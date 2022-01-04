@@ -200,6 +200,25 @@ internal class Colibri2Session(
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
 
+    internal fun expireAllRelays() = expireRelays(relays.keys.toList())
+    internal fun expireRelay(relayId: String) = expireRelays(listOf(relayId))
+    private fun expireRelays(relayIds: List<String>) {
+        val request = createRequest()
+        relayIds.forEach {
+            request.addRelay(
+                Colibri2Relay.getBuilder().apply {
+                    setId(it)
+                    setExpire(true)
+                }.build()
+            )
+        }
+
+        relayIds.forEach { relays.remove(it) }
+
+        logger.info("Expiring relays $relayIds: ${request.build().toXML()}")
+        xmppConnection.trySendStanza(request.build())
+    }
+
     private inner class Relay(
         val id: String,
         initiator: Boolean

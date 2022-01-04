@@ -74,6 +74,7 @@ class ColibriV2SessionManager(
     override fun expire() = synchronized(syncRoot) {
         sessions.values.forEach { session ->
             session.expire(getSessionParticipants(session))
+            session.expireAllRelays()
         }
         sessions.clear()
         clear()
@@ -98,10 +99,23 @@ class ColibriV2SessionManager(
         }
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             session.expire(sessionParticipantsToRemove)
-            sessions.values.filter { it != session }.forEach { otherSession ->
-                otherSession.expireRemoteParticipants(sessionParticipantsToRemove, session.bridge.relayId)
-            }
             sessionParticipantsToRemove.forEach { remove(it) }
+
+            val removeSession = getSessionParticipants(session).isEmpty()
+
+            if (removeSession) {
+                sessions.remove(session.bridge)
+                session.expireAllRelays()
+                sessions.values.forEach { otherSession ->
+                    otherSession.expireRelay(session.bridge.relayId)
+                }
+            } else {
+                // If the session was removed the relays themselves are expired, so there's no need to expire individual
+                // endpoints within a relay.
+                sessions.values.filter { it != session }.forEach { otherSession ->
+                    otherSession.expireRemoteParticipants(sessionParticipantsToRemove, session.bridge.relayId)
+                }
+            }
         }
     }
 
