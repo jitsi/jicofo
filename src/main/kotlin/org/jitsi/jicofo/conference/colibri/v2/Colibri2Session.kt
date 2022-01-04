@@ -21,7 +21,6 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.codec.JingleOfferFactory
 import org.jitsi.jicofo.codec.OctoOptions
-import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
@@ -73,21 +72,21 @@ internal class Colibri2Session(
      * Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response.
      */
     internal fun sendAllocationRequest(
-        participant: Participant,
+        participant: ParticipantInfo,
         contents: List<ContentPacketExtension>,
         create: Boolean
     ): StanzaCollector {
         val request = createRequest(create).apply { setCreate(create) }
         val endpoint = Colibri2Endpoint.getBuilder().apply {
-            setId(participant.endpointId)
+            setId(participant.id)
             setCreate(true)
-            setStatsId(participant.statId)
+            setStatsId(participant.statsId)
             setTransport(Transport.getBuilder().build())
         }
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
         request.addEndpoint(endpoint.build())
 
-        logger.debug { "Sending allocation request for ${participant.endpointId}: ${request.build().toXML()}" }
+        logger.debug { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
 
@@ -118,7 +117,7 @@ internal class Colibri2Session(
     }
 
     internal fun updateParticipant(
-        participant: Participant,
+        participant: ParticipantInfo,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?
     ) {
@@ -129,8 +128,8 @@ internal class Colibri2Session(
 
         val request = createRequest()
         val endpoint = Colibri2Endpoint.getBuilder().apply {
-            setId(participant.endpointId)
-            setStatsId(participant.statId)
+            setId(participant.id)
+            setStatsId(participant.statsId)
         }
 
         if (transport != null) {
@@ -146,23 +145,23 @@ internal class Colibri2Session(
         xmppConnection.tryToSendStanza(request.build())
     }
 
-    internal fun mute(endpointId: String, audio: Boolean, video: Boolean): StanzaCollector {
+    internal fun mute(participant: ParticipantInfo, audio: Boolean, video: Boolean): StanzaCollector {
         val request = createRequest()
         request.addEndpoint(
             Colibri2Endpoint.getBuilder().apply {
                 setForceMute(audio, video)
-                setId(endpointId)
+                setId(participant.id)
             }.build()
         )
 
-        logger.debug { "Sending mute request for $endpointId: ${request.build().toXML()}" }
+        logger.debug { "Sending mute request for $participant: ${request.build().toXML()}" }
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
 
-    internal fun expire(endpointId: String) = expire(singletonList(endpointId))
-    internal fun expire(endpointIds: List<String>) {
+    internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
+    internal fun expire(participantsToExpire: List<ParticipantInfo>) {
         val request = createRequest()
-        endpointIds.forEach { request.addExpire(it) }
+        participantsToExpire.forEach { request.addExpire(it.id) }
 
         val response = xmppConnection.sendIqAndGetResponse(request.build())
 

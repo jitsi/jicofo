@@ -72,7 +72,7 @@ class ColibriV2SessionManager(
 
     override fun expire() = synchronized(syncRoot) {
         sessions.values.forEach { session ->
-            session.expire(session.participants.map { it.id })
+            session.expire(session.participants)
             session.participants.clear()
         }
     }
@@ -82,13 +82,11 @@ class ColibriV2SessionManager(
 
         val participantInfo = participants[participant.endpointId]
             ?: run {
-                logger.warn("No session for participant $participant")
+                logger.warn("No ParticipantInfo for participant $participant")
                 return
             }
-        participantInfo.session.apply {
-            expire(participant.endpointId)
-            participantInfo.session.participants.remove(participantInfo)
-        }
+        participantInfo.session.expire(participantInfo)
+        participantInfo.session.participants.remove(participantInfo)
         participants.remove(participant.endpointId)
     }
 
@@ -126,7 +124,7 @@ class ColibriV2SessionManager(
             val audioMute = if (mediaType == MediaType.AUDIO) doMute else participantInfo.audioMuted
             val videoMute = if (mediaType == MediaType.VIDEO) doMute else participantInfo.videoMuted
             val session = participantInfo.session
-            stanzaCollector = session.mute(participant.endpointId, audioMute, videoMute)
+            stanzaCollector = session.mute(participantInfo, audioMute, videoMute)
         }
 
         val response: IQ?
@@ -194,9 +192,8 @@ class ColibriV2SessionManager(
                 created = it.second
             }
             logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
-            stanzaCollector = session.sendAllocationRequest(participant, contents, created)
-
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
+            stanzaCollector = session.sendAllocationRequest(participantInfo, contents, created)
             session.participants.add(participantInfo)
             participants[participant.endpointId] = participantInfo
             if (created) {
@@ -239,7 +236,7 @@ class ColibriV2SessionManager(
 
         val participantInfo = participants[participant.endpointId]
             ?: throw IllegalStateException("No participantInfo for $participant")
-        participantInfo.session.updateParticipant(participant, transport, sources)
+        participantInfo.session.updateParticipant(participantInfo, transport, sources)
         if (sources != null) {
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
@@ -256,10 +253,6 @@ class ColibriV2SessionManager(
 
     override fun removeBridges(bridges: Set<Jid>): List<Participant> {
         TODO("Not yet implemented")
-    }
-
-    private fun getSession(participant: Participant): Colibri2Session? = synchronized(syncRoot) {
-        return participants[participant.endpointId]?.session
     }
 
     internal fun setRelayTransport(
