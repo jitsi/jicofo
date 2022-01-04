@@ -67,6 +67,7 @@ internal class Colibri2Session(
     val id = UUID.randomUUID().toString()
 
     private val relays = mutableMapOf<String, Relay>()
+    internal val participants = mutableListOf<ParticipantInfo>()
 
     /**
      * Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response.

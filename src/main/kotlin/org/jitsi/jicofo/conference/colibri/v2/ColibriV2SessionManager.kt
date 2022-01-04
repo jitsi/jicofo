@@ -71,22 +71,24 @@ class ColibriV2SessionManager(
     internal val conferenceName = conference.roomName.toString()
 
     override fun expire() = synchronized(syncRoot) {
-        // Should we add a colibri2 way to expire a whole conference?
-        val participantsBySession: MutableMap<Colibri2Session, MutableList<String>> = mutableMapOf()
-
-        participants.forEach { (id, participantInfo) ->
-            participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(id)
-        }
-        participantsBySession.forEach { (session, participantIds) ->
-            session.expire(participantIds)
+        sessions.values.forEach { session ->
+            session.expire(session.participants.map { it.id })
+            session.participants.clear()
         }
     }
 
     override fun removeParticipant(participant: Participant): Unit = synchronized(syncRoot) {
         participant.setInviteRunnable(null)
 
-        getSession(participant)?.expire(participant.endpointId)
-            ?: logger.warn("No session for participant $participant")
+        val participantInfo = participants[participant.endpointId]
+            ?: run {
+                logger.warn("No session for participant $participant")
+                return
+            }
+        participantInfo.session.apply {
+            expire(participant.endpointId)
+            participantInfo.session.participants.remove(participantInfo)
+        }
         participants.remove(participant.endpointId)
     }
 
@@ -164,13 +166,7 @@ class ColibriV2SessionManager(
     }
 
     private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
-        // TODO do we need to be efficient here?
-        val bridges = mutableMapOf<Bridge, Int>()
-        participants.values.forEach { participantInfo ->
-            val old = bridges.computeIfAbsent(participantInfo.session.bridge) { 0 }
-            bridges[participantInfo.session.bridge] = old + 1
-        }
-        return bridges
+        return sessions.entries.associate { Pair(it.key, it.value.participants.size) }
     }
 
     @Throws(ColibriAllocationFailedException::class)
@@ -201,11 +197,12 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participant, contents, created)
 
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
+            session.participants.add(participantInfo)
             participants[participant.endpointId] = participantInfo
             if (created) {
                 sessions.values.filter { it != session }.forEach {
-                    it.createRelay(session.bridge.relayId, participantsWithSession(session), initiator = true)
-                    session.createRelay(it.bridge.relayId, participantsWithSession(it), initiator = false)
+                    it.createRelay(session.bridge.relayId, session.participants, initiator = true)
+                    session.createRelay(it.bridge.relayId, it.participants, initiator = false)
                 }
             } else {
                 sessions.values.filter { it != session }.forEach {
@@ -225,12 +222,11 @@ class ColibriV2SessionManager(
             session.processAllocationResponse(response, participant.endpointId, created)
         } catch (e: ColibriAllocationFailedException) {
             logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
+            session.participants.remove(participantInfo)
             participants.remove(participant.endpointId)
             throw e
         }
     }
-
-    private fun participantsWithSession(s: Colibri2Session) = participants.values.filter { it.session == s }
 
     override fun updateParticipant(
         participant: Participant,
