@@ -103,6 +103,7 @@ class ColibriV2SessionManager(
     }
 
     private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
+        var sessionRemoved = false
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             session.expire(sessionParticipantsToRemove)
             sessionParticipantsToRemove.forEach { remove(it) }
@@ -115,6 +116,7 @@ class ColibriV2SessionManager(
                 sessions.values.forEach { otherSession ->
                     otherSession.expireRelay(session.bridge.relayId)
                 }
+                sessionRemoved = true
             } else {
                 // If the session was removed the relays themselves are expired, so there's no need to expire individual
                 // endpoints within a relay.
@@ -122,6 +124,10 @@ class ColibriV2SessionManager(
                     otherSession.expireRemoteParticipants(sessionParticipantsToRemove, session.bridge.relayId)
                 }
             }
+        }
+
+        if (sessionRemoved) {
+            eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
         }
     }
 
@@ -236,6 +242,10 @@ class ColibriV2SessionManager(
                     it.updateRemoteParticipant(participantInfo, session.bridge.relayId, create = true)
                 }
             }
+        }
+
+        if (created) {
+            eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
         }
 
         val response: IQ?
