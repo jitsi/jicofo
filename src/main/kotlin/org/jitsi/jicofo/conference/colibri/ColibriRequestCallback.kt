@@ -17,14 +17,14 @@
  */
 package org.jitsi.jicofo.conference.colibri
 
-import org.jxmpp.jid.Jid
+import org.jitsi.jicofo.bridge.Bridge
 
 /**
  * A callback interface to use when a colibri request fails or succeeds.
  */
 interface ColibriRequestCallback {
     /** A colibri request to a specific bridge failed. */
-    fun requestFailed(jvbJid: Jid)
+    fun requestFailed(bridge: Bridge)
     /** A colibri request to a specific bridge succeeded. */
-    fun requestSucceeded(jvbJid: Jid)
+    fun requestSucceeded(bridge: Bridge)
 }

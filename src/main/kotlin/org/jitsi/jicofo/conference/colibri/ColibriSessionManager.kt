@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference.colibri
 
+import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -24,7 +25,6 @@ import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
-import org.jxmpp.jid.Jid
 
 interface ColibriSessionManager {
     fun addListener(listener: Listener)
@@ -75,7 +75,7 @@ interface ColibriSessionManager {
      * Stop using [bridges] (because they were detected to have failed).
      * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
      */
-    fun removeBridges(bridges: Set<Jid>): List<String>
+    fun removeBridges(bridges: Set<Bridge>): List<String>
 
     /**
      * Interface for events fired by [ColibriSessionManager].

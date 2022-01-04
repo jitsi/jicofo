@@ -208,7 +208,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             if (e.getRestartConference())
             {
-                colibriRequestCallback.requestFailed(e.getJid());
+                colibriRequestCallback.requestFailed(e.getBridge());
             }
             return;
         }
@@ -224,7 +224,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             if (e.getRestartConference())
             {
-                colibriRequestCallback.requestFailed(e.getJid());
+                colibriRequestCallback.requestFailed(e.getBridge());
             }
             return;
         }
@@ -232,7 +232,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             logger.error("Canceling due to", e);
             cancel();
-            colibriRequestCallback.requestFailed(e.getJid());
+            colibriRequestCallback.requestFailed(e.getBridge());
             return;
         }
         catch (ColibriAllocationFailedException e)

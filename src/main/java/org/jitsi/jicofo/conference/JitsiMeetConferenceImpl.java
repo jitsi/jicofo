@@ -1701,11 +1701,11 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles the case of some bridges in the conference becoming non-operational.
-     * @param bridgeJids the JIDs of the bridges that are non-operational.
+     * @param bridges the bridges that are non-operational.
      */
-    private void onMultipleBridgesDown(Set<Jid> bridgeJids)
+    private void onMultipleBridgesDown(Set<Bridge> bridges)
     {
-        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridgeJids);
+        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridges);
 
         if (!participantIdsToReinvite.isEmpty())
         {
@@ -1987,7 +1987,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge.getJid()));
+            onMultipleBridgesDown(Collections.singleton(bridge));
         }
 
         @Override
@@ -2085,13 +2085,13 @@ public class JitsiMeetConferenceImpl
     private class ColibriRequestCallbackImpl implements ColibriRequestCallback
     {
         @Override
-        public void requestFailed(@NotNull Jid jvbJid)
+        public void requestFailed(@NotNull Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(jvbJid));
+            onMultipleBridgesDown(Collections.singleton(bridge));
         }
 
         @Override
-        public void requestSucceeded(@NotNull Jid jvbJid)
+        public void requestSucceeded(@NotNull Bridge bridge)
         {
             // Remove "bridge not available" from Jicofo's presence
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;

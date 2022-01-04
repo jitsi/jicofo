@@ -96,7 +96,7 @@ internal class Colibri2Session(
         }
 
         if (response == null)
-            throw ColibriTimeoutException(bridge.jid)
+            throw ColibriTimeoutException(bridge)
         else if (response is ErrorIQ) {
             // TODO proper error handling
             throw GenericColibriAllocationFailedException(response.toXML().toString())
