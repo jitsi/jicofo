@@ -98,6 +98,9 @@ class ColibriV2SessionManager(
         }
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             session.expire(sessionParticipantsToRemove)
+            sessions.values.filter { it != session }.forEach { otherSession ->
+                otherSession.expireRemoteParticipants(sessionParticipantsToRemove, session.bridge.relayId)
+            }
             sessionParticipantsToRemove.forEach { remove(it) }
         }
     }

@@ -190,6 +190,11 @@ internal class Colibri2Session(
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
 
+    internal fun expireRemoteParticipants(participants: List<ParticipantInfo>, relayId: String) {
+        relays[relayId]?.expireParticipants(participants)
+            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+    }
+
     internal fun setRelayTransport(transport: IceUdpTransportPacketExtension, relayId: String) {
         relays[relayId]?.setTransport(transport)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
@@ -272,10 +277,24 @@ internal class Colibri2Session(
                 setId(id)
             }
             val endpoints = Endpoints.getBuilder()
-            endpoints.addEndpoint(participant.toEndpoint(create))
+            endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false))
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
-            logger.warn("Creating new octo endpoiont: ${request.build().toXML()}")
+            logger.warn("Creating new octo endpoint: ${request.build().toXML()}")
+            xmppConnection.trySendStanza(request.build())
+        }
+
+        fun expireParticipants(participants: List<ParticipantInfo>) {
+            val request = createRequest()
+            val relay = Colibri2Relay.getBuilder().apply { setId(id) }
+            val endpoints = Endpoints.getBuilder()
+
+            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = false, expire = true)) }
+
+            relay.setEndpoints(endpoints.build())
+            request.addRelay(relay.build())
+
+            logger.info("Expiring ${participants.map { it.id }}: ${request.build().toXML()}")
             xmppConnection.trySendStanza(request.build())
         }
 
@@ -290,7 +309,7 @@ internal class Colibri2Session(
             contents.forEach { it.toMedia()?.let<Media, Unit> { media -> relay.addMedia(media) } }
 
             val endpoints = Endpoints.getBuilder()
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(true)) }
+            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false)) }
             relay.setEndpoints(endpoints.build())
 
             relay.setTransport(

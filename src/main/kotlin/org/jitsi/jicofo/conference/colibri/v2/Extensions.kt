@@ -92,12 +92,17 @@ fun ContentPacketExtension.toMedia(): Media? {
     return media.build()
 }
 
-internal fun ParticipantInfo.toEndpoint(create: Boolean): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
+internal fun ParticipantInfo.toEndpoint(create: Boolean, expire: Boolean): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
     setId(id)
     if (create) {
         setCreate(true)
         setStatsId(statsId)
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
-    setSources(sources.toColibriMediaSources())
+    if (!expire) {
+        setSources(sources.toColibriMediaSources())
+    }
+    if (expire) {
+        setExpire(true)
+    }
 }.build()
