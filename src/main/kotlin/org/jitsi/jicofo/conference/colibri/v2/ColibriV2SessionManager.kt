@@ -53,8 +53,9 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
-    private val sessions: MutableMap<Bridge, Colibri2Session> = mutableMapOf()
-    private val participants: MutableMap<String, ParticipantInfo> = mutableMapOf()
+    private val sessions = mutableMapOf<Bridge, Colibri2Session>()
+    private val participants = mutableMapOf<String, ParticipantInfo>()
+    private val participantsBySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
     private val syncRoot = Any()
 
     /**
@@ -72,9 +73,10 @@ class ColibriV2SessionManager(
 
     override fun expire() = synchronized(syncRoot) {
         sessions.values.forEach { session ->
-            session.expire(session.participants)
-            session.participants.clear()
+            session.expire(getSessionParticipants(session))
         }
+        sessions.clear()
+        clear()
     }
 
     override fun removeParticipant(participant: Participant): Unit = synchronized(syncRoot) {
@@ -86,8 +88,7 @@ class ColibriV2SessionManager(
                 return
             }
         participantInfo.session.expire(participantInfo)
-        participantInfo.session.participants.remove(participantInfo)
-        participants.remove(participant.endpointId)
+        remove(participantInfo)
     }
 
     override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
@@ -164,7 +165,7 @@ class ColibriV2SessionManager(
     }
 
     private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
-        return sessions.entries.associate { Pair(it.key, it.value.participants.size) }
+        return participantsBySession.entries.associate { Pair(it.key.bridge, it.value.size) }
     }
 
     @Throws(ColibriAllocationFailedException::class)
@@ -194,12 +195,11 @@ class ColibriV2SessionManager(
             logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, created)
-            session.participants.add(participantInfo)
-            participants[participant.endpointId] = participantInfo
+            add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {
-                    it.createRelay(session.bridge.relayId, session.participants, initiator = true)
-                    session.createRelay(it.bridge.relayId, it.participants, initiator = false)
+                    it.createRelay(session.bridge.relayId, getSessionParticipants(session), initiator = true)
+                    session.createRelay(it.bridge.relayId, getSessionParticipants(it), initiator = false)
                 }
             } else {
                 sessions.values.filter { it != session }.forEach {
@@ -219,8 +219,7 @@ class ColibriV2SessionManager(
             session.processAllocationResponse(response, participant.endpointId, created)
         } catch (e: ColibriAllocationFailedException) {
             logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
-            session.participants.remove(participantInfo)
-            participants.remove(participant.endpointId)
+            remove(participantInfo)
             throw e
         }
     }
@@ -268,5 +267,23 @@ class ColibriV2SessionManager(
             sessions.values.find { it.bridge.relayId == relayId }?.setRelayTransport(transport, session.bridge.relayId)
                 ?: { logger.error("Response for a relay that is no longer active. Ignoring.") }
         }
+    }
+
+    private fun clear() {
+        participants.clear()
+        participantsBySession.clear()
+    }
+
+    private fun getSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
+        participantsBySession[session] ?: emptyList()
+
+    private fun remove(participantInfo: ParticipantInfo) {
+        participants.remove(participantInfo.id)
+        participantsBySession[participantInfo.session]?.remove(participantInfo)
+    }
+
+    private fun add(participantInfo: ParticipantInfo) {
+        participants[participantInfo.id] = participantInfo
+        participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(participantInfo)
     }
 }
