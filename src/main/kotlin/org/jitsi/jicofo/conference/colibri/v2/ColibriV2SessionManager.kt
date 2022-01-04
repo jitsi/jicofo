@@ -40,6 +40,9 @@ import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import java.util.UUID
 
+/**
+ * Implements [ColibriSessionManager] using colibri2.
+ */
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
@@ -52,9 +55,28 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
+    /**
+     * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
+     */
     private val sessions = mutableMapOf<Bridge, Colibri2Session>()
+
+    /**
+     * The set of participants that have associated colibri2 endpoints allocated, mapped by their ID. A participant is
+     * represented by a [ParticipantInfo] instance. Needs to be kept in sync with [participantsBySession].
+     */
     private val participants = mutableMapOf<String, ParticipantInfo>()
+
+    /**
+     * Maintains the same set as [participants], but organized by their session. Needs to be kept in sync with
+     * [participants] (see [add], [remove], [clear]).
+     */
     private val participantsBySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
+
+    /**
+     * Protects access to [sessions], [participants] and [participantsBySession].
+     *
+     * Note that we currently fire some events via [eventEmitter] while holding this lock.
+     */
     private val syncRoot = Any()
 
     /**
@@ -70,6 +92,9 @@ class ColibriV2SessionManager(
 
     internal val conferenceName = conference.roomName.toString()
 
+    /**
+     * Expire everything.
+     */
     override fun expire() = synchronized(syncRoot) {
         sessions.values.forEach { session ->
             session.expire(getSessionParticipants(session))
@@ -189,6 +214,10 @@ class ColibriV2SessionManager(
     override val bridgeRegions: Set<String>
         get() = synchronized(syncRoot) { sessions.keys.map { it.region }.toSet() }
 
+    /**
+     * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
+     * a boolean indicating whether the session was just created (true) or existed (false).
+     */
     private fun getOrCreateSession(bridge: Bridge): Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
         var session = sessions[bridge]
         if (session != null) {
@@ -200,6 +229,7 @@ class ColibriV2SessionManager(
         return Pair(session, true)
     }
 
+    /** Get the bridge-to-participant-count needed for bridge selection. */
     private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
         return participantsBySession.entries.associate { Pair(it.key.bridge, it.value.size) }
     }
@@ -230,7 +260,7 @@ class ColibriV2SessionManager(
             }
             logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
-            stanzaCollector = session.sendAllocationRequest(participantInfo, contents, created)
+            stanzaCollector = session.sendAllocationRequest(participantInfo, contents)
             add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {
@@ -256,7 +286,7 @@ class ColibriV2SessionManager(
         }
 
         return try {
-            session.processAllocationResponse(response, participant.endpointId, created)
+            session.processAllocationResponse(response, participant.endpointId)
         } catch (e: ColibriAllocationFailedException) {
             logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
             remove(participantInfo)
@@ -300,15 +330,23 @@ class ColibriV2SessionManager(
         participantsToRemove
     }
 
+    /**
+     * Sets the transport information for a relay. Since relays connect two different [Colibri2Session]s which don't
+     * know about each other, their communications goes through [setRelayTransport]
+     */
     internal fun setRelayTransport(
+        /** The session which received transport information for a relay. */
         session: Colibri2Session,
+        /** The transport information for [session]'s bridge, which needs to be passed to the other session. */
         transport: IceUdpTransportPacketExtension,
+        /** The ID of the relay, which can be used to find the other session. */
         relayId: String
     ) {
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
             if (!sessions.containsKey(session.bridge) || sessions[session.bridge] != session) {
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
+                return
             }
             sessions.values.find { it.bridge.relayId == relayId }?.setRelayTransport(transport, session.bridge.relayId)
                 ?: { logger.error("Response for a relay that is no longer active. Ignoring.") }

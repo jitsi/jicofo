@@ -49,6 +49,7 @@ import org.jivesoftware.smack.packet.IQ
 import java.util.Collections.singletonList
 import java.util.UUID
 
+/** Represents a colibri2 session with one specific bridge. */
 internal class Colibri2Session(
     val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
@@ -57,25 +58,34 @@ internal class Colibri2Session(
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
+    private val xmppConnection = colibriSessionManager.xmppConnection
+    val id = UUID.randomUUID().toString()
+
+    /**
+     * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request
+     * ([sendAllocationRequest]).
+     */
+    var created = false
 
     /**
      * The sources advertised by the bridge, read from the response of the initial request to create a conference.
      */
     private var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
-    private val xmppConnection = colibriSessionManager.xmppConnection
-    val id = UUID.randomUUID().toString()
 
+    /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
     private val relays = mutableMapOf<String, Relay>()
 
-    /**
-     * Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response.
-     */
+    /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
     internal fun sendAllocationRequest(
         participant: ParticipantInfo,
-        contents: List<ContentPacketExtension>,
-        create: Boolean
+        /**
+         * A list of Jingle [ContentPacketExtension]s, which describe the media types and RTP header extensions, i.e.
+         * the information contained in colibri2 [Media] elements.
+         */
+        contents: List<ContentPacketExtension>
     ): StanzaCollector {
-        val request = createRequest(create).apply { setCreate(create) }
+
+        val request = createRequest(!created)
         val endpoint = Colibri2Endpoint.getBuilder().apply {
             setId(participant.id)
             setCreate(true)
@@ -86,11 +96,16 @@ internal class Colibri2Session(
         request.addEndpoint(endpoint.build())
 
         logger.debug { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
 
+    /**
+     * Process the response for an endpoint allocation request (send via [sendAllocationRequest]). Parses the feedback
+     * sources, and returns a [ColibriAllocation] for the endpoint.
+     */
     @Throws(ColibriAllocationFailedException::class)
-    internal fun processAllocationResponse(response: IQ?, participantId: String, create: Boolean): ColibriAllocation {
+    internal fun processAllocationResponse(response: IQ?, participantId: String): ColibriAllocation {
         logger.debug {
             "Received response of type ${response?.let { it::class.java } ?: "null" }: ${response?.toXML()}"
         }
@@ -103,7 +118,7 @@ internal class Colibri2Session(
         } else if (response !is ConferenceModifiedIQ)
             throw BadColibriRequestException("response of wrong type: ${response::class.java.name }")
 
-        if (create) {
+        if (bridgeSources.isEmpty()) {
             bridgeSources = response.parseSources()
         }
 
@@ -115,9 +130,12 @@ internal class Colibri2Session(
         )
     }
 
+    /** Updates the transport info and/or sources for an existing endpoint. */
     internal fun updateParticipant(
         participant: ParticipantInfo,
+        /** The transport info to set for the colibri2 endpoint, or null if it is not to be modified. */
         transport: IceUdpTransportPacketExtension?,
+        /** The sources to set for the colibri2 endpoint, or null if the sources are not to be modified. */
         sources: ConferenceSourceMap?
     ) {
         if (transport == null && sources == null) {
@@ -144,6 +162,7 @@ internal class Colibri2Session(
         xmppConnection.tryToSendStanza(request.build())
     }
 
+    /** Force-mutes a specific endpoint **/
     internal fun mute(participant: ParticipantInfo, audio: Boolean, video: Boolean): StanzaCollector {
         val request = createRequest()
         request.addEndpoint(
@@ -158,6 +177,7 @@ internal class Colibri2Session(
     }
 
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
+    /** Expire the colibri2 endpoints for a set of participants. */
     internal fun expire(participantsToExpire: List<ParticipantInfo>) {
         val request = createRequest()
         participantsToExpire.forEach { request.addExpire(it.id) }
@@ -172,10 +192,28 @@ internal class Colibri2Session(
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
         to(bridge.jid)
         setMeetingId(colibriSessionManager.meetingId)
-        if (create) setConferenceName(colibriSessionManager.conferenceName)
+        if (create) {
+            setCreate(true)
+            setConferenceName(colibriSessionManager.conferenceName)
+        }
     }
 
-    internal fun createRelay(relayId: String, initialParticipants: List<ParticipantInfo>, initiator: Boolean) {
+    /**
+     * Create a new colibri2 relay. This sends an allocation request and submits an IO task to wait for and handle the
+     * response.
+     * This assumes that the colibri2 conference has already been created, i.e. [createRelay] must be called after at
+     * least one call to [sendAllocationRequest].
+     */
+    internal fun createRelay(
+        /** The ID of the relay (i.e. the relayId of the remote [Bridge]). */
+        relayId: String,
+        /** Initial remote endpoints to be included in the relay. */
+        initialParticipants: List<ParticipantInfo>,
+        /**
+         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay * connection should have different values for [initiator].
+         */
+        initiator: Boolean
+    ) {
         if (relays.containsKey(relayId)) {
             throw IllegalStateException("Relay $relayId already exists")
         }
@@ -185,17 +223,33 @@ internal class Colibri2Session(
         relay.start(initialParticipants)
     }
 
-    internal fun updateRemoteParticipant(participantInfo: ParticipantInfo, relayId: String, create: Boolean) {
+    /**
+     * Updates the sources for a specific endpoint on a specific relay. Also used to create a new remote endpoint in
+     * the relay (when [create] is true).
+     */
+    internal fun updateRemoteParticipant(
+        participantInfo: ParticipantInfo,
+        /** The ID of the relay on which to add/update an endpoint. */
+        relayId: String,
+        /** Whether a new relay endpoint should be created, or an existing one updated. */
+        create: Boolean
+    ) {
         relays[relayId]?.updateParticipant(participantInfo, create)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
 
+    /** Expires a set of endpoints on a specific relay. */
     internal fun expireRemoteParticipants(participants: List<ParticipantInfo>, relayId: String) {
         relays[relayId]?.expireParticipants(participants)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
 
-    internal fun setRelayTransport(transport: IceUdpTransportPacketExtension, relayId: String) {
+    /** Sets the remote side transport information for a specific relay. */
+    internal fun setRelayTransport(
+        /** The transport information of the other bridge. */
+        transport: IceUdpTransportPacketExtension,
+        relayId: String
+    ) {
         relays[relayId]?.setTransport(transport)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
@@ -219,21 +273,35 @@ internal class Colibri2Session(
         xmppConnection.trySendStanza(request.build())
     }
 
+    /**
+     * Represents a colibri2 relay connection to another bridge.
+     */
     private inner class Relay(
+        /** The relayId of the remote bridge. */
         val id: String,
+        /**
+         * A flag used to determine the roles. The associated [Relay] for the remote side should have the opposite
+         * value.
+         */
         initiator: Boolean
     ) {
+        // TODO: One of the ways to select the ICE/DTLS roles might save an RTT. Which one?
         private val useUniquePort = initiator
         private val iceControlling = initiator
         private val dtlsSetup = if (initiator) "active" else "passive"
         private val websocketActive = initiator
 
+        /** Send a request to allocate a new relay, and submit a task to wait for a response. */
         fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
             val stanzaCollector = xmppConnection.createStanzaCollectorAndSend(request)
             TaskPools.ioPool.submit { waitForResponse(stanzaCollector) }
         }
 
+        /**
+         * Waits for a response to the relay allocation request. When a response is received, parse the contained
+         * transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
+         */
         private fun waitForResponse(stanzaCollector: StanzaCollector) {
             val response: IQ?
             try {
@@ -247,6 +315,7 @@ internal class Colibri2Session(
                 return
             }
 
+            // TODO: We just assume that the response has a single [Colibri2Relay].
             val transport = response.relays.firstOrNull()?.transport
                 ?: run {
                     logger.error("No transport in response: ${response.toXML()}")
@@ -263,7 +332,19 @@ internal class Colibri2Session(
             colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
         }
 
-        fun setTransport(transport: IceUdpTransportPacketExtension) {
+        /**
+         * Sends a colibri2 message setting/updating the remote-side transport of this relay.
+         *
+         */
+        fun setTransport(
+            /**
+             * The transport info as received by the remote side. We update some of the fields as required based on the
+             * ICE/DTLS/WS roles.
+             */
+            transport: IceUdpTransportPacketExtension
+        ) {
+            // We always expect the bridge to advertise its DTLS setup as "actpass". Here we override it to set one
+            // side as "active" and the other as "passive".
             transport.getChildExtensionsOfType(DtlsFingerprintPacketExtension::class.java).forEach {
                 if (it.setup != "actpass") {
                     logger.error("Response has an unexpected dtls setup field: ${it.setup}")
@@ -272,6 +353,9 @@ internal class Colibri2Session(
                 logger.info("Setting setup=$dtlsSetup for $id")
                 it.setup = dtlsSetup
             }
+            // We always expect the bridge to advertise a websocket, but we want only one side to act as a client.
+            // The bridge will always act as a client if the signaled transport includes a websocket, so here we make
+            // sure it is only included to one of the sides.
             if (!websocketActive) {
                 transport.getChildExtensionsOfType(WebSocketPacketExtension::class.java).forEach {
                     transport.removeChildExtension(it)
@@ -290,6 +374,7 @@ internal class Colibri2Session(
             xmppConnection.trySendStanza(request.build())
         }
 
+        /** Update or create a relay endpoint for a specific participant. */
         fun updateParticipant(participant: ParticipantInfo, create: Boolean) {
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {
@@ -303,6 +388,7 @@ internal class Colibri2Session(
             xmppConnection.trySendStanza(request.build())
         }
 
+        /** Expire relay endpoints for a set of participants. */
         fun expireParticipants(participants: List<ParticipantInfo>) {
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply { setId(id) }
@@ -317,6 +403,7 @@ internal class Colibri2Session(
             xmppConnection.trySendStanza(request.build())
         }
 
+        /** Create a request to create a relay (this is just the initial request). */
         private fun buildCreateRelayRequest(participants: Collection<ParticipantInfo>): ConferenceModifyIQ {
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {

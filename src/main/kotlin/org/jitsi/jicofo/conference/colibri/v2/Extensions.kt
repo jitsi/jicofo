@@ -32,10 +32,16 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 
+/** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
 fun ConferenceModifiedIQ.parseTransport(endpointId: String): IceUdpTransportPacketExtension? {
     return endpoints.find { it.id == endpointId }?.transport?.iceUdpTransport
 }
 
+/**
+ * Reads the feedback sources (at the "conference" level) and parses them into a [ConferenceSourceMap].
+ * Uses the special [ParticipantInviteRunnable.SSRC_OWNER_JVB] JID as the "owner", since this is how jitsi-meet
+ * clients expect the bridge's sources to be signaled.
+ */
 fun ConferenceModifiedIQ.parseSources(): ConferenceSourceMap {
     val parsedSources = ConferenceSourceMap()
     val owner = ParticipantInviteRunnable.SSRC_OWNER_JVB
@@ -92,8 +98,11 @@ fun ContentPacketExtension.toMedia(): Media? {
     return media.build()
 }
 
+/** Create a [Colibri2Endpoint] for a specific [ParticipantInfo]. */
 internal fun ParticipantInfo.toEndpoint(
+    /** Whether the request should have the "create" flag set. */
     create: Boolean,
+    /** Whether the request should have the "expire" flag set. */
     expire: Boolean
 ): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
     setId(id)
