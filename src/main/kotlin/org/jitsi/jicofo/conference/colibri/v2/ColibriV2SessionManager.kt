@@ -79,20 +79,27 @@ class ColibriV2SessionManager(
         clear()
     }
 
-    override fun removeParticipant(participant: Participant): Unit = synchronized(syncRoot) {
-        participant.setInviteRunnable(null)
+    override fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
+    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
+        participants.forEach { it.setInviteRunnable(null) }
 
-        val participantInfo = participants[participant.endpointId]
-            ?: run {
-                logger.warn("No ParticipantInfo for participant $participant")
-                return
-            }
-        participantInfo.session.expire(participantInfo)
-        remove(participantInfo)
+        val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
+        if (participantInfos.size != participants.size) {
+            logger.error("Can not remove every participant requested, ParticipantInfo missing: " +
+                    "participants=$participants, participantInfos=$participantInfos")
+        }
+        removeParticipantInfos(participantInfos)
     }
 
-    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
-        participants.forEach { removeParticipant(it) }
+    private fun removeParticipantInfos(participantsToRemove: Collection<ParticipantInfo>) = synchronized(syncRoot) {
+        val bySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
+        participantsToRemove.forEach {
+            bySession.computeIfAbsent(it.session) { mutableListOf() }.add(it)
+        }
+        bySession.forEach { (session, sessionParticipantsToRemove) ->
+            session.expire(sessionParticipantsToRemove)
+            sessionParticipantsToRemove.forEach { remove(it) }
+        }
     }
 
     /**
