@@ -6,7 +6,7 @@ internal class ParticipantInfo(
     val id: String,
     val statsId: String?,
     var sources: ConferenceSourceMap = ConferenceSourceMap(),
-    var session: Colibri2Session? = null,
+    var session: Colibri2Session,
     var audioMuted: Boolean = false,
     var videoMuted: Boolean = false
 )

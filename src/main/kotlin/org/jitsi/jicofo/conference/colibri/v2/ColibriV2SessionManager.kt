@@ -75,9 +75,7 @@ class ColibriV2SessionManager(
         val participantsBySession: MutableMap<Colibri2Session, MutableList<String>> = mutableMapOf()
 
         participants.forEach { (id, participantInfo) ->
-            participantInfo.session?.let { session ->
-                participantsBySession.computeIfAbsent(session) { mutableListOf() }.add(id)
-            }
+            participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(id)
         }
         participantsBySession.forEach { (session, participantIds) ->
             session.expire(participantIds)
@@ -125,7 +123,7 @@ class ColibriV2SessionManager(
 
             val audioMute = if (mediaType == MediaType.AUDIO) doMute else participantInfo.audioMuted
             val videoMute = if (mediaType == MediaType.VIDEO) doMute else participantInfo.videoMuted
-            val session = participantInfo.session ?: throw IllegalStateException("No session for $participant")
+            val session = participantInfo.session
             stanzaCollector = session.mute(participant.endpointId, audioMute, videoMute)
         }
 
@@ -169,10 +167,8 @@ class ColibriV2SessionManager(
         // TODO do we need to be efficient here?
         val bridges = mutableMapOf<Bridge, Int>()
         participants.values.forEach { participantInfo ->
-            participantInfo.session?.bridge?.let {
-                val old = bridges.computeIfAbsent(it) { 0 }
-                bridges[it] = old + 1
-            }
+            val old = bridges.computeIfAbsent(participantInfo.session.bridge) { 0 }
+            bridges[participantInfo.session.bridge] = old + 1
         }
         return bridges
     }
@@ -229,7 +225,6 @@ class ColibriV2SessionManager(
             session.processAllocationResponse(response, participant.endpointId, created)
         } catch (e: ColibriAllocationFailedException) {
             logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
-            participantInfo.session = null
             participants.remove(participant.endpointId)
             throw e
         }
@@ -248,15 +243,13 @@ class ColibriV2SessionManager(
 
         val participantInfo = participants[participant.endpointId]
             ?: throw IllegalStateException("No participantInfo for $participant")
-        val session = participantInfo.session
-            ?: throw IllegalStateException("No session for $participant")
-        session.updateParticipant(participant, transport, sources)
+        participantInfo.session.updateParticipant(participant, transport, sources)
         if (sources != null) {
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
-            sessions.values.filter { it != session }.forEach {
-                it.updateRemoteParticipant(participantInfo, session.bridge.relayId, false)
+            sessions.values.filter { it != participantInfo.session }.forEach {
+                it.updateRemoteParticipant(participantInfo, participantInfo.session.bridge.relayId, false)
             }
         }
     }
