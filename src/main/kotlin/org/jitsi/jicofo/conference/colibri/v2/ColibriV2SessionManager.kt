@@ -38,7 +38,6 @@ import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
-import org.jxmpp.jid.Jid
 import java.util.UUID
 
 class ColibriV2SessionManager(
@@ -99,6 +98,11 @@ class ColibriV2SessionManager(
         participantsToRemove.forEach {
             bySession.computeIfAbsent(it.session) { mutableListOf() }.add(it)
         }
+
+        removeParticipantInfosBySession(bySession)
+    }
+
+    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             session.expire(sessionParticipantsToRemove)
             sessionParticipantsToRemove.forEach { remove(it) }
@@ -276,8 +280,13 @@ class ColibriV2SessionManager(
         return participants[participant.endpointId]?.session?.id
     }
 
-    override fun removeBridges(bridges: Set<Bridge>): List<String> {
-        TODO("Not yet implemented")
+    override fun removeBridges(bridges: Set<Bridge>): List<String> = synchronized(syncRoot) {
+        val sessionsToRemove = sessions.values.filter { bridges.contains(it.bridge) }
+        val participantsToRemove = sessionsToRemove.flatMap { getSessionParticipants(it) }.map { it.id }
+
+        removeParticipantInfosBySession(sessionsToRemove.associateWith { getSessionParticipants(it) })
+
+        participantsToRemove
     }
 
     internal fun setRelayTransport(
