@@ -73,9 +73,9 @@ interface ColibriSessionManager {
 
     /**
      * Stop using [bridges] (because they were detected to have failed).
-     * @return the list of participants which were on one of the removed bridges and now need to be re-invited.
+     * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
      */
-    fun removeBridges(bridges: Set<Jid>): List<Participant>
+    fun removeBridges(bridges: Set<Jid>): List<String>
 
     /**
      * Interface for events fired by [ColibriSessionManager].

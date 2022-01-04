@@ -1705,12 +1705,27 @@ public class JitsiMeetConferenceImpl
      */
     private void onMultipleBridgesDown(Set<Jid> bridgeJids)
     {
-        List<Participant> participantsToReinvite = colibriSessionManager.removeBridges(bridgeJids);
+        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridgeJids);
 
-        if (!participantsToReinvite.isEmpty())
+        if (!participantIdsToReinvite.isEmpty())
         {
-            listener.participantsMoved(participantsToReinvite.size());
-            reInviteParticipants(participantsToReinvite);
+            listener.participantsMoved(participantIdsToReinvite.size());
+            synchronized (participantLock)
+            {
+                List<Participant> participantsToReinvite = new ArrayList<>();
+                for (Participant participant : participants)
+                {
+                    if (participantIdsToReinvite.contains(participant.getEndpointId()))
+                    {
+                        participantsToReinvite.add(participant);
+                    }
+                }
+                if (participantsToReinvite.size() != participantIdsToReinvite.size())
+                {
+                    logger.error("Can not re-invite all participants, no Participant object for some of them.");
+                }
+                reInviteParticipants(participantsToReinvite);
+            }
         }
     }
 

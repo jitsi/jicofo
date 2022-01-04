@@ -276,7 +276,7 @@ class ColibriV2SessionManager(
         return participants[participant.endpointId]?.session?.id
     }
 
-    override fun removeBridges(bridges: Set<Jid>): List<Participant> {
+    override fun removeBridges(bridges: Set<Jid>): List<String> {
         TODO("Not yet implemented")
     }
 
