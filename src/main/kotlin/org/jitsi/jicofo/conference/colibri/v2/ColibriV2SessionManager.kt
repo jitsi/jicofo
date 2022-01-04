@@ -86,8 +86,10 @@ class ColibriV2SessionManager(
 
         val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
         if (participantInfos.size != participants.size) {
-            logger.error("Can not remove every participant requested, ParticipantInfo missing: " +
-                    "participants=$participants, participantInfos=$participantInfos")
+            logger.error(
+                "Can not remove every participant requested, ParticipantInfo missing: " +
+                    "participants=$participants, participantInfos=$participantInfos"
+            )
         }
         removeParticipantInfos(participantInfos)
     }

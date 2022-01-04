@@ -92,7 +92,10 @@ fun ContentPacketExtension.toMedia(): Media? {
     return media.build()
 }
 
-internal fun ParticipantInfo.toEndpoint(create: Boolean, expire: Boolean): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
+internal fun ParticipantInfo.toEndpoint(
+    create: Boolean,
+    expire: Boolean
+): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
     setId(id)
     if (create) {
         setCreate(true)
