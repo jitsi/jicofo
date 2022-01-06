@@ -101,6 +101,7 @@ class ColibriV2SessionManager(
             session.expireAllRelays()
         }
         sessions.clear()
+        eventEmitter.fireEvent { bridgeCountChanged(0) }
         clear()
     }
 
