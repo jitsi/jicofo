@@ -243,7 +243,9 @@ class ColibriV2SessionManager(
 
     /** Get the bridge-to-participant-count needed for bridge selection. */
     private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
-        return participantsBySession.entries.associate { Pair(it.key.bridge, it.value.size) }
+        return participantsBySession.entries
+            .filter { it.key.bridge.isOperational }
+            .associate { Pair(it.key.bridge, it.value.size) }
     }
 
     @Throws(ColibriAllocationFailedException::class)
