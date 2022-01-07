@@ -21,14 +21,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.codec.JingleOfferFactory
 import org.jitsi.jicofo.codec.OctoOptions
-import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
-import org.jitsi.jicofo.conference.colibri.ColibriAllocation
-import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
-import org.jitsi.jicofo.conference.colibri.ColibriParsingException
-import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
-import org.jitsi.jicofo.conference.colibri.GenericColibriAllocationFailedException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
-import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -44,7 +37,6 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
-import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import java.util.Collections.singletonList
 import java.util.UUID
@@ -70,7 +62,7 @@ internal class Colibri2Session(
     /**
      * The sources advertised by the bridge, read from the response of the initial request to create a conference.
      */
-    private var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
+    internal var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
 
     /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
     private val relays = mutableMapOf<String, Relay>()
@@ -98,36 +90,6 @@ internal class Colibri2Session(
         logger.debug { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
-    }
-
-    /**
-     * Process the response for an endpoint allocation request (send via [sendAllocationRequest]). Parses the feedback
-     * sources, and returns a [ColibriAllocation] for the endpoint.
-     */
-    @Throws(ColibriAllocationFailedException::class)
-    internal fun processAllocationResponse(response: IQ?, participantId: String): ColibriAllocation {
-        logger.debug {
-            "Received response of type ${response?.let { it::class.java } ?: "null" }: ${response?.toXML()}"
-        }
-
-        if (response == null)
-            throw ColibriTimeoutException(bridge)
-        else if (response is ErrorIQ) {
-            // TODO proper error handling
-            throw GenericColibriAllocationFailedException(response.toXML().toString())
-        } else if (response !is ConferenceModifiedIQ)
-            throw BadColibriRequestException("response of wrong type: ${response::class.java.name }")
-
-        if (bridgeSources.isEmpty()) {
-            bridgeSources = response.parseSources()
-        }
-
-        return ColibriAllocation(
-            bridgeSources,
-            response.parseTransport(participantId) ?: throw ColibriParsingException("failed to parse transport"),
-            bridge.region,
-            id
-        )
     }
 
     /** Updates the transport info and/or sources for an existing endpoint. */

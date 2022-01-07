@@ -22,10 +22,16 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
+import org.jitsi.jicofo.conference.colibri.BridgeFailedException
+import org.jitsi.jicofo.conference.colibri.BridgeInGracefulShutdownException
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
+import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
+import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
+import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.event.SyncEventEmitter
@@ -37,7 +43,12 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
+import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
+import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
+import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
+import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import java.util.UUID
 
 /**
@@ -286,13 +297,78 @@ class ColibriV2SessionManager(
             stanzaCollector.cancel()
         }
 
-        return try {
-            session.processAllocationResponse(response, participant.endpointId)
-        } catch (e: ColibriAllocationFailedException) {
-            logger.warn("Failed to allocate a colibri endpoint for ${participant.endpointId}", e)
-            remove(participantInfo)
-            throw e
+        synchronized(syncRoot) {
+            try {
+                return handleResponse(response, session, created, participantInfo)
+            } catch (e: Exception) {
+                // TODO: the conference does not know that participants were removed and need to be re-invited (they
+                //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
+                //  hard to avoid right now.
+                removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
+                remove(participantInfo)
+                throw e
+            }
         }
+    }
+
+    private fun handleResponse(
+        response: IQ?,
+        session: Colibri2Session,
+        created: Boolean,
+        participantInfo: ParticipantInfo
+    ): ColibriAllocation {
+
+        // The game we're playing here is throwing the appropriate exception type and setting or not setting the
+        // bridge as non-operational to make [ParticipantInviteRunnable] do the right thing:
+        // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
+        // * Re-invite the participants on this bridge
+        // * Re-invite the participants on this bridge to a different bridge
+        //
+        // Once colibri v1 is removed, it will be easier to organize this better.
+        if (!sessions.containsKey(session.bridge)) {
+            logger.warn("The session was removed, ignoring allocation response.")
+            throw ColibriConferenceDisposedException()
+        }
+
+        if (response == null) {
+            session.bridge.setIsOperational(false)
+            throw ColibriTimeoutException(session.bridge)
+        } else if (response is ErrorIQ) {
+            when (response.error.condition) {
+                bad_request, conflict, item_not_found -> {
+                    // Most probably we sent a bad request, or something went out of sync between jicofo and the
+                    // bridge (e.g. a conference/endpoint/relay we referenced didn't exist)
+                    // If we flag the bridge as non-operational we may disrupt other conferences.
+                    // If we trigger a re-invite we may cause the same error repeating.
+                    throw BadColibriRequestException(response.error?.toXML()?.toString() ?: "null")
+                }
+                service_unavailable -> {
+                    // This only happens if the bridge is in graceful-shutdown and we request a new conference.
+                    throw BridgeInGracefulShutdownException()
+                }
+                else -> {
+                    session.bridge.setIsOperational(false)
+                    throw BridgeFailedException(session.bridge, true)
+                }
+            }
+        }
+
+        if (response !is ConferenceModifiedIQ) {
+            session.bridge.setIsOperational(false)
+            throw BadColibriRequestException("Response of wrong type: ${response::class.java.name}")
+        }
+
+        if (created) {
+            session.bridgeSources = response.parseSources()
+        }
+
+        return ColibriAllocation(
+            session.bridgeSources,
+            response.parseTransport(participantInfo.id)
+                ?: throw ColibriParsingException("failed to parse transport"),
+            session.bridge.region,
+            session.id
+        )
     }
 
     override fun updateParticipant(
