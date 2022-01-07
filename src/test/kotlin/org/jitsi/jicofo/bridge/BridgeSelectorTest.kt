@@ -115,5 +115,28 @@ class BridgeSelectorTest : ShouldSpec() {
             regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), null) shouldBe jvb1
             regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), "r2") shouldBe jvb2
         }
+        context("SplitBridgeSelectionStrategy") {
+            setNewConfig(
+                """
+                    jicofo.octo.enabled=true
+                    jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
+                """.trimIndent(),
+                true
+            )
+
+            val splitSelector = BridgeSelector(clock)
+            val jvb1 = splitSelector.addJvbAddress(jid1).apply { setStats(stress = 0.2, region = "r1") }
+            val jvb2 = splitSelector.addJvbAddress(jid2).apply { setStats(stress = 0.5, region = "r2") }
+            val jvb3 = splitSelector.addJvbAddress(jid3).apply { setStats(stress = 0.1, region = "r3") }
+
+            splitSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
+            splitSelector.selectBridge(mapOf(jvb1 to 1), null) shouldBeIn setOf(jvb2, jvb3)
+            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1), null) shouldBe jvb3
+            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb1
+
+            splitSelector.removeJvbAddress(jid1)
+
+            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb2
+        }
     }
 }
