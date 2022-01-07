@@ -30,6 +30,7 @@ import org.jitsi.utils.logging2.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -45,7 +46,7 @@ import static org.glassfish.jersey.internal.guava.Predicates.not;
  * @author Boris Grozev
  */
 public class BridgeSelector
-    implements JvbDoctor.HealthCheckListener
+    implements HealthCheckListener
 {
     /**
      * The logger.
@@ -70,21 +71,29 @@ public class BridgeSelector
      */
     private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
 
-    private final JvbDoctor jvbDoctor = new JvbDoctor(this);
-
     /**
      * The number of bridges which disconnected without going into graceful shutdown first.
      */
     private final AtomicInteger lostBridges = new AtomicInteger();
 
+    @NotNull
+    private final Clock clock;
+
     /**
-     * Creates new instance of {@link BridgeSelector}.
-     *
+     * Initalizes a new instance of {@link BridgeSelector}.
+     */
+    public BridgeSelector(@NotNull Clock clock)
+    {
+        logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
+        this.clock = clock;
+    }
+
+    /**
+     * Initalizes a new instance of {@link BridgeSelector}.
      */
     public BridgeSelector()
     {
-        logger.info("Using " + bridgeSelectionStrategy.getClass().getName());
-        jvbDoctor.start(getBridges());
+        this(Clock.systemUTC());
     }
 
     /**
@@ -120,7 +129,7 @@ public class BridgeSelector
                 return bridge;
             }
 
-            newBridge = new Bridge(bridgeJid);
+            newBridge = new Bridge(bridgeJid, clock);
             if (stats != null)
             {
                 newBridge.setStats(stats);
@@ -130,7 +139,6 @@ public class BridgeSelector
         }
 
         notifyBridgeUp(newBridge);
-        jvbDoctor.addBridge(newBridge.getJid());
 
         return newBridge;
     }
@@ -159,7 +167,6 @@ public class BridgeSelector
                 lostBridges.incrementAndGet();
             }
             notifyBridgeDown(bridge);
-            jvbDoctor.removeBridge(bridgeJid);
         }
     }
 
@@ -273,15 +280,6 @@ public class BridgeSelector
         return selectBridge(new HashMap<>(), null);
     }
 
-    /**
-     * Returns the number of JVBs known to this bridge selector. Not all of them
-     * have to be operational.
-     */
-    synchronized int getKnownBridgesCount()
-    {
-        return bridges.size();
-    }
-
     private void notifyBridgeUp(Bridge bridge)
     {
         logger.debug("Propagating new bridge added event: " + bridge.getJid());
@@ -302,11 +300,6 @@ public class BridgeSelector
             handler.bridgeRemoved(bridge);
             return Unit.INSTANCE;
         });
-    }
-
-    public void shutdown()
-    {
-        jvbDoctor.shutdown();
     }
 
     public int getBridgeCount()

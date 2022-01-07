@@ -40,6 +40,7 @@ import static org.jitsi.jicofo.bridge.BridgeConfig.config;
  * @author Pawel Domas
  */
 public class JvbDoctor
+    implements BridgeSelector.EventHandler
 {
     /**
      * The logger.
@@ -60,7 +61,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private final Map<Jid, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    private final Map<Bridge, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
 
     private final HealthCheckListener listener;
 
@@ -80,87 +81,59 @@ public class JvbDoctor
         return xmppProvider.getXmppConnection();
     }
 
-    synchronized public void start(Collection<Bridge> initialBridges)
-    {
-        if (!config.getHealthChecksEnabled())
-        {
-            logger.warn("JVB health-checks disabled");
-            return;
-        }
-
-        initializeHealthChecks(initialBridges);
-    }
-
-    /**
-     * Initializes bridge health checks.
-     *
-     * @param bridges - the list of bridges connected at the time when
-     * the {@link JvbDoctor} bundle starts.
-     */
-    private void initializeHealthChecks(Collection<Bridge> bridges)
-    {
-        for (Bridge b : bridges)
-        {
-            Jid bridgeJid = b.getJid();
-
-            if (!tasks.containsKey(bridgeJid))
-            {
-                addBridge(bridgeJid);
-            }
-        }
-    }
-
     synchronized public void shutdown()
     {
         // Remove scheduled tasks
-        ArrayList<Jid> bridges = new ArrayList<>(tasks.keySet());
-        for (Jid bridge : bridges)
+        ArrayList<Bridge> bridges = new ArrayList<>(tasks.keySet());
+        for (Bridge bridge : bridges)
         {
-            removeBridge(bridge);
+            bridgeRemoved(bridge);
         }
     }
 
-    void addBridge(Jid bridgeJid)
+    @Override
+    public void bridgeRemoved(Bridge bridge)
     {
-        if (tasks.containsKey(bridgeJid))
-        {
-            logger.warn("Trying to add already existing bridge: " + bridgeJid);
-            return;
-        }
-
-        ScheduledFuture<?> healthTask
-            = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                    new HealthCheckTask(bridgeJid),
-                    healthCheckInterval,
-                    healthCheckInterval,
-                    TimeUnit.MILLISECONDS);
-
-        tasks.put(bridgeJid, healthTask);
-
-        logger.info("Scheduled health-check task for: " + bridgeJid);
-    }
-
-    void removeBridge(Jid bridgeJid)
-    {
-        ScheduledFuture<?> healthTask = tasks.remove(bridgeJid);
+        ScheduledFuture<?> healthTask = tasks.remove(bridge);
         if (healthTask == null)
         {
-            logger.warn("Trying to remove a bridge that does not exist anymore: " + bridgeJid);
+            logger.warn("Trying to remove a bridge that does not exist anymore: " + bridge);
             return;
         }
 
-        logger.info("Stopping health-check task for: " + bridgeJid);
+        logger.info("Stopping health-check task for: " + bridge);
 
         healthTask.cancel(true);
     }
 
+    @Override
+    public void bridgeAdded(Bridge bridge)
+    {
+        if (tasks.containsKey(bridge))
+        {
+            logger.warn("Trying to add already existing bridge: " + bridge);
+            return;
+        }
+
+        ScheduledFuture<?> healthTask
+                = TaskPools.getScheduledPool().scheduleAtFixedRate(
+                new HealthCheckTask(bridge),
+                healthCheckInterval,
+                healthCheckInterval,
+                TimeUnit.MILLISECONDS);
+
+        tasks.put(bridge, healthTask);
+
+        logger.info("Scheduled health-check task for: " + bridge);
+    }
+
     private class HealthCheckTask implements Runnable
     {
-        private final Jid bridgeJid;
+        private final Bridge bridge;
 
-        private HealthCheckTask(Jid bridgeJid)
+        private HealthCheckTask(Bridge bridge)
         {
-            this.bridgeJid = bridgeJid;
+            this.bridge = bridge;
         }
 
         @Override
@@ -172,7 +145,7 @@ public class JvbDoctor
             }
             catch (Exception e)
             {
-                logger.error("Error when doing health-check on: " + bridgeJid, e);
+                logger.error("Error when doing health-check on: " + bridge, e);
             }
         }
 
@@ -180,19 +153,19 @@ public class JvbDoctor
         {
             synchronized (JvbDoctor.this)
             {
-                if (!tasks.containsKey(bridgeJid))
+                if (!tasks.containsKey(bridge))
                 {
-                    logger.info("Health check task canceled for: " + bridgeJid);
+                    logger.info("Health check task canceled for: " + bridge);
                     return true;
                 }
                 return false;
             }
         }
 
-        private HealthCheckIQ newHealthCheckIQ(Jid bridgeJid)
+        private HealthCheckIQ newHealthCheckIQ(Bridge bridge)
         {
             HealthCheckIQ healthIq = new HealthCheckIQ();
-            healthIq.setTo(bridgeJid);
+            healthIq.setTo(bridge.getJid());
             healthIq.setType(IQ.Type.get);
             return healthIq;
         }
@@ -209,7 +182,7 @@ public class JvbDoctor
             // If XMPP is currently not connected skip the health-check
             if (!connection.isConnected())
             {
-                logger.warn("XMPP disconnected - skipping health check for: " + bridgeJid);
+                logger.warn("XMPP disconnected - skipping health check for: " + bridge);
                 return;
             }
 
@@ -218,9 +191,9 @@ public class JvbDoctor
                 return;
             }
 
-            logger.debug("Sending health-check request to: " + bridgeJid);
+            logger.debug("Sending health-check request to: " + bridge);
 
-            IQ response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
+            IQ response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -230,7 +203,7 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    logger.warn(bridgeJid + " health-check timed out,"
+                    logger.warn(bridge + " health-check timed out,"
                             + " but will give it another try after: "
                             + secondChanceDelay);
 
@@ -239,11 +212,11 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridgeJid));
+                    response = UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
                 }
                 catch (InterruptedException e)
                 {
-                    logger.error(bridgeJid + " second chance delay wait interrupted", e);
+                    logger.error(bridge + " second chance delay wait interrupted", e);
                 }
             }
 
@@ -255,8 +228,8 @@ public class JvbDoctor
 
                 if (response == null)
                 {
-                    logger.warn("Health check timed out for: " + bridgeJid);
-                    listener.healthCheckTimedOut(bridgeJid);
+                    logger.warn("Health check timed out for: " + bridge);
+                    listener.healthCheckTimedOut(bridge.getJid());
                     return;
                 }
 
@@ -266,9 +239,9 @@ public class JvbDoctor
                     // OK
                     if (logger.isDebugEnabled())
                     {
-                        logger.debug("Health check passed on: " + bridgeJid);
+                        logger.debug("Health check passed on: " + bridge);
                     }
-                    listener.healthCheckPassed(bridgeJid);
+                    listener.healthCheckPassed(bridge.getJid());
                     return;
                 }
 
@@ -281,23 +254,16 @@ public class JvbDoctor
                         || StanzaError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
-                        logger.warn("Health check failed for: " + bridgeJid + ": " + error.toXML().toString());
-                        listener.healthCheckFailed(bridgeJid);
+                        logger.warn("Health check failed for: " + bridge + ": " + error.toXML().toString());
+                        listener.healthCheckFailed(bridge.getJid());
                     }
                     else
                     {
                         logger.error(
-                                "Unexpected error returned by the bridge: " + bridgeJid + ", err: " + response.toXML());
+                                "Unexpected error returned by the bridge: " + bridge + ", err: " + response.toXML());
                     }
                 }
             }
         }
-    }
-
-    interface HealthCheckListener
-    {
-        void healthCheckPassed(Jid bridgeJid);
-        void healthCheckFailed(Jid bridgeJid);
-        void healthCheckTimedOut(Jid bridgeJid);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015-Present 8x8, Inc.
+ * Copyright @ 2021-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package mock;
+package org.jitsi.jicofo.bridge;
 
-import java.math.*;
-import java.security.*;
+import org.jxmpp.jid.*;
 
-/**
- *
- * @author Pawel Domas
- */
-public class StringGenerator
+public interface HealthCheckListener
 {
-    static private SecureRandom random = new SecureRandom();
-
-    static public String nextRandomStr()
-    {
-        return new BigInteger(130, random).toString(32);
-    }
+    void healthCheckPassed(Jid bridgeJid);
+    void healthCheckFailed(Jid bridgeJid);
+    void healthCheckTimedOut(Jid bridgeJid);
 }

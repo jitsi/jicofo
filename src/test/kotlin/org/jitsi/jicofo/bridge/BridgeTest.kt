@@ -17,8 +17,13 @@ package org.jitsi.jicofo.bridge
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.ints.shouldBeLessThan
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.times
+import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
+import org.jxmpp.jid.impl.JidCreate
 
 class BridgeTest : ShouldSpec({
     context("when comparing two bridges") {
@@ -67,4 +72,67 @@ class BridgeTest : ShouldSpec({
             Bridge.compare(bridge2, bridge1) shouldBeLessThan 0
         }
     }
+    context("notOperationalThresholdTest") {
+        val clock = FakeClock()
+        val bridge = Bridge(JidCreate.from("bridge"), clock)
+        val failureResetThreshold = BridgeConfig.config.failureResetThreshold
+        bridge.isOperational shouldBe true
+
+        bridge.setIsOperational(false)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold.times(100))
+        bridge.isOperational shouldBe false
+
+        bridge.setIsOperational(true)
+        bridge.isOperational shouldBe true
+
+        bridge.setIsOperational(false)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold.dividedBy(2))
+        bridge.isOperational shouldBe false
+
+        bridge.setIsOperational(true)
+        bridge.isOperational shouldBe false
+
+        clock.elapse(failureResetThreshold)
+        bridge.isOperational shouldBe true
+    }
+    context("Setting stats") {
+        // This mostly makes sure the test framework works as expected.
+        val bridge = Bridge(JidCreate.from("bridge"))
+
+        bridge.stress shouldBe 0
+        bridge.region shouldBe null
+
+        bridge.setStats(stress = 0.1)
+        bridge.stress shouldBe 0.1
+        bridge.region shouldBe null
+
+        // The different stats should be updated independently.
+        bridge.setStats(region = "region")
+        bridge.stress shouldBe 0.1
+        bridge.region shouldBe "region"
+
+        // The different stats should be updated independently.
+        bridge.setStats(stress = 0.2)
+        bridge.stress shouldBe 0.2
+        bridge.region shouldBe "region"
+    }
 })
+
+fun Bridge.setStats(
+    stress: Double? = null,
+    region: String? = null,
+    octoVersion: Int? = null
+) = setStats(
+    ColibriStatsExtension().apply {
+        stress?.let { addStat(ColibriStatsExtension.Stat("stress_level", it)) }
+        region?.let {
+            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.REGION, it))
+            addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.RELAY_ID, it))
+        }
+        octoVersion?.let { addStat(ColibriStatsExtension.Stat("octo_version", octoVersion)) }
+    }
+)

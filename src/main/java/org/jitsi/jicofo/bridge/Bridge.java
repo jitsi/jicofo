@@ -24,7 +24,6 @@ import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
-import java.util.*;
 
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
@@ -44,21 +43,11 @@ public class Bridge
     implements Comparable<Bridge>
 {
     /**
-     * A {@link ColibriStatsExtension} instance with no stats.
+     * How long the "failed" state should be sticky for. Once a {@link Bridge} goes in a non-operational state (via
+     * {@link #setIsOperational(boolean)}) it will be considered non-operational for at least this amount of time.
+     * See the tests for example behavior.
      */
-    private static final ColibriStatsExtension EMPTY_STATS
-        = new ColibriStatsExtension();
-
-    /**
-     * This is static for the purposes of tests.
-     * TODO: just use the config and port the tests.
-     */
-    private static long failureResetThreshold = config.failureResetThreshold().toMillis();
-
-    static void setFailureResetThreshold(long newValue)
-    {
-        failureResetThreshold = newValue;
-    }
+    private static final Duration failureResetThreshold = config.failureResetThreshold();
 
     /**
      * The XMPP address of the bridge.
@@ -123,16 +112,23 @@ public class Bridge
     /**
      * The time when this instance has failed.
      */
-    private volatile long failureTimestamp;
+    private Instant failureInstant = Instant.MIN;
 
-    /**
-     * The last known {@link ColibriStatsExtension} reported by this bridge.
-     */
-    private ColibriStatsExtension stats = EMPTY_STATS;
+    private String region = null;
+    private String relayId = null;
 
-    Bridge(Jid jid)
+    @NonNull
+    private final Clock clock;
+
+    Bridge(@NonNull Jid jid, @NonNull Clock clock)
     {
-        this.jid = Objects.requireNonNull(jid, "jid");
+        this.jid = jid;
+        this.clock = clock;
+    }
+
+    Bridge(@NonNull Jid jid)
+    {
+        this(jid, Clock.systemUTC());
     }
 
     /**
@@ -141,17 +137,12 @@ public class Bridge
      * @param stats the {@link ColibriStatsExtension} instance which was
      * received.
      */
-    void setStats(ColibriStatsExtension stats)
+    public void setStats(ColibriStatsExtension stats)
     {
         if (stats == null)
         {
-            this.stats = EMPTY_STATS;
+            return;
         }
-        else
-        {
-            this.stats = ColibriStatsExtension.clone(stats);
-        }
-        stats = this.stats;
 
         Double stressLevel = UtilKt.getDouble(stats, "stress_level");
         if (stressLevel != null)
@@ -197,6 +188,18 @@ public class Bridge
         {
             this.octoVersion = octoVersion;
         }
+
+        String region = stats.getValueAsString(REGION);
+        if (region != null)
+        {
+            this.region = region;
+        }
+
+        String relayId = stats.getValueAsString(RELAY_ID);
+        if (relayId != null)
+        {
+            this.relayId = relayId;
+        }
     }
 
     /**
@@ -205,7 +208,7 @@ public class Bridge
      */
     public String getRelayId()
     {
-        return stats.getValueAsString(RELAY_ID);
+        return relayId;
     }
 
     public void setIsOperational(boolean isOperational)
@@ -215,7 +218,7 @@ public class Bridge
         if (!isOperational)
         {
             // Remember when the bridge has last failed
-            failureTimestamp = System.currentTimeMillis();
+            failureInstant = clock.instant();
         }
     }
 
@@ -223,8 +226,7 @@ public class Bridge
     {
         // To filter out intermittent failures, do not return operational
         // until past the reset threshold since the last failure.
-        if (System.currentTimeMillis() - failureTimestamp
-                < failureResetThreshold)
+        if (Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0)
         {
             return false;
         }
@@ -309,7 +311,7 @@ public class Bridge
      */
     public String getRegion()
     {
-        return stats.getValueAsString(REGION);
+        return region;
     }
 
     /**
