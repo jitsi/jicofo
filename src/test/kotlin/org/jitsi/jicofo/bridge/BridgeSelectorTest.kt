@@ -21,6 +21,7 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.setNewConfig
 import org.jitsi.test.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
@@ -29,13 +30,17 @@ class BridgeSelectorTest : ShouldSpec() {
 
     init {
         val clock = FakeClock()
-        val bridgeSelector = BridgeSelector(clock)
         // Test different types of jid (domain, entity bare, entity full).
-        val jvb1 = bridgeSelector.addJvbAddress(JidCreate.from("jvb.example.com"))
-        val jvb2 = bridgeSelector.addJvbAddress(JidCreate.from("jvb@example.com"))
-        val jvb3 = bridgeSelector.addJvbAddress(JidCreate.from("jvb@example.com/goldengate"))
+        val jid1 = JidCreate.from("jvb1.example.com")
+        val jid2 = JidCreate.from("jvb2@example.com")
+        val jid3 = JidCreate.from("jvb3@example.com/goldengate")
 
         context("Selection based on operational status") {
+            val bridgeSelector = BridgeSelector(clock)
+            val jvb1 = bridgeSelector.addJvbAddress(jid1)
+            val jvb2 = bridgeSelector.addJvbAddress(jid2)
+            val jvb3 = bridgeSelector.addJvbAddress(jid3)
+
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
 
             // Bridge 1 is down
@@ -54,10 +59,10 @@ class BridgeSelectorTest : ShouldSpec() {
             bridgeSelector.selectBridge() shouldBe jvb1
         }
         context("Selection based on stress level") {
-            // Jvb 1 and 2 are occupied by some conferences, 3 is free
-            jvb1.setStats(stress = .1)
-            jvb2.setStats(stress = 0.23)
-            jvb3.setStats(stress = 0.0)
+            val bridgeSelector = BridgeSelector(clock)
+            val jvb1 = bridgeSelector.addJvbAddress(jid1).apply { setStats(stress = 0.1) }
+            val jvb2 = bridgeSelector.addJvbAddress(jid2).apply { setStats(stress = 0.23) }
+            val jvb3 = bridgeSelector.addJvbAddress(jid3).apply { setStats(stress = 0.0) }
 
             bridgeSelector.selectBridge() shouldBe jvb3
 
@@ -90,6 +95,25 @@ class BridgeSelectorTest : ShouldSpec() {
             jvb2.setStats(stress = 0.0)
             jvb3.setStats(stress = .01)
             bridgeSelector.selectBridge() shouldBe jvb2
+        }
+        context("Selection with a conference bridge removed from the selector") {
+            setNewConfig(
+                """
+                    jicofo.octo.enabled=true
+                    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
+                """.trimIndent(),
+                true
+            )
+
+            val regionBasedSelector = BridgeSelector(clock)
+            val jvb1 = regionBasedSelector.addJvbAddress(jid1).apply { setStats(stress = 0.2, region = "r1") }
+            val jvb2 = regionBasedSelector.addJvbAddress(jid2).apply { setStats(stress = 0.5, region = "r2") }
+            val jvb3 = regionBasedSelector.addJvbAddress(jid3).apply { setStats(stress = 0.1, region = "r3") }
+
+            regionBasedSelector.removeJvbAddress(jid3)
+
+            regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), null) shouldBe jvb1
+            regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), "r2") shouldBe jvb2
         }
     }
 }

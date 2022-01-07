@@ -69,7 +69,7 @@ public class BridgeSelector
     /**
      * The bridge selection strategy.
      */
-    private final BridgeSelectionStrategy bridgeSelectionStrategy = BridgeConfig.config.getSelectionStrategy();
+    private final BridgeSelectionStrategy bridgeSelectionStrategy = new BridgeConfig().getSelectionStrategy();
 
     /**
      * The number of bridges which disconnected without going into graceful shutdown first.
