@@ -144,11 +144,7 @@ internal class Colibri2Session(
         val request = createRequest()
         participantsToExpire.forEach { request.addExpire(it.id) }
 
-        val response = xmppConnection.sendIqAndGetResponse(request.build())
-
-        if (response !is ConferenceModifiedIQ) {
-            logger.error("Failed to expire: ${response?.javaClass?.name}: ${response?.toXML()}")
-        }
+        xmppConnection.tryToSendStanza(request.build())
     }
 
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
