@@ -438,7 +438,7 @@ class ColibriV2SessionManager(
     }
 
     private fun getSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
-        participantsBySession[session] ?: emptyList()
+        participantsBySession[session]?.toList() ?: emptyList()
 
     private fun remove(participantInfo: ParticipantInfo) {
         participants.remove(participantInfo.id)
