@@ -208,4 +208,6 @@ public interface ChatRoom
      * @return The main room JID as a string.
      */
     String getMainRoom();
+
+    OrderedJsonObject getDebugState();
 }

@@ -40,7 +40,6 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.function.*;
 
 /**
@@ -64,6 +63,7 @@ public class ChatRoomImpl
     /**
      * The room JID (e.g. "room@service").
      */
+    @NotNull
     private final EntityBareJid roomJid;
 
     /**
@@ -927,6 +927,28 @@ public class ChatRoomImpl
 
         List<String> whitelist = this.whitelists.get(mediaType.toString());
         return whitelist != null && whitelist.contains(jid.toString());
+    }
+
+    @Override
+    public OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("room_jid", roomJid.toString());
+        o.put("my_occupant_jid", String.valueOf(myOccupantJid));
+        OrderedJsonObject membersJson = new OrderedJsonObject();
+        for (ChatMemberImpl m : members.values())
+        {
+            membersJson.put(m.getJid(), m.getDebugState());
+        }
+        o.put("members", membersJson);
+        o.put("role", String.valueOf(role));
+        o.put("meeting_id", String.valueOf(meetingId));
+        o.put("is_breakout_room", isBreakoutRoom);
+        o.put("main_room", String.valueOf(mainRoom));
+        o.put("num_audio_senders", numAudioSenders);
+        o.put("num_video_senders", numVideoSenders);
+
+        return o;
     }
 
     class MemberListener implements ParticipantStatusListener

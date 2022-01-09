@@ -21,6 +21,7 @@ import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -63,6 +64,8 @@ interface ColibriSessionManager {
     )
     fun getAllocation(participant: Participant): ColibriAllocation?
     fun bridgesDown(bridges: Set<Jid>): List<Participant>
+
+    val debugState: OrderedJsonObject
 
     /**
      * Interface for events fired by [ColibriSessionManager].

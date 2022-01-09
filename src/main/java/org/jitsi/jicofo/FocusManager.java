@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.jitsi.utils.queue.*;
@@ -531,6 +532,15 @@ public class FocusManager
         return octoId != 0;
     }
 
+    OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        for (JitsiMeetConference conference : getConferences())
+        {
+            o.put(conference.getRoomName().toString(), conference.getDebugState());
+        }
+        return o;
+    }
     /**
      * Takes care of stopping {@link JitsiMeetConference} if no participant ever joins.
      *

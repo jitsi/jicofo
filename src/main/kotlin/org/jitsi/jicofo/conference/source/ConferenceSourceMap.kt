@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.conference.source
 
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
@@ -210,6 +211,14 @@ open class ConferenceSourceMap(
             }
         }
         this
+    }
+
+    fun toJson() = OrderedJsonObject().apply {
+        synchronized(syncRoot) {
+            endpointSourceSets.forEach { (owner, sourceSet) ->
+                put(owner?.toString() ?: "null", sourceSet.toJson())
+            }
+        }
     }
 }
 

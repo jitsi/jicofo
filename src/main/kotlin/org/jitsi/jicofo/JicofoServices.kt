@@ -48,6 +48,7 @@ import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
 import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
@@ -216,6 +217,16 @@ open class JicofoServices {
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())
         healthChecker?.let { put("slow_health_check", it.totalSlowHealthChecks) }
+    }
+
+    fun getDebugState() = OrderedJsonObject().apply {
+        put("focus_manager", focusManager.debugState)
+        put("bridge_selector", bridgeSelector.debugState)
+    }
+
+    fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
+        val conference = focusManager.getConference(JidCreate.entityBareFrom(conferenceId))
+        return conference?.debugState ?: OrderedJsonObject()
     }
 
     companion object {

@@ -17,8 +17,10 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 
@@ -43,6 +45,7 @@ public class ChatMemberImpl
     /**
      * The resource part of this {@link ChatMemberImpl}'s JID in the MUC.
      */
+    @NotNull
     private final Resourcepart resourcepart;
 
     /**
@@ -65,6 +68,7 @@ public class ChatMemberImpl
      * Full MUC address:
      * room_name@muc.server.net/nickname
      */
+    @NotNull
     private final EntityFullJid occupantJid;
 
     /**
@@ -367,5 +371,24 @@ public class ChatMemberImpl
     public String toString()
     {
         return String.format("ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
+    }
+
+    OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("resourcepart", resourcepart.toString());
+        o.put("region", String.valueOf(region));
+        o.put("join_order_number", joinOrderNumber);
+        o.put("occupant_jid", occupantJid.toString());
+        o.put("jid", String.valueOf(jid));
+        o.put("robot", robot);
+        o.put("is_jibri", isJibri);
+        o.put("is_jigasi", isJigasi);
+        o.put("role", String.valueOf(role));
+        o.put("stats_id", statsId);
+        o.put("is_audio_muted", isAudioMuted);
+        o.put("is_video_muted", isVideoMuted);
+
+        return o;
     }
 }

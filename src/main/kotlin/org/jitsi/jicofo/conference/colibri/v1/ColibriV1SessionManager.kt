@@ -39,6 +39,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.protocol.xmpp.util.TransportSignaling
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -572,4 +573,6 @@ class ColibriV1SessionManager(
     private fun operationalBridges(): List<BridgeSession> = synchronized(syncRoot) {
         bridgeSessions.filter { !it.hasFailed && it.bridge.isOperational }
     }
+
+    override val debugState = OrderedJsonObject()
 }

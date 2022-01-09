@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
@@ -386,5 +387,20 @@ public class Bridge
     public boolean isInGracefulShutdown()
     {
         return shutdownInProgress;
+    }
+
+    @NonNull public OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("version", version);
+        o.put("stress", getStress());
+        o.put("operational", isOperational());
+        o.put("packet_rate", lastReportedPacketRatePps);
+        o.put("region", region);
+        o.put("graceful-shutdown", isInGracefulShutdown());
+        o.put("overloaded", isOverloaded());
+        o.put("relay-id", getRelayId());
+
+        return o;
     }
 }

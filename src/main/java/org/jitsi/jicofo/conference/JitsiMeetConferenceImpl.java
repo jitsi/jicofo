@@ -1575,6 +1575,47 @@ public class JitsiMeetConferenceImpl
         return colibriSessionManager.mute(participant, doMute, mediaType) ? MuteResult.SUCCESS : MuteResult.ERROR;
     }
 
+    @Override
+    public @NotNull OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("name", roomName.toString());
+        o.put("config", config.getDebugState());
+        ChatRoom chatRoom = this.chatRoom;
+        o.put("chat_room", chatRoom == null ? "null" : chatRoom.getDebugState());
+        OrderedJsonObject participantsJson = new OrderedJsonObject();
+        for (Participant participant : participants)
+        {
+            participantsJson.put(participant.getEndpointId(), participant.getDebugState());
+        }
+        o.put("participants", participantsJson);
+        //o.put("jibri_recorder", jibriRecorder.getDebugState());
+        //o.put("jibri_sip_gateway", jibriSipGateway.getDebugState());
+        //o.put("transcriber_manager", transcriberManager.getDebugState());
+        ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
+        o.put("chat_room_role_manager", chatRoomRoleManager == null ? "null" : chatRoomRoleManager.getDebugState());
+        o.put("started", started.get());
+        o.put("creation_time", creationTime.toString());
+        o.put("has_had_at_least_one_participant", hasHadAtLeastOneParticipant);
+        o.put("start_audio_muted", startAudioMuted);
+        o.put("start_video_muted", startVideoMuted);
+        o.put("colibri_session_manager", colibriSessionManager.getDebugState());
+        OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
+        for (ConferenceProperties.ConferenceProperty conferenceProperty : conferenceProperties.getProperties())
+        {
+            conferencePropertiesJson.put(conferenceProperty.getKey(), conferenceProperty.getValue());
+        }
+        o.put("conference_properties", conferencePropertiesJson);
+        o.put("include_in_statistics", includeInStatistics);
+        o.put("conference_sources", conferenceSources.toJson());
+        o.put("audio_limit_reached", audioLimitReached);
+        o.put("video_limit_reached", videoLimitReached);
+        o.put("gid", gid);
+
+
+        return o;
+    }
+
     /**
      * Mutes all participants (except jibri or jigasi without "audioMute" support). Will block for colibri responses.
      */

@@ -18,10 +18,12 @@ package org.jitsi.jicofo.conference.source
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
+import org.json.simple.JSONArray
 import org.jxmpp.jid.Jid
 import java.lang.IllegalArgumentException
 import kotlin.jvm.Throws
@@ -124,6 +126,21 @@ data class EndpointSourceSet(
             }
             append("]")
         }
+    }
+
+    fun toJson() = OrderedJsonObject().apply {
+        put(
+            "sources",
+            JSONArray().apply {
+                sources.forEach { add(it.toJson()) }
+            }
+        )
+        put(
+            "groups",
+            JSONArray().apply {
+                ssrcGroups.forEach { add(it.toJson()) }
+            }
+        )
     }
 
     companion object {

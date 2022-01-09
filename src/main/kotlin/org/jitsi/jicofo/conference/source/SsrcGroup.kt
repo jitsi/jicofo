@@ -16,8 +16,10 @@
 package org.jitsi.jicofo.conference.source
 
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
+import org.json.simple.JSONArray
 import java.lang.IllegalArgumentException
 import kotlin.jvm.Throws
 
@@ -79,5 +81,11 @@ data class SsrcGroup(
             ssrcs.forEach { append(",$it") }
             append("]")
         }
+    }
+
+    fun toJson() = OrderedJsonObject().apply {
+        put("semantics", semantics.toString())
+        put("media_type", mediaType.toString())
+        put("ssrcs", JSONArray().apply { ssrcs.forEach { add(it) } })
     }
 }
