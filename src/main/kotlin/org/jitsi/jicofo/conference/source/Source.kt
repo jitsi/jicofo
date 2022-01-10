@@ -50,9 +50,11 @@ data class Source(
     )
 
     /** Serializes this [Source] to XML */
+    @JvmOverloads
     fun toPacketExtension(
         /** An optional JID for the owner of this source to encode in the XML extension. */
-        owner: Jid? = null
+        owner: Jid? = null,
+        encodeMsid: Boolean = true
     ) = SourcePacketExtension().apply {
         ssrc = this@Source.ssrc
         name = this@Source.name
@@ -60,7 +62,7 @@ data class Source(
             addChildExtension(SSRCInfoPacketExtension().apply { this.owner = owner })
         }
 
-        msid?.let {
+        if (encodeMsid && msid != null) {
             addChildExtension(ParameterPacketExtension("msid", msid))
         }
         isInjected = injected

@@ -71,7 +71,7 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
                     .setType(source.mediaType)
                     .setId(sourceId)
             }
-            mediaSource.addSource(source.toPacketExtension())
+            mediaSource.addSource(source.toPacketExtension(encodeMsid = false))
         }
         endpointSourceSet.ssrcGroups.forEach { ssrcGroup ->
             if (ssrcGroup.ssrcs.isEmpty()) return@forEach
