@@ -63,7 +63,7 @@ internal class Colibri2Session(
     /**
      * The sources advertised by the bridge, read from the response of the initial request to create a conference.
      */
-    internal var bridgeSources: ConferenceSourceMap = ConferenceSourceMap()
+    internal var feedbackSources: ConferenceSourceMap = ConferenceSourceMap()
 
     /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
     private val relays = mutableMapOf<String, Relay>()
@@ -235,7 +235,7 @@ internal class Colibri2Session(
     fun toJson() = OrderedJsonObject().apply {
         put("bridge", bridge.debugState)
         put("id", id)
-        put("bridge_sources", bridgeSources.toJson())
+        put("feedback_sources", feedbackSources.toJson())
         put("created", created)
         put(
             "relays",

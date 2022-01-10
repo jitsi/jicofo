@@ -363,11 +363,11 @@ class ColibriV2SessionManager(
         }
 
         if (created) {
-            session.bridgeSources = response.parseSources()
+            session.feedbackSources = response.parseSources()
         }
 
         return ColibriAllocation(
-            session.bridgeSources,
+            session.feedbackSources,
             response.parseTransport(participantInfo.id)
                 ?: throw ColibriParsingException("failed to parse transport"),
             session.bridge.region,
