@@ -23,6 +23,7 @@ import org.jitsi.jicofo.codec.JingleOfferFactory
 import org.jitsi.jicofo.codec.OctoOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.tryToSendStanza
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
@@ -231,6 +232,19 @@ internal class Colibri2Session(
         xmppConnection.trySendStanza(request.build())
     }
 
+    fun toJson() = OrderedJsonObject().apply {
+        put("bridge", bridge.debugState)
+        put("id", id)
+        put("bridge_sources", bridgeSources.toJson())
+        put("created", created)
+        put(
+            "relays",
+            OrderedJsonObject().apply {
+                relays.values.forEach { put(it.id, it.toJson()) }
+            }
+        )
+    }
+
     /**
      * Represents a colibri2 relay connection to another bridge.
      */
@@ -248,6 +262,9 @@ internal class Colibri2Session(
         private val iceControlling = initiator
         private val dtlsSetup = if (initiator) "active" else "passive"
         private val websocketActive = initiator
+
+        /** Whether the transport has been updated with the remote side's candidates, DTLS fingerprints etc. */
+        private var transportUpdated = false
 
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
         fun start(initialParticipants: List<ParticipantInfo>) {
@@ -330,6 +347,16 @@ internal class Colibri2Session(
 
             logger.warn("Updating transport: ${request.build().toXML()}")
             xmppConnection.trySendStanza(request.build())
+            transportUpdated = true
+        }
+
+        fun toJson() = OrderedJsonObject().apply {
+            put("id", id)
+            put("use_unique_port", useUniquePort)
+            put("ice_controlling", iceControlling)
+            put("dtls_setup", dtlsSetup)
+            put("websocket_active", websocketActive)
+            put("transport_updated", transportUpdated)
         }
 
         /** Update or create a relay endpoint for a specific participant. */

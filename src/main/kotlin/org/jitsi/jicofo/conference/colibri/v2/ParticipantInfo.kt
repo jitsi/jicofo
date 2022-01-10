@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference.colibri.v2
 
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.utils.OrderedJsonObject
 
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
@@ -31,4 +32,13 @@ internal class ParticipantInfo(
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
     var videoMuted: Boolean = false
-)
+) {
+    fun toJson() = OrderedJsonObject().apply {
+        put("id", id)
+        put("stats_id", statsId.toString())
+        put("sources", sources.toJson())
+        put("bridge", session.bridge.jid.resourceOrNull.toString())
+        put("audio_muted", audioMuted)
+        put("video_muted", videoMuted)
+    }
+}

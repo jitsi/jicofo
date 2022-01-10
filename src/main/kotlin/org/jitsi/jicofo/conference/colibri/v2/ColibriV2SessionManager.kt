@@ -50,6 +50,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
 import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
+import org.json.simple.JSONArray
 import java.util.UUID
 
 /**
@@ -410,7 +411,24 @@ class ColibriV2SessionManager(
         participantsToRemove
     }
 
-    override val debugState = OrderedJsonObject()
+    override val debugState
+        get() = OrderedJsonObject().apply {
+            synchronized(syncRoot) {
+                val participantsJson = OrderedJsonObject()
+                participants.values.forEach { participantsJson[it.id] = it.toJson() }
+                put("participants", participantsJson)
+
+                val sessionsJson = OrderedJsonObject()
+                sessions.values.forEach {
+                    sessionsJson[it.bridge.jid.resourceOrNull.toString()] = it.toJson().also { sessionJson ->
+                        sessionJson["participants"] = JSONArray().apply {
+                            getSessionParticipants(it).forEach { participant -> add(participant.id) }
+                        }
+                    }
+                }
+                put("sessions", sessionsJson)
+            }
+        }
 
     /**
      * Sets the transport information for a relay. Since relays connect two different [Colibri2Session]s which don't
