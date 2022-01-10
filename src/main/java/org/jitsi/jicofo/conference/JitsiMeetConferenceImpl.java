@@ -1576,7 +1576,8 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public @NotNull OrderedJsonObject getDebugState()
+    @NotNull
+    public OrderedJsonObject getDebugState()
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("name", roomName.toString());

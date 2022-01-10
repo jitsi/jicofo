@@ -83,6 +83,7 @@ data class SsrcGroup(
         }
     }
 
+    /** Expanded JSON format used for debugging. */
     fun toJson() = OrderedJsonObject().apply {
         put("semantics", semantics.toString())
         put("media_type", mediaType.toString())

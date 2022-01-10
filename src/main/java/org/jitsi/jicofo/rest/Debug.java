@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.rest;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.*;
@@ -30,6 +31,7 @@ import java.util.*;
 @Path("/debug")
 public class Debug
 {
+    @NotNull
     private final JicofoServices jicofoServices
             = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
 
@@ -39,6 +41,7 @@ public class Debug
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
+    @NotNull
     public String getDebug(@DefaultValue("false") @QueryParam("full") boolean full)
     {
         return jicofoServices.getDebugState(full).toJSONString();
@@ -47,6 +50,7 @@ public class Debug
     @GET
     @Path("conference/{confId}")
     @Produces(MediaType.APPLICATION_JSON)
+    @NotNull
     public String confDebug(@PathParam("confId") String confId)
     {
         OrderedJsonObject confJson = jicofoServices.getConferenceDebugState(confId);
@@ -56,6 +60,7 @@ public class Debug
     @GET
     @Path("/conferences")
     @Produces(MediaType.APPLICATION_JSON)
+    @NotNull
     public String conferences(@PathParam("confId") String confId)
     {
         JSONArray conferencesJson = new JSONArray();

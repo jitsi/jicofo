@@ -128,5 +128,6 @@ public interface JitsiMeetConference
             boolean doMute,
             MediaType mediaType);
 
-    @NotNull OrderedJsonObject getDebugState();
+    @NotNull
+    OrderedJsonObject getDebugState();
 }

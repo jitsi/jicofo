@@ -532,7 +532,8 @@ public class FocusManager
         return octoId != 0;
     }
 
-    @NotNull OrderedJsonObject getDebugState(boolean full)
+    @NotNull
+    OrderedJsonObject getDebugState(boolean full)
     {
         OrderedJsonObject o = new OrderedJsonObject();
         for (JitsiMeetConference conference : getConferences())

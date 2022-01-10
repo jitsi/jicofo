@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 
@@ -204,6 +205,7 @@ public class JitsiMeetConfig
         return maxAvgBitrate == null ? -1 : maxAvgBitrate;
     }
 
+    @NotNull
     public OrderedJsonObject getDebugState()
     {
         OrderedJsonObject o = new OrderedJsonObject();

@@ -84,6 +84,7 @@ data class Source(
         }
     }
 
+    /** Expanded JSON format used for debugging. */
     fun toJson() = OrderedJsonObject().apply {
         put("ssrc", ssrc)
         put("media_type", mediaType.toString())

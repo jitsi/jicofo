@@ -607,7 +607,8 @@ public class Participant
         return "Participant[" + getMucJid() + "]@" + hashCode();
     }
 
-    OrderedJsonObject getDebugState()
+    @NotNull
+    public OrderedJsonObject getDebugState()
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("id", getEndpointId());

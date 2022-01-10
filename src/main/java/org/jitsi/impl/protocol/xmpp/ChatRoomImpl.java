@@ -930,6 +930,7 @@ public class ChatRoomImpl
     }
 
     @Override
+    @NotNull
     public OrderedJsonObject getDebugState()
     {
         OrderedJsonObject o = new OrderedJsonObject();

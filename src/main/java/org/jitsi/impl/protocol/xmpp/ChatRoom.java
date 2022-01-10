@@ -209,5 +209,6 @@ public interface ChatRoom
      */
     String getMainRoom();
 
+    @NotNull
     OrderedJsonObject getDebugState();
 }

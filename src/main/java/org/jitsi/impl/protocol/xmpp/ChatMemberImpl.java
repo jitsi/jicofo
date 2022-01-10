@@ -373,7 +373,8 @@ public class ChatMemberImpl
         return String.format("ChatMember[%s, jid: %s]@%s", occupantJid, jid, hashCode());
     }
 
-    OrderedJsonObject getDebugState()
+    @NotNull
+    public OrderedJsonObject getDebugState()
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("resourcepart", resourcepart.toString());
@@ -385,7 +386,7 @@ public class ChatMemberImpl
         o.put("is_jibri", isJibri);
         o.put("is_jigasi", isJigasi);
         o.put("role", String.valueOf(role));
-        o.put("stats_id", statsId);
+        o.put("stats_id", String.valueOf(statsId));
         o.put("is_audio_muted", isAudioMuted);
         o.put("is_video_muted", isVideoMuted);
 

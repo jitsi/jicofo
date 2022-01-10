@@ -128,6 +128,7 @@ data class EndpointSourceSet(
         }
     }
 
+    /** Expanded JSON format used for debugging. */
     fun toJson() = OrderedJsonObject().apply {
         put(
             "sources",
