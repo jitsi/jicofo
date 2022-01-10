@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.conference.source
 
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
@@ -81,5 +82,14 @@ data class Source(
             }
             append("}")
         }
+    }
+
+    /** Expanded JSON format used for debugging. */
+    fun toJson() = OrderedJsonObject().apply {
+        put("ssrc", ssrc)
+        put("media_type", mediaType.toString())
+        put("name", name ?: "null")
+        put("msid", msid ?: "null")
+        put("injected", injected)
     }
 }

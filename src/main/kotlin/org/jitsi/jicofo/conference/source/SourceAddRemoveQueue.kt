@@ -19,6 +19,7 @@ package org.jitsi.jicofo.conference.source
 
 import org.jitsi.jicofo.conference.AddOrRemove
 import org.jitsi.jicofo.conference.SourcesToAddOrRemove
+import org.json.simple.JSONArray
 
 /**
  * A queue of [SourcesToAddOrRemove] which merges consecutive "add" or "remove" operations.
@@ -72,4 +73,9 @@ class SourceAddRemoveQueue {
             queuedRemoteSourceChanges.add(SourcesToAddOrRemove(AddOrRemove.Remove, sourcesToRemove))
         }
     }
+
+    val debugState: JSONArray
+        get() = JSONArray().apply {
+            queuedRemoteSourceChanges.forEach { add(it.debugState) }
+        }
 }

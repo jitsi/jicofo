@@ -31,6 +31,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.impl.JidCreate
+import shouldBeValidJson
 import java.lang.UnsupportedOperationException
 
 @Suppress("NAME_SHADOWING")
@@ -279,11 +280,17 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 jvbJid to jvbEndpointSourceSet
             )
             val jsonString = conferenceSourceMap.compactJson()
-            println("xxx $jsonString")
             val json = JSONParser().parse(jsonString)
             json.shouldBeInstanceOf<JSONObject>()
             json.size shouldBe 3
             json.keys shouldBe setOf(endpointId1, endpointId2, "jvb")
+        }
+        context("Debug json") {
+            val conferenceSourceMap = ConferenceSourceMap(
+                JidCreate.from("jid1") to endpoint1CombinedSourceSet,
+                JidCreate.from("jid2") to endpoint2SourceSet
+            )
+            conferenceSourceMap.toJson().shouldBeValidJson()
         }
     }
 }

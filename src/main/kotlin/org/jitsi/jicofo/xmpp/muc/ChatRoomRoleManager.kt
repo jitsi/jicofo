@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
 /**
@@ -53,6 +54,8 @@ sealed class ChatRoomRoleManager(
     protected open fun memberLeftOrKicked(member: ChatRoomMember) {}
 
     open fun stop() {}
+
+    open val debugState: OrderedJsonObject = OrderedJsonObject()
 }
 
 /**
@@ -105,6 +108,12 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
             owner = newOwner
         }
     }
+
+    override val debugState
+        get() = OrderedJsonObject().apply {
+            put("class", javaClass.simpleName)
+            put("owner", owner?.jid?.toString() ?: "null")
+        }
 }
 
 /** A [ChatRoomRoleManager] which grants ownership to all authenticated users. */
@@ -149,4 +158,6 @@ class AuthenticationRoleManager(
     }
 
     override fun stop() = authenticationAuthority.removeAuthenticationListener(authenticationListener)
+
+    override val debugState = OrderedJsonObject().apply { put("class", javaClass.simpleName) }
 }

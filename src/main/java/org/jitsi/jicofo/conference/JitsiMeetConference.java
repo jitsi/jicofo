@@ -25,6 +25,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
+import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -126,4 +127,7 @@ public interface JitsiMeetConference
             Jid toBeMutedJid,
             boolean doMute,
             MediaType mediaType);
+
+    @NotNull
+    OrderedJsonObject getDebugState();
 }
