@@ -58,18 +58,32 @@ fun ConferenceModifiedIQ.parseSources(): ConferenceSourceMap {
 }
 
 fun ConferenceSourceMap.toColibriMediaSources(): Sources {
-    val mediaSources: MutableMap<MediaType, MediaSource.Builder> = mutableMapOf()
+    val mediaSources: MutableMap<String, MediaSource.Builder> = mutableMapOf()
 
-    forEach { endpointSourceSet ->
-        endpointSourceSet.value.sources.forEach { source ->
-            val mediaSource = mediaSources.computeIfAbsent(source.mediaType) {
-                MediaSource.getBuilder().setType(source.mediaType)
+    // We use the signaled "name" of the source at the colibri2 source ID. If a source name isn't signaled, we use a
+    // default ID of "endpointId-mediaType". This allows backwards compat with clients that don't signal source names
+    // (and only support a single source).
+    forEach { (owner, endpointSourceSet) ->
+        endpointSourceSet.sources.forEach { source ->
+            val sourceId = source.name ?: "$owner-${source.mediaType}"
+            val mediaSource = mediaSources.computeIfAbsent(sourceId) {
+                MediaSource.getBuilder()
+                    .setType(source.mediaType)
+                    .setId(sourceId)
             }
             mediaSource.addSource(source.toPacketExtension())
         }
-        endpointSourceSet.value.ssrcGroups.forEach { ssrcGroup ->
-            val mediaSource = mediaSources.computeIfAbsent(ssrcGroup.mediaType) {
-                MediaSource.getBuilder().setType(ssrcGroup.mediaType)
+        endpointSourceSet.ssrcGroups.forEach { ssrcGroup ->
+            if (ssrcGroup.ssrcs.isEmpty()) return@forEach
+
+            val firstSource = endpointSourceSet.sources.firstOrNull() { ssrcGroup.ssrcs.contains(it.ssrc) }
+                ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")
+
+            val sourceId = firstSource.name ?: "$owner-${ssrcGroup.mediaType}"
+            val mediaSource = mediaSources.computeIfAbsent(sourceId) {
+                MediaSource.getBuilder()
+                    .setType(ssrcGroup.mediaType)
+                    .setId(sourceId)
             }
             mediaSource.addSsrcGroup(ssrcGroup.toPacketExtension())
         }
