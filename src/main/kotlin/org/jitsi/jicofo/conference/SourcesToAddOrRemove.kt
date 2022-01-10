@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference
 
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.utils.OrderedJsonObject
 
 /** An action -- add or remove. */
 enum class AddOrRemove {
@@ -28,4 +29,10 @@ enum class AddOrRemove {
 data class SourcesToAddOrRemove(
     val action: AddOrRemove,
     val sources: ConferenceSourceMap
-)
+) {
+    val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            put("action", action.toString())
+            put("sources", sources.toJson())
+        }
+}

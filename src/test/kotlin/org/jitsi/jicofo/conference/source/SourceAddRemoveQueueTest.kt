@@ -22,6 +22,8 @@ import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.utils.MediaType.AUDIO
+import org.json.simple.JSONArray
+import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.impl.JidCreate
 
 class SourceAddRemoveQueueTest : ShouldSpec() {
@@ -103,8 +105,12 @@ class SourceAddRemoveQueueTest : ShouldSpec() {
                 it[2].sources.toMap() shouldBe s3.copy().apply { add(s1) }.toMap()
             }
 
+            queue.debugState.shouldBeValidJson()
+
             queue.clear()
             queue.get() shouldBe emptyList()
         }
     }
 }
+
+fun JSONArray.shouldBeValidJson() = JSONParser().parse(this.toJSONString())

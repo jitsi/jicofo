@@ -607,4 +607,15 @@ public class Participant
         return "Participant[" + getMucJid() + "]@" + hashCode();
     }
 
+    @NotNull
+    public OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("id", getEndpointId());
+        o.put("remote_sources_queue", remoteSourcesQueue.getDebugState());
+        o.put("invite_runnable", inviteRunnable != null ? "Running" : "Not running");
+        //o.put("room_member", roomMember.getDebugState());
+        o.put("jingle_session", jingleSession == null ? "null" : "not null");
+        return o;
+    }
 }

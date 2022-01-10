@@ -22,6 +22,7 @@ import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -76,6 +77,8 @@ interface ColibriSessionManager {
      * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
      */
     fun removeBridges(bridges: Set<Bridge>): List<String>
+
+    val debugState: OrderedJsonObject
 
     /**
      * Interface for events fired by [ColibriSessionManager].

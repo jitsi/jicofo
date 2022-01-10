@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 
 import java.util.*;
@@ -201,5 +203,21 @@ public class JitsiMeetConfig
     {
         Integer maxAvgBitrate = getInt(PNAME_OPUS_MAX_AVG_BITRATE);
         return maxAvgBitrate == null ? -1 : maxAvgBitrate;
+    }
+
+    @NotNull
+    public OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("start_audio_muted", String.valueOf(getStartAudioMuted()));
+        o.put("start_video_muted", String.valueOf(getStartVideoMuted()));
+        o.put("rtcstats_enabled", getRtcStatsEnabled());
+        o.put("callstats_enabled", getCallStatsEnabled());
+        o.put("min_bitrate", getMinBitrate());
+        o.put("start_bitrate", getStartBitrate());
+        o.put("stereo_enabled", stereoEnabled());
+        o.put("opus_max_average_bitrate", getOpusMaxAverageBitrate());
+
+        return o;
     }
 }

@@ -34,6 +34,7 @@ import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -408,6 +409,8 @@ class ColibriV2SessionManager(
 
         participantsToRemove
     }
+
+    override val debugState = OrderedJsonObject()
 
     /**
      * Sets the transport information for a relay. Since relays connect two different [Colibri2Session]s which don't

@@ -329,4 +329,9 @@ public class MockChatRoom
     {
         return findMember(mucJid.getResourceOrNull());
     }
+
+    @Override public OrderedJsonObject getDebugState()
+    {
+        return new OrderedJsonObject();
+    }
 }

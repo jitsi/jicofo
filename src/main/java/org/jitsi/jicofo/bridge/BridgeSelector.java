@@ -21,6 +21,7 @@ import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.*;
+import org.jitsi.utils.*;
 import org.jitsi.utils.concurrent.*;
 import org.jitsi.utils.event.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -348,6 +349,20 @@ public class BridgeSelector
     public void removeHandler(EventHandler eventHandler)
     {
         eventEmitter.removeHandler(eventHandler);
+    }
+
+    @NotNull
+    public OrderedJsonObject getDebugState()
+    {
+        OrderedJsonObject o = new OrderedJsonObject();
+        o.put("strategy", bridgeSelectionStrategy.getClass().getSimpleName());
+        OrderedJsonObject bridgesJson = new OrderedJsonObject();
+        for (Bridge b : bridges.values())
+        {
+            bridgesJson.put(b.getJid().toString(), b.getDebugState());
+        }
+        o.put("bridges", bridgesJson);
+        return o;
     }
 
     public interface EventHandler
