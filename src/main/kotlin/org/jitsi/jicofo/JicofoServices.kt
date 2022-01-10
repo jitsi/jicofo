@@ -219,8 +219,8 @@ open class JicofoServices {
         healthChecker?.let { put("slow_health_check", it.totalSlowHealthChecks) }
     }
 
-    fun getDebugState() = OrderedJsonObject().apply {
-        put("focus_manager", focusManager.debugState)
+    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+        put("focus_manager", focusManager.getDebugState(full))
         put("bridge_selector", bridgeSelector.debugState)
     }
 

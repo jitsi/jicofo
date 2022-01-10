@@ -25,7 +25,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.*;
 
 /**
- * Adds statistics REST endpoint exposes some internal Jicofo stats.
+ * An interface which exposes detailed internal state for the purpose of debugging.
  */
 @Path("/debug")
 public class Debug
@@ -39,9 +39,9 @@ public class Debug
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public String getDebug()
+    public String getDebug(@DefaultValue("false") @QueryParam("full") boolean full)
     {
-        return jicofoServices.getDebugState().toJSONString();
+        return jicofoServices.getDebugState(full).toJSONString();
     }
 
     @GET
