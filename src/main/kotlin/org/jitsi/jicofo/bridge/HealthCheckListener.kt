@@ -15,13 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.bridge;
+package org.jitsi.jicofo.bridge
 
-import org.jxmpp.jid.*;
+import org.jxmpp.jid.Jid
 
-public interface HealthCheckListener
-{
-    void healthCheckPassed(Jid bridgeJid);
-    void healthCheckFailed(Jid bridgeJid);
-    void healthCheckTimedOut(Jid bridgeJid);
+interface HealthCheckListener {
+    fun healthCheckPassed(bridgeJid: Jid)
+    fun healthCheckFailed(bridgeJid: Jid)
+    fun healthCheckTimedOut(bridgeJid: Jid)
 }

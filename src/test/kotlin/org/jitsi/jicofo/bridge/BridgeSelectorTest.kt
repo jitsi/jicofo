@@ -22,6 +22,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.setNewConfig
+import org.jitsi.metaconfig.MetaconfigSettings
 import org.jitsi.test.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
@@ -29,6 +30,7 @@ class BridgeSelectorTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
+        MetaconfigSettings.cacheEnabled = false
         val clock = FakeClock()
         // Test different types of jid (domain, entity bare, entity full).
         val jid1 = JidCreate.from("jvb1.example.com")
