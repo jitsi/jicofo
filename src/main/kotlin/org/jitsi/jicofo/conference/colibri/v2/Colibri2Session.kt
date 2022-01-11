@@ -142,6 +142,10 @@ internal class Colibri2Session(
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
     /** Expire the colibri2 endpoints for a set of participants. */
     internal fun expire(participantsToExpire: List<ParticipantInfo>) {
+        if (participantsToExpire.isEmpty()) {
+            logger.debug { "No participants to expire." }
+            return
+        }
         val request = createRequest()
         participantsToExpire.forEach { request.addExpire(it.id) }
 
@@ -226,6 +230,10 @@ internal class Colibri2Session(
     internal fun expireAllRelays() = expireRelays(relays.keys.toList())
     internal fun expireRelay(relayId: String) = expireRelays(listOf(relayId))
     private fun expireRelays(relayIds: List<String>) {
+        if (relayIds.isEmpty()) {
+            logger.debug("No relays to expire.")
+            return
+        }
         logger.info("Expiring relays: $relayIds")
         val request = createRequest()
         relayIds.forEach {
