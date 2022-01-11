@@ -134,18 +134,6 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             // conference bridge.
             strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe mediumStressBridge2
         }
-        context("Mixing octo versions") {
-            val highStressBridge = createBridge("region", 0.9).apply { setStats(octoVersion = 13) }
-            val lowStressBridge = createBridge("region", 0.1).apply { setStats(octoVersion = 12) }
-            val allBridges = listOf(lowStressBridge, highStressBridge)
-
-            val conferenceBridges = mutableMapOf<Bridge, Int>()
-            conferenceBridges[highStressBridge] = 1
-
-            // lowStressBridge must not be selected, because the conference already
-            // has a bridge and its octo_version does not match.
-            strategy.select(allBridges, conferenceBridges, "region", true) shouldBe highStressBridge
-        }
     }
 }
 

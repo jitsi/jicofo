@@ -98,6 +98,31 @@ class BridgeSelectorTest : ShouldSpec() {
             jvb3.setStats(stress = .01)
             bridgeSelector.selectBridge() shouldBe jvb2
         }
+        context("Mixing versions") {
+            setNewConfig(
+                """
+                    jicofo.octo.enabled=true
+                    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
+                """.trimIndent(),
+                true
+            )
+            val bridgeSelector = BridgeSelector(clock)
+            val jvb1 = bridgeSelector.addJvbAddress(jid1).apply { setStats(version = "v1", stress = 0.9, region = "r") }
+            val jvb2 = bridgeSelector.addJvbAddress(jid2).apply { setStats(version = "v2", stress = 0.1, region = "r") }
+
+            context("With explicit API call") {
+                bridgeSelector.selectBridge(version = "v1") shouldBe jvb1
+                bridgeSelector.selectBridge(version = "v2") shouldBe jvb2
+                bridgeSelector.selectBridge(version = "v-nonexistent") shouldBe null
+            }
+            context("From an existing conference bridge") {
+                bridgeSelector.selectBridge(conferenceBridges = mapOf(jvb1 to 1)) shouldBe jvb1
+                val jvb3 = bridgeSelector.addJvbAddress(jid3).apply {
+                    setStats(version = "v1", stress = 0.1, region = "r")
+                }
+                bridgeSelector.selectBridge(conferenceBridges = mapOf(jvb1 to 1)) shouldBe jvb3
+            }
+        }
         context("Selection with a conference bridge removed from the selector") {
             setNewConfig(
                 """

@@ -84,21 +84,9 @@ public abstract class BridgeSelectionStrategy
             String participantRegion,
             boolean allowMultiBridge)
     {
-        List<Bridge> bridgesMatchingVersion
-                = bridges.stream()
-                    .filter(versionMatches(conferenceBridges.keySet()))
-                    .collect(Collectors.toList());
-        if (bridges.size() != bridgesMatchingVersion.size())
-        {
-            logger.info("Filtered out "
-                    + (bridges.size() - bridgesMatchingVersion.size())
-                    + " bridges due to different Octo version.");
-        }
-
         if (conferenceBridges.isEmpty())
         {
-            Bridge bridge
-                = doSelect(bridgesMatchingVersion, conferenceBridges, participantRegion);
+            Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
@@ -129,7 +117,7 @@ public abstract class BridgeSelectionStrategy
                 return existingBridge;
             }
 
-            Bridge bridge = doSelect(bridgesMatchingVersion, conferenceBridges, participantRegion);
+            Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected bridge " + bridge
@@ -377,20 +365,6 @@ public abstract class BridgeSelectionStrategy
     private static Predicate<Bridge> inRegion(String region)
     {
         return b -> region != null && region.equalsIgnoreCase(b.getRegion());
-    }
-
-    private static Predicate<Bridge> versionMatches(Collection<Bridge> conferenceBridges)
-    {
-        if (conferenceBridges == null || conferenceBridges.isEmpty())
-        {
-            return b -> true;
-        }
-        else
-        {
-            String existingVersion
-                    = conferenceBridges.iterator().next().getVersion();
-            return b -> Objects.equals(b.getVersion(), existingVersion);
-        }
     }
 
     /**

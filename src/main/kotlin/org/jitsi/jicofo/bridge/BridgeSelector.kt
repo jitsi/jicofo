@@ -154,7 +154,12 @@ class BridgeSelector @JvmOverloads constructor(
     @JvmOverloads
     fun selectBridge(
         conferenceBridges: Map<Bridge, Int> = emptyMap(),
-        participantRegion: String? = null
+        participantRegion: String? = null,
+        /**
+         * A specific jitsi-videobridge version to use, or null to use any version. If conferenceBridges is non-empty
+         * the version needs to match the version of the existing bridges.
+         * */
+        version: String? = null
     ): Bridge? {
         // the list of all known videobridges JIDs ordered by load and *operational* status.
         val prioritizedBridges = synchronized(this) { ArrayList(bridges.values) }
@@ -170,10 +175,17 @@ class BridgeSelector @JvmOverloads constructor(
             candidateBridges = prioritizedBridges.filter { it.isOperational }.toList()
         }
 
-        if (candidateBridges.isEmpty()) return null
+        val v = version ?: conferenceBridges.keys.firstOrNull()?.version
+        val candidateBridgesMatchingVersion = if (v == null) candidateBridges else
+            candidateBridges.filter { it.version == v }
+        if (candidateBridges.isNotEmpty() && candidateBridgesMatchingVersion.isEmpty()) {
+            logger.warn("There are available bridges, but none with the required version: $v")
+        }
+
+        if (candidateBridgesMatchingVersion.isEmpty()) return null
 
         return bridgeSelectionStrategy.select(
-            candidateBridges,
+            candidateBridgesMatchingVersion,
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
