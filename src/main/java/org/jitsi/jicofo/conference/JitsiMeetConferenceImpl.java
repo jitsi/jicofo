@@ -1286,7 +1286,8 @@ public class JitsiMeetConferenceImpl
             // This is not necessary (and might trigger unexpected behavior) with colibri2.
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised = new EndpointSourceSet(new Source(ssrc, MediaType.AUDIO, null, null, true));
+            sourcesAdvertised = new EndpointSourceSet(
+                    new Source(ssrc, MediaType.AUDIO, participantId + "-injected0", null, true));
         }
         ConferenceSourceMap sourcesAccepted;
         try
