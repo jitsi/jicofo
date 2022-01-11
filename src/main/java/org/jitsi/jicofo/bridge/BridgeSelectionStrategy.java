@@ -84,21 +84,21 @@ public abstract class BridgeSelectionStrategy
             String participantRegion,
             boolean allowMultiBridge)
     {
-        List<Bridge> bridgesMatchingOctoVersion
+        List<Bridge> bridgesMatchingVersion
                 = bridges.stream()
-                    .filter(octoVersionMatches(conferenceBridges.keySet()))
+                    .filter(versionMatches(conferenceBridges.keySet()))
                     .collect(Collectors.toList());
-        if (bridges.size() != bridgesMatchingOctoVersion.size())
+        if (bridges.size() != bridgesMatchingVersion.size())
         {
             logger.info("Filtered out "
-                    + (bridges.size() - bridgesMatchingOctoVersion.size())
+                    + (bridges.size() - bridgesMatchingVersion.size())
                     + " bridges due to different Octo version.");
         }
 
         if (conferenceBridges.isEmpty())
         {
             Bridge bridge
-                = doSelect(bridgesMatchingOctoVersion, conferenceBridges, participantRegion);
+                = doSelect(bridgesMatchingVersion, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
@@ -129,8 +129,7 @@ public abstract class BridgeSelectionStrategy
                 return existingBridge;
             }
 
-            Bridge bridge = doSelect(
-                    bridgesMatchingOctoVersion, conferenceBridges, participantRegion);
+            Bridge bridge = doSelect(bridgesMatchingVersion, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected bridge " + bridge
@@ -380,7 +379,7 @@ public abstract class BridgeSelectionStrategy
         return b -> region != null && region.equalsIgnoreCase(b.getRegion());
     }
 
-    private static Predicate<Bridge> octoVersionMatches(Collection<Bridge> conferenceBridges)
+    private static Predicate<Bridge> versionMatches(Collection<Bridge> conferenceBridges)
     {
         if (conferenceBridges == null || conferenceBridges.isEmpty())
         {
@@ -388,9 +387,9 @@ public abstract class BridgeSelectionStrategy
         }
         else
         {
-            int existingVersion
-                    = conferenceBridges.iterator().next().getOctoVersion();
-            return b -> b.getOctoVersion() == existingVersion;
+            String existingVersion
+                    = conferenceBridges.iterator().next().getVersion();
+            return b -> Objects.equals(b.getVersion(), existingVersion);
         }
     }
 
