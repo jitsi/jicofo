@@ -22,6 +22,7 @@ import mock.jvb.*;
 import mock.muc.*;
 import mock.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -72,7 +73,8 @@ public class TestConference
         mockBridge = new MockVideobridge(new MockXmppConnection(bridgeJid));
         mockBridge.start();
 
-        harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
+        Bridge bridge = harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
+        BridgeTestKt.setStats(bridge, 0.0, "region", "version", true /* colibri2 */);
 
         createConferenceRoom(roomName);
     }
