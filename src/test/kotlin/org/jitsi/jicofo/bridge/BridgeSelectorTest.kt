@@ -18,19 +18,16 @@
 package org.jitsi.jicofo.bridge
 
 import io.kotest.core.spec.IsolationMode
-import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
-import org.jitsi.config.setNewConfig
-import org.jitsi.metaconfig.MetaconfigSettings
+import org.jitsi.jicofo.ConfigTest
 import org.jitsi.test.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
-class BridgeSelectorTest : ShouldSpec() {
+class BridgeSelectorTest : ConfigTest() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
-        MetaconfigSettings.cacheEnabled = false
         val clock = FakeClock()
         // Test different types of jid (domain, entity bare, entity full).
         val jid1 = JidCreate.from("jvb1.example.com")
@@ -98,14 +95,7 @@ class BridgeSelectorTest : ShouldSpec() {
             jvb3.setStats(stress = .01)
             bridgeSelector.selectBridge() shouldBe jvb2
         }
-        context("Mixing versions") {
-            setNewConfig(
-                """
-                    jicofo.octo.enabled=true
-                    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
-                """.trimIndent(),
-                true
-            )
+        context(config = regionBasedConfig, name = "Mixing versions") {
             val bridgeSelector = BridgeSelector(clock)
             val jvb1 = bridgeSelector.addJvbAddress(jid1).apply { setStats(version = "v1", stress = 0.9, region = "r") }
             val jvb2 = bridgeSelector.addJvbAddress(jid2).apply { setStats(version = "v2", stress = 0.1, region = "r") }
@@ -123,15 +113,7 @@ class BridgeSelectorTest : ShouldSpec() {
                 bridgeSelector.selectBridge(conferenceBridges = mapOf(jvb1 to 1)) shouldBe jvb3
             }
         }
-        context("Selection with a conference bridge removed from the selector") {
-            setNewConfig(
-                """
-                    jicofo.octo.enabled=true
-                    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
-                """.trimIndent(),
-                true
-            )
-
+        context(config = regionBasedConfig, name = "Selection with a conference bridge removed from the selector") {
             val regionBasedSelector = BridgeSelector(clock)
             val jvb1 = regionBasedSelector.addJvbAddress(jid1).apply { setStats(stress = 0.2, region = "r1") }
             val jvb2 = regionBasedSelector.addJvbAddress(jid2).apply { setStats(stress = 0.5, region = "r2") }
@@ -142,15 +124,7 @@ class BridgeSelectorTest : ShouldSpec() {
             regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), null) shouldBe jvb1
             regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), "r2") shouldBe jvb2
         }
-        context("SplitBridgeSelectionStrategy") {
-            setNewConfig(
-                """
-                    jicofo.octo.enabled=true
-                    jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
-                """.trimIndent(),
-                true
-            )
-
+        context(config = splitConfig, name = "SplitBridgeSelectionStrategy") {
             val splitSelector = BridgeSelector(clock)
             val jvb1 = splitSelector.addJvbAddress(jid1).apply { setStats(stress = 0.2, region = "r1") }
             val jvb2 = splitSelector.addJvbAddress(jid2).apply { setStats(stress = 0.5, region = "r2") }
@@ -167,3 +141,13 @@ class BridgeSelectorTest : ShouldSpec() {
         }
     }
 }
+
+private const val enableOctoConfig = "jicofo.octo.enabled=true"
+private val regionBasedConfig = """
+    $enableOctoConfig
+    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
+""".trimIndent()
+private val splitConfig = """
+    $enableOctoConfig
+    jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
+""".trimIndent()
