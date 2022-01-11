@@ -109,7 +109,9 @@ class ColibriV2SessionManager(
      * Expire everything.
      */
     override fun expire() = synchronized(syncRoot) {
+        logger.info("Expiring.")
         sessions.values.forEach { session ->
+            logger.debug { "Expiring $session" }
             session.expire(getSessionParticipants(session))
             session.expireAllRelays()
         }
@@ -121,14 +123,10 @@ class ColibriV2SessionManager(
     override fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
     override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
         participants.forEach { it.setInviteRunnable(null) }
+        logger.debug { "Asked to remove participants: ${participants.map { it.endpointId}}" }
 
         val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
-        if (participantInfos.size != participants.size) {
-            logger.error(
-                "Can not remove every participant requested, ParticipantInfo missing: " +
-                    "participants=$participants, participantInfos=$participantInfos"
-            )
-        }
+        logger.info("Removing participants: ${participantInfos.map { it.id }}")
         removeParticipantInfos(participantInfos)
     }
 
@@ -144,12 +142,14 @@ class ColibriV2SessionManager(
     private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
         var sessionRemoved = false
         bySession.forEach { (session, sessionParticipantsToRemove) ->
+            logger.debug { "Removing participants from session $session: ${sessionParticipantsToRemove.map { it.id }}" }
             session.expire(sessionParticipantsToRemove)
             sessionParticipantsToRemove.forEach { remove(it) }
 
             val removeSession = getSessionParticipants(session).isEmpty()
 
             if (removeSession) {
+                logger.info("Removing session with no remaining participants: $session")
                 sessions.remove(session.bridge)
                 session.expireAllRelays()
                 sessions.values.forEach { otherSession ->
@@ -184,9 +184,13 @@ class ColibriV2SessionManager(
     override fun removeSources(participant: Participant, sources: ConferenceSourceMap) =
         updateParticipant(participant, sources = participant.sources)
 
+    /**
+     * TODO: Is it really necessary to wait for a response?
+     */
     override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
         val stanzaCollector: StanzaCollector
         val participantInfo: ParticipantInfo
+        logger.info("${if (doMute) "Adding" else "Removing"} force-mute for ${participant.endpointId} ($mediaType).")
         synchronized(syncRoot) {
             participantInfo = participants[participant.endpointId]
                 ?: throw IllegalStateException("No participantInfo for $participant")
@@ -194,6 +198,7 @@ class ColibriV2SessionManager(
             if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
                 mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
             ) {
+                logger.debug("No change required")
                 return true
             }
 
@@ -211,7 +216,7 @@ class ColibriV2SessionManager(
         }
 
         return if (response is ConferenceModifiedIQ) {
-            // Success, update our local state
+            // Success, update the local state.
             if (mediaType == MediaType.AUDIO)
                 participantInfo.audioMuted = doMute
             if (mediaType == MediaType.VIDEO)
@@ -256,6 +261,7 @@ class ColibriV2SessionManager(
         contents: List<ContentPacketExtension>,
         reInvite: Boolean
     ): ColibriAllocation {
+        logger.info("Allocating for ${participant.endpointId}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
         val created: Boolean
@@ -274,17 +280,19 @@ class ColibriV2SessionManager(
                 session = it.first
                 created = it.second
             }
-            logger.warn("Selected ${bridge.jid.resourceOrNull} for $participant, session exists: ${!created}")
+            logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents)
             add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {
+                    logger.debug { "Creating relays between $session and $it." }
                     it.createRelay(session.bridge.relayId, getSessionParticipants(session), initiator = true)
                     session.createRelay(it.bridge.relayId, getSessionParticipants(it), initiator = false)
                 }
             } else {
                 sessions.values.filter { it != session }.forEach {
+                    logger.debug { "Adding a relayed endpoint to $it for ${participantInfo.id}." }
                     it.updateRemoteParticipant(participantInfo, session.bridge.relayId, create = true)
                 }
             }
@@ -297,6 +305,7 @@ class ColibriV2SessionManager(
         val response: IQ?
         try {
             response = stanzaCollector.nextResult()
+            logger.trace { "Received response: ${response?.toXML()}" }
         } finally {
             stanzaCollector.cancel()
         }
@@ -308,6 +317,7 @@ class ColibriV2SessionManager(
                 // TODO: the conference does not know that participants were removed and need to be re-invited (they
                 //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
                 //  hard to avoid right now.
+                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
                 removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
                 remove(participantInfo)
                 throw e
@@ -402,12 +412,15 @@ class ColibriV2SessionManager(
     }
 
     override fun removeBridges(bridges: Set<Bridge>): List<String> = synchronized(syncRoot) {
+        logger.info("Removing bridges: ${bridges.map { it.jid.resourceOrNull }}")
         val sessionsToRemove = sessions.values.filter { bridges.contains(it.bridge) }
+        logger.info("Removing sessions: $sessionsToRemove")
         val participantsToRemove = sessionsToRemove.flatMap { getSessionParticipants(it) }.map { it.id }
 
         removeParticipantInfosBySession(sessionsToRemove.associateWith { getSessionParticipants(it) })
         eventEmitter.fireEvent { failedBridgesRemoved(sessionsToRemove.size) }
 
+        logger.info("Removed participants: $participantsToRemove")
         participantsToRemove
     }
 
@@ -442,6 +455,8 @@ class ColibriV2SessionManager(
         /** The ID of the relay, which can be used to find the other session. */
         relayId: String
     ) {
+        logger.info("Received transport from $session for relay $relayId")
+        logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
             if (!sessions.containsKey(session.bridge) || sessions[session.bridge] != session) {
@@ -449,7 +464,7 @@ class ColibriV2SessionManager(
                 return
             }
             sessions.values.find { it.bridge.relayId == relayId }?.setRelayTransport(transport, session.bridge.relayId)
-                ?: { logger.error("Response for a relay that is no longer active. Ignoring.") }
+                ?: { logger.warn("Response for a relay that is no longer active. Ignoring.") }
         }
     }
 

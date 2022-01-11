@@ -88,7 +88,7 @@ internal class Colibri2Session(
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
         request.addEndpoint(endpoint.build())
 
-        logger.debug { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
@@ -121,6 +121,7 @@ internal class Colibri2Session(
         }
 
         request.addEndpoint(endpoint.build())
+        logger.trace { "Sending endpoint update: ${request.build().toXML()}" }
 
         xmppConnection.tryToSendStanza(request.build())
     }
@@ -135,7 +136,7 @@ internal class Colibri2Session(
             }.build()
         )
 
-        logger.debug { "Sending mute request for $participant: ${request.build().toXML()}" }
+        logger.trace { "Sending force-mute update: ${request.build().toXML()}" }
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
 
@@ -145,6 +146,8 @@ internal class Colibri2Session(
         val request = createRequest()
         participantsToExpire.forEach { request.addExpire(it.id) }
 
+        logger.debug { "Expiring endpoint: ${participantsToExpire.map { it.id }}" }
+        logger.trace { "Expiring endpoints: ${request.build().toXML()}" }
         xmppConnection.tryToSendStanza(request.build())
     }
 
@@ -173,6 +176,10 @@ internal class Colibri2Session(
          */
         initiator: Boolean
     ) {
+        logger.info(
+            "Creating relay $relayId (initiator=$initiator), " +
+                "initial participants: ${initialParticipants.map { it.id }}"
+        )
         if (relays.containsKey(relayId)) {
             throw IllegalStateException("Relay $relayId already exists")
         }
@@ -193,12 +200,14 @@ internal class Colibri2Session(
         /** Whether a new relay endpoint should be created, or an existing one updated. */
         create: Boolean
     ) {
+        logger.debug { "Updating remote participant ${participantInfo.id} on $relayId" }
         relays[relayId]?.updateParticipant(participantInfo, create)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
 
     /** Expires a set of endpoints on a specific relay. */
     internal fun expireRemoteParticipants(participants: List<ParticipantInfo>, relayId: String) {
+        logger.debug { "Expiring remote participants on $relayId: ${participants.map { it.id }}" }
         relays[relayId]?.expireParticipants(participants)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
@@ -209,6 +218,8 @@ internal class Colibri2Session(
         transport: IceUdpTransportPacketExtension,
         relayId: String
     ) {
+        logger.info("Setting relay transport for $relayId")
+        logger.debug { "Setting relay transport for $relayId: ${transport.toXML()}" }
         relays[relayId]?.setTransport(transport)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
     }
@@ -216,6 +227,7 @@ internal class Colibri2Session(
     internal fun expireAllRelays() = expireRelays(relays.keys.toList())
     internal fun expireRelay(relayId: String) = expireRelays(listOf(relayId))
     private fun expireRelays(relayIds: List<String>) {
+        logger.info("Expiring relays: $relayIds")
         val request = createRequest()
         relayIds.forEach {
             request.addRelay(
@@ -228,9 +240,11 @@ internal class Colibri2Session(
 
         relayIds.forEach { relays.remove(it) }
 
-        logger.info("Expiring relays $relayIds: ${request.build().toXML()}")
+        logger.trace("Expiring relays $relayIds: ${request.build().toXML()}")
         xmppConnection.trySendStanza(request.build())
     }
+
+    override fun toString() = "Colibri2Session[bridge=${bridge.jid.resourceOrNull}, id=$id]"
 
     fun toJson() = OrderedJsonObject().apply {
         put("bridge", bridge.debugState)
@@ -263,12 +277,15 @@ internal class Colibri2Session(
         private val dtlsSetup = if (initiator) "active" else "passive"
         private val websocketActive = initiator
 
+        private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", id) }
+
         /** Whether the transport has been updated with the remote side's candidates, DTLS fingerprints etc. */
         private var transportUpdated = false
 
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
         fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
+            logger.trace { "Sending create relay: ${request.toXML()}" }
             val stanzaCollector = xmppConnection.createStanzaCollectorAndSend(request)
             TaskPools.ioPool.submit { waitForResponse(stanzaCollector) }
         }
@@ -276,15 +293,17 @@ internal class Colibri2Session(
         /**
          * Waits for a response to the relay allocation request. When a response is received, parse the contained
          * transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
+         * TODO: act on errors (remove both bridges?)
          */
         private fun waitForResponse(stanzaCollector: StanzaCollector) {
             val response: IQ?
             try {
                 response = stanzaCollector.nextResult()
             } finally {
-                logger.info("Cancel.")
+                logger.debug("Cancelling.")
                 stanzaCollector.cancel()
             }
+            logger.trace { "Received response: ${response?.toXML()}" }
             if (response !is ConferenceModifiedIQ) {
                 logger.error("Received error: ${response?.toXML() ?: "timeout"}")
                 return
@@ -301,7 +320,6 @@ internal class Colibri2Session(
                 logger.error("Response has no iceUdpTransport")
                 return
             }
-            // TODO indicate that the octo connection failed somehow.
 
             // Forward the response to the corresponding [Colibri2Session]
             colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
@@ -345,7 +363,7 @@ internal class Colibri2Session(
             relay.setTransport(Transport.getBuilder().apply { setIceUdpExtension(transport) }.build())
             request.addRelay(relay.build())
 
-            logger.warn("Updating transport: ${request.build().toXML()}")
+            logger.debug { "Setting transport: ${request.build().toXML()}" }
             xmppConnection.trySendStanza(request.build())
             transportUpdated = true
         }
@@ -369,7 +387,8 @@ internal class Colibri2Session(
             endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false))
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
-            logger.warn("Creating new octo endpoint: ${request.build().toXML()}")
+            logger.debug { "${if (create) "Creating" else "Updating"} endpoint ${participant.id}" }
+            logger.trace { "Sending ${request.build().toXML()}" }
             xmppConnection.trySendStanza(request.build())
         }
 
@@ -384,7 +403,8 @@ internal class Colibri2Session(
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
 
-            logger.info("Expiring ${participants.map { it.id }}: ${request.build().toXML()}")
+            logger.info("Expiring ${participants.map { it.id }}")
+            logger.trace { "Sending ${request.build().toXML()}" }
             xmppConnection.trySendStanza(request.build())
         }
 
