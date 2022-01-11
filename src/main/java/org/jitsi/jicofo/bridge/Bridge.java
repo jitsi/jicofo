@@ -84,6 +84,11 @@ public class Bridge
     private String version = null;
 
     /**
+     * Whether the bridge supports colibri2.
+     */
+    private boolean colibri2 = false;
+
+    /**
      * Stores the {@code operational} status of the bridge, which is
      * {@code true} if the bridge has been successfully used by the focus to
      * allocate channels. It is reset to {@code false} when the focus fails
@@ -171,6 +176,11 @@ public class Bridge
             shutdownInProgress = true;
         }
 
+        if (Boolean.parseBoolean(stats.getValueAsString("colibri2")))
+        {
+            colibri2 = true;
+        }
+
         String newVersion = stats.getValueAsString(VERSION);
         if (newVersion != null)
         {
@@ -188,6 +198,11 @@ public class Bridge
         {
             this.relayId = relayId;
         }
+    }
+
+    public boolean supportsColibri2()
+    {
+        return colibri2;
     }
 
     /**

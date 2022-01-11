@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge
 
 import org.jitsi.jicofo.OctoConfig
+import org.jitsi.jicofo.conference.colibri.ColibriConfig
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -175,17 +176,25 @@ class BridgeSelector @JvmOverloads constructor(
             candidateBridges = prioritizedBridges.filter { it.isOperational }.toList()
         }
 
+        if (candidateBridges.isEmpty()) return null
+
         val v = version ?: conferenceBridges.keys.firstOrNull()?.version
-        val candidateBridgesMatchingVersion = if (v == null) candidateBridges else
-            candidateBridges.filter { it.version == v }
-        if (candidateBridges.isNotEmpty() && candidateBridgesMatchingVersion.isEmpty()) {
-            logger.warn("There are available bridges, but none with the required version: $v")
+        candidateBridges = if (v == null) candidateBridges else candidateBridges.filter { it.version == v }
+        if (candidateBridges.isEmpty()) {
+            logger.warn("There are no bridges with the required version: $v")
+            return null
         }
 
-        if (candidateBridgesMatchingVersion.isEmpty()) return null
+        if (ColibriConfig().enableColibri2) {
+            candidateBridges = candidateBridges.filter { it.supportsColibri2() }
+            if (candidateBridges.isEmpty()) {
+                logger.warn("There are no bridges with colibri2 support.")
+                return null
+            }
+        }
 
         return bridgeSelectionStrategy.select(
-            candidateBridgesMatchingVersion,
+            candidateBridges,
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
