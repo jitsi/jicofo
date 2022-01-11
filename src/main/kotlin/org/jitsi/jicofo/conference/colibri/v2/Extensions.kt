@@ -17,12 +17,14 @@
  */
 package org.jitsi.jicofo.conference.colibri.v2
 
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.ParticipantInviteRunnable
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -31,6 +33,8 @@ import org.jitsi.xmpp.extensions.colibri2.Sources
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jivesoftware.smack.AbstractXMPPConnection
+import org.jivesoftware.smack.packet.IQ
 
 /** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
 fun ConferenceModifiedIQ.parseTransport(endpointId: String): IceUdpTransportPacketExtension? {
@@ -132,3 +136,28 @@ internal fun ParticipantInfo.toEndpoint(
         setExpire(true)
     }
 }.build()
+
+/**
+ * Sends an IQ and dispatches an IO thread to wait for a response and log any errors.
+ * TODO: better error handling
+ */
+internal fun AbstractXMPPConnection.sendIqAndLogResponse(iq: IQ, logger: Logger) {
+    val stanzaCollector = createStanzaCollectorAndSend(iq)
+    TaskPools.ioPool.submit {
+        try {
+            when (val response: IQ? = stanzaCollector.nextResult()) {
+                null -> {
+                    logger.error("Request to ${iq.to} timed out")
+                    logger.debug { "Request timed out: ${iq.toXML()}" }
+                }
+                // For colibri2 all success responses should be conference-modified.
+                !is ConferenceModifiedIQ -> {
+                    logger.error("Received an unexpected colibri2 response: ${response.toXML()}")
+                    logger.debug { "The request was: ${iq.toXML()}" }
+                }
+            }
+        } finally {
+            stanzaCollector.cancel()
+        }
+    }
+}

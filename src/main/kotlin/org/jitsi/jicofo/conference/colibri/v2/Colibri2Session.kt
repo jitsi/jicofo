@@ -22,7 +22,6 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.codec.JingleOfferFactory
 import org.jitsi.jicofo.codec.OctoOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
-import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -123,7 +122,7 @@ internal class Colibri2Session(
         request.addEndpoint(endpoint.build())
         logger.trace { "Sending endpoint update: ${request.build().toXML()}" }
 
-        xmppConnection.tryToSendStanza(request.build())
+        xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
     /** Force-mutes a specific endpoint **/
@@ -148,7 +147,7 @@ internal class Colibri2Session(
 
         logger.debug { "Expiring endpoint: ${participantsToExpire.map { it.id }}" }
         logger.trace { "Expiring endpoints: ${request.build().toXML()}" }
-        xmppConnection.tryToSendStanza(request.build())
+        xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
@@ -241,7 +240,7 @@ internal class Colibri2Session(
         relayIds.forEach { relays.remove(it) }
 
         logger.trace("Expiring relays $relayIds: ${request.build().toXML()}")
-        xmppConnection.trySendStanza(request.build())
+        xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
     override fun toString() = "Colibri2Session[bridge=${bridge.jid.resourceOrNull}, id=$id]"
@@ -364,7 +363,7 @@ internal class Colibri2Session(
             request.addRelay(relay.build())
 
             logger.debug { "Setting transport: ${request.build().toXML()}" }
-            xmppConnection.trySendStanza(request.build())
+            xmppConnection.sendIqAndLogResponse(request.build(), logger)
             transportUpdated = true
         }
 
@@ -389,7 +388,7 @@ internal class Colibri2Session(
             request.addRelay(relay.build())
             logger.debug { "${if (create) "Creating" else "Updating"} endpoint ${participant.id}" }
             logger.trace { "Sending ${request.build().toXML()}" }
-            xmppConnection.trySendStanza(request.build())
+            xmppConnection.sendIqAndLogResponse(request.build(), logger)
         }
 
         /** Expire relay endpoints for a set of participants. */
@@ -405,7 +404,7 @@ internal class Colibri2Session(
 
             logger.info("Expiring ${participants.map { it.id }}")
             logger.trace { "Sending ${request.build().toXML()}" }
-            xmppConnection.trySendStanza(request.build())
+            xmppConnection.sendIqAndLogResponse(request.build(), logger)
         }
 
         /** Create a request to create a relay (this is just the initial request). */
