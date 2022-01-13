@@ -109,6 +109,11 @@ public class Bridge
     private boolean shutdownInProgress = false /* we assume it is not shutting down */;
 
     /**
+     * Stores a boolean that indicates whether the bridge is in drain mode.
+     */
+    private boolean draining = false;
+
+    /**
      * The time when this instance has failed.
      */
     private Instant failureInstant = Instant.MIN;
@@ -174,6 +179,12 @@ public class Bridge
         if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
         {
             shutdownInProgress = true;
+        }
+
+        String drainStr = stats.getValueAsString(DRAIN);
+        if (drainStr != null)
+        {
+            draining = Boolean.parseBoolean(drainStr);
         }
 
         if (Boolean.parseBoolean(stats.getValueAsString("colibri2")))
