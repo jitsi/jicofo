@@ -82,7 +82,14 @@ internal class Colibri2Session(
             setId(participant.id)
             setCreate(true)
             setStatsId(participant.statsId)
-            setTransport(Transport.getBuilder().build())
+            setTransport(
+                Transport.getBuilder()
+                    // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
+                    //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
+                    //  failures with firefox but not chrome).
+                    .setIceControlling(true)
+                    .build()
+            )
         }
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
         request.addEndpoint(endpoint.build())
