@@ -26,6 +26,7 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 public class MockXmppConnection
     extends AbstractXMPPConnection
@@ -33,6 +34,8 @@ public class MockXmppConnection
     private final static Logger logger = new LoggerImpl(MockXmppConnection.class.getName());
 
     private static final Map<Jid, MockXmppConnection> sharedStanzaQueue = Collections.synchronizedMap(new HashMap<>());
+
+    private final Executor receiveStanzaExecutor = Executors.newSingleThreadExecutor();
 
     private static DomainBareJid domain;
     static
@@ -131,8 +134,8 @@ public class MockXmppConnection
             return;
         }
 
-        Thread t = new Thread(() -> target.invokeStanzaCollectorsAndNotifyRecvListeners(packet));
-        t.start();
+        // Use the target's executor to preserve stanza order.
+        target.receiveStanzaExecutor.execute(() -> target.invokeStanzaCollectorsAndNotifyRecvListeners(packet));
     }
 
     @Override

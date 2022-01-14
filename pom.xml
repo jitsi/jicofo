@@ -50,7 +50,7 @@
     <kotest.version>4.6.3</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
     <jersey.version>2.35</jersey.version>
-    <jitsi.utils.version>1.0-108-g480acf0</jitsi.utils.version>
+    <jitsi.utils.version>1.0-109-g31bfa99</jitsi.utils.version>
     <jicoco.version>1.1-98-gbeeaa92</jicoco.version>
     <spotbugs.version>4.2.0</spotbugs.version>
     <junit.version>5.8.1</junit.version>
@@ -131,7 +131,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-37-gb2b3dd1</version>
+      <version>1.0-40-gb85a8a8</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -192,7 +192,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-600-gc5a59056</version>
+      <version>2.1-609-g7e881954</version>
       <scope>test</scope>
     </dependency>
     <dependency>

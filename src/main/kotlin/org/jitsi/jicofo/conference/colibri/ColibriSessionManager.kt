@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference.colibri
 
+import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -25,7 +26,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
-import org.jxmpp.jid.Jid
 
 interface ColibriSessionManager {
     fun addListener(listener: Listener)
@@ -44,7 +44,15 @@ interface ColibriSessionManager {
      */
     fun removeParticipants(participants: Collection<Participant>)
 
+    /**
+     *  Note at the time this is called [participant.sources] have already been updated.
+     * TODO: remove in favor of updateParticipant
+     */
     fun addSources(participant: Participant, sources: ConferenceSourceMap)
+    /**
+     *  Note at the time this is called [participant.sources] have already been updated.
+     * TODO: remove in favor of updateParticipant
+     */
     fun removeSources(participant: Participant, sources: ConferenceSourceMap)
     fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
@@ -58,12 +66,17 @@ interface ColibriSessionManager {
 
     fun updateParticipant(
         participant: Participant,
-        transport: IceUdpTransportPacketExtension?,
-        sources: ConferenceSourceMap?,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+        transport: IceUdpTransportPacketExtension? = null,
+        sources: ConferenceSourceMap? = null,
+        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
     )
-    fun getAllocation(participant: Participant): ColibriAllocation?
-    fun bridgesDown(bridges: Set<Jid>): List<Participant>
+    fun getBridgeSessionId(participant: Participant): String?
+
+    /**
+     * Stop using [bridges] (because they were detected to have failed).
+     * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
+     */
+    fun removeBridges(bridges: Set<Bridge>): List<String>
 
     val debugState: OrderedJsonObject
 

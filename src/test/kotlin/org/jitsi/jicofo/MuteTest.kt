@@ -29,7 +29,7 @@ import org.jxmpp.jid.impl.JidCreate
  * Test one participant muting another.
  */
 class MuteTest : JicofoHarnessTest() {
-    override fun isolationMode(): IsolationMode? = IsolationMode.SingleInstance
+    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
     init {
         val roomName = JidCreate.entityBareFrom("test@example.com")

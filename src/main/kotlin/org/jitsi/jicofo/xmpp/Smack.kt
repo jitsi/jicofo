@@ -23,6 +23,7 @@ import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIqProvider
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsIqProvider
 import org.jitsi.xmpp.extensions.colibri.ForcefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
+import org.jitsi.xmpp.extensions.colibri2.IqProviderUtils
 import org.jitsi.xmpp.extensions.health.HealthCheckIQProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
@@ -165,4 +166,5 @@ fun registerXmppExtensions() {
         VideoMutedExtension.NAMESPACE,
         DefaultPacketExtensionProvider(VideoMutedExtension::class.java)
     )
+    IqProviderUtils.registerProviders()
 }

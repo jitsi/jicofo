@@ -23,6 +23,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.version.*;
 import org.jitsi.videobridge.*;
 import org.jitsi.xmpp.extensions.colibri.*;
+import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -42,8 +43,11 @@ public class MockVideobridge
     private Videobridge bridge;
 
     private final ColibriConferenceIqHandler confIqGetHandler = new ColibriConferenceIqHandler(IQ.Type.get);
-
     private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
+    private final ConferenceModifyIqHandler conferenceModifyIqGetHandler
+            = new ConferenceModifyIqHandler(IQ.Type.get);
+    private final ConferenceModifyIqHandler conferenceModifyIqSetHandler
+            = new ConferenceModifyIqHandler(IQ.Type.set);
 
     public MockVideobridge(MockXmppConnection connection)
     {
@@ -60,12 +64,16 @@ public class MockVideobridge
 
         connection.registerIQRequestHandler(confIqGetHandler);
         connection.registerIQRequestHandler(confIqSetHandler);
+        connection.registerIQRequestHandler(conferenceModifyIqGetHandler);
+        connection.registerIQRequestHandler(conferenceModifyIqSetHandler);
     }
 
     public void stop()
     {
         connection.unregisterIQRequestHandler(confIqGetHandler);
         connection.unregisterIQRequestHandler(confIqSetHandler);
+        connection.unregisterIQRequestHandler(conferenceModifyIqGetHandler);
+        connection.unregisterIQRequestHandler(conferenceModifyIqSetHandler);
 
         bridge.stop();
     }
@@ -87,6 +95,31 @@ public class MockVideobridge
             try
             {
                 IQ confResult = bridge.handleColibriConferenceIQ((ColibriConferenceIQ) iqRequest);
+                confResult.setTo(iqRequest.getFrom());
+                confResult.setStanzaId(iqRequest.getStanzaId());
+                return confResult;
+            }
+            catch (Exception e)
+            {
+                logger.error("JVB internal error!", e);
+                return null;
+            }
+        }
+    }
+
+    private class ConferenceModifyIqHandler extends AbstractIqRequestHandler
+    {
+        ConferenceModifyIqHandler(IQ.Type type)
+        {
+            super(ConferenceModifyIQ.ELEMENT, ConferenceModifyIQ.NAMESPACE, type, Mode.sync);
+        }
+
+        @Override
+        public IQ handleIQRequest(IQ iqRequest)
+        {
+            try
+            {
+                IQ confResult = bridge.handleConferenceModifyIq((ConferenceModifyIQ) iqRequest);
                 confResult.setTo(iqRequest.getFrom());
                 confResult.setStanzaId(iqRequest.getStanzaId());
                 return confResult;

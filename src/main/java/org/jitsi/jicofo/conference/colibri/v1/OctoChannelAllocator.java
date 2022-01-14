@@ -169,7 +169,7 @@ class OctoChannelAllocator implements Runnable
         boolean restartConference;
         try
         {
-            logger.info("Allocating octo channels on " + jvb);
+            logger.info("Allocating octo channels on " + bridgeSession.bridge);
 
             ColibriConferenceIQ colibriChannels = doAllocateChannels(contents);
 
@@ -182,7 +182,7 @@ class OctoChannelAllocator implements Runnable
             }
 
             bridgeSession.bridge.setIsOperational(true);
-            colibriRequestCallback.requestSucceeded(jvb);
+            colibriRequestCallback.requestSucceeded(bridgeSession.bridge);
             return colibriChannels;
         }
         catch (ConferenceNotFoundException e)
@@ -222,7 +222,7 @@ class OctoChannelAllocator implements Runnable
         // If the ColibriConference is in use, and we want to retry.
         if (restartConference && isNotBlank(bridgeSession.colibriConference.getConferenceId()))
         {
-            colibriRequestCallback.requestFailed(jvb);
+            colibriRequestCallback.requestFailed(bridgeSession.bridge);
         }
 
         return null;

@@ -25,6 +25,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.colibri.v1.*;
+import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
@@ -255,8 +256,20 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.gid = gid;
-        this.colibriSessionManager
-                = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
+        ColibriConfig colibriConfig = new ColibriConfig();
+        if (colibriConfig.getEnableColibri2())
+        {
+            colibriSessionManager = new ColibriV2SessionManager(
+                    jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
+                    jicofoServices.getBridgeSelector(),
+                    this,
+                    logger);
+        }
+        else
+        {
+            colibriSessionManager
+                    = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
+        }
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
@@ -983,8 +996,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        ColibriAllocation colibriAllocation = colibriSessionManager.getAllocation(participant);
-        String existingBridgeSessionId = colibriAllocation == null ? null : colibriAllocation.getBridgeSessionId();
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
@@ -1030,8 +1042,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        ColibriAllocation colibriAllocation = colibriSessionManager.getAllocation(participant);
-        String existingBridgeSessionId = colibriAllocation == null ? null : colibriAllocation.getBridgeSessionId();
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)
@@ -1292,11 +1303,13 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
-        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints())
+        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints()
+            && !(new ColibriConfig().getEnableColibri2()))
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
             // conference will not be aware of the participant.
+            // This is not necessary (and might trigger unexpected behavior) with colibri2.
             long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
             logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
             sourcesAdvertised = new EndpointSourceSet(new Source(ssrc, MediaType.AUDIO, null, null, true));
@@ -1304,7 +1317,7 @@ public class JitsiMeetConferenceImpl
         ConferenceSourceMap sourcesAccepted;
         try
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
+            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised).unmodifiable();
         }
         catch (ValidationFailedException e)
         {
@@ -1732,16 +1745,31 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles the case of some bridges in the conference becoming non-operational.
-     * @param bridgeJids the JIDs of the bridges that are non-operational.
+     * @param bridges the bridges that are non-operational.
      */
-    private void onMultipleBridgesDown(Set<Jid> bridgeJids)
+    private void onMultipleBridgesDown(Set<Bridge> bridges)
     {
-        List<Participant> participantsToReinvite = colibriSessionManager.bridgesDown(bridgeJids);
+        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridges);
 
-        if (!participantsToReinvite.isEmpty())
+        if (!participantIdsToReinvite.isEmpty())
         {
-            listener.participantsMoved(participantsToReinvite.size());
-            reInviteParticipants(participantsToReinvite);
+            listener.participantsMoved(participantIdsToReinvite.size());
+            synchronized (participantLock)
+            {
+                List<Participant> participantsToReinvite = new ArrayList<>();
+                for (Participant participant : participants)
+                {
+                    if (participantIdsToReinvite.contains(participant.getEndpointId()))
+                    {
+                        participantsToReinvite.add(participant);
+                    }
+                }
+                if (participantsToReinvite.size() != participantIdsToReinvite.size())
+                {
+                    logger.error("Can not re-invite all participants, no Participant object for some of them.");
+                }
+                reInviteParticipants(participantsToReinvite);
+            }
         }
     }
 
@@ -2003,7 +2031,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge.getJid()));
+            onMultipleBridgesDown(Collections.singleton(bridge));
         }
 
         @Override
@@ -2101,13 +2129,13 @@ public class JitsiMeetConferenceImpl
     private class ColibriRequestCallbackImpl implements ColibriRequestCallback
     {
         @Override
-        public void requestFailed(@NotNull Jid jvbJid)
+        public void requestFailed(@NotNull Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(jvbJid));
+            onMultipleBridgesDown(Collections.singleton(bridge));
         }
 
         @Override
-        public void requestSucceeded(@NotNull Jid jvbJid)
+        public void requestSucceeded(@NotNull Bridge bridge)
         {
             // Remove "bridge not available" from Jicofo's presence
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;

@@ -208,7 +208,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             if (e.getRestartConference())
             {
-                colibriRequestCallback.requestFailed(e.getJid());
+                colibriRequestCallback.requestFailed(e.getBridge());
             }
             return;
         }
@@ -224,8 +224,15 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             if (e.getRestartConference())
             {
-                colibriRequestCallback.requestFailed(e.getJid());
+                colibriRequestCallback.requestFailed(e.getBridge());
             }
+            return;
+        }
+        catch (ColibriTimeoutException e)
+        {
+            logger.error("Canceling due to", e);
+            cancel();
+            colibriRequestCallback.requestFailed(e.getBridge());
             return;
         }
         catch (ColibriAllocationFailedException e)
@@ -355,6 +362,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             colibriSessionManager.updateParticipant(participant, null, null, null);
         }
 
+        // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.
         if (chatRoom != null && !participant.hasModeratorRights())
         {
             // if participant is not muted, but needs to be

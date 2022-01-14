@@ -47,6 +47,7 @@ class SplitBridgeSelectionStrategy
         Optional<Bridge> bridgeNotYetInConf = bridges.stream()
             .filter(b -> !conferenceBridges.containsKey(b)).findFirst();
         return bridgeNotYetInConf.orElseGet(() -> conferenceBridges.entrySet().stream()
+            .filter(b -> bridges.contains(b.getKey()))
             .min(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey)
             .orElse(null));

@@ -44,4 +44,12 @@ abstract class ConfigTest : ShouldSpec() {
     inline fun withNewConfig(config: String, loadDefaults: Boolean, block: () -> Unit) {
         useNewConfig("new-${this::class.simpleName}", config, loadDefaults, block)
     }
+
+    fun context(config: String, name: String, block: () -> Unit) {
+        context(name) {
+            withNewConfig(config) {
+                block()
+            }
+        }
+    }
 }

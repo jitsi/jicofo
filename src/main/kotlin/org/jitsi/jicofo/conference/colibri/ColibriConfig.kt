@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2021-Present 8x8 Inc
+ * Copyright @ 2021 - present 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,11 @@
  */
 package org.jitsi.jicofo.conference.colibri
 
-import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.config
 
-/**
- * A callback interface to use when a colibri request fails or succeeds.
- */
-interface ColibriRequestCallback {
-    /** A colibri request to a specific bridge failed. */
-    fun requestFailed(bridge: Bridge)
-    /** A colibri request to a specific bridge succeeded. */
-    fun requestSucceeded(bridge: Bridge)
+class ColibriConfig {
+    val enableColibri2: Boolean by config {
+        "jicofo.colibri.enable-colibri2".from(newConfig)
+    }
 }

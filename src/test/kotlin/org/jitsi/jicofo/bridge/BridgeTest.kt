@@ -125,7 +125,8 @@ class BridgeTest : ShouldSpec({
 fun Bridge.setStats(
     stress: Double? = null,
     region: String? = null,
-    octoVersion: Int? = null
+    version: String? = null,
+    colibri2: Boolean = true
 ) = setStats(
     ColibriStatsExtension().apply {
         stress?.let { addStat(ColibriStatsExtension.Stat("stress_level", it)) }
@@ -133,6 +134,7 @@ fun Bridge.setStats(
             addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.REGION, it))
             addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.RELAY_ID, it))
         }
-        octoVersion?.let { addStat(ColibriStatsExtension.Stat("octo_version", octoVersion)) }
+        version?.let { addStat(ColibriStatsExtension.Stat("version", version)) }
+        if (colibri2) addStat("colibri2", "true")
     }
 )

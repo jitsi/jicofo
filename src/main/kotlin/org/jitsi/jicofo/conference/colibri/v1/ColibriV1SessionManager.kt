@@ -159,10 +159,10 @@ class ColibriV1SessionManager(
         bridgeSession: BridgeSession,
         contents: List<ContentPacketExtension>
     ): ColibriAllocation {
-        val jvb = bridgeSession.bridge.jid
+        val bridge = bridgeSession.bridge
         // We want to re-invite the participants in this conference.
         try {
-            logger.info("Using $jvb to allocate channels for: $participant")
+            logger.info("Using $bridge to allocate channels for: $participant")
 
             // null means canceled, because colibriConference has been disposed by another thread
             val colibriChannels = bridgeSession.colibriConference.createColibriChannels(
@@ -181,12 +181,12 @@ class ColibriV1SessionManager(
                 // This is not an error coming from the bridge, so the channels are still active. Make sure they are
                 // expired.
                 bridgeSession.colibriConference.expireChannels(colibriChannels)
-                throw BridgeFailedException(jvb, restartConference = false)
+                throw BridgeFailedException(bridgeSession.bridge, restartConference = false)
             }
 
             val colibriAllocation = ColibriAllocation(sources, transport, bridgeSession.bridge.region, bridgeSession.id)
             bridgeSession.bridge.setIsOperational(true)
-            colibriRequestCallback.requestSucceeded(jvb)
+            colibriRequestCallback.requestSucceeded(bridge)
             participantInfo.colibriChannels = colibriChannels
             participantInfo.colibriAllocation = colibriAllocation
 
@@ -194,9 +194,9 @@ class ColibriV1SessionManager(
         } catch (e: ConferenceNotFoundException) {
             // The conference on the bridge has likely expired. We want to re-invite the conference participants,
             // though the bridge is not faulty.
-            logger.error("$jvb - conference ID not found (expired?): ${e.message}")
+            logger.error("$bridge - conference ID not found (expired?): ${e.message}")
             throw ColibriConferenceExpiredException(
-                jvb,
+                bridge,
                 // If the ColibriConference is in use, and we want to retry.
                 restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)
             )
@@ -205,15 +205,15 @@ class ColibriV1SessionManager(
             // will likely result in the same error.
             // We observe this when an endpoint uses an ID not accepted by the new bridge (via a custom client).
             // TODO: Jicofo should not allow such endpoints.
-            logger.error("$jvb - the bridge indicated bad-request: ${e.message}")
+            logger.error("$bridge - the bridge indicated bad-request: ${e.message}")
             throw BadColibriRequestException()
         } catch (e: ColibriException) {
             // All other errors indicate that the bridge is faulty: timeout, wrong response type, or something else.
             bridgeSession.bridge.setIsOperational(false)
             bridgeSession.hasFailed = true
-            logger.error("$jvb - failed to allocate channels, will consider the bridge faulty: ${e.message}", e)
+            logger.error("$bridge - failed to allocate channels, will consider the bridge faulty: ${e.message}", e)
             throw BridgeFailedException(
-                jvb,
+                bridge,
                 restartConference = StringUtils.isNotBlank(bridgeSession.colibriConference.conferenceId)
             )
         }
@@ -312,8 +312,8 @@ class ColibriV1SessionManager(
     }
 
     /** Get the ID of the bridge session for a [participant], or null if there's none. */
-    override fun getAllocation(participant: Participant): ColibriAllocation? = synchronized(syncRoot) {
-        return participantInfoMap[participant]?.colibriAllocation
+    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
+        return participantInfoMap[participant]?.colibriAllocation?.bridgeSessionId
     }
 
     /**
@@ -321,15 +321,15 @@ class ColibriV1SessionManager(
      *
      * @return the set of participants which were on removed bridges (and now need to be re-invited).
      */
-    override fun bridgesDown(bridges: Set<Jid>): List<Participant> {
+    override fun removeBridges(bridges: Set<Bridge>): List<String> {
         val participantsToReinvite: MutableList<Participant> = ArrayList()
         var bridgesRemoved = 0
 
         synchronized(syncRoot) {
-            bridges.forEach { bridgeJid: Jid ->
-                val bridgeSession = findBridgeSession(bridgeJid)
+            bridges.forEach { bridge ->
+                val bridgeSession = findBridgeSession(bridge.jid)
                 if (bridgeSession != null) {
-                    logger.error("One of our bridges failed: $bridgeJid")
+                    logger.error("One of our bridges failed: $bridge")
 
                     // Note: the Jingle sessions are still alive, we'll just
                     // (try to) move to a new bridge and send transport-replace.
@@ -342,7 +342,7 @@ class ColibriV1SessionManager(
             eventEmitter.fireEvent { failedBridgesRemoved(bridgesRemoved) }
             updateOctoRelays()
         }
-        return participantsToReinvite
+        return participantsToReinvite.map { it.endpointId }
     }
 
     /** The number of bridges currently used. */
@@ -524,12 +524,12 @@ class ColibriV1SessionManager(
     }
 
     private fun removeNonOperationalBridges() {
-        val nonOperationalBridges: Set<Jid> = bridgeSessions
+        val nonOperationalBridges: Set<Bridge> = bridgeSessions
             .filter { it.hasFailed || !it.bridge.isOperational }
-            .map { it.bridge.jid }.toSet()
+            .map { it.bridge }.toSet()
 
         if (nonOperationalBridges.isNotEmpty()) {
-            bridgesDown(nonOperationalBridges)
+            removeBridges(nonOperationalBridges)
         }
     }
 

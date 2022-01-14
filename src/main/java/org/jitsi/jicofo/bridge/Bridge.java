@@ -84,11 +84,9 @@ public class Bridge
     private String version = null;
 
     /**
-     * The version of Octo that this bridge supports. This is set to the default
-     * version (0) which will be assumed if the bridge does not explicitly
-     * advertise a version.
+     * Whether the bridge supports colibri2.
      */
-    private int octoVersion = 0;
+    private boolean colibri2 = false;
 
     /**
      * Stores the {@code operational} status of the bridge, which is
@@ -178,16 +176,15 @@ public class Bridge
             shutdownInProgress = true;
         }
 
+        if (Boolean.parseBoolean(stats.getValueAsString("colibri2")))
+        {
+            colibri2 = true;
+        }
+
         String newVersion = stats.getValueAsString(VERSION);
         if (newVersion != null)
         {
             version = newVersion;
-        }
-
-        Integer octoVersion = stats.getValueAsInt("octo_version");
-        if (octoVersion != null)
-        {
-            this.octoVersion = octoVersion;
         }
 
         String region = stats.getValueAsString(REGION);
@@ -201,6 +198,11 @@ public class Bridge
         {
             this.relayId = relayId;
         }
+    }
+
+    public boolean supportsColibri2()
+    {
+        return colibri2;
     }
 
     /**
@@ -377,11 +379,6 @@ public class Bridge
     public double getLastReportedStressLevel()
     {
         return lastReportedStressLevel;
-    }
-
-    public int getOctoVersion()
-    {
-        return octoVersion;
     }
 
     public boolean isInGracefulShutdown()

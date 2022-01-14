@@ -84,21 +84,9 @@ public abstract class BridgeSelectionStrategy
             String participantRegion,
             boolean allowMultiBridge)
     {
-        List<Bridge> bridgesMatchingOctoVersion
-                = bridges.stream()
-                    .filter(octoVersionMatches(conferenceBridges.keySet()))
-                    .collect(Collectors.toList());
-        if (bridges.size() != bridgesMatchingOctoVersion.size())
-        {
-            logger.info("Filtered out "
-                    + (bridges.size() - bridgesMatchingOctoVersion.size())
-                    + " bridges due to different Octo version.");
-        }
-
         if (conferenceBridges.isEmpty())
         {
-            Bridge bridge
-                = doSelect(bridgesMatchingOctoVersion, conferenceBridges, participantRegion);
+            Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected initial bridge " + bridge
@@ -129,8 +117,7 @@ public abstract class BridgeSelectionStrategy
                 return existingBridge;
             }
 
-            Bridge bridge = doSelect(
-                    bridgesMatchingOctoVersion, conferenceBridges, participantRegion);
+            Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
                 logger.info("Selected bridge " + bridge
@@ -378,20 +365,6 @@ public abstract class BridgeSelectionStrategy
     private static Predicate<Bridge> inRegion(String region)
     {
         return b -> region != null && region.equalsIgnoreCase(b.getRegion());
-    }
-
-    private static Predicate<Bridge> octoVersionMatches(Collection<Bridge> conferenceBridges)
-    {
-        if (conferenceBridges == null || conferenceBridges.isEmpty())
-        {
-            return b -> true;
-        }
-        else
-        {
-            int existingVersion
-                    = conferenceBridges.iterator().next().getOctoVersion();
-            return b -> b.getOctoVersion() == existingVersion;
-        }
     }
 
     /**
