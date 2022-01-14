@@ -135,7 +135,7 @@ public class MockXmppConnection
         }
 
         // Use the target's executor to preserve stanza order.
-        target.receiveStanzaExecutor.execute(() -> invokeStanzaCollectorsAndNotifyRecvListeners(packet));
+        target.receiveStanzaExecutor.execute(() -> target.invokeStanzaCollectorsAndNotifyRecvListeners(packet));
     }
 
     @Override
