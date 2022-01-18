@@ -16,13 +16,16 @@
 package org.jitsi.jicofo.auth
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.withLegacyConfig
 import org.jitsi.config.withNewConfig
-import org.jitsi.jicofo.ConfigTest
 import java.time.Duration
 
-class AuthConfigTest : ConfigTest() {
+class AuthConfigTest : ShouldSpec() {
+    override fun isolationMode() = IsolationMode.InstancePerLeaf
+
     init {
         context("Default values") {
             val config = AuthConfig()

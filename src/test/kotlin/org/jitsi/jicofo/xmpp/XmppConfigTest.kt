@@ -16,15 +16,15 @@
 package org.jitsi.jicofo.xmpp
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.withLegacyConfig
 import org.jitsi.config.withNewConfig
-import org.jitsi.jicofo.ConfigTest
 import org.jitsi.metaconfig.ConfigException
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 
-class XmppConfigTest : ConfigTest() {
+class XmppConfigTest : ShouldSpec() {
     init {
         context("XMPP client connection config") {
             context("Default values") {

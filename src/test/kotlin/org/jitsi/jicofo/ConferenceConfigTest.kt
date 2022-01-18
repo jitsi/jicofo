@@ -17,10 +17,11 @@
  */
 package org.jitsi.jicofo
 
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.withNewConfig
 
-class ConferenceConfigTest : ConfigTest() {
+class ConferenceConfigTest : ShouldSpec() {
     init {
         context("source-signaling-delays") {
             context("With no delay configured") {
