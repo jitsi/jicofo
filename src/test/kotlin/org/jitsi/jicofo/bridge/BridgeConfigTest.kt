@@ -17,6 +17,8 @@ package org.jitsi.jicofo.bridge
 
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.utils.mins

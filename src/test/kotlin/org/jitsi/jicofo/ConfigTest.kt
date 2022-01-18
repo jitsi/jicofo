@@ -17,22 +17,13 @@ package org.jitsi.jicofo
 
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
-import org.jitsi.config.useLegacyConfig
-import org.jitsi.config.useNewConfig
+import org.jitsi.config.withNewConfig
 
 /**
  * A helper class for testing configuration properties
  */
 abstract class ConfigTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
-
-    inline fun withLegacyConfig(props: String, block: () -> Unit) {
-        useLegacyConfig(name = "legacy-${this::class.simpleName}", props = props, block = block)
-    }
-
-    inline fun withNewConfig(config: String, block: () -> Unit) {
-        useNewConfig("new-${this::class.simpleName}", config, true, block)
-    }
 
     fun context(config: String, name: String, block: () -> Unit) {
         context(name) {

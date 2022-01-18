@@ -16,6 +16,8 @@
 package org.jitsi.jicofo
 
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.JicofoConfig.Companion.config
 
 class JicofoConfigTest : ConfigTest() {

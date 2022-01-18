@@ -16,6 +16,7 @@
 package org.jitsi.jicofo
 
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withNewConfig
 
 class OctoConfigTest : ConfigTest() {
     init {

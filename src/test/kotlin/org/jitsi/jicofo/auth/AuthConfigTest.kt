@@ -17,6 +17,8 @@ package org.jitsi.jicofo.auth
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.ConfigTest
 import java.time.Duration
 

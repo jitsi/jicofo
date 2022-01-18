@@ -17,6 +17,8 @@ package org.jitsi.jicofo.xmpp
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.ConfigTest
 import org.jitsi.metaconfig.ConfigException
 import org.jxmpp.jid.impl.JidCreate
