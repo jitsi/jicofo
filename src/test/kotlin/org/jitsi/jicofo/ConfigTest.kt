@@ -16,11 +16,9 @@
 package org.jitsi.jicofo
 
 import io.kotest.core.spec.IsolationMode
-import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
 import org.jitsi.config.useLegacyConfig
 import org.jitsi.config.useNewConfig
-import org.jitsi.metaconfig.MetaconfigSettings
 
 /**
  * A helper class for testing configuration properties
@@ -28,21 +26,12 @@ import org.jitsi.metaconfig.MetaconfigSettings
 abstract class ConfigTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    override fun beforeSpec(spec: Spec) {
-        super.beforeSpec(spec)
-        MetaconfigSettings.cacheEnabled = false
-    }
-
     inline fun withLegacyConfig(props: String, block: () -> Unit) {
         useLegacyConfig(name = "legacy-${this::class.simpleName}", props = props, block = block)
     }
 
     inline fun withNewConfig(config: String, block: () -> Unit) {
         useNewConfig("new-${this::class.simpleName}", config, true, block)
-    }
-
-    inline fun withNewConfig(config: String, loadDefaults: Boolean, block: () -> Unit) {
-        useNewConfig("new-${this::class.simpleName}", config, loadDefaults, block)
     }
 
     fun context(config: String, name: String, block: () -> Unit) {
