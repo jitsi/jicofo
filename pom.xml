@@ -51,7 +51,7 @@
     <slf4j.version>1.7.32</slf4j.version>
     <jersey.version>2.35</jersey.version>
     <jitsi.utils.version>1.0-109-g31bfa99</jitsi.utils.version>
-    <jicoco.version>1.1-SNAPSHOT</jicoco.version>
+    <jicoco.version>1.1-101-g2170967</jicoco.version>
     <spotbugs.version>4.2.0</spotbugs.version>
     <junit.version>5.8.1</junit.version>
   </properties>
@@ -192,7 +192,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-609-g7e881954</version>
+      <version>2.1-613-ge63e129c</version>
       <scope>test</scope>
     </dependency>
     <dependency>
