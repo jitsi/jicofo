@@ -18,13 +18,14 @@
 package org.jitsi.jicofo.bridge
 
 import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.ConfigTest
+import org.jitsi.jicofo.util.context
 import org.jitsi.test.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
-class BridgeSelectorTest : ConfigTest() {
+class BridgeSelectorTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {

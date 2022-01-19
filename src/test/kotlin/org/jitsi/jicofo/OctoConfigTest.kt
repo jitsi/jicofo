@@ -15,9 +15,11 @@
  */
 package org.jitsi.jicofo
 
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withNewConfig
 
-class OctoConfigTest : ConfigTest() {
+class OctoConfigTest : ShouldSpec() {
     init {
         context("Enabled flag") {
             // Note that there's a corresponding flag in the JVB and these two

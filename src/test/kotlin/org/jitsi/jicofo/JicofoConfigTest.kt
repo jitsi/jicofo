@@ -15,10 +15,13 @@
  */
 package org.jitsi.jicofo
 
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.JicofoConfig.Companion.config
 
-class JicofoConfigTest : ConfigTest() {
+class JicofoConfigTest : ShouldSpec() {
     init {
         context("Local region config") {
             context("With no config") {

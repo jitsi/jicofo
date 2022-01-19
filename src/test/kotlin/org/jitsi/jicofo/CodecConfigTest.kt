@@ -16,10 +16,13 @@
 package org.jitsi.jicofo
 
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.codec.Config.Companion.config
 
-class CodecConfigTest : ConfigTest() {
+class CodecConfigTest : ShouldSpec() {
     init {
         context("Default configuration") {
             config.vp8.enabled() shouldBe true

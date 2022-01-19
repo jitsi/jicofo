@@ -15,13 +15,18 @@
  */
 package org.jitsi.jicofo.bridge
 
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import org.jitsi.jicofo.ConfigTest
+import org.jitsi.config.withLegacyConfig
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.utils.mins
 
-class BridgeConfigTest : ConfigTest() {
+class BridgeConfigTest : ShouldSpec() {
+    override fun isolationMode() = IsolationMode.InstancePerLeaf
+
     init {
         context("with no config the defaults from reference.conf should be used") {
             config.maxBridgeParticipants shouldBe -1
