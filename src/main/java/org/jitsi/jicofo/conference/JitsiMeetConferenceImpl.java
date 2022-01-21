@@ -111,9 +111,9 @@ public class JitsiMeetConferenceImpl
     private OperationSetJingle jingle;
 
     /**
-     * The list of all conference participants.
+     * Map of occupant JID to Participant.
      */
-    private final List<Participant> participants = new CopyOnWriteArrayList<>();
+    private final Map<Jid, Participant> participants = new ConcurrentHashMap<>();
 
     /**
      * This lock is used to synchronise write access to {@link #participants}.
@@ -651,14 +651,14 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             // Participant already connected ?
-            if (findParticipantForChatMember(chatRoomMember) != null)
+            if (participants.get(chatRoomMember.getOccupantJid()) != null)
             {
                 return;
             }
 
             final Participant participant = new Participant(chatRoomMember, logger, this);
 
-            participants.add(participant);
+            participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);
         }
     }
@@ -793,7 +793,7 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             logger.info("Member left:" + chatRoomMember.getName());
-            Participant leftParticipant = findParticipantForChatMember(chatRoomMember);
+            Participant leftParticipant = participants.get(chatRoomMember.getOccupantJid());
             if (leftParticipant != null)
             {
                 // We don't send source-remove, because the participant leaving the MUC will notify other participants
@@ -856,8 +856,9 @@ public class JitsiMeetConferenceImpl
 
             participant.setJingleSession(null);
 
-            boolean removed = participants.remove(participant);
-            logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
+            Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
+            logger.info(
+                    "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
         }
 
         colibriSessionManager.removeParticipant(participant);
@@ -890,40 +891,19 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private Participant findParticipantForJingleSession(JingleSession jingleSession)
+    /**
+     * @return the {@link Participant} associated with a specific {@link JingleSession}, if any.
+     */
+    @Nullable
+    private Participant getParticipant(@NotNull JingleSession jingleSession)
     {
-        for (Participant participant : participants)
-        {
-            if (participant.getChatMember().getOccupantJid().equals(jingleSession.getAddress()))
-            {
-                return participant;
-            }
-        }
-        return null;
+        return participants.get(jingleSession.getAddress());
     }
 
-    private Participant findParticipantForChatMember(ChatRoomMember chatMember)
+    @Nullable
+    public Participant getParticipant(@NotNull Jid occupantJid)
     {
-        for (Participant participant : participants)
-        {
-            if (participant.getChatMember().equals(chatMember))
-            {
-                return participant;
-            }
-        }
-        return null;
-    }
-
-    public Participant findParticipantForRoomJid(Jid roomJid)
-    {
-        for (Participant participant : participants)
-        {
-            if (participant.getChatMember().getOccupantJid().equals(roomJid))
-            {
-                return participant;
-            }
-        }
-        return null;
+        return participants.get(occupantJid);
     }
 
     @Override
@@ -969,7 +949,7 @@ public class JitsiMeetConferenceImpl
     public StanzaError onSessionInfo(@NotNull JingleSession session, JingleIQ iq)
     {
         Jid address = session.getAddress();
-        Participant participant = findParticipantForJingleSession(session);
+        Participant participant = getParticipant(session);
 
         // FIXME: (duplicate) there's very similar logic in onSessionAccept
         if (participant == null)
@@ -1023,9 +1003,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionTerminate(JingleSession session, JingleIQ iq)
+    public StanzaError onSessionTerminate(@NotNull JingleSession session, JingleIQ iq)
     {
-        Participant participant = findParticipantForJingleSession(session);
+        Participant participant = getParticipant(session);
 
         // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
         if (participant == null)
@@ -1075,7 +1055,7 @@ public class JitsiMeetConferenceImpl
             {
                 if (participant.incrementAndCheckRestartRequests())
                 {
-                    participants.add(participant);
+                    participants.put(participant.getChatMember().getOccupantJid(), participant);
                     inviteParticipant(participant, false, false);
                 }
                 else
@@ -1109,7 +1089,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        participants.stream()
+        participants.values().stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
             .forEach(participant -> participant.addRemoteSources(finalSources));
     }
@@ -1122,9 +1102,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportInfo(JingleSession session, List<ContentPacketExtension> contentList)
+    public void onTransportInfo(@NotNull JingleSession session, List<ContentPacketExtension> contentList)
     {
-        Participant participant = findParticipantForJingleSession(session);
+        Participant participant = getParticipant(session);
         if (participant == null)
         {
             logger.warn("Failed to process transport-info, no session for: " + session.getAddress());
@@ -1161,7 +1141,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public void onTransportReject(@NotNull JingleSession jingleSession, JingleIQ reply)
     {
-        Participant p = findParticipantForJingleSession(jingleSession);
+        Participant p = getParticipant(jingleSession);
         if (p == null)
         {
             logger.warn("No participant for " + jingleSession);
@@ -1187,7 +1167,7 @@ public class JitsiMeetConferenceImpl
     public StanzaError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
         Jid address = jingleSession.getAddress();
-        Participant participant = findParticipantForJingleSession(jingleSession);
+        Participant participant = getParticipant(jingleSession);
         if (participant == null)
         {
             String errorMsg = "no session for " + address;
@@ -1254,7 +1234,7 @@ public class JitsiMeetConferenceImpl
     {
         EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
-        Participant participant = findParticipantForJingleSession(sourceJingleSession);
+        Participant participant = getParticipant(sourceJingleSession);
         if (participant == null)
         {
             logger.warn("No participant for jingle-session: " + sourceJingleSession);
@@ -1274,7 +1254,7 @@ public class JitsiMeetConferenceImpl
     private StanzaError onSessionAcceptInternal(
             @NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
     {
-        Participant participant = findParticipantForJingleSession(jingleSession);
+        Participant participant = getParticipant(jingleSession);
         Jid participantJid = jingleSession.getAddress();
 
         if (participant == null)
@@ -1459,7 +1439,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        participants.stream()
+        participants.values().stream()
                 .filter(participant -> participant != except)
                 .forEach(participant -> participant.removeRemoteSources(finalSources));
     }
@@ -1524,7 +1504,7 @@ public class JitsiMeetConferenceImpl
     {
         if (muterJid != null)
         {
-            Participant muter = findParticipantForRoomJid(muterJid);
+            Participant muter = getParticipant(muterJid);
             if (muter == null)
             {
                 logger.warn("Muter participant not found, jid=" + muterJid);
@@ -1538,7 +1518,7 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        Participant participant = findParticipantForRoomJid(toBeMutedJid);
+        Participant participant = getParticipant(toBeMutedJid);
         if (participant == null)
         {
             logger.warn("Participant to be muted not found, jid=" + toBeMutedJid);
@@ -1594,7 +1574,7 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         o.put("chat_room", chatRoom == null ? "null" : chatRoom.getDebugState());
         OrderedJsonObject participantsJson = new OrderedJsonObject();
-        for (Participant participant : participants)
+        for (Participant participant : participants.values())
         {
             participantsJson.put(participant.getEndpointId(), participant.getDebugState());
         }
@@ -1634,7 +1614,7 @@ public class JitsiMeetConferenceImpl
         Iterable<Participant> participantsToMute;
         synchronized (participantLock)
         {
-            participantsToMute = new ArrayList<>(participants);
+            participantsToMute = new ArrayList<>(participants.values());
         }
 
         for (Participant participant : participantsToMute)
@@ -1734,7 +1714,7 @@ public class JitsiMeetConferenceImpl
 
             synchronized (participantLock)
             {
-                reInviteParticipants(participants);
+                reInviteParticipants(participants.values());
             }
         }
     }
@@ -1753,7 +1733,7 @@ public class JitsiMeetConferenceImpl
             synchronized (participantLock)
             {
                 List<Participant> participantsToReinvite = new ArrayList<>();
-                for (Participant participant : participants)
+                for (Participant participant : participants.values())
                 {
                     if (participantIdsToReinvite.contains(participant.getEndpointId()))
                     {
@@ -1823,7 +1803,7 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * An adapter for {@link #reInviteParticipants(List)}.
+     * An adapter for {@link #reInviteParticipants(Collection)}.
      *
      * @param participant the {@link Participant} to be re invited into the
      * conference.
@@ -1842,7 +1822,7 @@ public class JitsiMeetConferenceImpl
      *
      * @param participants the list of {@link Participant}s to be re-invited.
      */
-    private void reInviteParticipants(List<Participant> participants)
+    private void reInviteParticipants(Collection<Participant> participants)
     {
         synchronized (participantLock)
         {
@@ -2000,8 +1980,7 @@ public class JitsiMeetConferenceImpl
             {
                 if (participants.size() == 1)
                 {
-                    Participant p = participants.get(0);
-
+                    Participant p = participants.values().stream().findFirst().orElse(null);
                     logger.info("Timing out single participant: " + p.getChatMember().getName());
 
                     terminateParticipant(
