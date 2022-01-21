@@ -179,6 +179,14 @@ class BridgeSelector @JvmOverloads constructor(
 
         if (candidateBridges.isEmpty()) return null
 
+        // Fail if an inconsistent version was requested. TODO: proper error handling
+        if (version != null) {
+            conferenceBridges.keys.firstOrNull()?.version?.let {
+                if (it != version) {
+                    return null
+                }
+            }
+        }
         val v = version ?: conferenceBridges.keys.firstOrNull()?.version
         candidateBridges = if (v == null) candidateBridges else candidateBridges.filter { it.version == v }
         if (candidateBridges.isEmpty()) {

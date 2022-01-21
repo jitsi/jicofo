@@ -169,7 +169,7 @@ class BridgeSelectorTest : ShouldSpec() {
 }
 
 private const val enableOctoConfig = "jicofo.octo.enabled=true"
-private val regionBasedConfig = """
+val regionBasedConfig = """
     $enableOctoConfig
     jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
 """.trimIndent()
