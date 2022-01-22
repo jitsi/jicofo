@@ -22,7 +22,7 @@ import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import java.time.Duration
 
-class HealthConfig {
+class HealthConfig private constructor() {
     val enabled: Boolean by config {
         "org.jitsi.jicofo.health.ENABLE_HEALTH_CHECKS".from(legacyConfig)
         "jicofo.health.enabled".from(newConfig)
