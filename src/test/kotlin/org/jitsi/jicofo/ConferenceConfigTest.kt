@@ -25,9 +25,8 @@ class ConferenceConfigTest : ShouldSpec() {
     init {
         context("source-signaling-delays") {
             context("With no delay configured") {
-                val config = ConferenceConfig()
                 for (i in 0..100) {
-                    config.getSourceSignalingDelayMs(i) shouldBe 0
+                    ConferenceConfig.config.getSourceSignalingDelayMs(i) shouldBe 0
                 }
             }
             context("With delay configured") {
@@ -41,16 +40,17 @@ class ConferenceConfigTest : ShouldSpec() {
                     }
                     """.trimIndent()
                 ) {
-                    val config = ConferenceConfig()
-                    config.getSourceSignalingDelayMs(0) shouldBe 0
-                    config.getSourceSignalingDelayMs(50) shouldBe 0
-                    config.getSourceSignalingDelayMs(99) shouldBe 0
-                    config.getSourceSignalingDelayMs(100) shouldBe 500
-                    config.getSourceSignalingDelayMs(199) shouldBe 500
-                    config.getSourceSignalingDelayMs(200) shouldBe 1000
-                    config.getSourceSignalingDelayMs(299) shouldBe 1000
-                    config.getSourceSignalingDelayMs(300) shouldBe 2000
-                    config.getSourceSignalingDelayMs(5000) shouldBe 2000
+                    ConferenceConfig.config.apply {
+                        getSourceSignalingDelayMs(0) shouldBe 0
+                        getSourceSignalingDelayMs(50) shouldBe 0
+                        getSourceSignalingDelayMs(99) shouldBe 0
+                        getSourceSignalingDelayMs(100) shouldBe 500
+                        getSourceSignalingDelayMs(199) shouldBe 500
+                        getSourceSignalingDelayMs(200) shouldBe 1000
+                        getSourceSignalingDelayMs(299) shouldBe 1000
+                        getSourceSignalingDelayMs(300) shouldBe 2000
+                        getSourceSignalingDelayMs(5000) shouldBe 2000
+                    }
                 }
             }
         }

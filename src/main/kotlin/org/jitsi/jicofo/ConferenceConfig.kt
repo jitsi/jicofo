@@ -26,7 +26,7 @@ import java.time.Duration
 import java.util.TreeMap
 
 @SuppressFBWarnings(value = ["BX_UNBOXING_IMMEDIATELY_REBOXED"], justification = "False positive.")
-class ConferenceConfig {
+class ConferenceConfig private constructor() {
     val conferenceStartTimeout: Duration by config {
         "org.jitsi.focus.IDLE_TIMEOUT".from(legacyConfig)
         "jicofo.conference.initial-timeout".from(newConfig)
