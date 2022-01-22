@@ -256,8 +256,7 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.gid = gid;
-        ColibriConfig colibriConfig = new ColibriConfig();
-        if (colibriConfig.getEnableColibri2())
+        if (ColibriConfig.config.getEnableColibri2())
         {
             colibriSessionManager = new ColibriV2SessionManager(
                     jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
@@ -1279,7 +1278,7 @@ public class JitsiMeetConferenceImpl
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
         if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints()
-            && !(new ColibriConfig().getEnableColibri2()))
+            && !(ColibriConfig.config.getEnableColibri2()))
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
