@@ -335,7 +335,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
             expireChannels = true;
         }
-        else if (meetConference.findMember(address) == null)
+        else if (!meetConference.hasMember(address))
         {
             // Participant has left the room
             logger.info("Expiring " + address + " channels - participant has left");

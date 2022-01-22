@@ -1469,9 +1469,18 @@ public class JitsiMeetConferenceImpl
         return jicofoServices.getXmppServices().getClientConnection();
     }
 
-    public ChatRoomMember findMember(Jid from)
+    /**
+     * Checks if this conference has a member with a specific occupant JID. Note that we check for the existence of a
+     * member in the chat room instead of a {@link Participant} (it's not clear whether the distinction is important).
+     * @param jid the occupant JID of the member.
+     * @return
+     */
+    public boolean hasMember(Jid jid)
     {
-        return chatRoom == null ? null : chatRoom.findChatMember(from);
+        ChatRoom chatRoom = this.chatRoom;
+        return chatRoom != null
+                && (jid instanceof EntityFullJid)
+                && chatRoom.getChatMember((EntityFullJid) jid) != null;
     }
 
     /**
