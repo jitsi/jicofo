@@ -25,7 +25,7 @@ import org.jitsi.metaconfig.optionalconfig
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 
-class JigasiConfig {
+class JigasiConfig private constructor() {
     val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.jigasi.BREWERY".from(legacyConfig).convertFrom<String> {
             JidCreate.entityBareFrom(it)
