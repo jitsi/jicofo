@@ -24,7 +24,7 @@ import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import java.time.Duration
 
-class AuthConfig {
+class AuthConfig private constructor() {
     val enabled: Boolean by config {
         // Enabled if the URL is set to anything
         legacyLoginUrlPropertyName.from(legacyConfig).convertFrom<String> { true }
