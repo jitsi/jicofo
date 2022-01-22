@@ -54,7 +54,7 @@ class BridgeSelector @JvmOverloads constructor(
     /**
      * The bridge selection strategy.
      */
-    private val bridgeSelectionStrategy = BridgeConfig().selectionStrategy.also {
+    private val bridgeSelectionStrategy = BridgeConfig.config.selectionStrategy.also {
         logger.info("Using ${it.javaClass.name}")
     }
 
