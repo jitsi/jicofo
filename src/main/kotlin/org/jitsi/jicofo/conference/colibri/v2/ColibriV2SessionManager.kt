@@ -421,7 +421,9 @@ class ColibriV2SessionManager(
 
         val participantInfo = participants[participant.endpointId]
             ?: throw IllegalStateException("No participantInfo for $participant")
-        participantInfo.session.updateParticipant(participantInfo, transport, sources)
+        if (!suppressLocalBridgeUpdate) {
+            participantInfo.session.updateParticipant(participantInfo, transport, sources)
+        }
         if (sources != null) {
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
