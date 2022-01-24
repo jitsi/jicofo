@@ -854,7 +854,7 @@ public class JitsiMeetConferenceImpl
                 // This is inefficient because it sends one colibri request to remove the sources and another one
                 // to expire the channels/endpoint.
                 // TODO: clean-up when colibri1 is removed.
-                removeSources(participant, participantSources, sendSourceRemove);
+                removeSources(participant, participantSources, false, sendSourceRemove);
             }
 
             participant.setJingleSession(null);
@@ -1265,7 +1265,7 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
-            return removeSources(participant, sourcesRequestedToBeRemoved, true);
+            return removeSources(participant, sourcesRequestedToBeRemoved, true, true);
         }
     }
 
@@ -1402,6 +1402,7 @@ public class JitsiMeetConferenceImpl
     private StanzaError removeSources(
             @NotNull Participant participant,
             EndpointSourceSet sourcesRequestedToBeRemoved,
+            boolean removeColibriSourcesFromLocalBridge,
             boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
@@ -1429,7 +1430,10 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        colibriSessionManager.removeSources(participant, sourcesAcceptedToBeRemoved);
+        colibriSessionManager.removeSources(
+                participant,
+                sourcesAcceptedToBeRemoved,
+                removeColibriSourcesFromLocalBridge);
 
         if (sendSourceRemove)
         {
