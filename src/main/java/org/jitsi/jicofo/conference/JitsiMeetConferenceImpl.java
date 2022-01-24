@@ -851,9 +851,6 @@ public class JitsiMeetConferenceImpl
             EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
             if (participantSources != null)
             {
-                // This is inefficient because it sends one colibri request to remove the sources and another one
-                // to expire the channels/endpoint.
-                // TODO: clean-up when colibri1 is removed.
                 removeSources(participant, participantSources, false, sendSourceRemove);
             }
 
