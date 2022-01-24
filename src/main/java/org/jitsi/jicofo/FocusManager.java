@@ -768,7 +768,7 @@ public class FocusManager
         /**
          * The version of the bridge that this conference must use.
          */
-        final String jvbVersion;
+        @NotNull final String jvbVersion;
 
         /**
          * When this pinning expires.
