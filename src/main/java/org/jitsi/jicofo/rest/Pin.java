@@ -63,6 +63,23 @@ public class Pin
         }
     }
 
+    @Path("/remove")
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response unpin(UnpinJson unpinJson, @Context HttpServletRequest request)
+    {
+        try
+        {
+            EntityBareJid conferenceJid = JidCreate.entityBareFrom(unpinJson.conferenceId);
+            jicofoServices.getFocusManager().unpinConference(conferenceJid);
+            return Response.ok().build();
+        }
+        catch (Throwable t)
+        {
+            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR_500).build();
+        }
+    }
+
     /**
      * Holds the JSON for the pin POST request
      */
@@ -85,23 +102,6 @@ public class Pin
             this.conferenceId = conferenceId;
             this.jvbVersion = jvbVersion;
             this.duration = duration;
-        }
-    }
-
-    @Path("/remove")
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response unpin(UnpinJson unpinJson, @Context HttpServletRequest request)
-    {
-        try
-        {
-            EntityBareJid conferenceJid = JidCreate.entityBareFrom(unpinJson.conferenceId);
-            jicofoServices.getFocusManager().unpinConference(conferenceJid);
-            return Response.ok().build();
-        }
-        catch (Throwable t)
-        {
-            return Response.status(HttpStatus.INTERNAL_SERVER_ERROR_500).build();
         }
     }
 
