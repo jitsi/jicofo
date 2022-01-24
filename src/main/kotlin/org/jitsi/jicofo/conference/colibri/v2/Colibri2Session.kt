@@ -105,7 +105,7 @@ internal class Colibri2Session(
         /** The transport info to set for the colibri2 endpoint, or null if it is not to be modified. */
         transport: IceUdpTransportPacketExtension?,
         /** The sources to set for the colibri2 endpoint, or null if the sources are not to be modified. */
-        sources: ConferenceSourceMap?,
+        sources: ConferenceSourceMap?
     ) {
         if (transport == null && sources == null) {
             logger.info("Nothing to update.")

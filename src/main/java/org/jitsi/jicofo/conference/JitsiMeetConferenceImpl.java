@@ -1394,8 +1394,8 @@ public class JitsiMeetConferenceImpl
      *
      * @param participant the participant that owns the sources to be removed.
      * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
-     * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      * @param removeColibriSourcesFromLocalBridge whether to signal the source removal to the local bridge (we use
+     * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      * "false" to avoid sending an unnecessary "remove source" message just prior to the "expire" message).
      */
     private StanzaError removeSources(
