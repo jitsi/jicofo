@@ -22,6 +22,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.impl.JidCreate;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -57,6 +58,10 @@ public class Pin
             jicofoServices.getFocusManager().pinConference(conferenceJid, pinJson.jvbVersion, pinJson.duration);
             return Response.ok().build();
         }
+        catch (XmppStringprepException x)
+        {
+            return Response.status(HttpStatus.BAD_REQUEST_400).build();
+        }
         catch (Throwable t)
         {
             return Response.status(HttpStatus.INTERNAL_SERVER_ERROR_500).build();
@@ -73,6 +78,10 @@ public class Pin
             EntityBareJid conferenceJid = JidCreate.entityBareFrom(unpinJson.conferenceId);
             jicofoServices.getFocusManager().unpinConference(conferenceJid);
             return Response.ok().build();
+        }
+        catch (XmppStringprepException x)
+        {
+            return Response.status(HttpStatus.BAD_REQUEST_400).build();
         }
         catch (Throwable t)
         {
