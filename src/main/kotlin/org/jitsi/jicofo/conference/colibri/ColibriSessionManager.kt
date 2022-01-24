@@ -53,7 +53,16 @@ interface ColibriSessionManager {
      *  Note at the time this is called [participant.sources] have already been updated.
      * TODO: remove in favor of updateParticipant
      */
-    fun removeSources(participant: Participant, sources: ConferenceSourceMap)
+    fun removeSources(
+        participant: Participant,
+        sources: ConferenceSourceMap,
+        /**
+         * If this is `false`, the source removal will only be signaled to remote bridges. This is used to avoid sending
+         * an unnecessary "remove sources" message prior to the endpoint itself being expired (the "remove sources"
+         * message for remote bridges is always necessary).
+         */
+        removeSourcesFromLocalBridge: Boolean
+    )
     fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>

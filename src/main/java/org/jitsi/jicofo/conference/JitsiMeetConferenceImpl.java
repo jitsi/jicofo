@@ -845,21 +845,16 @@ public class JitsiMeetConferenceImpl
             JingleSession jingleSession = participant.getJingleSession();
             if (jingleSession != null)
             {
-
                 jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
-
-                EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-                if (participantSources != null)
-                {
-                    removeSources(
-                            participant,
-                            participantSources,
-                            false /* no JVB update - will expire */,
-                            sendSourceRemove);
-                }
-
-                participant.setJingleSession(null);
             }
+
+            EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+            if (participantSources != null)
+            {
+                removeSources(participant, participantSources, false, sendSourceRemove);
+            }
+
+            participant.setJingleSession(null);
 
             boolean removed = participants.remove(participant);
             logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
@@ -1399,13 +1394,14 @@ public class JitsiMeetConferenceImpl
      *
      * @param participant the participant that owns the sources to be removed.
      * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
-     * @param updateColibri tells whether or not sources update request should be sent to the bridge.
+     * @param removeColibriSourcesFromLocalBridge whether to signal the source removal to the local bridge (we use
+     * "false" to avoid sending an unnecessary "remove source" message just prior to the "expire" message).
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
     private StanzaError removeSources(
             @NotNull Participant participant,
             EndpointSourceSet sourcesRequestedToBeRemoved,
-            boolean updateColibri,
+            boolean removeColibriSourcesFromLocalBridge,
             boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
@@ -1433,10 +1429,10 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        if (updateColibri)
-        {
-            colibriSessionManager.removeSources(participant, sourcesAcceptedToBeRemoved);
-        }
+        colibriSessionManager.removeSources(
+                participant,
+                sourcesAcceptedToBeRemoved,
+                removeColibriSourcesFromLocalBridge);
 
         if (sendSourceRemove)
         {

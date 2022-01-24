@@ -181,8 +181,16 @@ class ColibriV2SessionManager(
      * We don't keep track of source-add/source-removes manually and simply take the updated sources from the
      * participant object.
      */
-    override fun removeSources(participant: Participant, sources: ConferenceSourceMap) =
-        updateParticipant(participant, sources = participant.sources)
+    override fun removeSources(
+        participant: Participant,
+        sources: ConferenceSourceMap,
+        removeSourcesFromLocalBridge: Boolean
+    ) = doUpdateParticipant(
+        participant,
+        transport = null,
+        sources = participant.sources,
+        suppressLocalBridgeUpdate = !removeSourcesFromLocalBridge
+    )
 
     /**
      * TODO: Is it really necessary to wait for a response?
@@ -391,12 +399,31 @@ class ColibriV2SessionManager(
         sources: ConferenceSourceMap?,
         // This param is not used for colibri2
         rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
+    ) = doUpdateParticipant(
+        participant = participant,
+        transport = transport,
+        sources = sources,
+        suppressLocalBridgeUpdate = false
+    )
+
+    private fun doUpdateParticipant(
+        participant: Participant,
+        transport: IceUdpTransportPacketExtension?,
+        sources: ConferenceSourceMap?,
+        /**
+         * If this is `true`, the update will only be signaled to remote bridges. This is used to avoid sending
+         * an unnecessary "remove sources" message to the local bridge prior to the endpoint itself being expired.
+         * TODO: cleanup when colibri1 is removed
+         */
+        suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
         logger.info("Updating $participant with transport=$transport, sources=$sources")
 
         val participantInfo = participants[participant.endpointId]
             ?: throw IllegalStateException("No participantInfo for $participant")
-        participantInfo.session.updateParticipant(participantInfo, transport, sources)
+        if (!suppressLocalBridgeUpdate) {
+            participantInfo.session.updateParticipant(participantInfo, transport, sources)
+        }
         if (sources != null) {
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).

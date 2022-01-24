@@ -299,14 +299,20 @@ class ColibriV1SessionManager(
     }
 
     /** Remove sources for a [participant] */
-    override fun removeSources(participant: Participant, sources: ConferenceSourceMap) {
+    override fun removeSources(
+        participant: Participant,
+        sources: ConferenceSourceMap,
+        removeSourcesFromLocalBridge: Boolean
+    ) {
         // TODO error handling
         val bridgeSession = findBridgeSession(participant)
         if (bridgeSession != null) {
-            bridgeSession.colibriConference.updateSourcesInfo(
-                participant.sources,
-                participantInfoMap[participant]?.colibriChannels
-            )
+            if (removeSourcesFromLocalBridge) {
+                bridgeSession.colibriConference.updateSourcesInfo(
+                    participant.sources,
+                    participantInfoMap[participant]?.colibriChannels
+                )
+            }
             removeSourcesFromOcto(sources, bridgeSession)
         }
     }
