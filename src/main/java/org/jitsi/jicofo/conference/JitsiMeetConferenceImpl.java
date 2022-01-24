@@ -845,21 +845,20 @@ public class JitsiMeetConferenceImpl
             JingleSession jingleSession = participant.getJingleSession();
             if (jingleSession != null)
             {
-
                 jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
-
-                EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-                if (participantSources != null)
-                {
-                    removeSources(
-                            participant,
-                            participantSources,
-                            false /* no JVB update - will expire */,
-                            sendSourceRemove);
-                }
-
-                participant.setJingleSession(null);
             }
+
+            EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+            if (participantSources != null)
+            {
+                removeSources(
+                        participant,
+                        participantSources,
+                        false /* no JVB update - will expire */,
+                        sendSourceRemove);
+            }
+
+            participant.setJingleSession(null);
 
             boolean removed = participants.remove(participant);
             logger.info("Removed participant " + participant.getChatMember().getName() + " removed=" + removed);
