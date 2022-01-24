@@ -59,7 +59,7 @@ import java.util.UUID
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
-    conference: JitsiMeetConferenceImpl,
+    private val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger
 ) : ColibriSessionManager {
     private val logger = createChildLogger(parentLogger)
@@ -271,10 +271,15 @@ class ColibriV2SessionManager(
                 throw IllegalStateException("participant already exists")
             }
 
+            val version = conference.bridgeVersion
+            if (version != null) {
+                logger.info("Selecting bridge. Conference is pinned to version \"$version\"")
+            }
+
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region)
+            val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region, version)
                 ?: throw BridgeSelectionFailedException()
             getOrCreateSession(bridge).let {
                 session = it.first

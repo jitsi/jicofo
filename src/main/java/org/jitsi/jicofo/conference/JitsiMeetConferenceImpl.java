@@ -222,6 +222,11 @@ public class JitsiMeetConferenceImpl
     private final long gid;
 
     /**
+     * Requested bridge version from a pin. null if not pinned.
+     */
+    private final String jvbVersion;
+
+    /**
      * Callback for colibri requests failing/succeeding.
      */
     private final ColibriRequestCallback colibriRequestCallback = new ColibriRequestCallbackImpl();
@@ -242,6 +247,7 @@ public class JitsiMeetConferenceImpl
             @NotNull JitsiMeetConfig config,
             Level logLevel,
             long gid,
+            String jvbVersion,
             boolean includeInStatistics)
     {
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
@@ -256,6 +262,8 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.gid = gid;
+        this.jvbVersion = jvbVersion;
+
         ColibriConfig colibriConfig = new ColibriConfig();
         if (colibriConfig.getEnableColibri2())
         {
@@ -280,9 +288,10 @@ public class JitsiMeetConferenceImpl
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
-            long gid)
+            long gid,
+            String jvbVersion)
     {
-       this(roomName, listener, config, logLevel, gid, false);
+       this(roomName, listener, config, logLevel, gid, jvbVersion, false);
     }
 
     /**
@@ -1718,6 +1727,14 @@ public class JitsiMeetConferenceImpl
     public long getId()
     {
         return gid;
+    }
+
+    /**
+     * Get pinned bridge version. Returns null if not pinned.
+     */
+    public String getBridgeVersion()
+    {
+        return jvbVersion;
     }
 
     private void onBridgeUp(Jid bridgeJid)

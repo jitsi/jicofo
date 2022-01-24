@@ -88,6 +88,11 @@ public class FocusManager
     private final List<ConferenceStore.Listener> listeners = new ArrayList<>();
 
     /**
+     * Holds the conferences that are currently pinned to a specific bridge version.
+     */
+    private final Map<EntityBareJid, PinnedConference> pinnedConferences = new HashMap<>();
+
+    /**
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
@@ -261,11 +266,12 @@ public class FocusManager
         synchronized (conferencesSyncRoot)
         {
             long id = generateConferenceId();
+            String jvbVersion = getBridgeVersionForConference(room);
             conference
                     = new JitsiMeetConferenceImpl(
                         room,
                         this, config, logLevel,
-                        id, includeInStatistics);
+                        id, jvbVersion, includeInStatistics);
 
             conferences.put(room, conference);
             conferencesCache.add(conference);
@@ -659,5 +665,122 @@ public class FocusManager
                 }
             }
         }
+    }
+
+    /**
+     * Holds pinning information for one conference.
+     */
+    private static class PinnedConference
+    {
+        /**
+         * The version of the bridge that this conference must use.
+         */
+        final String jvbVersion;
+
+        /**
+         * When this pinning expires.
+         */
+        final long expiresAt;
+
+        /**
+         * Constructor
+         */
+        public PinnedConference(String jvbVersion, int durationInMinutes)
+        {
+            this.jvbVersion = jvbVersion;
+            this.expiresAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(durationInMinutes, TimeUnit.MINUTES);
+        }
+    }
+
+    /**
+     * Create or update the pinning for the specified conference.
+     */
+    public void pinConference(@NotNull EntityBareJid roomName,
+                              @NotNull String jvbVersion,
+                              @Nullable Integer duration)
+    {
+        final int minutes = (duration != null && duration > 0) ? duration : 10;
+        PinnedConference pc = new PinnedConference(jvbVersion, minutes);
+
+        synchronized (conferencesSyncRoot)
+        {
+            PinnedConference prev = pinnedConferences.remove(roomName);
+            if (prev != null)
+            {
+                logger.info(() -> "Modifying pin for " + roomName + ":");
+            }
+
+            pinnedConferences.put(roomName, pc);
+        }
+
+        logger.info(() -> "Pinning " + roomName + " to version \"" + jvbVersion + "\" for " +
+            minutes + (minutes == 1 ? " minute." : " minutes."));
+    }
+
+    /**
+     * Remove any existing pinning for the specified conference.
+     */
+    public void unpinConference(@NotNull EntityBareJid roomName)
+    {
+        synchronized (conferencesSyncRoot)
+        {
+            PinnedConference prev = pinnedConferences.remove(roomName);
+            if (prev != null)
+            {
+                logger.info(() -> "Removing pin for " + roomName);
+            }
+            else
+            {
+                logger.info(() -> "Unpin failed: " + roomName);
+            }
+        }
+    }
+
+    private void expirePins(long curTime)
+    {
+        if (pinnedConferences.values().removeIf(v -> v.expiresAt <= curTime))
+        {
+            logger.info("Some pins have expired.");
+        }
+    }
+
+    /**
+     * Return the requested bridge version of a pinned conference.
+     * Returns null if the conference is not currently pinned.
+     */
+    private String getBridgeVersionForConference(@NotNull EntityBareJid roomName)
+    {
+        expirePins(System.nanoTime());
+        PinnedConference pc = pinnedConferences.get(roomName);
+        return pc != null ? pc.jvbVersion : null;
+    }
+
+    /**
+     * Get the set of current pinned conferences.
+     */
+    @SuppressWarnings("unchecked")
+    public JSONObject getPinnedConferences()
+    {
+        long wallTime = System.currentTimeMillis();
+        long curTime = System.nanoTime();
+        JSONArray pins = new JSONArray();
+
+        synchronized (conferencesSyncRoot)
+        {
+            expirePins(curTime);
+            pinnedConferences.forEach((k, v) -> {
+                Duration dur = Duration.ofNanos(v.expiresAt - curTime);
+                Date d = new Date(wallTime + dur.toMillis());
+                JSONObject pin = new JSONObject();
+                pin.put("conference-id", k.toString());
+                pin.put("jvb-version", v.jvbVersion);
+                pin.put("expires-at", d.toString());
+                pins.add(pin);
+            });
+        }
+
+        JSONObject stats = new JSONObject();
+        stats.put("pins", pins);
+        return stats;
     }
 }
