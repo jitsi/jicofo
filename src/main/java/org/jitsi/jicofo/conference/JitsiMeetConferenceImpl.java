@@ -851,11 +851,10 @@ public class JitsiMeetConferenceImpl
             EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
             if (participantSources != null)
             {
-                removeSources(
-                        participant,
-                        participantSources,
-                        false /* no JVB update - will expire */,
-                        sendSourceRemove);
+                // This is inefficient because it sends one colibri request to remove the sources and another one
+                // to expire the channels/endpoint.
+                // TODO: clean-up when colibri1 is removed.
+                removeSources(participant, participantSources, sendSourceRemove);
             }
 
             participant.setJingleSession(null);
@@ -1266,7 +1265,7 @@ public class JitsiMeetConferenceImpl
         }
         else
         {
-            return removeSources(participant, sourcesRequestedToBeRemoved, true, true);
+            return removeSources(participant, sourcesRequestedToBeRemoved, true);
         }
     }
 
@@ -1398,13 +1397,11 @@ public class JitsiMeetConferenceImpl
      *
      * @param participant the participant that owns the sources to be removed.
      * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
-     * @param updateColibri tells whether or not sources update request should be sent to the bridge.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
     private StanzaError removeSources(
             @NotNull Participant participant,
             EndpointSourceSet sourcesRequestedToBeRemoved,
-            boolean updateColibri,
             boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
@@ -1432,10 +1429,7 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        if (updateColibri)
-        {
-            colibriSessionManager.removeSources(participant, sourcesAcceptedToBeRemoved);
-        }
+        colibriSessionManager.removeSources(participant, sourcesAcceptedToBeRemoved);
 
         if (sendSourceRemove)
         {
