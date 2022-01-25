@@ -132,7 +132,7 @@ public abstract class AbstractOperationSetJingle
 
         JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
-        JingleSession session = new JingleSession(sid, inviteIQ.getTo(), requestHandler);
+        JingleSession session = new JingleSession(sid, to, requestHandler);
 
         inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
         additionalExtensions.forEach(inviteIQ::addExtension);

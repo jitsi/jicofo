@@ -416,7 +416,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatMemberImpl findChatMember(Jid occupantJid)
+    public ChatMemberImpl getChatMember(EntityFullJid occupantJid)
     {
         if (occupantJid == null)
         {
@@ -425,16 +425,8 @@ public class ChatRoomImpl
 
         synchronized (members)
         {
-            for (ChatMemberImpl member : members.values())
-            {
-                if (occupantJid.equals(member.getOccupantJid()))
-                {
-                    return member;
-                }
-            }
+            return members.get(occupantJid);
         }
-
-        return null;
     }
 
     @Override
@@ -793,7 +785,7 @@ public class ChatRoomImpl
 
         synchronized (members)
         {
-            chatMember = findChatMember(jid);
+            chatMember = getChatMember(jid);
             if (chatMember == null)
             {
                 if (presence.getType().equals(Presence.Type.available))

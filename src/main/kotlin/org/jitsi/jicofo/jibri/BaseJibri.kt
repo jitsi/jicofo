@@ -133,12 +133,9 @@ abstract class BaseJibri internal constructor(
         if (!conference.roomName.equals(roomName)) {
             return false
         }
-        val chatMember = conference.findMember(from)
-        if (chatMember == null) {
-            logger.warn("Chat member not found for: $from")
-            return false
+        return conference.hasMember(from).apply {
+            if (!this) logger.warn("No chat member found for: $from")
         }
-        return true
     }
 
     protected abstract fun acceptType(packet: JibriIq): Boolean

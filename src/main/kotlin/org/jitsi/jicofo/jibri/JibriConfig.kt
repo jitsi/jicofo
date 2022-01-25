@@ -26,7 +26,7 @@ import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
-class JibriConfig {
+class JibriConfig private constructor() {
     val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.jibri.BREWERY".from(legacyConfig).convertFrom<String> {
             JidCreate.entityBareFrom(it)

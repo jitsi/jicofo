@@ -86,6 +86,7 @@ public class Participant
     /**
      * MUC chat member of this participant.
      */
+    @NotNull
     private final ChatRoomMember roomMember;
 
     /**
@@ -203,6 +204,7 @@ public class Participant
      * Returns {@link ChatRoomMember} that represents this participant in
      * conference multi-user chat room.
      */
+    @NotNull
     public ChatRoomMember getChatMember()
     {
         return roomMember;

@@ -28,7 +28,7 @@ import java.time.Duration
 /**
  * Config for classes in the org.jicofo.bridge package.
  */
-class BridgeConfig {
+class BridgeConfig private constructor() {
     val maxBridgeParticipants: Int by config {
         "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE".from(JitsiConfig.legacyConfig)
         "$BASE.max-bridge-participants".from(JitsiConfig.newConfig)

@@ -161,7 +161,7 @@ public class LipSyncHack implements OperationSetJingle
 
     private boolean receiverSupportsLipSync(Jid receiverJid)
     {
-        Participant receiver = conference.findParticipantForRoomJid(receiverJid);
+        Participant receiver = conference.getParticipant(receiverJid);
         return receiver != null && receiver.hasLipSyncSupport();
     }
 
@@ -327,7 +327,7 @@ public class LipSyncHack implements OperationSetJingle
             Source existingAudioSource = null;
             if (!haveValidAudioSource)
             {
-                Participant owner = conference.findParticipantForRoomJid(ownerJid);
+                Participant owner = conference.getParticipant(ownerJid);
                 if (owner != null)
                 {
                     EndpointSourceSet existingOwnerSources = owner.getSources().get(ownerJid);

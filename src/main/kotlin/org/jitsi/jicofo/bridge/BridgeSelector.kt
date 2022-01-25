@@ -54,7 +54,7 @@ class BridgeSelector @JvmOverloads constructor(
     /**
      * The bridge selection strategy.
      */
-    private val bridgeSelectionStrategy = BridgeConfig().selectionStrategy.also {
+    private val bridgeSelectionStrategy = BridgeConfig.config.selectionStrategy.also {
         logger.info("Using ${it.javaClass.name}")
     }
 
@@ -186,7 +186,7 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
-        if (ColibriConfig().enableColibri2) {
+        if (ColibriConfig.config.enableColibri2) {
             candidateBridges = candidateBridges.filter { it.supportsColibri2() }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with colibri2 support.")
