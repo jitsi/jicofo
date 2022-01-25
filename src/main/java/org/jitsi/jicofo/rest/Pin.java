@@ -15,21 +15,18 @@
  */
 package org.jitsi.jicofo.rest;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.eclipse.jetty.http.HttpStatus;
+import com.fasterxml.jackson.annotation.*;
+import org.eclipse.jetty.http.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
-import org.jxmpp.jid.EntityBareJid;
-import org.jxmpp.jid.impl.JidCreate;
-import org.jxmpp.stringprep.XmppStringprepException;
+import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
+import org.jxmpp.stringprep.*;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.*;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import java.time.Duration;
+import javax.ws.rs.core.*;
+import java.time.*;
 import java.util.*;
 
 /**
