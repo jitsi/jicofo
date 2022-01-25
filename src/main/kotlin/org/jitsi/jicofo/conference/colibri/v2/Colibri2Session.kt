@@ -417,7 +417,7 @@ internal class Colibri2Session(
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
 
-            logger.info("Expiring ${participants.map { it.id }}")
+            logger.debug { "Expiring ${participants.map { it.id }}" }
             logger.trace { "Sending ${request.build().toXML()}" }
             xmppConnection.sendIqAndLogResponse(request.build(), logger)
         }
