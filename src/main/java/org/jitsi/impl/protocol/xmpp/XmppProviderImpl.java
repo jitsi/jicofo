@@ -139,8 +139,11 @@ public class XmppProviderImpl
                 .setPort(config.getPort())
                 .setXmppDomain(config.getDomain());
 
-        // Required for PacketDebugger and XMPP stats to work
-        connConfig.setDebuggerFactory(PacketDebugger::new);
+        if (PacketDebugger.isEnabled())
+        {
+            // If XMPP debug logging is enabled, insert our debugger.
+            connConfig.setDebuggerFactory(PacketDebugger::new);
+        }
 
         if (!config.getUseTls())
         {

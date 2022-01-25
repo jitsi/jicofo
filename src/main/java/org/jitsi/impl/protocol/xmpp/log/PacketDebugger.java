@@ -45,6 +45,16 @@ public class PacketDebugger
     private final static Logger logger = new LoggerImpl(PacketDebugger.class.getName());
 
     /**
+     * Whether XMPP logging is enabled. We don't want to insert a debugger into Smack when it's not going to actually
+     * log anything.
+     * Note that the "packets" received/sent stats are only available when debug logging is enabled.
+     */
+    public static boolean isEnabled()
+    {
+        return logger.isDebugEnabled();
+    }
+
+    /**
      * Finds {@link PacketDebugger} for given connection.
      * @param connection - the connection for which {@link PacketDebugger} will
      * be retrieved.
