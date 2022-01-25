@@ -21,10 +21,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 import org.jivesoftware.smack.packet.*;
 
-import java.io.*;
 import java.lang.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Implements {@link SmackDebugger} in order to get info about XMPP traffic.
@@ -33,81 +30,47 @@ public class PacketDebugger
     extends AbstractDebugger
 {
     /**
-     * Weak mapping between {@link XMPPConnection} and {@link PacketDebugger}
-     * for convenient access(XMPP connection doesn't have a getter for
-     * the debugger field).
-     */
-    private static final WeakHashMap<XMPPConnection, PacketDebugger> debuggerMap = new WeakHashMap<>();
-
-    /**
      * The logger used by this class.
      */
     private final static Logger logger = new LoggerImpl(PacketDebugger.class.getName());
 
     /**
-     * Finds {@link PacketDebugger} for given connection.
-     * @param connection - the connection for which {@link PacketDebugger} will
-     * be retrieved.
-     * @return debugger instance for given connection.
+     * Whether XMPP logging is enabled. We don't want to insert a debugger into Smack when it's not going to actually
+     * log anything.
      */
-    static public PacketDebugger forConnection(XMPPConnection connection)
+    public static boolean isEnabled()
     {
-        return debuggerMap.get(connection);
+        return logger.isDebugEnabled();
     }
 
     /**
-     * Total XMPP packets  received.
+     * An ID to log to identify the connection.
      */
-    private AtomicLong totalPacketsRecv = new AtomicLong();
-
-    /**
-     * Total XMPP packets sent.
-     */
-    private AtomicLong totalPacketsSent = new AtomicLong();
+    @NonNull
+    private final String id;
 
     /**
      * Creates new {@link PacketDebugger}
      * {@inheritDoc}
      */
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public PacketDebugger(XMPPConnection connection)
+    public PacketDebugger(XMPPConnection connection, @NonNull String id)
     {
         super(connection);
+        this.id = id;
 
         // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;
-
-        debuggerMap.put(connection, this);
-    }
-
-    /**
-     * @return total XMPP packets received for the lifetime of the tracked
-     * {@link XMPPConnection} instance.
-     */
-    public long getTotalPacketsRecv()
-    {
-        return totalPacketsRecv.get();
-    }
-
-    /**
-     * @return total XMPP packets sent for the lifetime of the tracked
-     * {@link XMPPConnection} instance.
-     */
-    public long getTotalPacketsSent()
-    {
-        return totalPacketsSent.get();
     }
 
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
-        totalPacketsRecv.incrementAndGet();
-        logger.debug(() -> "RCV PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+        logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
-        totalPacketsSent.incrementAndGet();
-        logger.debug(() -> "SENT PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+        logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
     }
 
     // It's fine to do non-atomic as it's only 1 thread doing write operation

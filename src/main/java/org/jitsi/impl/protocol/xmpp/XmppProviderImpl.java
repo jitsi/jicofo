@@ -139,8 +139,11 @@ public class XmppProviderImpl
                 .setPort(config.getPort())
                 .setXmppDomain(config.getDomain());
 
-        // Required for PacketDebugger and XMPP stats to work
-        connConfig.setDebuggerFactory(PacketDebugger::new);
+        if (PacketDebugger.isEnabled())
+        {
+            // If XMPP debug logging is enabled, insert our debugger.
+            connConfig.setDebuggerFactory((connection) -> new PacketDebugger(connection, config.getName()));
+        }
 
         if (!config.getUseTls())
         {
@@ -285,26 +288,6 @@ public class XmppProviderImpl
     public @NotNull OperationSetJingle getJingleApi()
     {
         return jingleOpSet;
-    }
-
-    /**
-     * Generates a {@link JSONObject} with statistics for this {@link XmppProviderImpl}.
-     * @return JSON stats
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public @NotNull JSONObject getStats()
-    {
-        JSONObject stats = new JSONObject();
-
-        PacketDebugger debugger = PacketDebugger.forConnection(connection);
-        if (debugger != null)
-        {
-            stats.put("total_sent", debugger.getTotalPacketsSent());
-            stats.put("total_recv", debugger.getTotalPacketsRecv());
-        }
-
-        return stats;
     }
 
     @Override
