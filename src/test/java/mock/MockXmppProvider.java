@@ -25,7 +25,6 @@ import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smackx.disco.packet.*;
-import org.json.simple.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -152,12 +151,5 @@ public class MockXmppProvider
     public DiscoverInfo discoverInfo(@NotNull Jid jid)
     {
         return null;
-    }
-
-    @NotNull
-    @Override
-    public JSONObject getStats()
-    {
-        return new JSONObject();
     }
 }

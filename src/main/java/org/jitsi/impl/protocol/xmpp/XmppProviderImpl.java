@@ -290,26 +290,6 @@ public class XmppProviderImpl
         return jingleOpSet;
     }
 
-    /**
-     * Generates a {@link JSONObject} with statistics for this {@link XmppProviderImpl}.
-     * @return JSON stats
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public @NotNull JSONObject getStats()
-    {
-        JSONObject stats = new JSONObject();
-
-        PacketDebugger debugger = PacketDebugger.forConnection(connection);
-        if (debugger != null)
-        {
-            stats.put("total_sent", debugger.getTotalPacketsSent());
-            stats.put("total_recv", debugger.getTotalPacketsRecv());
-        }
-
-        return stats;
-    }
-
     @Override
     public @NotNull ChatRoom createRoom(@NotNull EntityBareJid name) throws RoomExistsException
     {

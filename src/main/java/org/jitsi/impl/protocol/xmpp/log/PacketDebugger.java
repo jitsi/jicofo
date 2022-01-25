@@ -21,10 +21,7 @@ import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 import org.jivesoftware.smack.packet.*;
 
-import java.io.*;
 import java.lang.*;
-import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Implements {@link SmackDebugger} in order to get info about XMPP traffic.
@@ -33,13 +30,6 @@ public class PacketDebugger
     extends AbstractDebugger
 {
     /**
-     * Weak mapping between {@link XMPPConnection} and {@link PacketDebugger}
-     * for convenient access(XMPP connection doesn't have a getter for
-     * the debugger field).
-     */
-    private static final WeakHashMap<XMPPConnection, PacketDebugger> debuggerMap = new WeakHashMap<>();
-
-    /**
      * The logger used by this class.
      */
     private final static Logger logger = new LoggerImpl(PacketDebugger.class.getName());
@@ -47,33 +37,11 @@ public class PacketDebugger
     /**
      * Whether XMPP logging is enabled. We don't want to insert a debugger into Smack when it's not going to actually
      * log anything.
-     * Note that the "packets" received/sent stats are only available when debug logging is enabled.
      */
     public static boolean isEnabled()
     {
         return logger.isDebugEnabled();
     }
-
-    /**
-     * Finds {@link PacketDebugger} for given connection.
-     * @param connection - the connection for which {@link PacketDebugger} will
-     * be retrieved.
-     * @return debugger instance for given connection.
-     */
-    static public PacketDebugger forConnection(XMPPConnection connection)
-    {
-        return debuggerMap.get(connection);
-    }
-
-    /**
-     * Total XMPP packets  received.
-     */
-    private AtomicLong totalPacketsRecv = new AtomicLong();
-
-    /**
-     * Total XMPP packets sent.
-     */
-    private AtomicLong totalPacketsSent = new AtomicLong();
 
     /**
      * Creates new {@link PacketDebugger}
@@ -86,37 +54,15 @@ public class PacketDebugger
 
         // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;
-
-        debuggerMap.put(connection, this);
-    }
-
-    /**
-     * @return total XMPP packets received for the lifetime of the tracked
-     * {@link XMPPConnection} instance.
-     */
-    public long getTotalPacketsRecv()
-    {
-        return totalPacketsRecv.get();
-    }
-
-    /**
-     * @return total XMPP packets sent for the lifetime of the tracked
-     * {@link XMPPConnection} instance.
-     */
-    public long getTotalPacketsSent()
-    {
-        return totalPacketsSent.get();
     }
 
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
-        totalPacketsRecv.incrementAndGet();
         logger.debug(() -> "RCV PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
-        totalPacketsSent.incrementAndGet();
         logger.debug(() -> "SENT PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
     }
 

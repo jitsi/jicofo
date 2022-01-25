@@ -205,10 +205,6 @@ open class JicofoServices {
         putAll(focusManager.stats)
         putAll(ColibriConferenceImpl.stats.toJson())
 
-        // XMPP traffic stats
-        put("xmpp", xmppServices.clientConnection.getStats())
-        put("xmpp_service", xmppServices.serviceConnection.getStats())
-
         put("bridge_selector", bridgeSelector.stats)
         jibriDetector?.let { put("jibri_detector", it.stats) }
         sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
