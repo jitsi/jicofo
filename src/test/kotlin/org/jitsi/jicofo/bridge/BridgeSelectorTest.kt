@@ -148,6 +148,23 @@ class BridgeSelectorTest : ShouldSpec() {
             val jvb2 = selector.addJvbAddress(jid2).apply { setStats(stress = 0.9) }
             selector.selectBridge() shouldBe jvb2
         }
+        context("Lost bridges stats") {
+            val selector = BridgeSelector(clock)
+            selector.lostBridges() shouldBe 0
+
+            val jvb1 = selector.addJvbAddress(jid1)
+            selector.lostBridges() shouldBe 0
+
+            should("Increment the lost bridges stat when a bridge goes away") {
+                selector.removeJvbAddress(jvb1.jid)
+                selector.lostBridges() shouldBe 1
+            }
+            should("Not increment the lost bridges stat when a bridge in graceful-shutdown goes away") {
+                jvb1.setStats(gracefulShutdown = true)
+                selector.removeJvbAddress(jvb1.jid)
+                selector.lostBridges() shouldBe 0
+            }
+        }
     }
 }
 

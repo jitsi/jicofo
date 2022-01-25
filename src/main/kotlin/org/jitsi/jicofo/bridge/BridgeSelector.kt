@@ -75,6 +75,7 @@ class BridgeSelector @JvmOverloads constructor(
      * The number of bridges which disconnected without going into graceful shutdown first.
      */
     private val lostBridges = AtomicInteger()
+    fun lostBridges() = lostBridges.get()
 
     /**
      * Adds a bridge to this selector, or if a bridge with the given JID
@@ -110,7 +111,7 @@ class BridgeSelector @JvmOverloads constructor(
     fun removeJvbAddress(bridgeJid: Jid) {
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
-            if (it.isInGracefulShutdown) {
+            if (!it.isInGracefulShutdown) {
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
