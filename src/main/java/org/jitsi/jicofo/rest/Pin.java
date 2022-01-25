@@ -29,6 +29,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -100,17 +101,17 @@ public class Pin
         @JsonProperty(value = "jvb-version", required = true)
         private String jvbVersion;
 
-        @JsonProperty(value = "duration")
-        private Integer duration;
+        @JsonProperty(value = "duration", required = true)
+        private Duration duration;
 
         @JsonCreator
         public PinJson(@JsonProperty(value = "conference-id", required = true) String conferenceId,
                        @JsonProperty(value = "jvb-version", required = true) String jvbVersion,
-                       @JsonProperty(value = "duration") Integer duration)
+                       @JsonProperty(value = "duration", required = true) Integer duration)
         {
             this.conferenceId = conferenceId;
             this.jvbVersion = jvbVersion;
-            this.duration = duration;
+            this.duration = Duration.ofMinutes(duration);
         }
     }
 

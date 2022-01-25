@@ -565,10 +565,9 @@ public class FocusManager
      */
     public void pinConference(@NotNull EntityBareJid roomName,
                               @NotNull String jvbVersion,
-                              @Nullable Integer duration)
+                              @NotNull Duration duration)
     {
-        final int minutes = (duration != null && duration > 0) ? duration : 10;
-        PinnedConference pc = new PinnedConference(jvbVersion, minutes);
+        PinnedConference pc = new PinnedConference(jvbVersion, duration);
 
         synchronized (conferencesSyncRoot)
         {
@@ -581,8 +580,11 @@ public class FocusManager
             pinnedConferences.put(roomName, pc);
         }
 
-        logger.info(() -> "Pinning " + roomName + " to version \"" + jvbVersion + "\" for " +
-            minutes + (minutes == 1 ? " minute." : " minutes."));
+        logger.info(() -> {
+            long minutes = duration.toMinutes();
+            return "Pinning " + roomName + " to version \"" + jvbVersion + "\" for " +
+                    minutes + (minutes == 1 ? " minute." : " minutes.");
+        });
     }
 
     /**
@@ -779,12 +781,10 @@ public class FocusManager
         /**
          * Constructor
          */
-        public PinnedConference(String jvbVersion, int durationInMinutes)
+        public PinnedConference(@NotNull String jvbVersion, @NotNull Duration duration)
         {
             this.jvbVersion = jvbVersion;
-            this.expiresAt = Clock.systemUTC().instant()
-                .plus(Duration.ofMinutes(durationInMinutes))
-                .truncatedTo(ChronoUnit.SECONDS);
+            this.expiresAt = Clock.systemUTC().instant().plus(duration).truncatedTo(ChronoUnit.SECONDS);
         }
     }
 }
