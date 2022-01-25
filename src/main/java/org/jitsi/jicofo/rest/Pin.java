@@ -56,7 +56,8 @@ public class Pin
         try
         {
             EntityBareJid conferenceJid = JidCreate.entityBareFrom(pinJson.conferenceId);
-            jicofoServices.getFocusManager().pinConference(conferenceJid, pinJson.jvbVersion, pinJson.duration);
+            jicofoServices.getFocusManager().pinConference(conferenceJid, pinJson.jvbVersion,
+                Duration.ofMinutes(pinJson.minutes));
             return Response.ok().build();
         }
         catch (XmppStringprepException x)
@@ -101,17 +102,17 @@ public class Pin
         @JsonProperty(value = "jvb-version", required = true)
         private String jvbVersion;
 
-        @JsonProperty(value = "duration", required = true)
-        private Duration duration;
+        @JsonProperty(value = "duration-minutes", required = true)
+        private Integer minutes;
 
         @JsonCreator
         public PinJson(@JsonProperty(value = "conference-id", required = true) String conferenceId,
                        @JsonProperty(value = "jvb-version", required = true) String jvbVersion,
-                       @JsonProperty(value = "duration", required = true) Integer duration)
+                       @JsonProperty(value = "duration-minutes", required = true) Integer minutes)
         {
             this.conferenceId = conferenceId;
             this.jvbVersion = jvbVersion;
-            this.duration = Duration.ofMinutes(duration);
+            this.minutes = minutes;
         }
     }
 
