@@ -28,8 +28,11 @@ import org.jitsi.utils.queue.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -601,9 +604,9 @@ public class FocusManager
         }
     }
 
-    private void expirePins(long curTime)
+    private void expirePins(Instant curTime)
     {
-        if (pinnedConferences.values().removeIf(v -> v.expiresAt <= curTime))
+        if (pinnedConferences.values().removeIf(v -> v.expiresAt.isBefore(curTime)))
         {
             logger.info("Some pins have expired.");
         }
@@ -615,7 +618,7 @@ public class FocusManager
      */
     private String getBridgeVersionForConference(@NotNull EntityBareJid roomName)
     {
-        expirePins(System.nanoTime());
+        expirePins(Clock.systemUTC().instant());
         PinnedConference pc = pinnedConferences.get(roomName);
         return pc != null ? pc.jvbVersion : null;
     }
@@ -626,20 +629,18 @@ public class FocusManager
     @SuppressWarnings("unchecked")
     public JSONObject getPinnedConferences()
     {
-        long wallTime = System.currentTimeMillis();
-        long curTime = System.nanoTime();
+        Instant curTime = Clock.systemUTC().instant();
+        ZoneId tz = ZoneId.systemDefault();
         JSONArray pins = new JSONArray();
 
         synchronized (conferencesSyncRoot)
         {
             expirePins(curTime);
             pinnedConferences.forEach((k, v) -> {
-                Duration dur = Duration.ofNanos(v.expiresAt - curTime);
-                Date d = new Date(wallTime + dur.toMillis());
                 JSONObject pin = new JSONObject();
                 pin.put("conference-id", k.toString());
                 pin.put("jvb-version", v.jvbVersion);
-                pin.put("expires-at", d.toString());
+                pin.put("expires-at", v.expiresAt.atZone(tz).toString());
                 pins.add(pin);
             });
         }
@@ -773,7 +774,7 @@ public class FocusManager
         /**
          * When this pinning expires.
          */
-        final long expiresAt;
+        @NotNull final Instant expiresAt;
 
         /**
          * Constructor
@@ -781,7 +782,9 @@ public class FocusManager
         public PinnedConference(String jvbVersion, int durationInMinutes)
         {
             this.jvbVersion = jvbVersion;
-            this.expiresAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(durationInMinutes, TimeUnit.MINUTES);
+            this.expiresAt = Clock.systemUTC().instant()
+                .plus(Duration.ofMinutes(durationInMinutes))
+                .truncatedTo(ChronoUnit.SECONDS);
         }
     }
 }
