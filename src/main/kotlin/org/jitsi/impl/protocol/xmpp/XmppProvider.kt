@@ -21,7 +21,6 @@ import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.protocol.xmpp.OperationSetJingle
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smackx.disco.packet.DiscoverInfo
-import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid

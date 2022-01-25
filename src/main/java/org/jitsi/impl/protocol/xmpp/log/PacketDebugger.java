@@ -44,13 +44,20 @@ public class PacketDebugger
     }
 
     /**
+     * An ID to log to identify the connection.
+     */
+    @NonNull
+    private final String id;
+
+    /**
      * Creates new {@link PacketDebugger}
      * {@inheritDoc}
      */
     @SuppressFBWarnings("ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD")
-    public PacketDebugger(XMPPConnection connection)
+    public PacketDebugger(XMPPConnection connection, @NonNull String id)
     {
         super(connection);
+        this.id = id;
 
         // Change the static value only if an instance is created.
         AbstractDebugger.printInterpreted = true;
@@ -58,12 +65,12 @@ public class PacketDebugger
 
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
-        logger.debug(() -> "RCV PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+        logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
-        logger.debug(() -> "SENT PKT (" + connection.getConnectionCounter() + "): " + streamElement.toXML());
+        logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
     }
 
     // It's fine to do non-atomic as it's only 1 thread doing write operation

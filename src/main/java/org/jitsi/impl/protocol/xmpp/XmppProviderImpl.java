@@ -142,7 +142,7 @@ public class XmppProviderImpl
         if (PacketDebugger.isEnabled())
         {
             // If XMPP debug logging is enabled, insert our debugger.
-            connConfig.setDebuggerFactory(PacketDebugger::new);
+            connConfig.setDebuggerFactory((connection) -> new PacketDebugger(connection, config.getName()));
         }
 
         if (!config.getUseTls())
