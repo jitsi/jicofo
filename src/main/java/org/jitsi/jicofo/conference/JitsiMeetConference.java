@@ -53,7 +53,7 @@ public interface JitsiMeetConference
      *
      * @return {@link Participant} instance or <tt>null</tt> if not found.
      */
-    Participant findParticipantForRoomJid(Jid mucJid);
+    Participant getParticipant(Jid mucJid);
 
     /**
      * @return the set of regions of the bridges currently in the conference.

@@ -325,7 +325,7 @@ public class MockChatRoom
     }
 
     @Override
-    public ChatRoomMember findChatMember(Jid mucJid)
+    public ChatRoomMember getChatMember(EntityFullJid mucJid)
     {
         return findMember(mucJid.getResourceOrNull());
     }

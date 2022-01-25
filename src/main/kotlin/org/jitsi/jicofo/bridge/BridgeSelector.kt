@@ -54,7 +54,7 @@ class BridgeSelector @JvmOverloads constructor(
     /**
      * The bridge selection strategy.
      */
-    private val bridgeSelectionStrategy = BridgeConfig().selectionStrategy.also {
+    private val bridgeSelectionStrategy = BridgeConfig.config.selectionStrategy.also {
         logger.info("Using ${it.javaClass.name}")
     }
 
@@ -75,6 +75,7 @@ class BridgeSelector @JvmOverloads constructor(
      * The number of bridges which disconnected without going into graceful shutdown first.
      */
     private val lostBridges = AtomicInteger()
+    fun lostBridges() = lostBridges.get()
 
     /**
      * Adds a bridge to this selector, or if a bridge with the given JID
@@ -110,7 +111,7 @@ class BridgeSelector @JvmOverloads constructor(
     fun removeJvbAddress(bridgeJid: Jid) {
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
-            if (it.isInGracefulShutdown) {
+            if (!it.isInGracefulShutdown) {
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
@@ -185,7 +186,7 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
-        if (ColibriConfig().enableColibri2) {
+        if (ColibriConfig.config.enableColibri2) {
             candidateBridges = candidateBridges.filter { it.supportsColibri2() }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with colibri2 support.")

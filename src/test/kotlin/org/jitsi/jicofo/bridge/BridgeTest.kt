@@ -126,7 +126,8 @@ fun Bridge.setStats(
     stress: Double? = null,
     region: String? = null,
     version: String? = null,
-    colibri2: Boolean = true
+    colibri2: Boolean = true,
+    gracefulShutdown: Boolean = false
 ) = setStats(
     ColibriStatsExtension().apply {
         stress?.let { addStat(ColibriStatsExtension.Stat("stress_level", it)) }
@@ -136,5 +137,6 @@ fun Bridge.setStats(
         }
         version?.let { addStat(ColibriStatsExtension.Stat("version", version)) }
         if (colibri2) addStat("colibri2", "true")
+        if (gracefulShutdown) addStat(ColibriStatsExtension.SHUTDOWN_IN_PROGRESS, "true")
     }
 )

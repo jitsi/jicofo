@@ -28,15 +28,14 @@ class AuthConfigTest : ShouldSpec() {
 
     init {
         context("Default values") {
-            val config = AuthConfig()
-            config.enabled shouldBe false
-            config.enableAutoLogin shouldBe true
-            shouldThrow<Exception> {
-                config.loginUrl
+            AuthConfig.config.apply {
+                enabled shouldBe false
+                enableAutoLogin shouldBe true
+                shouldThrow<Exception> { loginUrl }
+                logoutUrl shouldBe null
+                type shouldBe AuthConfig.Type.SHIBBOLETH
+                authenticationLifetime shouldBe Duration.ofHours(24)
             }
-            config.logoutUrl shouldBe null
-            config.type shouldBe AuthConfig.Type.SHIBBOLETH
-            config.authenticationLifetime shouldBe Duration.ofHours(24)
         }
         context("With legacy config") {
             withLegacyConfig(
@@ -47,13 +46,14 @@ class AuthConfigTest : ShouldSpec() {
                 org.jitsi.jicofo.auth.AUTH_LIFETIME=60000
                 """
             ) {
-                val config = AuthConfig()
-                config.enabled shouldBe true
-                config.enableAutoLogin shouldBe false
-                config.loginUrl shouldBe "test@example.com"
-                config.logoutUrl shouldBe "logout"
-                config.type shouldBe AuthConfig.Type.XMPP
-                config.authenticationLifetime shouldBe Duration.ofMillis(60000)
+                AuthConfig.config.apply {
+                    enabled shouldBe true
+                    enableAutoLogin shouldBe false
+                    loginUrl shouldBe "test@example.com"
+                    logoutUrl shouldBe "logout"
+                    type shouldBe AuthConfig.Type.XMPP
+                    authenticationLifetime shouldBe Duration.ofMillis(60000)
+                }
             }
         }
         context("With new config") {
@@ -69,14 +69,14 @@ class AuthConfigTest : ShouldSpec() {
                 }
             """
             ) {
-                val config = AuthConfig()
-
-                config.enabled shouldBe false
-                config.enableAutoLogin shouldBe false
-                config.loginUrl shouldBe "login"
-                config.logoutUrl shouldBe "logout"
-                config.type shouldBe AuthConfig.Type.JWT
-                config.authenticationLifetime shouldBe Duration.ofMinutes(5)
+                AuthConfig.config.apply {
+                    enabled shouldBe false
+                    enableAutoLogin shouldBe false
+                    loginUrl shouldBe "login"
+                    logoutUrl shouldBe "logout"
+                    type shouldBe AuthConfig.Type.JWT
+                    authenticationLifetime shouldBe Duration.ofMinutes(5)
+                }
             }
         }
     }

@@ -74,7 +74,7 @@ public class TestConference
         mockBridge.start();
 
         Bridge bridge = harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
-        BridgeTestKt.setStats(bridge, 0.0, "region", "version", true /* colibri2 */);
+        BridgeTestKt.setStats(bridge, 0.0, "region", "version", true /* colibri2 */, false);
 
         createConferenceRoom(roomName);
     }

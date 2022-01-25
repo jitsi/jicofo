@@ -22,7 +22,7 @@ import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 
-class JicofoConfig {
+class JicofoConfig private constructor() {
     val localRegion: String? by optionalconfig {
         "org.jitsi.jicofo.BridgeSelector.LOCAL_REGION".from(legacyConfig)
         "$BASE.local-region".from(newConfig)

@@ -20,8 +20,13 @@ package org.jitsi.jicofo.conference.colibri
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 
-class ColibriConfig {
+class ColibriConfig private constructor() {
     val enableColibri2: Boolean by config {
         "jicofo.colibri.enable-colibri2".from(newConfig)
+    }
+
+    companion object {
+        @JvmField
+        val config = ColibriConfig()
     }
 }

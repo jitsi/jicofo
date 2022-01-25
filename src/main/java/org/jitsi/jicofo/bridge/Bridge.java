@@ -115,8 +115,11 @@ public class Bridge
 
     /**
      * The time when this instance has failed.
+     *
+     * Use {@code null} to represent "never" because calculating the duration from {@link Instant#MIN} is slow.
      */
-    private Instant failureInstant = Instant.MIN;
+    @Nullable
+    private Instant failureInstant = null;
 
     private String region = null;
     private String relayId = null;
@@ -240,7 +243,8 @@ public class Bridge
     {
         // To filter out intermittent failures, do not return operational
         // until past the reset threshold since the last failure.
-        if (Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0)
+        if (failureInstant != null &&
+                Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0)
         {
             return false;
         }
