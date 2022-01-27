@@ -512,7 +512,12 @@ class ColibriV1SessionManager(
             throw IllegalStateException("The participant already has a bridge:" + participant.chatMember.name)
         }
 
-        return jicofoServices.bridgeSelector.selectBridge(getBridges(), participant.chatMember.region)
+        val version = jitsiMeetConference.bridgeVersion
+        if (version != null) {
+            logger.info("Selecting bridge. Conference is pinned to version \"$version\"")
+        }
+
+        return jicofoServices.bridgeSelector.selectBridge(getBridges(), participant.chatMember.region, version)
             ?: throw BridgeSelectionFailedException()
     }
 

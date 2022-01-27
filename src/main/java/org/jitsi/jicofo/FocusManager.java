@@ -28,8 +28,8 @@ import org.jitsi.utils.queue.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
-import java.time.Duration;
-import java.time.Instant;
+import java.time.*;
+import java.time.temporal.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
@@ -88,6 +88,11 @@ public class FocusManager
     private final List<ConferenceStore.Listener> listeners = new ArrayList<>();
 
     /**
+     * Holds the conferences that are currently pinned to a specific bridge version.
+     */
+    private final Map<EntityBareJid, PinnedConference> pinnedConferences = new HashMap<>();
+
+    /**
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
@@ -97,6 +102,27 @@ public class FocusManager
      * protocol, but only used when no value is explicitly configured.
      */
     private int octoId;
+
+    /**
+     * Clock to use for pin timeouts.
+     */
+    private final Clock clock;
+
+    /**
+     * Create FocusManager with custom clock for testing.
+     */
+    public FocusManager(Clock clock)
+    {
+        this.clock = clock;
+    }
+
+    /**
+     * Create FocusManager with system clock.
+     */
+    public FocusManager()
+    {
+        this(Clock.systemUTC());
+    }
 
     /**
      * Starts this manager.
@@ -261,11 +287,12 @@ public class FocusManager
         synchronized (conferencesSyncRoot)
         {
             long id = generateConferenceId();
+            String jvbVersion = getBridgeVersionForConference(room);
             conference
                     = new JitsiMeetConferenceImpl(
                         room,
                         this, config, logLevel,
-                        id, includeInStatistics);
+                        id, jvbVersion, includeInStatistics);
 
             conferences.put(room, conference);
             conferencesCache.add(conference);
@@ -550,6 +577,102 @@ public class FocusManager
         }
         return o;
     }
+
+    /**
+     * Create or update the pinning for the specified conference.
+     */
+    public void pinConference(@NotNull EntityBareJid roomName,
+                              @NotNull String jvbVersion,
+                              @NotNull Duration duration)
+    {
+        PinnedConference pc = new PinnedConference(jvbVersion, duration);
+
+        synchronized (conferencesSyncRoot)
+        {
+            PinnedConference prev = pinnedConferences.remove(roomName);
+            if (prev != null)
+            {
+                logger.info(() -> "Modifying pin for " + roomName + ":");
+            }
+
+            pinnedConferences.put(roomName, pc);
+        }
+
+        logger.info(() -> {
+            long minutes = duration.toMinutes();
+            return "Pinning " + roomName + " to version \"" + jvbVersion + "\" for " +
+                    minutes + (minutes == 1 ? " minute." : " minutes.");
+        });
+    }
+
+    /**
+     * Remove any existing pinning for the specified conference.
+     */
+    public void unpinConference(@NotNull EntityBareJid roomName)
+    {
+        synchronized (conferencesSyncRoot)
+        {
+            PinnedConference prev = pinnedConferences.remove(roomName);
+            if (prev != null)
+            {
+                logger.info(() -> "Removing pin for " + roomName);
+            }
+            else
+            {
+                logger.info(() -> "Unpin failed: " + roomName);
+            }
+        }
+    }
+
+    private void expirePins(Instant curTime)
+    {
+        if (pinnedConferences.values().removeIf(v -> v.expiresAt.isBefore(curTime)))
+        {
+            logger.info("Some pins have expired.");
+        }
+    }
+
+    /**
+     * Return the requested bridge version of a pinned conference.
+     * Returns null if the conference is not currently pinned.
+     */
+    public String getBridgeVersionForConference(@NotNull EntityBareJid roomName)
+    {
+        synchronized (conferencesSyncRoot)
+        {
+            expirePins(clock.instant());
+            PinnedConference pc = pinnedConferences.get(roomName);
+            return pc != null ? pc.jvbVersion : null;
+        }
+    }
+
+    /**
+     * Get the set of current pinned conferences.
+     */
+    @SuppressWarnings("unchecked")
+    public JSONObject getPinnedConferences()
+    {
+        Instant curTime = clock.instant();
+        ZoneId tz = ZoneId.systemDefault();
+        JSONArray pins = new JSONArray();
+
+        synchronized (conferencesSyncRoot)
+        {
+            expirePins(curTime);
+            pinnedConferences.forEach((k, v) -> {
+                JSONObject pin = new JSONObject();
+                pin.put("conference-id", k.toString());
+                pin.put("jvb-version", v.jvbVersion);
+                pin.put("expires-at", v.expiresAt.atZone(tz).toString());
+                pins.add(pin);
+            });
+        }
+
+        JSONObject stats = new JSONObject();
+        stats.put("pins", pins);
+        return stats;
+    }
+
     /**
      * Takes care of stopping {@link JitsiMeetConference} if no participant ever joins.
      *
@@ -658,6 +781,31 @@ public class FocusManager
                     logger.warn("Error while checking for timed out conference", ex);
                 }
             }
+        }
+    }
+
+    /**
+     * Holds pinning information for one conference.
+     */
+    private class PinnedConference
+    {
+        /**
+         * The version of the bridge that this conference must use.
+         */
+        @NotNull final String jvbVersion;
+
+        /**
+         * When this pinning expires.
+         */
+        @NotNull final Instant expiresAt;
+
+        /**
+         * Constructor
+         */
+        public PinnedConference(@NotNull String jvbVersion, @NotNull Duration duration)
+        {
+            this.jvbVersion = jvbVersion;
+            this.expiresAt = clock.instant().plus(duration).truncatedTo(ChronoUnit.SECONDS);
         }
     }
 }
