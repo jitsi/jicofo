@@ -218,6 +218,9 @@ open class JicofoServices {
     fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
         put("focus_manager", focusManager.getDebugState(full))
         put("bridge_selector", bridgeSelector.debugState)
+        put("jibri_detector", jibriDetector?.debugState ?: "null")
+        put("sip_jibri_detector", sipJibriDetector?.debugState ?: "null")
+        put("jigasi_detector", xmppServices.jigasiDetector?.debugState ?: "null")
     }
 
     fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {

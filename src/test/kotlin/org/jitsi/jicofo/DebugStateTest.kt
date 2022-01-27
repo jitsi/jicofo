@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 import io.kotest.matchers.shouldNotBe
+import io.mockk.every
+import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatMemberImpl
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
+import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.JicofoHarnessTest
 import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.jibri.JibriChatRoomMember
+import org.jitsi.jicofo.jibri.JibriDetector
+import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.parser.JSONParser
+import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 
 /**
@@ -49,9 +57,45 @@ class DebugStateTest : JicofoHarnessTest() {
 
             val participant = Participant(member, logger, conference)
             participant.debugState.shouldBeValidJson()
-            print(participant.debugState.toJSONString())
+        }
+        context("Jigasi detector") {
+            val jigasiDetector = JigasiDetector(
+                harness.jicofoServices.xmppServices.clientConnection,
+                JidCreate.entityBareFrom("JigasiBrewery@example.com")
+            )
+            jigasiDetector.processMemberPresence(
+                jigasiChatMember(JidCreate.entityFullFrom("JigasiBrewery@example.com/jigasi-1"))
+            )
+            jigasiDetector.debugState.shouldBeValidJson()
+            println(jigasiDetector.debugState.toJSONString())
+        }
+        context("Jibri detector") {
+            val jibriDetector = JibriDetector(
+                harness.jicofoServices.xmppServices.clientConnection,
+                JidCreate.entityBareFrom("JibriBrewery@example.com"),
+                false
+            )
+
+            // This registers with the detector internally.
+            JibriChatRoomMember(
+                JidCreate.entityFullFrom("JibriBrewery@example.com/jibri-1"),
+                jibriDetector
+            )
+            jibriDetector.debugState.shouldBeValidJson()
+            println(jibriDetector.debugState.toJSONString())
         }
     }
 }
 
 fun OrderedJsonObject.shouldBeValidJson() = JSONParser().parse(this.toJSONString())
+
+private fun jigasiChatMember(jid: EntityFullJid) = mockk<ChatRoomMember> {
+    every { occupantJid } returns jid
+    every { presence } returns mockk {
+        every {
+            getExtensionElement(ColibriStatsExtension.ELEMENT, ColibriStatsExtension.NAMESPACE)
+        } answers {
+            ColibriStatsExtension()
+        }
+    }
+}
