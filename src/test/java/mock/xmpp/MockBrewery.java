@@ -35,19 +35,19 @@ public class MockBrewery<T extends ExtensionElement>
     }
 
     @Override
-    protected void onInstanceStatusChanged(@NotNull Jid jid, @NotNull T status)
+    protected void onInstanceStatusChanged(@NotNull EntityFullJid jid, @NotNull T status)
     {}
 
     @Override
     protected void notifyInstanceOffline(Jid jid)
     {}
 
-    public void addNewBrewInstance(@NotNull Jid jid, @NotNull T el)
+    public void addNewBrewInstance(@NotNull EntityFullJid jid, @NotNull T el)
     {
         processInstanceStatusChanged(jid, el);
     }
 
-    public void updateInstanceStats(@NotNull Jid jid, @NotNull T el)
+    public void updateInstanceStats(@NotNull EntityFullJid jid, @NotNull T el)
     {
         processInstanceStatusChanged(jid, el);
     }

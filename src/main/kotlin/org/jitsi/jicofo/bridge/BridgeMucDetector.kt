@@ -22,6 +22,7 @@ import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.EntityBareJid
+import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 
 /**
@@ -45,7 +46,7 @@ class BridgeMucDetector(
     LoggerImpl(BridgeMucDetector::class.simpleName).apply { addContext("type", "bridge") }
 ) {
 
-    override fun onInstanceStatusChanged(jid: Jid, stats: ColibriStatsExtension) {
+    override fun onInstanceStatusChanged(jid: EntityFullJid, stats: ColibriStatsExtension) {
         bridgeSelector.addJvbAddress(jid, stats)
     }
 

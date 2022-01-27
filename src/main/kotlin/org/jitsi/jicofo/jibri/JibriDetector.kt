@@ -26,6 +26,7 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
+import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
@@ -91,7 +92,7 @@ class JibriDetector(
     /** The jibri instances to select from */
     private val jibriInstances: MutableMap<Jid, JibriInstance> = mutableMapOf()
 
-    override fun onInstanceStatusChanged(jid: Jid, presenceExt: JibriStatusPacketExt) {
+    override fun onInstanceStatusChanged(jid: EntityFullJid, presenceExt: JibriStatusPacketExt) {
         if (!jibriInstances.containsKey(jid)) {
             logger.info("Creating a new instance for $jid, available = ${presenceExt.isAvailable}")
             jibriInstances[jid] = JibriInstance(jid, presenceExt.isAvailable)
@@ -145,7 +146,7 @@ class JibriDetector(
                         this["last_selected"] = it.lastSelected.toString()
                     }
                 }
-                debugState[instance.jid.resourceOrEmpty.toString()] = instanceJson
+                debugState[instance.jid.resourcepart.toString()] = instanceJson
             }
         }
 

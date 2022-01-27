@@ -284,7 +284,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param extension the presence extension representing this brewing
      * instance status.
      */
-    protected void processInstanceStatusChanged(@NotNull Jid jid, @NotNull T extension)
+    protected void processInstanceStatusChanged(@NotNull EntityFullJid jid, @NotNull T extension)
     {
         BrewInstance instance = find(jid);
 
@@ -319,7 +319,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param jid the brewing instance muc address
      * @param status the updated status for that instance
      */
-    abstract protected void onInstanceStatusChanged(@NotNull Jid jid, @NotNull T status);
+    abstract protected void onInstanceStatusChanged(@NotNull EntityFullJid jid, @NotNull T status);
 
     /**
      * Finds instance by muc address.
@@ -369,7 +369,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
          * Eg. "room@muc.server.net/nick"
          */
         @NotNull
-        public final Jid jid;
+        public final EntityFullJid jid;
 
         /**
          * One of {@link ExtensionElement}
@@ -377,7 +377,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         @NotNull
         public T status;
 
-        BrewInstance(@NotNull Jid jid, @NotNull T status)
+        BrewInstance(@NotNull EntityFullJid jid, @NotNull T status)
         {
             this.jid = jid;
             this.status = status;

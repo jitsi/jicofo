@@ -59,10 +59,10 @@ public class JigasiSelectorTest
         harness.shutdown();
     }
 
-    private Jid createAndAddInstance()
+    private EntityFullJid createAndAddInstance()
         throws Exception
     {
-        Jid jid = JidCreate.from("jigasi-" + (++numberOfInstances));
+        EntityFullJid jid = JidCreate.entityFullFrom("JigasiBrewery@example.com/jigasi-" + (++numberOfInstances));
 
         brewery.addNewBrewInstance(jid, new ColibriStatsExtension());
 
@@ -70,7 +70,7 @@ public class JigasiSelectorTest
     }
 
     private void updateStats(
-        Jid jid,
+        EntityFullJid jid,
         int numberOfParticipants,
         String region,
         Boolean inGracefulShutdown,
@@ -114,8 +114,8 @@ public class JigasiSelectorTest
     public void selectorTest()
         throws Exception
     {
-        Jid jid1 = createAndAddInstance();
-        Jid jid2 = createAndAddInstance();
+        EntityFullJid jid1 = createAndAddInstance();
+        EntityFullJid jid2 = createAndAddInstance();
 
         updateStats(jid1, 1, null, null, true, true);
         updateStats(jid2, 2, null, null, true, true);
@@ -206,8 +206,8 @@ public class JigasiSelectorTest
             true);              /* select transcriber*/
         assertNull(res, "Wrong jigasi selected");
 
-        Jid jid3 = createAndAddInstance();
-        Jid jid4 = createAndAddInstance();
+        EntityFullJid jid3 = createAndAddInstance();
+        EntityFullJid jid4 = createAndAddInstance();
 
         updateStats(jid3, 1, "region1", null, true, false);
         updateStats(jid4, 2, "region2", null, true, false);

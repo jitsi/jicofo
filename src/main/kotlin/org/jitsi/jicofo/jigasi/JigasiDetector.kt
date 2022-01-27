@@ -25,6 +25,7 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
+import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 
 /**
@@ -44,7 +45,7 @@ class JigasiDetector(
 ) {
     val xmppConnection = xmppProvider.xmppConnection
 
-    override fun onInstanceStatusChanged(jid: Jid, status: ColibriStatsExtension) {}
+    override fun onInstanceStatusChanged(jid: EntityFullJid, status: ColibriStatsExtension) {}
     override fun notifyInstanceOffline(jid: Jid) {}
 
     /**
