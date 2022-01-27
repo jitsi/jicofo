@@ -108,7 +108,7 @@ class JibriDetectorTest : ShouldSpec({
     }
 })
 
-private class JibriChatRoomMember(
+class JibriChatRoomMember(
     val jid_: EntityFullJid,
     val detector: JibriDetector
 ) : ChatRoomMember {

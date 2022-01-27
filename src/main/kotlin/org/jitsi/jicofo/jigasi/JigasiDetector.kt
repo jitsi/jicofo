@@ -20,6 +20,7 @@ package org.jitsi.jicofo.jigasi
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JicofoConfig.Companion.config
 import org.jitsi.jicofo.xmpp.BaseBrewery
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.JSONObject
@@ -71,6 +72,19 @@ class JigasiDetector(
             this["sip_count"] = getInstanceCount { it.supportsSip() }
             this["sip_in_graceful_shutdown_count"] = getInstanceCount { it.supportsSip() && it.isInGracefulShutdown() }
             this["transcriber_count"] = getInstanceCount { it.supportsTranscription() }
+        }
+
+    val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().also { debugState ->
+            instances.forEach { instance ->
+                val instanceJson = OrderedJsonObject().apply {
+                    this["supports_sip"] = instance.supportsSip()
+                    this["supports_transcription"] = instance.supportsTranscription()
+                    this["is_in_graceful_shutdown"] = instance.isInGracefulShutdown()
+                    this["participants"] = instance.getParticipantCount()
+                }
+                debugState[instance.jid.resourceOrEmpty.toString()] = instanceJson
+            }
         }
 
     /**

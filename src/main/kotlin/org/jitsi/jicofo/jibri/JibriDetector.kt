@@ -19,6 +19,7 @@ package org.jitsi.jicofo.jibri
 
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
@@ -39,8 +40,8 @@ import java.util.concurrent.Executors
  */
 class JibriDetector(
     xmppProvider: XmppProvider,
-    breweryJid: EntityBareJid,
-    isSip: Boolean,
+    private val breweryJid: EntityBareJid,
+    private val isSip: Boolean,
     val clock: Clock = Clock.systemUTC()
 ) : BaseBrewery<JibriStatusPacketExt>(
     xmppProvider,
@@ -128,6 +129,24 @@ class JibriDetector(
         get() = JSONObject().apply {
             this["count"] = instanceCount
             this["available"] = getInstanceCount { it.status.isAvailable }
+        }
+
+    val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().also { debugState ->
+            debugState["is_sip"] = isSip
+            debugState["brewery_jid"] = breweryJid.toString()
+            instances.forEach { instance ->
+                val instanceJson = OrderedJsonObject().apply {
+                    this["health_status"] = instance.status.healthStatus?.status.toString()
+                    this["busy_status"] = instance.status.busyStatus?.status.toString()
+                    jibriInstances[instance.jid]?.let {
+                        this["reports_available"] = it.reportsAvailable
+                        this["last_failed"] = it.lastFailed.toString()
+                        this["last_selected"] = it.lastSelected.toString()
+                    }
+                }
+                debugState[instance.jid.resourceOrEmpty.toString()] = instanceJson
+            }
         }
 
     interface EventHandler {
