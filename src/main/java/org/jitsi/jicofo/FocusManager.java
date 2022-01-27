@@ -104,6 +104,27 @@ public class FocusManager
     private int octoId;
 
     /**
+     * Clock to use for pin timeouts.
+     */
+    private final Clock clock;
+
+    /**
+     * Create FocusManager with custom clock for testing.
+     */
+    public FocusManager(Clock clock)
+    {
+        this.clock = clock;
+    }
+
+    /**
+     * Create FocusManager with system clock.
+     */
+    public FocusManager()
+    {
+        this(Clock.systemUTC());
+    }
+
+    /**
      * Starts this manager.
      */
     public void start()
@@ -615,11 +636,14 @@ public class FocusManager
      * Return the requested bridge version of a pinned conference.
      * Returns null if the conference is not currently pinned.
      */
-    private String getBridgeVersionForConference(@NotNull EntityBareJid roomName)
+    public String getBridgeVersionForConference(@NotNull EntityBareJid roomName)
     {
-        expirePins(Clock.systemUTC().instant());
-        PinnedConference pc = pinnedConferences.get(roomName);
-        return pc != null ? pc.jvbVersion : null;
+        synchronized (conferencesSyncRoot)
+        {
+            expirePins(clock.instant());
+            PinnedConference pc = pinnedConferences.get(roomName);
+            return pc != null ? pc.jvbVersion : null;
+        }
     }
 
     /**
@@ -628,7 +652,7 @@ public class FocusManager
     @SuppressWarnings("unchecked")
     public JSONObject getPinnedConferences()
     {
-        Instant curTime = Clock.systemUTC().instant();
+        Instant curTime = clock.instant();
         ZoneId tz = ZoneId.systemDefault();
         JSONArray pins = new JSONArray();
 
@@ -763,7 +787,7 @@ public class FocusManager
     /**
      * Holds pinning information for one conference.
      */
-    private static class PinnedConference
+    private class PinnedConference
     {
         /**
          * The version of the bridge that this conference must use.
@@ -781,7 +805,7 @@ public class FocusManager
         public PinnedConference(@NotNull String jvbVersion, @NotNull Duration duration)
         {
             this.jvbVersion = jvbVersion;
-            this.expiresAt = Clock.systemUTC().instant().plus(duration).truncatedTo(ChronoUnit.SECONDS);
+            this.expiresAt = clock.instant().plus(duration).truncatedTo(ChronoUnit.SECONDS);
         }
     }
 }
