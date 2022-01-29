@@ -453,14 +453,14 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private @NonNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
         // Take all sources from participants in the conference.
-        ConferenceSourceMap conferenceSources = meetConference.getSources()
-                .copy()
-                .strip(ConferenceConfig.config.stripSimulcast(), true)
-                .stripByMediaType(participant.getSupportedMediaTypes());
+        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        // Add the bridge's feedback sources.
+        conferenceSources.add(colibriAllocation.getSources());
+        conferenceSources.strip(ConferenceConfig.config.stripSimulcast(), true);
+        conferenceSources.stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
         // Add sources advertised by the bridge.
-        conferenceSources.add(colibriAllocation.getSources());
 
         for (ContentPacketExtension cpe : offer.getContents())
         {
