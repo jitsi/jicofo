@@ -31,6 +31,7 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 /**
@@ -90,7 +91,7 @@ class JibriDetector(
     }
 
     /** The jibri instances to select from */
-    private val jibriInstances: MutableMap<Jid, JibriInstance> = mutableMapOf()
+    private val jibriInstances: MutableMap<Jid, JibriInstance> = ConcurrentHashMap()
 
     override fun onInstanceStatusChanged(jid: EntityFullJid, presenceExt: JibriStatusPacketExt) {
         if (!jibriInstances.containsKey(jid)) {
