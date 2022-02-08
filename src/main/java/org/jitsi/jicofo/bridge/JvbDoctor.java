@@ -145,7 +145,15 @@ public class JvbDoctor
             }
             catch (Exception e)
             {
-                logger.error("Error when doing health-check on: " + bridge, e);
+                // If the task was canceled while running it will throw InterruptedException, ignore it.
+                if (taskInvalid() && e instanceof InterruptedException)
+                {
+                    logger.debug("The task has been canceled.");
+                }
+                else
+                {
+                    logger.error("Error when doing health-check on: " + bridge, e);
+                }
             }
         }
 
@@ -176,7 +184,7 @@ public class JvbDoctor
          * the task should terminate.
          */
         private void doHealthCheck()
-            throws SmackException.NotConnectedException
+            throws SmackException.NotConnectedException, InterruptedException
         {
             AbstractXMPPConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
