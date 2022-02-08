@@ -104,6 +104,8 @@ class ColibriV2SessionManager(
     }
 
     internal val conferenceName = conference.roomName.toString()
+    internal val callstatsEnabled = conference.config.callStatsEnabled
+    internal val rtcStatsEnabled = conference.config.rtcStatsEnabled
 
     /**
      * Expire everything.

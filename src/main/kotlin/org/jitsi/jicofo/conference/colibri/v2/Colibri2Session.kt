@@ -167,6 +167,8 @@ internal class Colibri2Session(
         if (create) {
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
+            setCallstatsEnabled(colibriSessionManager.callstatsEnabled)
+            setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
         }
     }
 
