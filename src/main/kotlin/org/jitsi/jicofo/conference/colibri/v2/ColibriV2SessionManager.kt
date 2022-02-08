@@ -425,7 +425,12 @@ class ColibriV2SessionManager(
         logger.info("Updating $participant with transport=$transport, sources=$sources")
 
         val participantInfo = participants[participant.endpointId]
-            ?: throw IllegalStateException("No participantInfo for $participant")
+            ?: run {
+                // This can happen after a colibri session is removed due to a failure to allocate, since we never
+                // notify the JitsiMeetConferenceImpl object of the failure.
+                logger.error("No ParticipantInfo for ${participant.endpointId}")
+                return
+            }
         if (!suppressLocalBridgeUpdate) {
             participantInfo.session.updateParticipant(participantInfo, transport, sources)
         }
