@@ -400,6 +400,7 @@ class ColibriV2SessionManager(
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We don't bring the whole bridge down.
+                        logger.warn("Received a conflict error with reason=$reason: ${response.toXML()}")
                         throw BridgeFailedException(session.bridge, false)
                     }
                 }
