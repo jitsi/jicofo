@@ -14,5 +14,7 @@ data class ColibriAllocation(
     /** The region of the bridge */
     val region: String?,
     /** An identifier for the session */
-    val bridgeSessionId: String?
+    val bridgeSessionId: String?,
+    /** The SCTP port (used for both local and remote port) advertised by the bridge, if any */
+    val sctpPort: Int?
 )

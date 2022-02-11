@@ -278,6 +278,7 @@ class ColibriV2SessionManager(
         val session: Colibri2Session
         val created: Boolean
         val participantInfo: ParticipantInfo
+        val useSctp = contents.any { it.name == "data" }
         synchronized(syncRoot) {
             if (participants.containsKey(participant.endpointId)) {
                 throw IllegalStateException("participant already exists")
@@ -299,7 +300,7 @@ class ColibriV2SessionManager(
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
-            stanzaCollector = session.sendAllocationRequest(participantInfo, contents)
+            stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {
@@ -329,7 +330,7 @@ class ColibriV2SessionManager(
 
         synchronized(syncRoot) {
             try {
-                return handleResponse(response, session, created, participantInfo)
+                return handleResponse(response, session, created, participantInfo, useSctp)
             } catch (e: Exception) {
                 // TODO: the conference does not know that participants were removed and need to be re-invited (they
                 //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
@@ -346,7 +347,8 @@ class ColibriV2SessionManager(
         response: IQ?,
         session: Colibri2Session,
         created: Boolean,
-        participantInfo: ParticipantInfo
+        participantInfo: ParticipantInfo,
+        useSctp: Boolean
     ): ColibriAllocation {
 
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
@@ -424,12 +426,20 @@ class ColibriV2SessionManager(
             session.feedbackSources = response.parseSources()
         }
 
+        val transport = response.parseTransport(participantInfo.id)
+            ?: throw ColibriParsingException("failed to parse transport")
+        val sctpPort = transport.sctp?.port
+        if (useSctp && sctpPort == null) {
+            logger.error("Requested SCTP, but the response had no SCTP.")
+            throw BridgeFailedException(session.bridge, false)
+        }
+
         return ColibriAllocation(
             session.feedbackSources,
-            response.parseTransport(participantInfo.id)
-                ?: throw ColibriParsingException("failed to parse transport"),
+            transport.iceUdpTransport ?: throw ColibriParsingException("failed to parse transport"),
             session.bridge.region,
-            session.id
+            session.id,
+            sctpPort
         )
     }
 

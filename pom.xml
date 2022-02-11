@@ -131,7 +131,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-42-gf2d08b7</version>
+      <version>1.0-43-ga767fcd</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -192,7 +192,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-videobridge</artifactId>
-      <version>2.1-613-ge63e129c</version>
+      <version>2.1-623-ge349ae32</version>
       <scope>test</scope>
     </dependency>
     <dependency>
