@@ -477,9 +477,12 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
                 if ("data".equalsIgnoreCase(cpe.getName()))
                 {
-                    // FIXME: hardcoded
+                    // FIXME: We signal a single port to the client which uses it for both local and remote port.
+                    // The port comes from the bridge, if it advertised one, otherwise (for backward compat with
+                    // the colibri1 impl) it defaults to 5000.
                     SctpMapExtension sctpMap = new SctpMapExtension();
-                    sctpMap.setPort(5000);
+                    Integer sctpPort = colibriAllocation.getSctpPort();
+                    sctpMap.setPort(sctpPort != null ? sctpPort : 5000);
                     sctpMap.setProtocol(SctpMapExtension.Protocol.WEBRTC_CHANNEL);
                     sctpMap.setStreams(1024);
 

@@ -30,6 +30,7 @@ import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.MediaSource
 import org.jitsi.xmpp.extensions.colibri2.Sources
+import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
@@ -37,8 +38,8 @@ import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 
 /** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
-fun ConferenceModifiedIQ.parseTransport(endpointId: String): IceUdpTransportPacketExtension? {
-    return endpoints.find { it.id == endpointId }?.transport?.iceUdpTransport
+fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? {
+    return endpoints.find { it.id == endpointId }?.transport
 }
 
 /**

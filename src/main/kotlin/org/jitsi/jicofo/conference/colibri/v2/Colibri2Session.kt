@@ -32,6 +32,7 @@ import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
 import org.jitsi.xmpp.extensions.colibri2.Media
+import org.jitsi.xmpp.extensions.colibri2.Sctp
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
@@ -74,7 +75,8 @@ internal class Colibri2Session(
          * A list of Jingle [ContentPacketExtension]s, which describe the media types and RTP header extensions, i.e.
          * the information contained in colibri2 [Media] elements.
          */
-        contents: List<ContentPacketExtension>
+        contents: List<ContentPacketExtension>,
+        useSctp: Boolean
     ): StanzaCollector {
 
         val request = createRequest(!created)
@@ -83,12 +85,15 @@ internal class Colibri2Session(
             setCreate(true)
             setStatsId(participant.statsId)
             setTransport(
-                Transport.getBuilder()
+                Transport.getBuilder().apply {
                     // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
                     //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
                     //  failures with firefox but not chrome).
-                    .setIceControlling(true)
-                    .build()
+                    setIceControlling(true)
+                    if (useSctp) {
+                        setSctp(Sctp.Builder().build())
+                    }
+                }.build()
             )
         }
         contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }

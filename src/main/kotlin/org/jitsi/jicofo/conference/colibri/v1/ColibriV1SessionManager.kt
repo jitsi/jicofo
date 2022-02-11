@@ -184,7 +184,14 @@ class ColibriV1SessionManager(
                 throw BridgeFailedException(bridgeSession.bridge, restartConference = false)
             }
 
-            val colibriAllocation = ColibriAllocation(sources, transport, bridgeSession.bridge.region, bridgeSession.id)
+            // Hard-code 5000 because this code is temporary (and the previous code did the same).
+            val colibriAllocation = ColibriAllocation(
+                sources,
+                transport,
+                bridgeSession.bridge.region,
+                bridgeSession.id,
+                5000
+            )
             bridgeSession.bridge.setIsOperational(true)
             colibriRequestCallback.requestSucceeded(bridge)
             participantInfo.colibriChannels = colibriChannels
