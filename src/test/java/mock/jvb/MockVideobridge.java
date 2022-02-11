@@ -18,11 +18,8 @@
 package mock.jvb;
 
 import mock.xmpp.*;
-import org.jitsi.shutdown.*;
+import org.jitsi.jicofo.mock.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.utils.version.*;
-import org.jitsi.videobridge.*;
-import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
@@ -40,10 +37,8 @@ public class MockVideobridge
 
     private final MockXmppConnection connection;
 
-    private Videobridge bridge;
+    private MockColibri2Server bridge;
 
-    private final ColibriConferenceIqHandler confIqGetHandler = new ColibriConferenceIqHandler(IQ.Type.get);
-    private final ColibriConferenceIqHandler confIqSetHandler = new ColibriConferenceIqHandler(IQ.Type.set);
     private final ConferenceModifyIqHandler conferenceModifyIqGetHandler
             = new ConferenceModifyIqHandler(IQ.Type.get);
     private final ConferenceModifyIqHandler conferenceModifyIqSetHandler
@@ -56,55 +51,17 @@ public class MockVideobridge
 
     public void start()
     {
-        bridge = new Videobridge(
-                new org.jitsi.videobridge.xmpp.XmppConnection(),
-                new ShutdownServiceImpl(),
-                new VersionImpl("jvb", 2, 72));
-        bridge.start();
-
-        connection.registerIQRequestHandler(confIqGetHandler);
-        connection.registerIQRequestHandler(confIqSetHandler);
+        bridge = new MockColibri2Server();
         connection.registerIQRequestHandler(conferenceModifyIqGetHandler);
         connection.registerIQRequestHandler(conferenceModifyIqSetHandler);
     }
 
     public void stop()
     {
-        connection.unregisterIQRequestHandler(confIqGetHandler);
-        connection.unregisterIQRequestHandler(confIqSetHandler);
         connection.unregisterIQRequestHandler(conferenceModifyIqGetHandler);
         connection.unregisterIQRequestHandler(conferenceModifyIqSetHandler);
 
         bridge.stop();
-    }
-
-    private class ColibriConferenceIqHandler extends AbstractIqRequestHandler
-    {
-        ColibriConferenceIqHandler(IQ.Type type)
-        {
-            super(ColibriConferenceIQ.ELEMENT,
-                ColibriConferenceIQ.NAMESPACE,
-                type,
-                Mode.sync
-            );
-        }
-
-        @Override
-        public IQ handleIQRequest(IQ iqRequest)
-        {
-            try
-            {
-                IQ confResult = bridge.handleColibriConferenceIQ((ColibriConferenceIQ) iqRequest);
-                confResult.setTo(iqRequest.getFrom());
-                confResult.setStanzaId(iqRequest.getStanzaId());
-                return confResult;
-            }
-            catch (Exception e)
-            {
-                logger.error("JVB internal error!", e);
-                return null;
-            }
-        }
     }
 
     private class ConferenceModifyIqHandler extends AbstractIqRequestHandler

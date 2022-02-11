@@ -57,7 +57,10 @@ public class JicofoHarness
         JitsiConfig.Companion.reloadNewConfig();
 
         // Prevent jetty from starting.
-        String disableRestConfig = "jicofo.rest.port=-1\njicofo.rest.tls-port=-1";
+        String disableRestConfig =
+                "jicofo.rest.port=-1\n" +
+                "jicofo.rest.tls-port=-1\n" +
+                "jicofo.colibri.enable-colibri2=true";
         JitsiConfig.Companion.useDebugNewConfig(
                 new TypesafeConfigSource(
                         "test config",
