@@ -29,6 +29,7 @@ import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
+import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
 import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
@@ -38,6 +39,7 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
@@ -365,13 +367,44 @@ class ColibriV2SessionManager(
             session.bridge.setIsOperational(false)
             throw ColibriTimeoutException(session.bridge)
         } else if (response is ErrorIQ) {
-            when (response.error.condition) {
-                bad_request, conflict, item_not_found -> {
-                    // Most probably we sent a bad request, or something went out of sync between jicofo and the
-                    // bridge (e.g. a conference/endpoint/relay we referenced didn't exist)
+            // The reason in a colibri2 error extension, if one is present. If a reason is present we know the response
+            // comes from a jitsi-videobridge instance. Otherwise, it might come from another component (e.g. the
+            // XMPP server or MUC component).
+            val reason = response.error?.getExtension<Colibri2Error>(
+                Colibri2Error.ELEMENT,
+                Colibri2Error.NAMESPACE
+            )?.reason
+            when (response.error?.condition) {
+                bad_request -> {
+                    // Most probably we sent a bad request.
                     // If we flag the bridge as non-operational we may disrupt other conferences.
                     // If we trigger a re-invite we may cause the same error repeating.
                     throw BadColibriRequestException(response.error?.toXML()?.toString() ?: "null")
+                }
+                item_not_found -> {
+                    if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
+                        // The conference on the bridge has expired. The state between jicofo and the bridge is out of
+                        // sync.
+                        throw ColibriConferenceExpiredException(session.bridge, true)
+                    } else {
+                        // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
+                        // because the occupant left.
+                        throw BridgeFailedException(session.bridge, true)
+                    }
+                }
+                conflict -> {
+                    if (reason == null) {
+                        // An error NOT coming from the bridge.
+                        throw BridgeFailedException(session.bridge, true)
+                    } else {
+                        // An error coming from the bridge. The state between jicofo and the bridge must be out of sync.
+                        // It's not clear how to handle this. Ideally we should expire the conference and retry, but
+                        // we can't expire a conference without listing its individual endpoints and we think there
+                        // were none.
+                        // We don't bring the whole bridge down.
+                        logger.warn("Received a conflict error with reason=$reason: ${response.toXML()}")
+                        throw BridgeFailedException(session.bridge, false)
+                    }
                 }
                 service_unavailable -> {
                     // This only happens if the bridge is in graceful-shutdown and we request a new conference.
