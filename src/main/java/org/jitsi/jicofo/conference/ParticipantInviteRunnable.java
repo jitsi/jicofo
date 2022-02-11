@@ -481,7 +481,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     Integer sctpPort = colibriAllocation.getSctpPort();
                     // The SCTP port is either hard-coded non-null (colibri1) or verified while parsing the response
                     // (colibri2).
-                    if (sctpPort == null) {
+                    if (sctpPort == null)
+                    {
                         throw new IllegalStateException("SCTP port must not be null");
                     }
                     sctpMap.setPort(sctpPort);
