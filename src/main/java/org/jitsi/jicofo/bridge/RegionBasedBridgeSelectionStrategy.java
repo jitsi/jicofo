@@ -73,4 +73,10 @@ public class RegionBasedBridgeSelectionStrategy
                 () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
                 () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))));
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + " with region groups:" + BridgeConfig.config.getRegionGroups();
+    }
 }
