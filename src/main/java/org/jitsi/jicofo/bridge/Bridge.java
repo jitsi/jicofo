@@ -330,16 +330,17 @@ public class Bridge
         return jid;
     }
 
+    /**
+     * Get the version of this bridge (with embedded release ID, if available).
+     * @return The version, or null if not known.
+     */
     public String getVersion()
     {
-        return version;
+        if (version != null && releaseId != null)
+            return version + "-" + releaseId;
+        else
+            return version;
     }
-
-    /**
-     * Get the release ID of this bridge.
-     * @return The release ID, or null if not known.
-     */
-    public String getReleaseId() { return releaseId; }
 
     /**
      * @return the region of this {@link Bridge}.
