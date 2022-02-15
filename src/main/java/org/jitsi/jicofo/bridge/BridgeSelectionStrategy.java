@@ -1,5 +1,6 @@
 package org.jitsi.jicofo.bridge;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging2.*;
 import org.json.simple.*;
 
@@ -28,9 +29,20 @@ public abstract class BridgeSelectionStrategy
     private int totalNotLoadedAlreadyInConferenceInRegion;
     /**
      * Total number of times selection succeeded because there was a bridge
+     * already in the conference, in the desired region group that was not
+     * overloaded.
+     */
+    private int totalNotLoadedAlreadyInConferenceInRegionGroup;
+    /**
+     * Total number of times selection succeeded because there was a bridge
      * in the desired region that was not overloaded.
      */
     private int totalNotLoadedInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * in the desired region group that was not overloaded.
+     */
+    private int totalNotLoadedInRegionGroup;
     /**
      * Total number of times selection succeeded because there was a bridge
      * already in the conference, in the desired region.
@@ -38,9 +50,19 @@ public abstract class BridgeSelectionStrategy
     private int totalLeastLoadedAlreadyInConferenceInRegion;
     /**
      * Total number of times selection succeeded because there was a bridge
+     * already in the conference, in the desired region group.
+     */
+    private int totalLeastLoadedAlreadyInConferenceInRegionGroup;
+    /**
+     * Total number of times selection succeeded because there was a bridge
      * in the desired region.
      */
     private int totalLeastLoadedInRegion;
+    /**
+     * Total number of times selection succeeded because there was a bridge
+     * in the desired region group.
+     */
+    private int totalLeastLoadedInRegionGroup;
     /**
      * Total number of times selection succeeded because there was a bridge
      * already in the conference.
@@ -89,7 +111,7 @@ public abstract class BridgeSelectionStrategy
             Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
-                logger.info("Selected initial bridge " + bridge
+                logger.debug("Selected initial bridge " + bridge
                         + " with reported stress=" + bridge.getLastReportedStressLevel()
                         + " for participantRegion=" + participantRegion
                         + " using strategy " + this.getClass().getSimpleName());
@@ -164,14 +186,44 @@ public abstract class BridgeSelectionStrategy
         return result;
     }
 
+    Optional<Bridge> notLoadedAlreadyInConferenceInRegionGroup(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            Set<String> participantRegionGroup)
+    {
+        Optional<Bridge> result = bridges.stream()
+                .filter(not(b -> isOverloaded(b, conferenceBridges)))
+                .filter(selectFrom(conferenceBridges.keySet()))
+                .filter(inRegionGroup(participantRegionGroup))
+                .findFirst();
+
+        if (result.isPresent())
+        {
+            totalNotLoadedAlreadyInConferenceInRegionGroup++;
+            logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
+        }
+
+        return result;
+    }
+
     private void logSelection(
             Bridge bridge,
             Map<Bridge, Integer> conferenceBridges,
             String participantRegion)
     {
+        logSelection(bridge, conferenceBridges, participantRegion, null);
+    }
+
+    private void logSelection(
+            Bridge bridge,
+            Map<Bridge, Integer> conferenceBridges,
+            String participantRegion,
+            Set<String> participantRegionGroup)
+    {
         String method = Thread.currentThread().getStackTrace()[2].getMethodName();
         logger.debug("Bridge selected: method=" + method
             + ", participantRegion=" + participantRegion
+            + ", participantRegionGroup=" + participantRegionGroup
             + ", bridge=" + bridge
             + ", conference_bridges="
             + conferenceBridges.keySet().stream().map(Bridge::toString)
@@ -208,17 +260,49 @@ public abstract class BridgeSelectionStrategy
         return result;
     }
 
+    Optional<Bridge> notLoadedInRegionGroup(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            Set<String> participantRegionGroup)
+    {
+        Optional<Bridge> result = bridges.stream()
+                .filter(not(b -> isOverloaded(b, conferenceBridges)))
+                .filter(inRegionGroup(participantRegionGroup))
+                .findFirst();
+
+        if (result.isPresent())
+        {
+            totalNotLoadedInRegionGroup++;
+            updateSplitStats(conferenceBridges, result.get(), null, participantRegionGroup);
+            logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
+        }
+
+        return result;
+    }
+
     private void updateSplitStats(
             Map<Bridge, Integer> conferenceBridges,
             Bridge selectedBridge,
             String participantRegion)
+    {
+        updateSplitStats(conferenceBridges, selectedBridge, participantRegion, null);
+    }
+
+    private void updateSplitStats(
+            Map<Bridge, Integer> conferenceBridges,
+            Bridge selectedBridge,
+            String participantRegion,
+            Set<String> participantRegionGroup)
     {
         if (!conferenceBridges.isEmpty() && !conferenceBridges.containsKey(selectedBridge))
         {
             // We added a new bridge to the conference. Was it because the
             // conference had no bridges in that region, or because it had
             // some, but they were over loaded?
-            if (conferenceBridges.keySet().stream().anyMatch(inRegion(participantRegion)))
+            if (
+                (participantRegion != null && conferenceBridges.keySet().stream().anyMatch(inRegion(participantRegion))
+                        || (participantRegionGroup != null &&
+                                conferenceBridges.keySet().stream().anyMatch(inRegionGroup(participantRegionGroup)))))
             {
                 totalSplitDueToLoad++;
             }
@@ -259,6 +343,25 @@ public abstract class BridgeSelectionStrategy
         return result;
     }
 
+    Optional<Bridge> leastLoadedAlreadyInConferenceInRegionGroup(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            Set<String> participantRegionGroup)
+    {
+        Optional<Bridge> result = bridges.stream()
+                .filter(selectFrom(conferenceBridges.keySet()))
+                .filter(inRegionGroup(participantRegionGroup))
+                .findFirst();
+
+        if (result.isPresent())
+        {
+            totalLeastLoadedAlreadyInConferenceInRegionGroup++;
+            logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
+        }
+
+        return result;
+    }
+
     /**
      * Finds the least loaded bridge in the participant's region.
      *
@@ -282,6 +385,25 @@ public abstract class BridgeSelectionStrategy
             totalLeastLoadedInRegion++;
             updateSplitStats(conferenceBridges, result.get(), participantRegion);
             logSelection(result.get(), conferenceBridges, participantRegion);
+        }
+
+        return result;
+    }
+
+    Optional<Bridge> leastLoadedInRegionGroup(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            Set<String> participantRegionGroup)
+    {
+        Optional<Bridge> result = bridges.stream()
+                .filter(inRegionGroup(participantRegionGroup))
+                .findFirst();
+
+        if (result.isPresent())
+        {
+            totalLeastLoadedInRegionGroup++;
+            updateSplitStats(conferenceBridges, result.get(), null, participantRegionGroup);
+            logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
         }
 
         return result;
@@ -367,6 +489,11 @@ public abstract class BridgeSelectionStrategy
         return b -> region != null && region.equalsIgnoreCase(b.getRegion());
     }
 
+    private static Predicate<Bridge> inRegionGroup(@NotNull Set<String> regionGroup)
+    {
+        return b -> regionGroup.contains(b.getRegion());
+    }
+
     /**
      * Checks whether a {@link Bridge} should be considered overloaded for a
      * particular conference.
@@ -390,9 +517,13 @@ public abstract class BridgeSelectionStrategy
         JSONObject json = new JSONObject();
 
         json.put("total_not_loaded_in_region_in_conference", totalNotLoadedAlreadyInConferenceInRegion);
+        json.put("total_not_loaded_in_region_group_in_conference", totalNotLoadedAlreadyInConferenceInRegionGroup);
         json.put("total_not_loaded_in_region", totalNotLoadedInRegion);
+        json.put("total_not_loaded_in_region_group", totalNotLoadedInRegionGroup);
         json.put("total_least_loaded_in_region_in_conference", totalLeastLoadedAlreadyInConferenceInRegion);
+        json.put("total_least_loaded_in_region_group_in_conference", totalLeastLoadedAlreadyInConferenceInRegionGroup);
         json.put("total_least_loaded_in_region", totalLeastLoadedInRegion);
+        json.put("total_least_loaded_in_region_group", totalLeastLoadedInRegionGroup);
         json.put("total_least_loaded_in_conference", totalLeastLoadedAlreadyInConference);
         json.put("total_least_loaded", totalLeastLoaded);
         json.put("total_split_due_to_region", totalSplitDueToRegion);

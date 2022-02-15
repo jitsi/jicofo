@@ -17,6 +17,9 @@
  */
 package org.jitsi.jicofo.bridge
 
+import com.typesafe.config.ConfigList
+import com.typesafe.config.ConfigObject
+import com.typesafe.config.ConfigValue
 import org.jitsi.config.JitsiConfig
 import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.metaconfig.config
@@ -116,6 +119,17 @@ class BridgeConfig private constructor() {
 
     val xmppConnectionName: XmppConnectionEnum by config {
         "jicofo.bridge.xmpp-connection-name".from(JitsiConfig.newConfig)
+    }
+
+    val regionGroups: Set<Set<String>> by config {
+        "jicofo.bridge".from(JitsiConfig.newConfig).convertFrom<ConfigObject> {
+            val regionGroupsConfigList = it["region-groups"] as? ConfigList ?: emptyList<ConfigValue>()
+            regionGroupsConfigList.map { regionsConfigList ->
+                (regionsConfigList as? ConfigList ?: emptyList<ConfigValue>()).map { region ->
+                    region.unwrapped().toString()
+                }.toSet()
+            }.toSet()
+        }
     }
 
     companion object {

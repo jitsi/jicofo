@@ -79,6 +79,20 @@ class BridgeConfigTest : ShouldSpec() {
                 config.healthChecksRetryDelay shouldBe 1.mins
             }
         }
+        context("Region groups") {
+            config.regionGroups shouldBe emptyList()
+
+            withNewConfig(
+                """
+                jicofo.bridge.region-groups = [
+                    [ "us-east", "us-west" ],
+                    [ "eu-central", "eu-west"]
+                ]
+                """.trimIndent()
+            ) {
+                config.regionGroups shouldBe setOf(setOf("us-east", "us-west"), setOf("eu-central", "eu-west"))
+            }
+        }
     }
 }
 private val legacyConfig = """
