@@ -84,6 +84,11 @@ public class Bridge
     private String version = null;
 
     /**
+     * Holds bridge release ID, or null if not known.
+     */
+    private String releaseId = null;
+
+    /**
      * Whether the bridge supports colibri2.
      */
     private boolean colibri2 = false;
@@ -199,6 +204,12 @@ public class Bridge
         if (newVersion != null)
         {
             version = newVersion;
+        }
+
+        String newReleaseId = stats.getValueAsString(RELEASE);
+        if (newReleaseId != null)
+        {
+            releaseId = newReleaseId;
         }
 
         String region = stats.getValueAsString(REGION);
@@ -323,6 +334,12 @@ public class Bridge
     {
         return version;
     }
+
+    /**
+     * Get the release ID of this bridge.
+     * @return The release ID, or null if not known.
+     */
+    public String getReleaseId() { return releaseId; }
 
     /**
      * @return the region of this {@link Bridge}.
