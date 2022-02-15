@@ -27,31 +27,31 @@ import java.util.*;
  * (Happy case 1): If there is a non-overloaded bridge in the conference
  * and in the region: use the least loaded of them.
  * (Happy case 1A): If there is a non-overloaded bridge in the conference
- * and in a near region: use the least loaded of them.
+ * and in the region's group: use the least loaded of them.
  * (Happy case 2): If there is a non-overloaded bridge in the region,
  * and the conference has no bridges in the region: use the least loaded bridge
  * in the region.
- * (Happy case 2A): If there is a non-overloaded bridge in a near region,
- * and the conference has no bridges in a near region: use the least loaded bridge
- * in a near region.
+ * (Happy case 2A): If there is a non-overloaded bridge in the region's group,
+ * and the conference has no bridges in the region's group: use the least loaded bridge
+ * in the region's group.
  *
  * (Split case 1): If there is a non-overloaded bridge in the region, the
  * conference has bridges in the region but all are overloaded: Use the least
  * loaded of the bridges in the region.
- * (Split case 1A): If there is a non-overloaded bridge in a near region, the
- * conference has bridges in the region or near-region but all are overloaded: Use the least
+ * (Split case 1A): If there is a non-overloaded bridge in the region's group, the
+ * conference has bridges in the region's group but all are overloaded: Use the least
  * loaded of the bridges in the region.
  *
- * (Overload case 1): If all bridges in the region and near regions are overloaded, and the
- * conference has a bridge in the region or near regions: use the least loaded conference
- * bridge in the region or near regions.
- * (Overload case 2): If all bridges in the region and near regions are overloaded, and the
- * conference has no bridges in the region or near regions: use the least loaded bridge in
- * the region or near regions.
+ * (Overload case 1): If all bridges in the region's group are overloaded, and the
+ * conference has a bridge in the region's group: use the least loaded conference
+ * bridge in the region's group.
+ * (Overload case 2): If all bridges in the region's group are overloaded, and the
+ * conference has no bridges in the region's group: use the least loaded bridge in
+ * the region's group.
  *
- * (No-region-match case 1): If there are no bridges in the region or near regions, and the
+ * (No-region-match case 1): If there are no bridges in the region's group, and the
  * conference has a non-overloaded bridge: use the least loaded conference bridge.
- * (No-region-match case 2): If there are no bridges in the region or near regions and all
+ * (No-region-match case 2): If there are no bridges in the region's group and all
  * conference bridges are overloaded: use the least loaded bridge.
  *
  */
