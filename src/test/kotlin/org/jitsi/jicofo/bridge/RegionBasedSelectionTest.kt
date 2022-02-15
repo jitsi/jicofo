@@ -161,6 +161,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
 const val maxBp = 10
 const val maxBpConfig = "jicofo.bridge.max-bridge-participants=$maxBp"
 val regionGroupsConfig = """
+    jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
     jicofo.bridge.region-groups = [
        [ "${UsEast.region}", "${UsWest.region}" ],
        [ "${EuCentral.region}", "${EuWest.region}" ],

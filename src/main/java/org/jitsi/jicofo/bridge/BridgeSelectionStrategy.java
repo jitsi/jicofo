@@ -111,7 +111,7 @@ public abstract class BridgeSelectionStrategy
             Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
-                logger.info("Selected initial bridge " + bridge
+                logger.debug("Selected initial bridge " + bridge
                         + " with reported stress=" + bridge.getLastReportedStressLevel()
                         + " for participantRegion=" + participantRegion
                         + " using strategy " + this.getClass().getSimpleName());

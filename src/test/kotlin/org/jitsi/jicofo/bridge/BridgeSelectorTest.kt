@@ -21,7 +21,9 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.util.context
+import org.jitsi.metaconfig.MetaconfigSettings
 import org.jitsi.test.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
@@ -163,6 +165,33 @@ class BridgeSelectorTest : ShouldSpec() {
                 jvb1.setStats(gracefulShutdown = true)
                 selector.removeJvbAddress(jvb1.jid)
                 selector.lostBridges() shouldBe 0
+            }
+        }
+        xcontext("Performance") {
+            withNewConfig(regionGroupsConfig) {
+                // Config caching has a huge impact!
+                MetaconfigSettings.cacheEnabled = true
+
+                val numBridges = 500
+                val times = 1000
+
+                val selector = BridgeSelector(clock)
+                for (i in 1..numBridges) {
+                    selector.addJvbAddress(JidCreate.from("jvb-$i")).apply {
+                        // Force the worst-case in RegionBasedBridgeSelectionStrategy (the last "least loaded" branch).
+                        setStats(stress = 0.99, region = "bridge-region")
+                    }
+                }
+
+                repeat(10) {
+                    val start = System.currentTimeMillis()
+                    for (i in 0..times) {
+                        selector.selectBridge(participantRegion = "participant-region-no-match")
+                    }
+                    val end = System.currentTimeMillis()
+                    val avgNs = (end - start) * 1_000_000.toDouble() / times
+                    println("Took ${end - start} ms to select $times times (an average of $avgNs ns per selection)")
+                }
             }
         }
     }
