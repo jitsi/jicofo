@@ -15,34 +15,43 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
- * Implements a {@link BridgeSelectionStrategy} which selects attempts to
- * select bridges in the participant's region.
+ * Implements a {@link BridgeSelectionStrategy} which attempts to select bridges in the participant's region.
  *
  * Specifically, it implements the following algorithm:
  *
  * (Happy case 1): If there is a non-overloaded bridge in the conference
  * and in the region: use the least loaded of them.
+ * (Happy case 1A): If there is a non-overloaded bridge in the conference
+ * and in a near region: use the least loaded of them.
  * (Happy case 2): If there is a non-overloaded bridge in the region,
  * and the conference has no bridges in the region: use the least loaded bridge
  * in the region.
+ * (Happy case 2A): If there is a non-overloaded bridge in a near region,
+ * and the conference has no bridges in a near region: use the least loaded bridge
+ * in a near region.
  *
  * (Split case 1): If there is a non-overloaded bridge in the region, the
  * conference has bridges in the region but all are overloaded: Use the least
  * loaded of the bridges in the region.
+ * (Split case 1A): If there is a non-overloaded bridge in a near region, the
+ * conference has bridges in the region or near-region but all are overloaded: Use the least
+ * loaded of the bridges in the region.
  *
- * (Overload case 1): If all bridges in the region are overloaded, and the
- * conference has a bridge in the region: use the least loaded conference
- * bridge in the region.
- * (Overload case 2): If all bridges in the region are overloaded, and the
- * conference has no bridges in the region: use the least loaded bridge in
- * the region.
+ * (Overload case 1): If all bridges in the region and near regions are overloaded, and the
+ * conference has a bridge in the region or near regions: use the least loaded conference
+ * bridge in the region or near regions.
+ * (Overload case 2): If all bridges in the region and near regions are overloaded, and the
+ * conference has no bridges in the region or near regions: use the least loaded bridge in
+ * the region or near regions.
  *
- * (No-region-match case 1): If there are no bridges in the region, and the
+ * (No-region-match case 1): If there are no bridges in the region or near regions, and the
  * conference has a non-overloaded bridge: use the least loaded conference bridge.
- * (No-region-match case 2): If there are no bridges in the region and all
+ * (No-region-match case 2): If there are no bridges in the region or near regions and all
  * conference bridges are overloaded: use the least loaded bridge.
  *
  */
@@ -50,10 +59,25 @@ public class RegionBasedBridgeSelectionStrategy
     extends BridgeSelectionStrategy
 {
     /**
+     * Map a region to the set of all region in its group (including itself).
+     */
+    private final Map<String, Set<String>> regionGroups = new HashMap<>();
+
+    /**
      * Default constructor.
      */
     public RegionBasedBridgeSelectionStrategy()
-    {}
+    {
+        BridgeConfig.config.getRegionGroups().forEach(
+                regionGroup -> regionGroup.forEach(region -> regionGroups.put(region, regionGroup)));
+    }
+
+    @NotNull
+    private Set<String> getRegionGroup(String region)
+    {
+        Set<String> regionGroup = regionGroups.get(region);
+        return regionGroup != null ? regionGroup : Collections.singleton(region);
+    }
 
     @Override
     public Bridge doSelect(
@@ -67,11 +91,17 @@ public class RegionBasedBridgeSelectionStrategy
         }
 
         return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> notLoadedAlreadyInConferenceInRegionGroup(
+                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
                 () -> notLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
                 () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> leastLoadedAlreadyInConferenceInRegionGroup(
+                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
                 () -> leastLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                () -> leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
                 () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))));
+                () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))))))));
     }
 
     @Override
