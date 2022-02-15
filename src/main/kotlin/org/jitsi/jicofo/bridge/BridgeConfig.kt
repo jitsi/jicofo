@@ -124,9 +124,9 @@ class BridgeConfig private constructor() {
     val regionGroups: Set<Set<String>> by config {
         "jicofo.bridge".from(JitsiConfig.newConfig).convertFrom<ConfigObject> {
             val regionGroupsConfigList = it["region-groups"] as? ConfigList ?: emptyList<ConfigValue>()
-            regionGroupsConfigList.map { regionGroupConfigList ->
-                (regionGroupConfigList as? ConfigList ?: emptyList<ConfigValue>()).map { regionConfigValue ->
-                    regionConfigValue.unwrapped().toString()
+            regionGroupsConfigList.map { regionsConfigList ->
+                (regionsConfigList as? ConfigList ?: emptyList<ConfigValue>()).map { region ->
+                    region.unwrapped().toString()
                 }.toSet()
             }.toSet()
         }
