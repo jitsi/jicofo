@@ -272,7 +272,7 @@ public abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            totalNotLoadedInRegion++;
+            totalNotLoadedInRegionGroup++;
             updateSplitStats(conferenceBridges, result.get(), null, participantRegionGroup);
             logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
         }
@@ -355,7 +355,7 @@ public abstract class BridgeSelectionStrategy
 
         if (result.isPresent())
         {
-            totalLeastLoadedAlreadyInConferenceInRegion++;
+            totalLeastLoadedAlreadyInConferenceInRegionGroup++;
             logSelection(result.get(), conferenceBridges, null, participantRegionGroup);
         }
 
