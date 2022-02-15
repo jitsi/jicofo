@@ -100,11 +100,6 @@ public class TestConference
         this.conference = getFocusManager().getConference(roomName);
     }
 
-    public MockVideobridge getMockVideoBridge()
-    {
-        return mockBridge;
-    }
-
     public int getParticipantCount()
     {
         return conference.getParticipantCount();
