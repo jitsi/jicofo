@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.bridge
 
-import io.kotest.core.annotation.Ignored
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
@@ -30,7 +29,6 @@ import org.jxmpp.jid.impl.JidCreate
  * This test simulates the intended procedure to upgrade the set of bridges connected to a jicofo instance, and
  * verifies the selection logic.
  */
-@Ignored
 class BridgeReleaseTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.SingleInstance
 
