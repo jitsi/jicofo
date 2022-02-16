@@ -23,9 +23,3 @@ fun ShouldSpec.context(config: String, name: String, block: () -> Unit) = contex
         block()
     }
 }
-
-fun ShouldSpec.xcontext(config: String, name: String, block: () -> Unit) = xcontext(name) {
-    withNewConfig(config) {
-        block()
-    }
-}
