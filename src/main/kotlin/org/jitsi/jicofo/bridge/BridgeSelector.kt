@@ -185,12 +185,12 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
-        /* If there are active bridges, prefer those */
+        // If there are active bridges, prefer those.
         val activeBridges = candidateBridges.filter { !it.isDraining }.toList()
         if (!activeBridges.isEmpty())
             candidateBridges = activeBridges
 
-        /* If there are bridges not shutting down, prefer those */
+        // If there are bridges not shutting down, prefer those.
         val runningBridges = candidateBridges.filter { !it.isInGracefulShutdown }.toList()
         if (!runningBridges.isEmpty())
             candidateBridges = runningBridges
