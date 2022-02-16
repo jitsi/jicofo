@@ -85,7 +85,7 @@ class BridgeReleaseTest : ShouldSpec() {
             selector.testSelect() shouldBe old1
             selector.testSelect(version = newVersion) shouldBe new1
             selector.testSelect(mapOf(new1 to 1)) shouldBe new1
-            new1.setStats(stress = 0.3)
+            new1.setStats(stress = 0.3, drain = true)
             // And more bridges with a new release.
             val new2 = selector.createBridge("new2", newVersion, 0.2, drain = true)
             val new3 = selector.createBridge("new3", newVersion, 0.1, drain = true)
@@ -128,7 +128,7 @@ class BridgeReleaseTest : ShouldSpec() {
             setOf(new1, new2, new3).forEach { it.setStats(drain = false) }
 
             // Select the new version for new conferences
-            old1.setStats(stress = 0.0)
+            old1.setStats(stress = 0.0, drain = true)
             // old1 should not be selected because it is in drain
             selector.testSelect() shouldBe new3
             selector.testSelect(mapOf(new3 to maxBp)) shouldBe new2
