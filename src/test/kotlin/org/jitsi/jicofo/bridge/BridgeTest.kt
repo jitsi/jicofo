@@ -125,18 +125,23 @@ class BridgeTest : ShouldSpec({
 fun Bridge.setStats(
     stress: Double? = null,
     region: String? = null,
+    relayId: String? = region,
     version: String? = null,
     colibri2: Boolean = true,
-    gracefulShutdown: Boolean = false
+    gracefulShutdown: Boolean = false,
+    drain: Boolean = false
 ) = setStats(
     ColibriStatsExtension().apply {
         stress?.let { addStat(ColibriStatsExtension.Stat("stress_level", it)) }
         region?.let {
             addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.REGION, it))
+        }
+        relayId?.let {
             addStat(ColibriStatsExtension.Stat(ColibriStatsExtension.RELAY_ID, it))
         }
         version?.let { addStat(ColibriStatsExtension.Stat("version", version)) }
         if (colibri2) addStat("colibri2", "true")
         if (gracefulShutdown) addStat(ColibriStatsExtension.SHUTDOWN_IN_PROGRESS, "true")
+        addStat(ColibriStatsExtension.DRAIN, if (drain) "true" else "false")
     }
 )
