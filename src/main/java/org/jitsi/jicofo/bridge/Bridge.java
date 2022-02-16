@@ -419,6 +419,14 @@ public class Bridge
         return shutdownInProgress;
     }
 
+    /**
+     * @return true if the bridge is currently in drain mode
+     */
+    public boolean isDraining()
+    {
+        return draining;
+    }
+
     @NonNull
     public OrderedJsonObject getDebugState()
     {
