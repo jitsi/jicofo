@@ -116,7 +116,7 @@ public class Bridge
     /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
-    private boolean draining = false;
+    private boolean draining = true; /* Default to true to prevent unwanted selection before reading actual state */
 
     /**
      * The time when this instance has failed.
@@ -417,6 +417,14 @@ public class Bridge
     public boolean isInGracefulShutdown()
     {
         return shutdownInProgress;
+    }
+
+    /**
+     * @return true if the bridge is currently in drain mode
+     */
+    public boolean isDraining()
+    {
+        return draining;
     }
 
     @NonNull

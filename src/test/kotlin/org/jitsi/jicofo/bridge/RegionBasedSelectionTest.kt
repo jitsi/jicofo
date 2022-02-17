@@ -158,7 +158,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
     }
 }
 
-const val maxBp = 10
+private const val maxBp = 10
 const val maxBpConfig = "jicofo.bridge.max-bridge-participants=$maxBp"
 val regionGroupsConfig = """
     jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy

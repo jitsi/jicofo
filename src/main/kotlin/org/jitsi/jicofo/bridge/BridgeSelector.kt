@@ -163,28 +163,37 @@ class BridgeSelector @JvmOverloads constructor(
          * */
         version: String? = null
     ): Bridge? {
+
+        var v = conferenceBridges.keys.firstOrNull()?.version
+        if (v == null) {
+            v = version
+        } else if (version != null && version != v) {
+            logger.warn("An inconsistent version was requested: $version. Conference is using version: $v")
+            return null
+        }
+
         // the list of all known videobridges JIDs ordered by load and *operational* status.
         val prioritizedBridges = synchronized(this) { ArrayList(bridges.values) }
         prioritizedBridges.sort()
 
-        var candidateBridges = prioritizedBridges
-            .filter { it.isOperational && !it.isInGracefulShutdown }
-            .toList()
-
-        // if there's no candidate bridge, we include bridges that are in graceful shutdown mode
-        // (the alternative is to crash the user)
-        if (candidateBridges.isEmpty()) {
-            candidateBridges = prioritizedBridges.filter { it.isOperational }.toList()
+        var candidateBridges = prioritizedBridges.filter { it.isOperational }.toList()
+        if (v != null) {
+            candidateBridges = candidateBridges.filter { it.version == v }
         }
-
-        if (candidateBridges.isEmpty()) return null
-
-        val v = version ?: conferenceBridges.keys.firstOrNull()?.version
-        candidateBridges = if (v == null) candidateBridges else candidateBridges.filter { it.version == v }
         if (candidateBridges.isEmpty()) {
             logger.warn("There are no bridges with the required version: $v")
             return null
         }
+
+        // If there are active bridges, prefer those.
+        val activeBridges = candidateBridges.filter { !it.isDraining }.toList()
+        if (!activeBridges.isEmpty())
+            candidateBridges = activeBridges
+
+        // If there are bridges not shutting down, prefer those.
+        val runningBridges = candidateBridges.filter { !it.isInGracefulShutdown }.toList()
+        if (!runningBridges.isEmpty())
+            candidateBridges = runningBridges
 
         if (ColibriConfig.config.enableColibri2) {
             candidateBridges = candidateBridges.filter { it.supportsColibri2() }
