@@ -177,12 +177,25 @@ class BridgeSelector @JvmOverloads constructor(
         prioritizedBridges.sort()
 
         var candidateBridges = prioritizedBridges.filter { it.isOperational }.toList()
+        if (candidateBridges.isEmpty()) {
+            logger.warn("There are no operational bridges.")
+            return null
+        }
+
         if (v != null) {
             candidateBridges = candidateBridges.filter { it.version == v }
+            if (candidateBridges.isEmpty()) {
+                logger.warn("There are no bridges with the required version: $v")
+                return null
+            }
         }
-        if (candidateBridges.isEmpty()) {
-            logger.warn("There are no bridges with the required version: $v")
-            return null
+
+        if (ColibriConfig.config.enableColibri2) {
+            candidateBridges = candidateBridges.filter { it.supportsColibri2() }
+            if (candidateBridges.isEmpty()) {
+                logger.warn("There are no bridges with colibri2 support.")
+                return null
+            }
         }
 
         // If there are active bridges, prefer those.
@@ -194,14 +207,6 @@ class BridgeSelector @JvmOverloads constructor(
         val runningBridges = candidateBridges.filter { !it.isInGracefulShutdown }.toList()
         if (!runningBridges.isEmpty())
             candidateBridges = runningBridges
-
-        if (ColibriConfig.config.enableColibri2) {
-            candidateBridges = candidateBridges.filter { it.supportsColibri2() }
-            if (candidateBridges.isEmpty()) {
-                logger.warn("There are no bridges with colibri2 support.")
-                return null
-            }
-        }
 
         return bridgeSelectionStrategy.select(
             candidateBridges,
