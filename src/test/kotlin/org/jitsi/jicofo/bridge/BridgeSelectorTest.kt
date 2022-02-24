@@ -149,6 +149,9 @@ class BridgeSelectorTest : ShouldSpec() {
 
             val jvb2 = selector.addJvbAddress(jid2).apply { setStats(stress = 0.9) }
             selector.selectBridge() shouldBe jvb2
+
+            jvb2.setStats(stress = 0.9, gracefulShutdown = true)
+            selector.selectBridge() shouldBe jvb2
         }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
