@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge
 
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.conference.colibri.ColibriConfig
+import org.jitsi.utils.LRUCache
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -63,6 +64,8 @@ class BridgeSelector @JvmOverloads constructor(
      */
     private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
 
+    private val cachedBridges: MutableMap<Jid, Bridge> = LRUCache(1000)
+
     val bridgeCount: Int
         @Synchronized
         get() = bridges.size
@@ -88,16 +91,25 @@ class BridgeSelector @JvmOverloads constructor(
      */
     @JvmOverloads
     @Synchronized
-    fun addJvbAddress(bridgeJid: Jid, stats: ColibriStatsExtension? = null): Bridge = bridges[bridgeJid]?.let {
-        it.setStats(stats)
-        return it
-    } ?: Bridge(bridgeJid, clock).also { newBridge ->
+    fun addJvbAddress(bridgeJid: Jid, stats: ColibriStatsExtension? = null): Bridge {
+        bridges[bridgeJid]?.let {
+            it.setStats(stats)
+            return it
+        }
+
+        val newBridge = cachedBridges[bridgeJid]?.apply {
+            logger.info("Reusing Bridge instance for $bridgeJid")
+            reset()
+        } ?: Bridge(bridgeJid, clock)
+
         logger.info("Added new videobridge: $newBridge")
         if (stats != null) {
             newBridge.setStats(stats)
         }
         bridges[bridgeJid] = newBridge
         eventEmitter.fireEvent { bridgeAdded(newBridge) }
+
+        return newBridge
     }
 
     /**
@@ -115,6 +127,7 @@ class BridgeSelector @JvmOverloads constructor(
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
+            cachedBridges[bridgeJid] = it
         }
     }
 

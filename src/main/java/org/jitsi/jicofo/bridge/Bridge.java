@@ -144,6 +144,25 @@ public class Bridge
     }
 
     /**
+     * Resets the state to the default values.
+     */
+    void reset()
+    {
+        lastReportedPacketRatePps = 0;
+        lastReportedStressLevel = 0.0;
+        usePacketRateStatForStress = true;
+        version = null;
+        releaseId = null;
+        colibri2 = false;
+        isOperational = true;
+        shutdownInProgress = false;
+        draining = true;
+        failureInstant = null;
+        region = null;
+        relayId = null;
+    }
+
+    /**
      * Notifies this instance that a new {@link ColibriStatsExtension} was
      * received for this instance.
      * @param stats the {@link ColibriStatsExtension} instance which was
