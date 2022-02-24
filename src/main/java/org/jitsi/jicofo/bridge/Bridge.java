@@ -62,20 +62,9 @@ public class Bridge
             = new RateTracker(config.participantRampupInterval(), Duration.ofMillis(100));
 
     /**
-     * The last reported packet rate in packets per second.
-     */
-    private int lastReportedPacketRatePps = 0;
-
-    /**
      * The last report stress level
      */
     private double lastReportedStressLevel = 0.0;
-
-    /**
-     * For older bridges which don't support reporting their stress level we'll fall back
-     * to calculating the stress manually via the packet rate.
-     */
-    private boolean usePacketRateStatForStress = true;
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -148,9 +137,7 @@ public class Bridge
      */
     void reset()
     {
-        lastReportedPacketRatePps = 0;
         lastReportedStressLevel = 0.0;
-        usePacketRateStatForStress = true;
         version = null;
         releaseId = null;
         colibri2 = false;
@@ -179,28 +166,11 @@ public class Bridge
         if (stressLevel != null)
         {
             lastReportedStressLevel = stressLevel;
-            usePacketRateStatForStress = false;
         }
         Double averageParticipantStress = UtilKt.getDouble(stats, "average_participant_stress");
         if (averageParticipantStress != null)
         {
             this.averageParticipantStress = averageParticipantStress;
-        }
-
-        Integer packetRateDown = null;
-        Integer packetRateUp = null;
-        try
-        {
-            packetRateDown = stats.getValueAsInt(PACKET_RATE_DOWNLOAD);
-            packetRateUp = stats.getValueAsInt(PACKET_RATE_UPLOAD);
-        }
-        catch (NumberFormatException ignored)
-        {
-        }
-
-        if (packetRateDown != null && packetRateUp != null)
-        {
-            lastReportedPacketRatePps = packetRateDown + packetRateUp;
         }
 
         if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
@@ -390,34 +360,9 @@ public class Bridge
      */
     public double getStress()
     {
-        if (usePacketRateStatForStress)
-        {
-            return getStressFromPacketRate();
-        }
         // While a stress of 1 indicates a bridge is fully loaded, we allow
         // larger values to keep sorting correctly.
         return (lastReportedStressLevel + Math.max(0, getRecentlyAddedEndpointCount()) * averageParticipantStress);
-    }
-
-    /**
-     * Returns the "stress" of the bridge. The stress is computed based on the
-     * total packet rate reported by the bridge and the video stream diff
-     * estimation since the last update from the bridge. Note that this is techincally
-     * deprecated and only exists for backwards compatibility with bridges who don't
-     * yet support reporting their stress level directly.
-     *
-     * @return the sum of the last total reported packet rate (in pps) and an
-     * estimation of the packet rate of the streams that we estimate that the bridge
-     * hasn't reported to Jicofo yet. The estimation is the product of the
-     * number of unreported streams and a constant C (which we set to 500 pps).
-     */
-    private double getStressFromPacketRate()
-    {
-        // While a stress of 1 indicates a bridge is fully loaded, we allow
-        // larger values to keep sorting correctly.
-        return (lastReportedPacketRatePps
-            + Math.max(0, getRecentlyAddedEndpointCount()) * config.averageParticipantPacketRatePps())
-            / (double) config.maxBridgePacketRatePps();
     }
 
     /**
@@ -453,7 +398,6 @@ public class Bridge
         o.put("version", String.valueOf(version));
         o.put("stress", getStress());
         o.put("operational", isOperational());
-        o.put("packet_rate", lastReportedPacketRatePps);
         o.put("region", String.valueOf(region));
         o.put("graceful-shutdown", isInGracefulShutdown());
         o.put("overloaded", isOverloaded());
