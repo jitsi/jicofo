@@ -61,6 +61,16 @@ public class MockChatRoom
 
     private final List<ChatRoomMember> members = new CopyOnWriteArrayList<>();
 
+    /**
+     * The number of members that currently have their audio sources unmuted.
+     */
+    private int numAudioSenders;
+
+    /**
+     * The number of members that currently have their video sources unmuted.
+     */
+    private int numVideoSenders;
+
     public MockChatRoom(EntityBareJid roomName, XmppProvider xmppProvider)
     {
         this.roomName = roomName;
@@ -261,15 +271,53 @@ public class MockChatRoom
     }
 
     @Override
-    public int getAudioSendersCount()
-    {
-        return 0; /* implement */
-    }
+    public int getAudioSendersCount() { return numAudioSenders; }
 
     @Override
-    public int getVideoSendersCount()
+    public int getVideoSendersCount() { return numVideoSenders; }
+
+    public void addAudioSender()
     {
-        return 0; /* implement */
+        ++numAudioSenders;
+        logger.debug(() -> "The number of audio senders has increased to " + numAudioSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numAudioSendersChanged(numAudioSenders);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void removeAudioSender()
+    {
+        --numAudioSenders;
+        logger.debug(() -> "The number of audio senders has decreased to " + numAudioSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numAudioSendersChanged(numAudioSenders);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void addVideoSender()
+    {
+        ++numVideoSenders;
+        logger.debug(() -> "The number of video senders has increased to " + numVideoSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numVideoSendersChanged(numVideoSenders);
+            return Unit.INSTANCE;
+        });
+    }
+
+    public void removeVideoSender()
+    {
+        --numVideoSenders;
+        logger.debug(() -> "The number of video senders has decreased to " + numVideoSenders + ".");
+
+        eventEmitter.fireEvent(handler -> {
+            handler.numVideoSendersChanged(numVideoSenders);
+            return Unit.INSTANCE;
+        });
     }
 
     private void grantRole(EntityFullJid address, MemberRole newRole)
