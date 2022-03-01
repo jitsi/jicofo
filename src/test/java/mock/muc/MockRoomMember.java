@@ -37,6 +37,16 @@ public class MockRoomMember
 
     private MemberRole role = MemberRole.GUEST;
 
+    /**
+     * Indicates whether the member's audio sources are currently muted.
+     */
+    private boolean isAudioMuted = true;
+
+    /**
+     * Indicates whether the member's video sources are currently muted.
+     */
+    private boolean isVideoMuted = true;
+
     public MockRoomMember(EntityFullJid address, MockChatRoom chatRoom)
     {
         this.address = address;
@@ -111,10 +121,34 @@ public class MockRoomMember
     }
 
     @Override
-    public boolean isAudioMuted() { return false; }
+    public boolean isAudioMuted() { return isAudioMuted; }
 
     @Override
-    public boolean isVideoMuted() { return false; }
+    public boolean isVideoMuted() { return isVideoMuted; }
+
+    public void audioMute(boolean enable)
+    {
+        if (isAudioMuted != enable)
+        {
+            isAudioMuted = enable;
+            if (enable)
+                room.removeAudioSender();
+            else
+                room.addAudioSender();
+        }
+    }
+
+    public void videoMute(boolean enable)
+    {
+        if (isVideoMuted != enable)
+        {
+            isVideoMuted = enable;
+            if (enable)
+                room.removeVideoSender();
+            else
+                room.addVideoSender();
+        }
+    }
 
     @Override
     public Presence getPresence()

@@ -32,6 +32,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jitsi.protocol.xmpp.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
 import org.jxmpp.jid.*;
@@ -397,21 +398,34 @@ public class MockParticipant
         jingle.sendRemoveSourceIQ(toRemove, jingleSession, false);
     }
 
-    public void videoSourceAdd(long[] newSSRCs)
+    private boolean sourceAdd(String media, long[] newSSRCs)
     {
         ConferenceSourceMap toAdd = new ConferenceSourceMap();
 
         // Create new SSRCs
         for (int i=0; i<newSSRCs.length; i++)
         {
-            Source ssrcPe = addLocalSSRC("video", newSSRCs[i]);
+            Source ssrcPe = addLocalSSRC(media, newSSRCs[i]);
 
             toAdd.add(getMyJid(), new EndpointSourceSet(ssrcPe));
         }
 
         // Send source-add
-        jingle.sendAddSourceIQ(toAdd, jingleSession, false);
+        try {
+            return jingle.sendAddSourceIQAndGetResult(toAdd, jingleSession, false);
+        }
+        catch (SmackException.NotConnectedException e)  {
+            return false;
+        }
     }
+
+    public boolean videoSourceAdd(long[] newSSRCs) { return sourceAdd("video", newSSRCs); }
+
+    public boolean audioSourceAdd(long[] newSSRCs) { return sourceAdd("audio", newSSRCs); }
+
+    public void audioMute(boolean enable) { user.audioMute(enable); }
+
+    public void videoMute(boolean enable) { user.videoMute(enable); }
 
     public ConferenceSourceMap getRemoteSources()
     {
@@ -462,7 +476,7 @@ public class MockParticipant
         return myJid;
     }
 
-    public Source addLocalSSRC(String media, long ssrc)
+    private Source addLocalSSRC(String media, long ssrc)
     {
         Source source = new Source(ssrc, MediaType.parseString(media), null, null, false);
 

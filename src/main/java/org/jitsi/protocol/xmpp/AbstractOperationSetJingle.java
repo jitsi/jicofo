@@ -382,11 +382,7 @@ public abstract class AbstractOperationSetJingle
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
+    private JingleIQ createAddSourceIq(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
         JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
         addSourceIq.setFrom(getOurJID());
@@ -403,9 +399,43 @@ public abstract class AbstractOperationSetJingle
 
         logger.debug("Sending source-add to " + session.getAddress()
                 + ", SID=" + session.getSessionID() + ", sources=" + sources);
+        return addSourceIq;
+    }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
+    {
+        JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
         UtilKt.tryToSendStanza(getConnection(), addSourceIq);
         stats.stanzaSent(JingleAction.SOURCEADD);
+    }
+
+    /**
+     * Sends 'source-add' proprietary notification. Wait for response and return status.
+     *
+     * @param sources the sources to be included in the source-add message.
+     * @param session the <tt>JingleSession</tt> used to send the notification.
+     * @param encodeSourcesAsJson whether to encode {@code sources} as JSON or standard Jingle.
+     * @return {@code true} if the source-add completed successfully.
+     */
+    public boolean sendAddSourceIQAndGetResult(ConferenceSourceMap sources, JingleSession session,
+        boolean encodeSourcesAsJson)
+        throws SmackException.NotConnectedException
+    {
+        JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
+        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), addSourceIq);
+        stats.stanzaSent(JingleAction.SOURCEADD);
+
+        if (reply == null)
+            return false;
+        if (IQ.Type.result.equals(reply.getType()))
+            return true;
+
+        logger.error("Failed to do 'source-add' to " + session.getAddress() + ": " + reply.toXML());
+        return false;
     }
 
     /**
