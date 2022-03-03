@@ -432,10 +432,12 @@ public class Bridge
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("version", String.valueOf(version));
+        o.put("release", String.valueOf(releaseId));
         o.put("stress", getStress());
         o.put("operational", isOperational());
         o.put("packet_rate", lastReportedPacketRatePps);
         o.put("region", String.valueOf(region));
+        o.put("drain", isDraining());
         o.put("graceful-shutdown", isInGracefulShutdown());
         o.put("overloaded", isOverloaded());
         o.put("relay-id", String.valueOf(relayId));
