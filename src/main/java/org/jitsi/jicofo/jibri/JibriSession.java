@@ -184,8 +184,7 @@ public class JibriSession
      * @param youTubeBroadcastId the YouTube broadcast id (optional)
      * @param applicationData a JSON-encoded string containing application-specific
      * data for Jibri
-     * @param logLevelDelegate logging level delegate which will be used to
-     * select logging level for this instance {@link #logger}.
+     * @param parentLogger the parent logger whose context will be inherited by {@link #logger}.
      */
     JibriSession(
             StateListener stateListener,
@@ -201,7 +200,7 @@ public class JibriSession
             String youTubeBroadcastId,
             String sessionId,
             String applicationData,
-            Logger logLevelDelegate)
+            Logger parentLogger)
     {
         this.stateListener = stateListener;
         this.roomName = roomName;
@@ -217,7 +216,7 @@ public class JibriSession
         this.sessionId = sessionId;
         this.applicationData = applicationData;
         jibriDetector.addHandler(jibriEventHandler);
-        logger = new LoggerImpl(getClass().getName(), logLevelDelegate.getLevel());
+        logger = parentLogger.createChildLogger(getClass().getName());
     }
 
     /**
