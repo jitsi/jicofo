@@ -72,6 +72,7 @@ abstract class BaseJibri internal constructor(
 
     fun handleJibriRequest(request: JibriRequest): IqProcessingResult =
         if (accept(request.iq)) {
+            logger.info("Accepted jibri request: ${request.iq.toXML()}")
             incomingIqQueue.add(request)
             AcceptedWithNoResponse()
         } else {
