@@ -22,6 +22,7 @@ import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
+import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
@@ -43,6 +44,7 @@ class JibriIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
+    val logger = createLogger()
 
     /**
      * {@inheritDoc}
@@ -60,6 +62,7 @@ class JibriIqHandler(
         }
 
         // No conference accepted the request.
+        logger.warn("Jibri IQ not accepted by any conference: ${request.iq.toXML()}")
         return RejectedWithError(request, StanzaError.Condition.item_not_found)
     }
 }
