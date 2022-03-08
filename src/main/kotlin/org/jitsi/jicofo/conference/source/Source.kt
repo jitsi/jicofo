@@ -103,7 +103,7 @@ data class Source(
          * source.
          */
         fun nameForIdAndMediaType(endpointId: String, mediaType: MediaType, idx: Int): String {
-            return "$endpointId-${(mediaType.toString().substring(0, 1))}$idx"
+            return "$endpointId-${(mediaType.toString()[0])}$idx"
         }
     }
 }
