@@ -66,11 +66,12 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
     val mediaSources: MutableMap<String, MediaSource.Builder> = mutableMapOf()
 
     // We use the signaled "name" of the source at the colibri2 source ID. If a source name isn't signaled, we use a
-    // default ID of "endpointId-mediaType". This allows backwards compat with clients that don't signal source names
+    // default ID of "endpointId-v0". This allows backwards compat with clients that don't signal source names
     // (and only support a single source).
     forEach { (owner, endpointSourceSet) ->
         endpointSourceSet.sources.forEach { source ->
-            val sourceId = source.name ?: "$owner-${source.mediaType}"
+            val sourceId = source.name ?:
+                Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), source.mediaType, 0)
             val mediaSource = mediaSources.computeIfAbsent(sourceId) {
                 MediaSource.getBuilder()
                     .setType(source.mediaType)
@@ -84,7 +85,8 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
             val firstSource = endpointSourceSet.sources.firstOrNull() { ssrcGroup.ssrcs.contains(it.ssrc) }
                 ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")
 
-            val sourceId = firstSource.name ?: "$owner-${ssrcGroup.mediaType}"
+            val sourceId = firstSource.name ?:
+                Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), ssrcGroup.mediaType, 0)
             val mediaSource = mediaSources.computeIfAbsent(sourceId) {
                 MediaSource.getBuilder()
                     .setType(ssrcGroup.mediaType)
