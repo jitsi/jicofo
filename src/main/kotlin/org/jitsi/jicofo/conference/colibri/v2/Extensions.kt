@@ -70,8 +70,8 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
     // (and only support a single source).
     forEach { (owner, endpointSourceSet) ->
         endpointSourceSet.sources.forEach { source ->
-            val sourceId = source.name ?:
-                Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), source.mediaType, 0)
+            val sourceId = source.name
+                ?: Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), source.mediaType, 0)
             val mediaSource = mediaSources.computeIfAbsent(sourceId) {
                 MediaSource.getBuilder()
                     .setType(source.mediaType)
@@ -85,8 +85,8 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
             val firstSource = endpointSourceSet.sources.firstOrNull() { ssrcGroup.ssrcs.contains(it.ssrc) }
                 ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")
 
-            val sourceId = firstSource.name ?:
-                Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), ssrcGroup.mediaType, 0)
+            val sourceId = firstSource.name
+                ?: Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), ssrcGroup.mediaType, 0)
             val mediaSource = mediaSources.computeIfAbsent(sourceId) {
                 MediaSource.getBuilder()
                     .setType(ssrcGroup.mediaType)
