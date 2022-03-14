@@ -94,4 +94,16 @@ data class Source(
         put("msid", msid ?: "null")
         put("injected", injected)
     }
+
+    companion object {
+        /**
+         * Generates a source name in deterministic format used in the jitsi-meet client. First part is the endpoint id,
+         * followed by "-", then the first letter of the media type and the index of the source (zero based).
+         * For example "endpointA-a0" is the first audio source of "endpointA" or "endpointA-v0" for the first video
+         * source.
+         */
+        fun nameForIdAndMediaType(endpointId: String, mediaType: MediaType, idx: Int): String {
+            return "$endpointId-${(mediaType.toString()[0])}$idx"
+        }
+    }
 }

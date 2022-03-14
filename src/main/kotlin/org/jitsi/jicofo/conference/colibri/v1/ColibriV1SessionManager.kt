@@ -258,7 +258,7 @@ class ColibriV1SessionManager(
                             Source(
                                 sourcePacketExtension.ssrc,
                                 mediaType, // assuming either audio or video the source name: jvb-a0 or jvb-v0
-                                "jvb-" + mediaType.toString()[0] + "0",
+                                Source.nameForIdAndMediaType("jvb", mediaType, 0),
                                 "mixedmslabel mixedlabel" + content.name + "0",
                                 false
                             )
