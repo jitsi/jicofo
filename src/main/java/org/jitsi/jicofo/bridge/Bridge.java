@@ -357,8 +357,9 @@ public class Bridge
     public String toString()
     {
         return String.format(
-                "Bridge[jid=%s, relayId=%s, region=%s, stress=%.2f]",
+                "Bridge[jid=%s, version=%s, relayId=%s, region=%s, stress=%.2f]",
                      jid.toString(),
+                     getVersion(),
                      getRelayId(),
                      getRegion(),
                      getStress());
