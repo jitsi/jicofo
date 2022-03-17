@@ -237,6 +237,14 @@ public class Participant
     }
 
     /**
+     * @return {@code true} if this participant supports source name signaling.
+     */
+    public boolean hasSourceNameSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SOURCE_NAMES);
+    }
+
+    /**
      * @return {@code true} if this participant supports receiving Jingle sources encoded as JSON instead of the
      * standard Jingle encoding.
      */

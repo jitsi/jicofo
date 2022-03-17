@@ -31,7 +31,9 @@ internal class ParticipantInfo(
     /** Whether the participant is force audio muted. */
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
-    var videoMuted: Boolean = false
+    var videoMuted: Boolean = false,
+    /* Whether the participant supports source name signaling */
+    var supportsSourceNames: Boolean = false
 ) {
     fun toJson() = OrderedJsonObject().apply {
         put("id", id)
@@ -40,5 +42,6 @@ internal class ParticipantInfo(
         put("bridge", session.bridge.jid.resourceOrNull.toString())
         put("audio_muted", audioMuted)
         put("video_muted", videoMuted)
+        put("source_names", supportsSourceNames)
     }
 }
