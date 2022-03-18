@@ -26,8 +26,6 @@ import org.jitsi.xmpp.extensions.health.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
-import org.jxmpp.jid.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -115,9 +113,13 @@ public class JvbDoctor
             return;
         }
 
+        Runnable task = config.getUsePresenceForHealth()
+                ? new HealthCheckPresenceTask(bridge)
+                : new HealthCheckTask(bridge);
+
         ScheduledFuture<?> healthTask
-                = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                new HealthCheckTask(bridge),
+            = TaskPools.getScheduledPool().scheduleAtFixedRate(
+                task,
                 healthCheckInterval,
                 healthCheckInterval,
                 TimeUnit.MILLISECONDS);
@@ -127,47 +129,11 @@ public class JvbDoctor
         logger.info("Scheduled health-check task for: " + bridge);
     }
 
-    private class HealthCheckTask implements Runnable
+    private class HealthCheckTask extends AbstractHealthCheckTask
     {
-        private final Bridge bridge;
-
         private HealthCheckTask(Bridge bridge)
         {
-            this.bridge = bridge;
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                doHealthCheck();
-            }
-            catch (Exception e)
-            {
-                // If the task was canceled while running it will throw InterruptedException, ignore it.
-                if (taskInvalid() && e instanceof InterruptedException)
-                {
-                    logger.debug("The task has been canceled.");
-                }
-                else
-                {
-                    logger.error("Error when doing health-check on: " + bridge, e);
-                }
-            }
-        }
-
-        private boolean taskInvalid()
-        {
-            synchronized (JvbDoctor.this)
-            {
-                if (!tasks.containsKey(bridge))
-                {
-                    logger.info("Health check task canceled for: " + bridge);
-                    return true;
-                }
-                return false;
-            }
+            super(bridge);
         }
 
         private HealthCheckIQ newHealthCheckIQ(Bridge bridge)
@@ -183,8 +149,9 @@ public class JvbDoctor
          * @throws org.jivesoftware.smack.SmackException.NotConnectedException when XMPP is not connected,
          * the task should terminate.
          */
-        private void doHealthCheck()
-            throws SmackException.NotConnectedException, InterruptedException
+        @Override
+        protected void doHealthCheck()
+            throws SmackException.NotConnectedException
         {
             AbstractXMPPConnection connection = getConnection();
             // If XMPP is currently not connected skip the health-check
@@ -270,6 +237,110 @@ public class JvbDoctor
                         logger.error(
                                 "Unexpected error returned by the bridge: " + bridge + ", err: " + response.toXML());
                     }
+                }
+            }
+        }
+    }
+
+    private abstract class AbstractHealthCheckTask implements Runnable
+    {
+        protected final Bridge bridge;
+        AbstractHealthCheckTask(Bridge bridge)
+        {
+            this.bridge = bridge;
+        }
+        protected abstract void doHealthCheck()
+                throws SmackException.NotConnectedException, InterruptedException;
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                doHealthCheck();
+            }
+            catch (Exception e)
+            {
+                // If the task was canceled while running it will throw InterruptedException, ignore it.
+                if (taskInvalid() && e instanceof InterruptedException)
+                {
+                    logger.debug("The task has been canceled.");
+                }
+                else
+                {
+                    logger.error("Error when doing health-check on: " + bridge, e);
+                }
+            }
+        }
+
+        protected boolean taskInvalid()
+        {
+            synchronized (JvbDoctor.this)
+            {
+                if (!tasks.containsKey(bridge))
+                {
+                    logger.info("Health check task canceled for: " + bridge);
+                    return true;
+                }
+                return false;
+            }
+        }
+
+    }
+
+    private class HealthCheckPresenceTask extends AbstractHealthCheckTask
+    {
+        private HealthCheckPresenceTask(Bridge bridge)
+        {
+            super(bridge);
+        }
+
+        /**
+         * Performs a health check.
+         * @throws org.jivesoftware.smack.SmackException.NotConnectedException when XMPP is not connected,
+         * the task should terminate.
+         */
+        @Override
+        protected void doHealthCheck()
+        {
+            AbstractXMPPConnection connection = getConnection();
+            // If XMPP is currently not connected skip the health-check
+            if (!connection.isConnected())
+            {
+                logger.warn("XMPP disconnected - skipping health check for: " + bridge);
+                return;
+            }
+
+            if (taskInvalid())
+            {
+                return;
+            }
+
+            logger.debug("Checking presence for health for: " + bridge);
+
+            boolean healthy = bridge.isHealthy() &&
+                    bridge.getTimeSinceLastPresence().compareTo(config.getPresenceHealthTimeout()) < 0;
+
+            // Sync on start/stop and bridges state
+            synchronized (JvbDoctor.this)
+            {
+                if (taskInvalid())
+                    return;
+
+                if (healthy)
+                {
+                    if (logger.isDebugEnabled())
+                    {
+                        logger.debug("Health check passed on: " + bridge);
+                    }
+                    // TODO: we should be able to do this directly when we receive presence with healthy=true, but
+                    // I don't want to modify the flow right now.
+                    listener.healthCheckPassed(bridge.getJid());
+                }
+                else
+                {
+                    logger.warn("Health check timed out for: " + bridge);
+                    listener.healthCheckTimedOut(bridge.getJid());
                 }
             }
         }

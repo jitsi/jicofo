@@ -108,6 +108,14 @@ class BridgeConfig private constructor() {
             .transformedBy { Duration.ofMillis(it.toMillis() / 2) }
     }
 
+    val usePresenceForHealth: Boolean by config {
+        "$BASE.health-checks.use-presence".from(JitsiConfig.newConfig)
+    }
+
+    val presenceHealthTimeout: Duration by config {
+        "$BASE.health-checks.presence-timeout".from(JitsiConfig.newConfig)
+    }
+
     val breweryJid: EntityBareJid? by optionalconfig {
         "org.jitsi.jicofo.BRIDGE_MUC".from(JitsiConfig.legacyConfig).convertFrom<String> {
             JidCreate.entityBareFrom(it)

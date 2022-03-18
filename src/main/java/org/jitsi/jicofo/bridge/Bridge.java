@@ -152,9 +152,14 @@ public class Bridge
     }
 
     @NonNull
-    public Instant getLastPresenceReceived()
+    public Duration getTimeSinceLastPresence()
     {
-        return lastPresenceReceived;
+        return Duration.between(lastPresenceReceived, clock.instant());
+    }
+
+    public boolean isHealthy()
+    {
+        return healthy;
     }
 
     /**
