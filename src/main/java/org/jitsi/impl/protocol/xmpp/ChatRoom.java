@@ -99,10 +99,9 @@ public interface ChatRoom
     * ownership privileges to other users. An owner is allowed to change
     * defining room features as well as perform all administrative functions.
     *
-    * @param address the user address of the user to grant ownership
-    * privileges (e.g. "user@host.org").
+    * @param member the member to grant ownershit to.
     */
-    void grantOwnership(String address);
+    void grantOwnership(@NotNull ChatRoomMember member);
 
     /**
      * Destroys the chat room.
