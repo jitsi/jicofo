@@ -84,7 +84,7 @@ public class DiscoveryUtil
     /**
      * Source name signalling required for the multi-stream mode.
      */
-    public final static String FEATURE_SOURCE_NAMES = "'http://jitsi.org/source-name'";
+    public final static String FEATURE_SOURCE_NAMES = "http://jitsi.org/source-name";
 
     /**
      * Jingle sources encoded as JSON.
