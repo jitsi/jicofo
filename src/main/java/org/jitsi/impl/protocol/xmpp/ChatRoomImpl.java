@@ -458,7 +458,7 @@ public class ChatRoomImpl
         admin.setType(IQ.Type.set);
         admin.setTo(roomJid);
 
-        MUCItem item = new MUCItem(MUCAffiliation.owner, member.getJid());
+        MUCItem item = new MUCItem(MUCAffiliation.owner, member.getJid().asBareJid());
         admin.addItem(item);
 
         AbstractXMPPConnection connection = xmppProvider.getXmppConnection();
