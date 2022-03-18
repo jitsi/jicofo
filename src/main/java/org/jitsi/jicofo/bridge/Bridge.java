@@ -137,6 +137,9 @@ public class Bridge
     @NonNull
     private final Clock clock;
 
+    @NonNull
+    private Instant lastPresenceReceived = Instant.MIN;
+
     Bridge(@NonNull Jid jid, @NonNull Clock clock)
     {
         this.jid = jid;
@@ -146,6 +149,12 @@ public class Bridge
     Bridge(@NonNull Jid jid)
     {
         this(jid, Clock.systemUTC());
+    }
+
+    @NonNull
+    public Instant getLastPresenceReceived()
+    {
+        return lastPresenceReceived;
     }
 
     /**
@@ -160,6 +169,7 @@ public class Bridge
         {
             return;
         }
+        lastPresenceReceived = clock.instant();
 
         Double stressLevel = UtilKt.getDouble(stats, "stress_level");
         if (stressLevel != null)
