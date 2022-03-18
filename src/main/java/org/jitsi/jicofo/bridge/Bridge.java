@@ -84,6 +84,11 @@ public class Bridge
     private String version = null;
 
     /**
+     * Whether the last received presence indicated the bridge is healthy.
+     */
+    private boolean healthy = true;
+
+    /**
      * Holds bridge release ID, or null if not known.
      */
     private String releaseId = null;
@@ -222,6 +227,12 @@ public class Bridge
         if (relayId != null)
         {
             this.relayId = relayId;
+        }
+
+        String healthy = stats.getValueAsString("healthy");
+        if (healthy != null)
+        {
+            this.healthy = Boolean.parseBoolean(healthy);
         }
     }
 
@@ -442,6 +453,7 @@ public class Bridge
         o.put("graceful-shutdown", isInGracefulShutdown());
         o.put("overloaded", isOverloaded());
         o.put("relay-id", String.valueOf(relayId));
+        o.put("healthy", healthy);
 
         return o;
     }
