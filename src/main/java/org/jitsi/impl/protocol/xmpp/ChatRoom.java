@@ -99,7 +99,7 @@ public interface ChatRoom
     * ownership privileges to other users. An owner is allowed to change
     * defining room features as well as perform all administrative functions.
     *
-    * @param member the member to grant ownershit to.
+    * @param member the member to grant ownership to.
     */
     void grantOwnership(@NotNull ChatRoomMember member);
 
