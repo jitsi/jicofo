@@ -20,6 +20,7 @@ package org.jitsi.jicofo.bridge;
 import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
@@ -84,6 +85,11 @@ public class Bridge
     private String version = null;
 
     /**
+     * Whether the last received presence indicated the bridge is healthy.
+     */
+    private boolean healthy = true;
+
+    /**
      * Holds bridge release ID, or null if not known.
      */
     private String releaseId = null;
@@ -132,15 +138,32 @@ public class Bridge
     @NonNull
     private final Clock clock;
 
+    private final Logger logger = new LoggerImpl(Bridge.class.getName());
+
+    @NonNull
+    private Instant lastPresenceReceived = Instant.MIN;
+
     Bridge(@NonNull Jid jid, @NonNull Clock clock)
     {
         this.jid = jid;
         this.clock = clock;
+        logger.addContext("jid", jid.toString());
     }
 
     Bridge(@NonNull Jid jid)
     {
         this(jid, Clock.systemUTC());
+    }
+
+    @NonNull
+    public Duration getTimeSinceLastPresence()
+    {
+        return Duration.between(lastPresenceReceived, clock.instant());
+    }
+
+    public boolean isHealthy()
+    {
+        return healthy;
     }
 
     /**
@@ -155,6 +178,7 @@ public class Bridge
         {
             return;
         }
+        lastPresenceReceived = clock.instant();
 
         Double stressLevel = UtilKt.getDouble(stats, "stress_level");
         if (stressLevel != null)
@@ -222,6 +246,17 @@ public class Bridge
         if (relayId != null)
         {
             this.relayId = relayId;
+        }
+
+        String healthy = stats.getValueAsString("healthy");
+        if (healthy != null)
+        {
+            this.healthy = Boolean.parseBoolean(healthy);
+        }
+        else if (config.getUsePresenceForHealth())
+        {
+            logger.warn("Presence-based health checks are enabled, but presence did not include health status. Health "
+                    + "checks for this bridge are effectively disabled.");
         }
     }
 
@@ -442,6 +477,7 @@ public class Bridge
         o.put("graceful-shutdown", isInGracefulShutdown());
         o.put("overloaded", isOverloaded());
         o.put("relay-id", String.valueOf(relayId));
+        o.put("healthy", healthy);
 
         return o;
     }
