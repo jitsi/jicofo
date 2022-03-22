@@ -20,6 +20,7 @@ package org.jitsi.jicofo.bridge;
 import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.stats.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
@@ -137,6 +138,8 @@ public class Bridge
     @NonNull
     private final Clock clock;
 
+    private final Logger logger = new LoggerImpl(Bridge.class.getName());
+
     @NonNull
     private Instant lastPresenceReceived = Instant.MIN;
 
@@ -144,6 +147,7 @@ public class Bridge
     {
         this.jid = jid;
         this.clock = clock;
+        logger.addContext("jid", jid.toString());
     }
 
     Bridge(@NonNull Jid jid)
@@ -248,6 +252,11 @@ public class Bridge
         if (healthy != null)
         {
             this.healthy = Boolean.parseBoolean(healthy);
+        }
+        else if (config.getUsePresenceForHealth())
+        {
+            logger.warn("Presence-based health checks are enabled, but presence did not include health status. Health "
+                    + "checks for this bridge are effectively disabled.");
         }
     }
 
