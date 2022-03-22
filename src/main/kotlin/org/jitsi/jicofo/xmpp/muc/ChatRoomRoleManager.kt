@@ -40,7 +40,7 @@ sealed class ChatRoomRoleManager(
         }
 
         return try {
-            chatRoom.grantOwnership(member.jid.toString())
+            chatRoom.grantOwnership(member)
             true
         } catch (e: RuntimeException) {
             logger.error("Failed to grant owner status to ${member.jid}", e)

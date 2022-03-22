@@ -447,9 +447,9 @@ public class ChatRoomImpl
     }
 
     @Override
-    public void grantOwnership(String address)
+    public void grantOwnership(@NotNull ChatRoomMember member)
     {
-        logger.debug("Grant owner to " + address);
+        logger.debug("Grant owner to " + member);
 
         // Have to construct the IQ manually as Smack version used here seems
         // to be using wrong namespace(muc#owner instead of muc#admin)
@@ -458,17 +458,7 @@ public class ChatRoomImpl
         admin.setType(IQ.Type.set);
         admin.setTo(roomJid);
 
-        Jid jidAddress;
-        try
-        {
-            jidAddress = JidCreate.from(address);
-        }
-        catch (XmppStringprepException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        MUCItem item = new MUCItem(MUCAffiliation.owner, jidAddress);
+        MUCItem item = new MUCItem(MUCAffiliation.owner, member.getJid().asBareJid());
         admin.addItem(item);
 
         AbstractXMPPConnection connection = xmppProvider.getXmppConnection();

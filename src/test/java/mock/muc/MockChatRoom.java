@@ -320,18 +320,6 @@ public class MockChatRoom
         });
     }
 
-    private void grantRole(EntityFullJid address, MemberRole newRole)
-    {
-        MockRoomMember member = findMember(address.getResourceOrNull());
-        if (member == null)
-        {
-            logger.error("Member not found for nickname: " + address);
-            return;
-        }
-
-        member.setRole(newRole);
-    }
-
     private MockRoomMember findMember(Resourcepart nickname)
     {
         if (nickname == null)
@@ -348,16 +336,9 @@ public class MockChatRoom
     }
 
     @Override
-    public void grantOwnership(String address)
+    public void grantOwnership(@NotNull ChatRoomMember member)
     {
-        try
-        {
-            grantRole(JidCreate.entityFullFrom(address), MemberRole.OWNER);
-        }
-        catch (XmppStringprepException e)
-        {
-            logger.error("Invalid address to grant ownership", e);
-        }
+        member.setRole(MemberRole.OWNER);
     }
 
     @Override
