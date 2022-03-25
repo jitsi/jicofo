@@ -1276,7 +1276,7 @@ public class JitsiMeetConferenceImpl
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
         if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints()
-            && !(ColibriConfig.config.getEnableColibri2()))
+            && false)
         {
             // We inject an SSRC in order to ensure that the participant has
             // at least one SSRC advertised. Otherwise, non-local bridges in the
