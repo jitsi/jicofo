@@ -257,7 +257,7 @@ operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
  * SSRCs that receivers of simulcast streams need to know about, i.e. that jitsi-videobridge uses that SSRC as the
  * target SSRC when rewriting streams.
  */
-fun EndpointSourceSet.stripSimulcast(stripInjected: Boolean = false): EndpointSourceSet {
+fun EndpointSourceSet.stripSimulcast(): EndpointSourceSet {
     val groupsToRemove = mutableSetOf<SsrcGroup>()
     val ssrcsToRemove = mutableSetOf<Long>()
 
@@ -277,7 +277,7 @@ fun EndpointSourceSet.stripSimulcast(stripInjected: Boolean = false): EndpointSo
         }
     }
     return EndpointSourceSet(
-        sources.filter { !ssrcsToRemove.contains(it.ssrc) && !(stripInjected && it.injected) }.toSet(),
+        sources.filter { !ssrcsToRemove.contains(it.ssrc) }.toSet(),
         ssrcGroups - groupsToRemove
     )
 }

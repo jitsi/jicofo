@@ -38,12 +38,6 @@ class ConferenceConfig private constructor() {
     }
     fun enableAutoOwner(): Boolean = enableAutoOwner
 
-    val injectSsrcForRecvOnlyEndpoints: Boolean by config {
-        "org.jitsi.jicofo.INJECT_SSRC_FOR_RECVONLY_ENDPOINTS".from(legacyConfig)
-        "jicofo.conference.inject-ssrc-for-recv-only-endpoints".from(newConfig)
-    }
-    fun injectSsrcForRecvOnlyEndpoints(): Boolean = injectSsrcForRecvOnlyEndpoints
-
     val maxSsrcsPerUser: Int by config {
         "org.jitsi.jicofo.MAX_SSRC_PER_USER".from(legacyConfig)
         "jicofo.conference.max-ssrcs-per-user".from(newConfig)

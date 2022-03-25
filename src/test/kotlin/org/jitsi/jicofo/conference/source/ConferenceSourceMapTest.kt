@@ -43,7 +43,7 @@ class ConferenceSourceMapTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
-        val s7 = Source(7, MediaType.AUDIO, injected = true)
+        val s7 = Source(7, MediaType.AUDIO)
         val endpoint1SourceSet = EndpointSourceSet(
             setOf(s1, s2, s7),
             setOf(
@@ -189,34 +189,6 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe jid1
             }
         }
-        context("removeInjected") {
-            context("With remaining") {
-                val conferenceSourceMap = ConferenceSourceMap(
-                    jid1 to endpoint1SourceSet,
-                    jid2 to endpoint2SourceSet
-                ).stripInjected()
-
-                conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe EndpointSourceSet(
-                    setOf(
-                        Source(1, MediaType.VIDEO),
-                        Source(2, MediaType.VIDEO),
-                    ),
-                    setOf(
-                        SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2))
-                    )
-                )
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
-            }
-            context("Without remaining") {
-                val conferenceSourceMap = ConferenceSourceMap(
-                    jid1 to EndpointSourceSet(
-                        setOf(Source(1, MediaType.AUDIO, injected = true))
-                    )
-                ).stripInjected()
-                conferenceSourceMap.isEmpty() shouldBe true
-            }
-        }
         context("unmodifiable") {
             val conferenceSourceMap = ConferenceSourceMap(
                 jid1 to endpoint1SourceSet,
@@ -238,7 +210,7 @@ class ConferenceSourceMapTest : ShouldSpec() {
             }
         }
         context("Strip") {
-            val s7 = Source(7, MediaType.AUDIO, injected = true)
+            val s7 = Source(7, MediaType.AUDIO)
             val sourceSet = EndpointSourceSet(
                 setOf(s1, s2, s3, s4, s5, s6, s7),
                 setOf(sim, fid1, fid2, fid3)
@@ -246,24 +218,10 @@ class ConferenceSourceMapTest : ShouldSpec() {
             val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
 
             // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
-            context("Nothing") {
-                conferenceSourceMap.strip(stripSimulcast = false, stripInjected = false) shouldBe
-                    ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
-            }
             context("Simulcast") {
                 conferenceSourceMap.stripSimulcast()
                 conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
                 conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
-            }
-            context("Injected") {
-                conferenceSourceMap.stripInjected()
-                conferenceSourceMap[jid1] shouldBe sourceSet.stripInjected()
-                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripInjected()
-            }
-            context("Simulcast and injected") {
-                conferenceSourceMap.strip(stripSimulcast = true, stripInjected = true)
-                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast(stripInjected = true)
-                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast(stripInjected = true)
             }
         }
         context("Compact JSON") {

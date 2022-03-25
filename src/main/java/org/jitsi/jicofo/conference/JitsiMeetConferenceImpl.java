@@ -1076,10 +1076,9 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
-        final ConferenceSourceMap finalSources = sources
-                .copy()
-                .strip(ConferenceConfig.config.stripSimulcast(), true)
-                .unmodifiable();
+        final ConferenceSourceMap finalSources = (ConferenceConfig.config.stripSimulcast())
+                ? sources.copy().stripSimulcast().unmodifiable()
+                : sources.copy().unmodifiable();
         if (finalSources.isEmpty())
         {
             logger.debug("No new sources to propagate.");
@@ -1275,18 +1274,6 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
-        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints()
-            && false)
-        {
-            // We inject an SSRC in order to ensure that the participant has
-            // at least one SSRC advertised. Otherwise, non-local bridges in the
-            // conference will not be aware of the participant.
-            // This is not necessary (and might trigger unexpected behavior) with colibri2.
-            long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
-            logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised = new EndpointSourceSet(
-                    new Source(ssrc, MediaType.AUDIO, participantId + "-injected0", null, true));
-        }
         ConferenceSourceMap sourcesAccepted;
         try
         {
@@ -1427,10 +1414,9 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
-        final ConferenceSourceMap finalSources = sources
-                .copy()
-                .strip(ConferenceConfig.config.stripSimulcast(), true)
-                .unmodifiable();
+        final ConferenceSourceMap finalSources = ConferenceConfig.config.stripSimulcast()
+                ? sources.copy().stripSimulcast().unmodifiable()
+                : sources.copy().unmodifiable();
         if (finalSources.isEmpty())
         {
             logger.debug("No sources to remove.");
