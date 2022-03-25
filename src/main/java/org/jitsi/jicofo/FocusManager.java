@@ -50,11 +50,6 @@ public class FocusManager
     private final static Logger logger = new LoggerImpl(FocusManager.class.getName());
 
     /**
-     * The pseudo-random generator which is to be used when generating IDs.
-     */
-    private static final Random RANDOM = new Random();
-
-    /**
      * The thread that expires {@link JitsiMeetConference}s.
      */
     private final FocusExpireThread expireThread = new FocusExpireThread();
@@ -75,13 +70,7 @@ public class FocusManager
     private final List<JitsiMeetConference> conferencesCache = new CopyOnWriteArrayList<>();
 
     /**
-     * The set of the IDs of conferences in {@link #conferences}.
-     */
-    private final Set<Long> conferenceGids = new HashSet<>();
-
-    /**
-     * The object used to synchronize access to {@link #conferences} and
-     * {@link #conferenceGids}.
+     * The object used to synchronize access to {@link #conferences}.
      */
     private final Object conferencesSyncRoot = new Object();
 
@@ -96,12 +85,6 @@ public class FocusManager
      * A class that holds Jicofo-wide statistics
      */
     private final Statistics statistics = new Statistics();
-
-    /**
-     * The ID of this Jicofo instance, used to generate conference GIDs. The special value 0 is valid in the Octo
-     * protocol, but only used when no value is explicitly configured.
-     */
-    private int octoId;
 
     /**
      * Clock to use for pin timeouts.
@@ -130,26 +113,6 @@ public class FocusManager
     public void start()
     {
         expireThread.start();
-
-        int octoId = 0;
-        Integer configuredId = OctoConfig.config.getId();
-        if (configuredId != null)
-        {
-            octoId = configuredId;
-        }
-        if (octoId < 1 || octoId > 0xffff)
-        {
-            logger.warn(
-                "Jicofo ID is not set correctly set (value=" + octoId + "). Configure a valid value [1-65535] by "
-                + "setting org.jitsi.jicofo.SHORT_ID in sip-communicator.properties or jicofo.octo.id in jicofo.conf. "
-                + "Future versions will require this for Octo.");
-            this.octoId = 0;
-        }
-        else
-        {
-            logger.info("Initialized octoId=" + octoId);
-            this.octoId = octoId;
-        }
     }
 
     /**
@@ -286,17 +249,15 @@ public class FocusManager
         JitsiMeetConferenceImpl conference;
         synchronized (conferencesSyncRoot)
         {
-            long id = generateConferenceId();
             String jvbVersion = getBridgeVersionForConference(room);
             conference
                     = new JitsiMeetConferenceImpl(
                         room,
                         this, config, logLevel,
-                        id, jvbVersion, includeInStatistics);
+                        jvbVersion, includeInStatistics);
 
             conferences.put(room, conference);
             conferencesCache.add(conference);
-            conferenceGids.add(id);
         }
 
         if (includeInStatistics)
@@ -305,27 +266,6 @@ public class FocusManager
         }
 
         return conference;
-    }
-
-    /**
-     * Generates a conference ID which is currently not used by an existing
-     * conference in a specific format (6 hexadecimal symbols).
-     * @return the generated ID.
-     */
-    private long generateConferenceId()
-    {
-        long id;
-
-        synchronized (conferencesSyncRoot)
-        {
-            do
-            {
-                id = (octoId << 16) | RANDOM.nextInt(0x1_0000);
-            }
-            while (conferenceGids.contains(id));
-        }
-
-        return id;
     }
 
     /**
@@ -365,7 +305,6 @@ public class FocusManager
         {
             conferences.remove(roomName);
             conferencesCache.remove(conference);
-            conferenceGids.remove(conference.getId());
 
             // It is not clear whether the code below necessarily needs to
             // hold the lock or not.
@@ -552,11 +491,6 @@ public class FocusManager
     public @NotNull Statistics getStatistics()
     {
         return statistics;
-    }
-
-    public boolean isJicofoIdConfigured()
-    {
-        return octoId != 0;
     }
 
     @NotNull

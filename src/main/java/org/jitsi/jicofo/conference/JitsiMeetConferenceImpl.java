@@ -217,8 +217,6 @@ public class JitsiMeetConferenceImpl
      */
     private boolean videoLimitReached = false;
 
-    private final long gid;
-
     /**
      * Requested bridge version from a pin. null if not pinned.
      */
@@ -244,7 +242,6 @@ public class JitsiMeetConferenceImpl
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
-            long gid,
             String jvbVersion,
             boolean includeInStatistics)
     {
@@ -259,7 +256,6 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        this.gid = gid;
         this.jvbVersion = jvbVersion;
         colibriSessionManager = new ColibriV2SessionManager(
                 jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
@@ -276,10 +272,9 @@ public class JitsiMeetConferenceImpl
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
-            long gid,
             String jvbVersion)
     {
-       this(roomName, listener, config, logLevel, gid, jvbVersion, false);
+       this(roomName, listener, config, logLevel, jvbVersion, false);
     }
 
     /**
@@ -1593,8 +1588,6 @@ public class JitsiMeetConferenceImpl
         o.put("conference_sources", conferenceSources.toJson());
         o.put("audio_limit_reached", audioLimitReached);
         o.put("video_limit_reached", videoLimitReached);
-        o.put("gid", gid);
-
 
         return o;
     }
@@ -1679,14 +1672,6 @@ public class JitsiMeetConferenceImpl
     public int getParticipantCount()
     {
         return participants.size();
-    }
-
-    /**
-     * Conference ID.
-     */
-    public long getId()
-    {
-        return gid;
     }
 
     /**
