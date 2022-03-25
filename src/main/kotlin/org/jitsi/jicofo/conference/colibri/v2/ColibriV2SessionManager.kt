@@ -43,7 +43,6 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -452,8 +451,6 @@ class ColibriV2SessionManager(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
-        // This param is not used for colibri2
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>?
     ) = doUpdateParticipant(
         participant = participant,
         transport = transport,

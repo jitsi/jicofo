@@ -1102,7 +1102,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null, null);
+        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null);
     }
 
     /**
@@ -1288,8 +1288,7 @@ public class JitsiMeetConferenceImpl
         colibriSessionManager.updateParticipant(
                 participant,
                 getTransport(contents),
-                sourcesAccepted,
-                getRtpDescriptions(contents));
+                sourcesAccepted);
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
@@ -1297,26 +1296,6 @@ public class JitsiMeetConferenceImpl
         participant.sendQueuedRemoteSources();
 
         return null;
-    }
-
-    /**
-     * Extract a map from content name to the first child of type {@link RtpDescriptionPacketExtension}.
-     */
-    private Map<String, RtpDescriptionPacketExtension> getRtpDescriptions(
-            @NotNull List<ContentPacketExtension> contents)
-    {
-        Map<String, RtpDescriptionPacketExtension> rtpDescriptions = new HashMap<>();
-        for (ContentPacketExtension content : contents)
-        {
-            RtpDescriptionPacketExtension rtpDescription
-                    = content.getFirstChildOfType(RtpDescriptionPacketExtension.class);
-            if (rtpDescription != null)
-            {
-                rtpDescriptions.put(content.getName(), rtpDescription);
-            }
-        }
-
-        return rtpDescriptions;
     }
 
     /**

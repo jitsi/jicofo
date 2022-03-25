@@ -359,7 +359,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else if (reInvite)
         {
-            colibriSessionManager.updateParticipant(participant, null, null, null);
+            colibriSessionManager.updateParticipant(participant, null, null);
         }
 
         // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.

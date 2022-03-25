@@ -24,7 +24,6 @@ import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 
 interface ColibriSessionManager {
     fun addListener(listener: Listener)
@@ -75,8 +74,7 @@ interface ColibriSessionManager {
     fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension? = null,
-        sources: ConferenceSourceMap? = null,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
+        sources: ConferenceSourceMap? = null
     )
     fun getBridgeSessionId(participant: Participant): String?
 
