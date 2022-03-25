@@ -19,7 +19,6 @@ package org.jitsi.jicofo.conference.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.Participant
-import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -91,9 +90,6 @@ interface ColibriSessionManager {
 
     /**
      * Interface for events fired by [ColibriSessionManager].
-     *
-     * Note that [ColibriV1SessionManager] calls these while holding its internal lock, so listeners should be careful
-     * not to perform action that will cause a deadlock.
      */
     interface Listener {
         /** The number of bridges changed. */

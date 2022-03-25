@@ -32,7 +32,6 @@ import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.JvbDoctor
-import org.jitsi.jicofo.conference.colibri.v1.ColibriConferenceImpl
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
@@ -203,7 +202,6 @@ open class JicofoServices {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
-        putAll(ColibriConferenceImpl.stats.toJson())
 
         put("bridge_selector", bridgeSelector.stats)
         jibriDetector?.let { put("jibri_detector", it.stats) }

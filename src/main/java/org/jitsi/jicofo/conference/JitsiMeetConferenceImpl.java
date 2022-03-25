@@ -23,7 +23,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.colibri.*;
-import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
@@ -262,19 +261,11 @@ public class JitsiMeetConferenceImpl
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.gid = gid;
         this.jvbVersion = jvbVersion;
-        if (ColibriConfig.config.getEnableColibri2())
-        {
-            colibriSessionManager = new ColibriV2SessionManager(
-                    jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
-                    jicofoServices.getBridgeSelector(),
-                    this,
-                    logger);
-        }
-        else
-        {
-            colibriSessionManager
-                    = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
-        }
+        colibriSessionManager = new ColibriV2SessionManager(
+                jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
+                jicofoServices.getBridgeSelector(),
+                this,
+                logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
@@ -2104,9 +2095,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Listener for events from {@link ColibriV1SessionManager}.
+     * Listener for events from {@link ColibriSessionManager}.
      */
-    private class ColibriSessionManagerListener implements ColibriV1SessionManager.Listener
+    private class ColibriSessionManagerListener implements ColibriSessionManager.Listener
     {
         @Override
         public void bridgeCountChanged(int bridgeCount)
