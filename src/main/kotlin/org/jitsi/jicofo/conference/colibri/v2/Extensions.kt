@@ -25,6 +25,7 @@ import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
+import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -130,6 +131,9 @@ internal fun ParticipantInfo.toEndpoint(
     if (create) {
         setCreate(true)
         setStatsId(statsId)
+        if (supportsSourceNames) {
+            addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
+        }
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
     if (!expire) {

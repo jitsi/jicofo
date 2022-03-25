@@ -299,7 +299,12 @@ class ColibriV2SessionManager(
                 created = it.second
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
-            participantInfo = ParticipantInfo(participant.endpointId, participant.statId, session = session)
+            participantInfo = ParticipantInfo(
+                participant.endpointId,
+                participant.statId,
+                session = session,
+                supportsSourceNames = participant.hasSourceNameSupport()
+            )
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)
             if (created) {

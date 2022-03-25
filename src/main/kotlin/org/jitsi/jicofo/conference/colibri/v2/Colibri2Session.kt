@@ -26,6 +26,7 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
+import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
@@ -84,6 +85,9 @@ internal class Colibri2Session(
             setId(participant.id)
             setCreate(true)
             setStatsId(participant.statsId)
+            if (participant.supportsSourceNames) {
+                addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
+            }
             setTransport(
                 Transport.getBuilder().apply {
                     // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
