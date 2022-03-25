@@ -1205,7 +1205,7 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        colibriSessionManager.addSources(participant, sourcesAccepted);
+        colibriSessionManager.updateParticipant(participant, null, participant.getSources());
 
         propagateNewSources(participant, sourcesAccepted);
 
@@ -1368,10 +1368,11 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        colibriSessionManager.removeSources(
+        colibriSessionManager.updateParticipant(
                 participant,
-                sourcesAcceptedToBeRemoved,
-                removeColibriSourcesFromLocalBridge);
+                null,
+                participant.getSources(),
+                !removeColibriSourcesFromLocalBridge);
 
         if (sendSourceRemove)
         {

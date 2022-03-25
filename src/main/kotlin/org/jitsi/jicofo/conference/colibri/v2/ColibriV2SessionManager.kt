@@ -123,7 +123,6 @@ class ColibriV2SessionManager(
         clear()
     }
 
-    override fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
     override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
         participants.forEach { it.setInviteRunnable(null) }
         logger.debug { "Asked to remove participants: ${participants.map { it.endpointId}}" }
@@ -172,28 +171,6 @@ class ColibriV2SessionManager(
             eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
         }
     }
-
-    /**
-     * We don't keep track of source-add/source-removes manually and simply take the updated sources from the
-     * participant object.
-     */
-    override fun addSources(participant: Participant, sources: ConferenceSourceMap) =
-        updateParticipant(participant, sources = participant.sources)
-
-    /**
-     * We don't keep track of source-add/source-removes manually and simply take the updated sources from the
-     * participant object.
-     */
-    override fun removeSources(
-        participant: Participant,
-        sources: ConferenceSourceMap,
-        removeSourcesFromLocalBridge: Boolean
-    ) = doUpdateParticipant(
-        participant,
-        transport = null,
-        sources = participant.sources,
-        suppressLocalBridgeUpdate = !removeSourcesFromLocalBridge
-    )
 
     /**
      * TODO: Is it really necessary to wait for a response?
@@ -451,22 +428,6 @@ class ColibriV2SessionManager(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
-    ) = doUpdateParticipant(
-        participant = participant,
-        transport = transport,
-        sources = sources,
-        suppressLocalBridgeUpdate = false
-    )
-
-    private fun doUpdateParticipant(
-        participant: Participant,
-        transport: IceUdpTransportPacketExtension?,
-        sources: ConferenceSourceMap?,
-        /**
-         * If this is `true`, the update will only be signaled to remote bridges. This is used to avoid sending
-         * an unnecessary "remove sources" message to the local bridge prior to the endpoint itself being expired.
-         * TODO: cleanup when colibri1 is removed
-         */
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
         logger.info("Updating $participant with transport=$transport, sources=$sources")

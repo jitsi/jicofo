@@ -33,7 +33,7 @@ interface ColibriSessionManager {
     fun expire()
 
     /** Remove a participant, expiring all resources allocated for it */
-    fun removeParticipant(participant: Participant)
+    fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
 
     /**
      *  Remove a set of participants, expiring all resources allocated for them.
@@ -42,25 +42,6 @@ interface ColibriSessionManager {
      */
     fun removeParticipants(participants: Collection<Participant>)
 
-    /**
-     *  Note at the time this is called [participant.sources] have already been updated.
-     * TODO: remove in favor of updateParticipant
-     */
-    fun addSources(participant: Participant, sources: ConferenceSourceMap)
-    /**
-     *  Note at the time this is called [participant.sources] have already been updated.
-     * TODO: remove in favor of updateParticipant
-     */
-    fun removeSources(
-        participant: Participant,
-        sources: ConferenceSourceMap,
-        /**
-         * If this is `false`, the source removal will only be signaled to remote bridges. This is used to avoid sending
-         * an unnecessary "remove sources" message prior to the endpoint itself being expired (the "remove sources"
-         * message for remote bridges is always necessary).
-         */
-        removeSourcesFromLocalBridge: Boolean
-    )
     fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
@@ -71,10 +52,18 @@ interface ColibriSessionManager {
         reInvite: Boolean
     ): ColibriAllocation
 
+    /** For use in java because @JvmOverloads is not availbe for inerfaces. */
     fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension? = null,
-        sources: ConferenceSourceMap? = null
+        sources: ConferenceSourceMap? = null,
+    ) = updateParticipant(participant, transport, sources, false)
+
+    fun updateParticipant(
+        participant: Participant,
+        transport: IceUdpTransportPacketExtension? = null,
+        sources: ConferenceSourceMap? = null,
+        suppressLocalBridgeUpdate: Boolean = false
     )
     fun getBridgeSessionId(participant: Participant): String?
 
