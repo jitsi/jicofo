@@ -357,10 +357,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             // not trigger a retry here.
             meetConference.onInviteFailed(this);
         }
-        else if (reInvite)
-        {
-            colibriSessionManager.updateParticipant(participant, null, null);
-        }
 
         // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.
         if (chatRoom != null && !participant.hasModeratorRights())
