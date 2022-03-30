@@ -52,7 +52,7 @@ interface ColibriSessionManager {
         reInvite: Boolean
     ): ColibriAllocation
 
-    /** For use in java because @JvmOverloads is not availbe for inerfaces. */
+    /** For use in java because @JvmOverloads is not available for interfaces. */
     fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension? = null,
