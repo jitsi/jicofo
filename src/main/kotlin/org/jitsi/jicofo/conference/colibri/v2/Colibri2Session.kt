@@ -88,6 +88,9 @@ internal class Colibri2Session(
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
             }
+            if (participant.audioMuted || participant.videoMuted) {
+                setForceMute(participant.audioMuted, participant.videoMuted)
+            }
             setTransport(
                 Transport.getBuilder().apply {
                     // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the

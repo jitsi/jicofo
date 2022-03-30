@@ -588,6 +588,15 @@ public class Participant
     }
 
     /**
+     * Whether force-muting should be suppressed for this participant (it is a trusted participant and doesn't
+     * support unmuting).
+     */
+    public boolean shouldSuppressForceMute()
+    {
+        return (getChatMember().isJigasi() && !hasAudioMuteSupport()) || getChatMember().isJibri();
+    }
+
+    /**
      * Checks whether this {@link Participant}'s role has moderator rights.
      */
     public boolean hasModeratorRights()

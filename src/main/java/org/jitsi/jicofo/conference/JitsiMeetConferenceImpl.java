@@ -1597,15 +1597,9 @@ public class JitsiMeetConferenceImpl
      */
     public void muteParticipant(Participant participant, MediaType mediaType)
     {
-        if (participant.getChatMember().isJigasi() && !participant.hasAudioMuteSupport())
+        if (participant.shouldSuppressForceMute())
         {
-            logger.warn("Will not mute jigasi with not audioMute support: " + participant);
-            return;
-        }
-
-        if (participant.getChatMember().isJibri())
-        {
-            logger.warn("Will not mute jibri: " + participant);
+            logger.info("Will not mute a trusted participant without unmute support (jibri, jigasi): " + participant);
             return;
         }
 

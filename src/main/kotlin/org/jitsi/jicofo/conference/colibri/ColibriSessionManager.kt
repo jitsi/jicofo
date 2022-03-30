@@ -48,7 +48,9 @@ interface ColibriSessionManager {
     @Throws(ColibriAllocationFailedException::class)
     fun allocate(
         participant: Participant,
-        contents: List<ContentPacketExtension>
+        contents: List<ContentPacketExtension>,
+        forceMuteAudio: Boolean,
+        forceMuteVideo: Boolean
     ): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */
