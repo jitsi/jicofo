@@ -172,48 +172,44 @@ class ColibriV2SessionManager(
         }
     }
 
-    /**
-     * TODO: Is it really necessary to wait for a response?
-     */
-    override fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean {
-        val stanzaCollector: StanzaCollector
-        val participantInfo: ParticipantInfo
-        logger.info("${if (doMute) "Adding" else "Removing"} force-mute for ${participant.endpointId} ($mediaType).")
-        synchronized(syncRoot) {
-            participantInfo = participants[participant.endpointId]
-                ?: throw IllegalStateException("No participantInfo for $participant")
+    override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
 
-            if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
-                mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
-            ) {
-                logger.debug("No change required")
-                return true
+        synchronized(syncRoot) {
+            val participantsToMuteBySession = mutableMapOf<Colibri2Session, MutableSet<ParticipantInfo>>()
+
+            participantIds.forEach {
+                val participantInfo = participants[it]
+                if (participantInfo == null) {
+                    logger.error("No ParticipantInfo for $it, can not force mute.")
+                    return@forEach
+                }
+
+                if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
+                    mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
+                ) {
+                    // No change required.
+                    return@forEach
+                }
+
+                // We set the updated state before we even send the request, i.e. we assume the request was successful.
+                // If an error occurs we should stop the whole colibri session with that bridge (TODO).
+                if (mediaType == MediaType.AUDIO) {
+                    participantInfo.audioMuted = doMute
+                }
+                if (mediaType == MediaType.VIDEO) {
+                    participantInfo.videoMuted = doMute
+                }
+
+                participantsToMuteBySession.computeIfAbsent(participantInfo.session) {
+                    mutableSetOf()
+                }.add(participantInfo)
             }
 
-            val audioMute = if (mediaType == MediaType.AUDIO) doMute else participantInfo.audioMuted
-            val videoMute = if (mediaType == MediaType.VIDEO) doMute else participantInfo.videoMuted
-            val session = participantInfo.session
-            stanzaCollector = session.mute(participantInfo, audioMute, videoMute)
+            participantsToMuteBySession.forEach { (session, participantsToMute) ->
+                session.updateForceMute(participantsToMute)
+            }
         }
-
-        val response: IQ?
-        try {
-            response = stanzaCollector.nextResult()
-        } finally {
-            stanzaCollector.cancel()
-        }
-
-        return if (response is ConferenceModifiedIQ) {
-            // Success, update the local state.
-            if (mediaType == MediaType.AUDIO)
-                participantInfo.audioMuted = doMute
-            if (mediaType == MediaType.VIDEO)
-                participantInfo.videoMuted = doMute
-            true
-        } else {
-            logger.error("Failed to mute ${participant.endpointId}: ${response?.toXML() ?: "timeout"}")
-            false
-        }
+        return true
     }
 
     override val bridgeCount: Int
