@@ -179,7 +179,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ColibriAllocation colibriAllocation;
         try
         {
-            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents(), reInvite);
+            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents());
         }
         catch (BridgeSelectionFailedException e)
         {

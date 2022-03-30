@@ -246,8 +246,7 @@ class ColibriV2SessionManager(
     @Throws(ColibriAllocationFailedException::class)
     override fun allocate(
         participant: Participant,
-        contents: List<ContentPacketExtension>,
-        reInvite: Boolean
+        contents: List<ContentPacketExtension>
     ): ColibriAllocation {
         logger.info("Allocating for ${participant.endpointId}")
         val stanzaCollector: StanzaCollector

@@ -48,8 +48,7 @@ interface ColibriSessionManager {
     @Throws(ColibriAllocationFailedException::class)
     fun allocate(
         participant: Participant,
-        contents: List<ContentPacketExtension>,
-        reInvite: Boolean
+        contents: List<ContentPacketExtension>
     ): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */
