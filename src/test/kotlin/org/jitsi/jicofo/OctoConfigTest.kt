@@ -39,15 +39,5 @@ class OctoConfigTest : ShouldSpec() {
                 }
             }
         }
-        context("ID") {
-            context("default") {
-                OctoConfig.config.id shouldBe null
-            }
-            context("set") {
-                withNewConfig("jicofo.octo.id=1234") {
-                    OctoConfig.config.id shouldBe 1234
-                }
-            }
-        }
     }
 }

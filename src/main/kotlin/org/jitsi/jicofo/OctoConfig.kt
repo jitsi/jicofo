@@ -17,17 +17,10 @@
  */
 package org.jitsi.jicofo
 
-import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
-import org.jitsi.metaconfig.optionalconfig
 
 class OctoConfig {
-    val id: Int? by optionalconfig {
-        "org.jitsi.jicofo.SHORT_ID".from(legacyConfig)
-        "jicofo.octo.id".from(newConfig)
-    }
-
     val enabled: Boolean by config {
         "jicofo.octo.enabled".from(newConfig)
     }

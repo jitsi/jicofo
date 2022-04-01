@@ -33,22 +33,20 @@ class SourceTest : ShouldSpec() {
                 ssrc = 1
                 name = "name-1"
                 addChildExtension(ParameterPacketExtension("msid", "msid"))
-                isInjected = true
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
-                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", injected = true)
+                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid")
         }
         context("To XML") {
             val msidValue = "msid-value"
             val nameValue = "source-name-value"
-            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, injected = true)
+            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue)
             val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
             val extension = source.toPacketExtension(owner = ownerJid)
 
             extension.ssrc shouldBe 1
             extension.name shouldBe nameValue
-            extension.isInjected shouldBe true
             val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
 

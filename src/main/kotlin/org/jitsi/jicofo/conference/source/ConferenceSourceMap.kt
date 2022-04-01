@@ -150,37 +150,16 @@ open class ConferenceSourceMap(
         return extensions
     }
 
-    /**
-     * Removes all [Source]s that have the [Source.injected] flag from this map.
-     * @returns the map
-     */
-    open fun stripInjected() = synchronized(syncRoot) { strip(stripInjected = true) }
-
     /** Use a kotlin map for easy pretty printing. Inefficient. */
     override fun toString(): String = endpointSourceSets.toMap().toString()
 
     /**
      * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
-     * See also [EndpointSourceSet.stripSimulcast].
-     */
-    open fun stripSimulcast() = synchronized(syncRoot) { strip(stripSimulcast = true) }
-
-    /**
-     * Strip simulcast and/or injected SSRCs from each entry in the map. Modifies the map in place.
-     *
-     * This is defined separately to improve performance because the two operations are often performed together.
      */
     @JvmOverloads
-    open fun strip(stripSimulcast: Boolean = false, stripInjected: Boolean = false) = synchronized(syncRoot) {
-        // Nothing to strip
-        if (!stripSimulcast && !stripInjected) return this
-
+    open fun stripSimulcast() = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) ->
-            val stripped = when {
-                stripSimulcast -> sources.stripSimulcast(stripInjected = stripInjected)
-                stripInjected -> sources.stripInjected()
-                else -> sources
-            }
+            val stripped = sources.stripSimulcast()
             if (stripped.isEmpty()) {
                 endpointSourceSets.remove(owner)
             } else {
@@ -244,21 +223,9 @@ class UnmodifiableConferenceSourceMap(
     override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 
-    override fun stripInjected() =
-        throw UnsupportedOperationException("removeInjected() not supported in unmodifiable view")
-
     override fun stripSimulcast() =
         throw UnsupportedOperationException("stripSimulcast() not supported in unmodifiable view")
-
-    override fun strip(stripSimulcast: Boolean, stripInjected: Boolean) =
-        throw UnsupportedOperationException("strip() not supported in unmodifiable view")
 
     override fun stripByMediaType(retain: Set<MediaType>) =
         throw UnsupportedOperationException("stripByMediaType() is not supported in unmodifiable view")
 }
-
-fun EndpointSourceSet.stripInjected() = EndpointSourceSet(
-    sources.filter { !it.injected }.toSet(),
-    // Just maintain the groups. We never use groups with injected SSRCs, and "injected" should go away at some point.
-    ssrcGroups
-)

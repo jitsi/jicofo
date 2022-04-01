@@ -179,7 +179,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ColibriAllocation colibriAllocation;
         try
         {
-            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents(), reInvite);
+            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents());
         }
         catch (BridgeSelectionFailedException e)
         {
@@ -357,10 +357,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             // not trigger a retry here.
             meetConference.onInviteFailed(this);
         }
-        else if (reInvite)
-        {
-            colibriSessionManager.updateParticipant(participant, null, null, null);
-        }
 
         // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.
         if (chatRoom != null && !participant.hasModeratorRights())
@@ -456,7 +452,10 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
         // Add the bridge's feedback sources.
         conferenceSources.add(colibriAllocation.getSources());
-        conferenceSources.strip(ConferenceConfig.config.stripSimulcast(), true);
+        if (ConferenceConfig.config.stripSimulcast())
+        {
+            conferenceSources.stripSimulcast();
+        }
         conferenceSources.stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());

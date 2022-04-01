@@ -19,13 +19,11 @@ package org.jitsi.jicofo.conference.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.Participant
-import org.jitsi.jicofo.conference.colibri.v1.ColibriV1SessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 
 interface ColibriSessionManager {
     fun addListener(listener: Listener)
@@ -35,7 +33,7 @@ interface ColibriSessionManager {
     fun expire()
 
     /** Remove a participant, expiring all resources allocated for it */
-    fun removeParticipant(participant: Participant)
+    fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
 
     /**
      *  Remove a set of participants, expiring all resources allocated for them.
@@ -44,40 +42,27 @@ interface ColibriSessionManager {
      */
     fun removeParticipants(participants: Collection<Participant>)
 
-    /**
-     *  Note at the time this is called [participant.sources] have already been updated.
-     * TODO: remove in favor of updateParticipant
-     */
-    fun addSources(participant: Participant, sources: ConferenceSourceMap)
-    /**
-     *  Note at the time this is called [participant.sources] have already been updated.
-     * TODO: remove in favor of updateParticipant
-     */
-    fun removeSources(
-        participant: Participant,
-        sources: ConferenceSourceMap,
-        /**
-         * If this is `false`, the source removal will only be signaled to remote bridges. This is used to avoid sending
-         * an unnecessary "remove sources" message prior to the endpoint itself being expired (the "remove sources"
-         * message for remote bridges is always necessary).
-         */
-        removeSourcesFromLocalBridge: Boolean
-    )
     fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
     @Throws(ColibriAllocationFailedException::class)
     fun allocate(
         participant: Participant,
-        contents: List<ContentPacketExtension>,
-        reInvite: Boolean
+        contents: List<ContentPacketExtension>
     ): ColibriAllocation
+
+    /** For use in java because @JvmOverloads is not available for interfaces. */
+    fun updateParticipant(
+        participant: Participant,
+        transport: IceUdpTransportPacketExtension? = null,
+        sources: ConferenceSourceMap? = null,
+    ) = updateParticipant(participant, transport, sources, false)
 
     fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension? = null,
         sources: ConferenceSourceMap? = null,
-        rtpDescriptions: Map<String, RtpDescriptionPacketExtension>? = null
+        suppressLocalBridgeUpdate: Boolean = false
     )
     fun getBridgeSessionId(participant: Participant): String?
 
@@ -91,9 +76,6 @@ interface ColibriSessionManager {
 
     /**
      * Interface for events fired by [ColibriSessionManager].
-     *
-     * Note that [ColibriV1SessionManager] calls these while holding its internal lock, so listeners should be careful
-     * not to perform action that will cause a deadlock.
      */
     interface Listener {
         /** The number of bridges changed. */

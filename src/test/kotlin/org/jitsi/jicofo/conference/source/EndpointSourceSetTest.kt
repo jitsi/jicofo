@@ -66,61 +66,31 @@ class EndpointSourceSetTest : ShouldSpec() {
             audioSources shouldBe sourceSet.sources.filter { it.mediaType == AUDIO }.toSet()
         }
         context("Strip simulcast") {
-            val s8 = Source(8, VIDEO, injected = true)
+            val s8 = Source(8, VIDEO)
 
             context("Without RTX") {
-                context("stripSimulcast") {
-                    EndpointSourceSet(
-                        setOf(s1, s2, s3, s7, s8),
-                        setOf(sim)
-                    ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s7, s8))
-                }
-                context("stripSimulcast and remove injected") {
-                    EndpointSourceSet(
-                        setOf(s1, s2, s3, s7, s8),
-                        setOf(sim)
-                    ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(setOf(s1, s7))
-                }
+                EndpointSourceSet(
+                    setOf(s1, s2, s3, s7, s8),
+                    setOf(sim)
+                ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s7, s8))
             }
             context("With multiple SIM groups") {
-                context("stripSimulcast") {
-                    EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        setOf(
-                            sim,
-                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
-                        )
-                    ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s4, s7, s8))
-                }
-                context("stripSimulcast and remove injected") {
-                    EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        setOf(
-                            sim,
-                            SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
-                        )
-                    ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(setOf(s1, s4, s7))
-                }
+                EndpointSourceSet(
+                    sourceSet.sources + s8,
+                    setOf(
+                        sim,
+                        SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
+                    )
+                ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s4, s7, s8))
             }
             context("With RTX") {
-                context("stripSimulcast") {
-                    EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        sourceSet.ssrcGroups
-                    ).stripSimulcast() shouldBe EndpointSourceSet(
-                        setOf(s1, s4, s7, s8),
-                        setOf(fid1)
-                    )
-                }
-                context("stripSimulcast and remove injected") {
-                    EndpointSourceSet(
-                        sourceSet.sources + s8,
-                        sourceSet.ssrcGroups
-                    ).stripSimulcast(stripInjected = true) shouldBe EndpointSourceSet(
-                        setOf(s1, s4, s7),
-                        setOf(fid1)
-                    )
-                }
+                EndpointSourceSet(
+                    sourceSet.sources + s8,
+                    sourceSet.ssrcGroups
+                ).stripSimulcast() shouldBe EndpointSourceSet(
+                    setOf(s1, s4, s7, s8),
+                    setOf(fid1)
+                )
             }
             context("Compact JSON") {
                 // See the documentation of [EndpointSourceSet.compactJson] for the expected JSON format.

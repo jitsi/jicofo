@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.bridge
 
 import org.jitsi.jicofo.OctoConfig
-import org.jitsi.jicofo.conference.colibri.ColibriConfig
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -190,12 +189,10 @@ class BridgeSelector @JvmOverloads constructor(
             }
         }
 
-        if (ColibriConfig.config.enableColibri2) {
-            candidateBridges = candidateBridges.filter { it.supportsColibri2() }
-            if (candidateBridges.isEmpty()) {
-                logger.warn("There are no bridges with colibri2 support.")
-                return null
-            }
+        candidateBridges = candidateBridges.filter { it.supportsColibri2() }
+        if (candidateBridges.isEmpty()) {
+            logger.warn("There are no bridges with colibri2 support.")
+            return null
         }
 
         // If there are active bridges, prefer those.

@@ -23,7 +23,6 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.colibri.*;
-import org.jitsi.jicofo.conference.colibri.v1.*;
 import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
@@ -218,8 +217,6 @@ public class JitsiMeetConferenceImpl
      */
     private boolean videoLimitReached = false;
 
-    private final long gid;
-
     /**
      * Requested bridge version from a pin. null if not pinned.
      */
@@ -245,7 +242,6 @@ public class JitsiMeetConferenceImpl
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
-            long gid,
             String jvbVersion,
             boolean includeInStatistics)
     {
@@ -260,21 +256,12 @@ public class JitsiMeetConferenceImpl
         this.includeInStatistics = includeInStatistics;
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
-        this.gid = gid;
         this.jvbVersion = jvbVersion;
-        if (ColibriConfig.config.getEnableColibri2())
-        {
-            colibriSessionManager = new ColibriV2SessionManager(
-                    jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
-                    jicofoServices.getBridgeSelector(),
-                    this,
-                    logger);
-        }
-        else
-        {
-            colibriSessionManager
-                    = new ColibriV1SessionManager(jicofoServices, gid, this, colibriRequestCallback, logger);
-        }
+        colibriSessionManager = new ColibriV2SessionManager(
+                jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
+                jicofoServices.getBridgeSelector(),
+                this,
+                logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
@@ -285,10 +272,9 @@ public class JitsiMeetConferenceImpl
             ConferenceListener listener,
             @NotNull JitsiMeetConfig config,
             Level logLevel,
-            long gid,
             String jvbVersion)
     {
-       this(roomName, listener, config, logLevel, gid, jvbVersion, false);
+       this(roomName, listener, config, logLevel, jvbVersion, false);
     }
 
     /**
@@ -1085,10 +1071,9 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
-        final ConferenceSourceMap finalSources = sources
-                .copy()
-                .strip(ConferenceConfig.config.stripSimulcast(), true)
-                .unmodifiable();
+        final ConferenceSourceMap finalSources = (ConferenceConfig.config.stripSimulcast())
+                ? sources.copy().stripSimulcast().unmodifiable()
+                : sources.copy().unmodifiable();
         if (finalSources.isEmpty())
         {
             logger.debug("No new sources to propagate.");
@@ -1117,7 +1102,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null, null);
+        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null);
     }
 
     /**
@@ -1220,7 +1205,7 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        colibriSessionManager.addSources(participant, sourcesAccepted);
+        colibriSessionManager.updateParticipant(participant, null, participant.getSources());
 
         propagateNewSources(participant, sourcesAccepted);
 
@@ -1284,18 +1269,6 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
-        if (sourcesAdvertised.isEmpty() && ConferenceConfig.config.injectSsrcForRecvOnlyEndpoints()
-            && !(ColibriConfig.config.getEnableColibri2()))
-        {
-            // We inject an SSRC in order to ensure that the participant has
-            // at least one SSRC advertised. Otherwise, non-local bridges in the
-            // conference will not be aware of the participant.
-            // This is not necessary (and might trigger unexpected behavior) with colibri2.
-            long ssrc = RANDOM.nextInt() & 0xffff_ffffL;
-            logger.info(participant + " did not advertise any SSRCs. Injecting " + ssrc);
-            sourcesAdvertised = new EndpointSourceSet(
-                    new Source(ssrc, MediaType.AUDIO, participantId + "-injected0", null, true));
-        }
         ConferenceSourceMap sourcesAccepted;
         try
         {
@@ -1315,8 +1288,7 @@ public class JitsiMeetConferenceImpl
         colibriSessionManager.updateParticipant(
                 participant,
                 getTransport(contents),
-                sourcesAccepted,
-                getRtpDescriptions(contents));
+                sourcesAccepted);
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
@@ -1324,26 +1296,6 @@ public class JitsiMeetConferenceImpl
         participant.sendQueuedRemoteSources();
 
         return null;
-    }
-
-    /**
-     * Extract a map from content name to the first child of type {@link RtpDescriptionPacketExtension}.
-     */
-    private Map<String, RtpDescriptionPacketExtension> getRtpDescriptions(
-            @NotNull List<ContentPacketExtension> contents)
-    {
-        Map<String, RtpDescriptionPacketExtension> rtpDescriptions = new HashMap<>();
-        for (ContentPacketExtension content : contents)
-        {
-            RtpDescriptionPacketExtension rtpDescription
-                    = content.getFirstChildOfType(RtpDescriptionPacketExtension.class);
-            if (rtpDescription != null)
-            {
-                rtpDescriptions.put(content.getName(), rtpDescription);
-            }
-        }
-
-        return rtpDescriptions;
     }
 
     /**
@@ -1416,10 +1368,11 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        colibriSessionManager.removeSources(
+        colibriSessionManager.updateParticipant(
                 participant,
-                sourcesAcceptedToBeRemoved,
-                removeColibriSourcesFromLocalBridge);
+                null,
+                participant.getSources(),
+                !removeColibriSourcesFromLocalBridge);
 
         if (sendSourceRemove)
         {
@@ -1436,10 +1389,9 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
-        final ConferenceSourceMap finalSources = sources
-                .copy()
-                .strip(ConferenceConfig.config.stripSimulcast(), true)
-                .unmodifiable();
+        final ConferenceSourceMap finalSources = ConferenceConfig.config.stripSimulcast()
+                ? sources.copy().stripSimulcast().unmodifiable()
+                : sources.copy().unmodifiable();
         if (finalSources.isEmpty())
         {
             logger.debug("No sources to remove.");
@@ -1616,8 +1568,6 @@ public class JitsiMeetConferenceImpl
         o.put("conference_sources", conferenceSources.toJson());
         o.put("audio_limit_reached", audioLimitReached);
         o.put("video_limit_reached", videoLimitReached);
-        o.put("gid", gid);
-
 
         return o;
     }
@@ -1702,14 +1652,6 @@ public class JitsiMeetConferenceImpl
     public int getParticipantCount()
     {
         return participants.size();
-    }
-
-    /**
-     * Conference ID.
-     */
-    public long getId()
-    {
-        return gid;
     }
 
     /**
@@ -2104,9 +2046,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Listener for events from {@link ColibriV1SessionManager}.
+     * Listener for events from {@link ColibriSessionManager}.
      */
-    private class ColibriSessionManagerListener implements ColibriV1SessionManager.Listener
+    private class ColibriSessionManagerListener implements ColibriSessionManager.Listener
     {
         @Override
         public void bridgeCountChanged(int bridgeCount)

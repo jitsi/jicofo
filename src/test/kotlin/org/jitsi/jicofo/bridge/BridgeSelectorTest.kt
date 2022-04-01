@@ -142,7 +142,7 @@ class BridgeSelectorTest : ShouldSpec() {
 
             splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb2
         }
-        context(config = colibri2Config, "Colibri2 support") {
+        context("Colibri2 support") {
             val selector = BridgeSelector(clock)
             val jvb1 = selector.addJvbAddress(jid1).apply { setStats(stress = 0.2, colibri2 = false) }
             selector.selectBridge() shouldBe null
@@ -209,5 +209,3 @@ private val splitConfig = """
     $enableOctoConfig
     jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
 """.trimIndent()
-
-private val colibri2Config = "jicofo.colibri.enable-colibri2=true"
