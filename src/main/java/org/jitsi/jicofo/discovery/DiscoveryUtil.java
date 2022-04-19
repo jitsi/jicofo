@@ -52,11 +52,6 @@ public class DiscoveryUtil
     public final static String FEATURE_VIDEO = "urn:xmpp:jingle:apps:rtp:video";
 
     /**
-     * ICE feature name.
-     */
-    public final static String FEATURE_ICE = "urn:xmpp:jingle:transports:ice-udp:1";
-
-    /**
      * DTLS/SCTP feature name.
      */
     public final static String FEATURE_SCTP = "urn:xmpp:jingle:transports:dtls-sctp:1";
@@ -75,11 +70,6 @@ public class DiscoveryUtil
      * Support for transport-cc.
      */
     public final static String FEATURE_TCC = "http://jitsi.org/tcc";
-
-    /**
-     * The Jingle DTLS feature name (XEP-0320).
-     */
-    public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
 
     /**
      * Source name signalling required for the multi-stream mode.
@@ -119,9 +109,7 @@ public class DiscoveryUtil
     private static final List<String> defaultFeatures = Arrays.asList(
             FEATURE_AUDIO,
             FEATURE_VIDEO,
-            FEATURE_ICE,
             FEATURE_SCTP,
-            FEATURE_DTLS,
             FEATURE_RTCP_MUX,
             FEATURE_RTP_BUNDLE);
 
