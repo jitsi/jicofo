@@ -20,7 +20,7 @@ package org.jitsi.jicofo.conference.colibri.v2
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.codec.JingleOfferFactory
-import org.jitsi.jicofo.codec.OctoOptions
+import org.jitsi.jicofo.codec.OfferOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
@@ -441,7 +441,7 @@ internal class Colibri2Session(
                 setCreate(true)
             }
 
-            val contents = JingleOfferFactory.INSTANCE.createOffer(OctoOptions)
+            val contents = JingleOfferFactory.INSTANCE.createOffer(OfferOptions(sctp = false))
             contents.forEach { it.toMedia()?.let<Media, Unit> { media -> relay.addMedia(media) } }
 
             val endpoints = Endpoints.getBuilder()

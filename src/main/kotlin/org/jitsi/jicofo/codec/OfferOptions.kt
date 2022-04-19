@@ -40,13 +40,6 @@ data class OfferOptions(
     var opusMaxAverageBitrate: Int? = null
 )
 
-val OctoOptions = OfferOptions(
-    ice = false,
-    dtls = false,
-    sctp = false,
-    stereo = false
-)
-
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
     if (jitsiMeetConfig.minBitrate > 0) {
