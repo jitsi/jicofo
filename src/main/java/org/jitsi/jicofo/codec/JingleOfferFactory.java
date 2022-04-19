@@ -118,21 +118,14 @@ public class JingleOfferFactory
 
         content.setSenders(ContentPacketExtension.SendersEnum.both);
 
-        if (options.getIce())
-        {
-            IceUdpTransportPacketExtension iceUdpTransportPacketExtension = new IceUdpTransportPacketExtension();
+        IceUdpTransportPacketExtension iceUdpTransportPacketExtension = new IceUdpTransportPacketExtension();
 
-            if (options.getDtls())
-            {
-                iceUdpTransportPacketExtension.addChildExtension(new DtlsFingerprintPacketExtension());
-            }
-
-            content.addChildExtension(iceUdpTransportPacketExtension);
-        }
-        else
+        if (options.getDtls())
         {
-            content.addChildExtension(new RawUdpTransportPacketExtension());
+            iceUdpTransportPacketExtension.addChildExtension(new DtlsFingerprintPacketExtension());
         }
+
+        content.addChildExtension(iceUdpTransportPacketExtension);
 
         return content;
     }

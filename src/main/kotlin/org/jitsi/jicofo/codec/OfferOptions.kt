@@ -25,7 +25,6 @@ import java.lang.Integer.min
  * Options for an offer that jicofo generates for a specific participant (or for an Octo link).
  */
 data class OfferOptions(
-    var ice: Boolean = true,
     var dtls: Boolean = true,
     var audio: Boolean = true,
     var video: Boolean = true,
