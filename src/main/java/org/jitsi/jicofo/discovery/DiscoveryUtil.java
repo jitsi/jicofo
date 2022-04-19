@@ -72,11 +72,6 @@ public class DiscoveryUtil
     public final static String FEATURE_TCC = "http://jitsi.org/tcc";
 
     /**
-     * The Jingle DTLS feature name (XEP-0320).
-     */
-    public final static String FEATURE_DTLS = "urn:xmpp:jingle:apps:dtls:0";
-
-    /**
      * Source name signalling required for the multi-stream mode.
      */
     public final static String FEATURE_SOURCE_NAMES = "http://jitsi.org/source-name";
@@ -115,7 +110,6 @@ public class DiscoveryUtil
             FEATURE_AUDIO,
             FEATURE_VIDEO,
             FEATURE_SCTP,
-            FEATURE_DTLS,
             FEATURE_RTCP_MUX,
             FEATURE_RTP_BUNDLE);
 

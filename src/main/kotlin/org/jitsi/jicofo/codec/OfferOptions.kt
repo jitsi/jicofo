@@ -25,7 +25,6 @@ import java.lang.Integer.min
  * Options for an offer that jicofo generates for a specific participant (or for an Octo link).
  */
 data class OfferOptions(
-    var dtls: Boolean = true,
     var audio: Boolean = true,
     var video: Boolean = true,
     var sctp: Boolean = true,
@@ -53,7 +52,6 @@ fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
 }
 
 fun OfferOptions.applyConstraints(participant: Participant) {
-    dtls = dtls && participant.hasDtlsSupport()
     audio = audio && participant.hasAudioSupport()
     video = video && participant.hasVideoSupport()
     sctp = sctp && participant.hasSctpSupport()

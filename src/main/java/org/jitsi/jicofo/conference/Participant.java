@@ -229,14 +229,6 @@ public class Participant
     }
 
     /**
-     * Returns <tt>true</tt> if this participant supports DTLS.
-     */
-    public boolean hasDtlsSupport()
-    {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_DTLS);
-    }
-
-    /**
      * @return {@code true} if this participant supports source name signaling.
      */
     public boolean hasSourceNameSupport()

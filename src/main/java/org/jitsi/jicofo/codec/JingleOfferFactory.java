@@ -119,11 +119,7 @@ public class JingleOfferFactory
         content.setSenders(ContentPacketExtension.SendersEnum.both);
 
         IceUdpTransportPacketExtension iceUdpTransportPacketExtension = new IceUdpTransportPacketExtension();
-
-        if (options.getDtls())
-        {
-            iceUdpTransportPacketExtension.addChildExtension(new DtlsFingerprintPacketExtension());
-        }
+        iceUdpTransportPacketExtension.addChildExtension(new DtlsFingerprintPacketExtension());
 
         content.addChildExtension(iceUdpTransportPacketExtension);
 
