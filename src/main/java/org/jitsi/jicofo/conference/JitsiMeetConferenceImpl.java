@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
@@ -1511,25 +1512,17 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        if (doMute
-            && participant.getChatMember().isJigasi()
-            && !participant.hasAudioMuteSupport())
+        if (participant.shouldSuppressForceMute())
         {
-            logger.warn("Mute not allowed, toBeMuted is jigasi.");
-            return MuteResult.NOT_ALLOWED;
-        }
-
-
-        if (doMute && participant.getChatMember().isJibri())
-        {
-            logger.warn("Mute not allowed, toBeMuted is jibri.");
+            logger.warn("Force mute suppressed, returning NOT_ALLOWED:" + participant);
             return MuteResult.NOT_ALLOWED;
         }
 
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        return colibriSessionManager.mute(participant, doMute, mediaType) ? MuteResult.SUCCESS : MuteResult.ERROR;
+        colibriSessionManager.mute(participant.getEndpointId(), doMute, mediaType);
+        return MuteResult.SUCCESS;
     }
 
     @Override
@@ -1577,69 +1570,58 @@ public class JitsiMeetConferenceImpl
      */
     public void muteAllParticipants(MediaType mediaType)
     {
-        Iterable<Participant> participantsToMute;
+        Set<Participant> participantsToMute = new HashSet<>();
         synchronized (participantLock)
         {
-            participantsToMute = new ArrayList<>(participants.values());
+            for (Participant participant : participants.values())
+            {
+                if (participant.shouldSuppressForceMute())
+                {
+                    logger.info("Will not mute a trusted participant without unmute support (jibri, jigasi): "
+                            + participant);
+                    continue;
+                }
+
+                participantsToMute.add(participant);
+            }
         }
 
+        // Force mute at the backend. We assume this was successful. If for some reason it wasn't the colibri layer
+        // should handle it (e.g. remove a broken bridge).
+        colibriSessionManager.mute(
+                participantsToMute.stream().map(p -> p.getEndpointId()).collect(Collectors.toSet()),
+                true,
+                mediaType);
+
+        // Signal to the participants that they are being muted.
         for (Participant participant : participantsToMute)
         {
-            muteParticipant(participant, mediaType);
-        }
-    }
+            IQ muteIq = null;
+            if (mediaType == MediaType.AUDIO)
+            {
+                MuteIq muteStatusUpdate = new MuteIq();
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
 
-    /**
-     * Mutes a participant, blocking for a colibri response (no-op if the participant is already muted).
-     * Will not mute jibri instances, and jigasi instances without "audioMute" support.
-     * @param participant the participant to mute.
-     * @param mediaType the media type for the operation.
-     */
-    public void muteParticipant(Participant participant, MediaType mediaType)
-    {
-        if (participant.getChatMember().isJigasi() && !participant.hasAudioMuteSupport())
-        {
-            logger.warn("Will not mute jigasi with not audioMute support: " + participant);
-            return;
-        }
+                muteStatusUpdate.setMute(true);
 
-        if (participant.getChatMember().isJibri())
-        {
-            logger.warn("Will not mute jibri: " + participant);
-            return;
-        }
+                muteIq = muteStatusUpdate;
+            }
+            else if (mediaType == MediaType.VIDEO)
+            {
+                MuteVideoIq muteStatusUpdate = new MuteVideoIq();
+                muteStatusUpdate.setType(IQ.Type.set);
+                muteStatusUpdate.setTo(participant.getMucJid());
 
-        if (!colibriSessionManager.mute(participant, true, mediaType))
-        {
-            logger.warn("Failed to mute colibri channels for " + participant);
-            return;
-        }
+                muteStatusUpdate.setMute(true);
 
-        IQ muteIq = null;
-        if (mediaType == MediaType.AUDIO)
-        {
-            MuteIq muteStatusUpdate = new MuteIq();
-            muteStatusUpdate.setType(IQ.Type.set);
-            muteStatusUpdate.setTo(participant.getMucJid());
+                muteIq = muteStatusUpdate;
+            }
 
-            muteStatusUpdate.setMute(true);
-
-            muteIq = muteStatusUpdate;
-        }
-        else if (mediaType == MediaType.VIDEO)
-        {
-            MuteVideoIq muteStatusUpdate = new MuteVideoIq();
-            muteStatusUpdate.setType(IQ.Type.set);
-            muteStatusUpdate.setTo(participant.getMucJid());
-
-            muteStatusUpdate.setMute(true);
-
-            muteIq = muteStatusUpdate;
-        }
-
-        if (muteIq != null)
-        {
-            UtilKt.tryToSendStanza(getClientXmppProvider().getXmppConnection(), muteIq);
+            if (muteIq != null)
+            {
+                UtilKt.tryToSendStanza(getClientXmppProvider().getXmppConnection(), muteIq);
+            }
         }
     }
 

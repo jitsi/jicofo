@@ -42,13 +42,17 @@ interface ColibriSessionManager {
      */
     fun removeParticipants(participants: Collection<Participant>)
 
-    fun mute(participant: Participant, doMute: Boolean, mediaType: MediaType): Boolean
+    fun mute(participantId: String, doMute: Boolean, mediaType: MediaType): Boolean =
+        mute(setOf(participantId), doMute, mediaType)
+    fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
     @Throws(ColibriAllocationFailedException::class)
     fun allocate(
         participant: Participant,
-        contents: List<ContentPacketExtension>
+        contents: List<ContentPacketExtension>,
+        forceMuteAudio: Boolean,
+        forceMuteVideo: Boolean
     ): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */

@@ -88,6 +88,9 @@ internal class Colibri2Session(
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
             }
+            if (participant.audioMuted || participant.videoMuted) {
+                setForceMute(participant.audioMuted, participant.videoMuted)
+            }
             setTransport(
                 Transport.getBuilder().apply {
                     // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
@@ -141,18 +144,18 @@ internal class Colibri2Session(
         xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
-    /** Force-mutes a specific endpoint **/
-    internal fun mute(participant: ParticipantInfo, audio: Boolean, video: Boolean): StanzaCollector {
+    internal fun updateForceMute(participants: Set<ParticipantInfo>) {
         val request = createRequest()
-        request.addEndpoint(
-            Colibri2Endpoint.getBuilder().apply {
-                setForceMute(audio, video)
-                setId(participant.id)
-            }.build()
-        )
+        participants.forEach { participant ->
+            request.addEndpoint(
+                Colibri2Endpoint.getBuilder().apply {
+                    setId(participant.id)
+                    setForceMute(participant.audioMuted, participant.videoMuted)
+                }.build()
+            )
+        }
 
-        logger.trace { "Sending force-mute update: ${request.build().toXML()}" }
-        return xmppConnection.createStanzaCollectorAndSend(request.build())
+        xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))

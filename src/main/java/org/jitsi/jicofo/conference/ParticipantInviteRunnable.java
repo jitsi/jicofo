@@ -95,6 +95,16 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private final boolean startVideoMuted;
 
     /**
+     * Whether the participant should be force muted (audio).
+     */
+    private final boolean forceMuteAudio;
+
+    /**
+     * Whether the participant should be force muted (video).
+     */
+    private final boolean forceMuteVideo;
+
+    /**
      * Indicates whether or not this task will be doing a "re-invite". It
      * means that we're going to replace a previous conference which has failed.
      * Channels are allocated on new JVB and peer is re-invited with
@@ -124,8 +134,29 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         this.meetConference = meetConference;
         this.colibriRequestCallback = colibriRequestCallback;
         this.colibriSessionManager = colibriSessionManager;
-        this.startAudioMuted = startAudioMuted;
-        this.startVideoMuted = startVideoMuted;
+
+        boolean forceMuteAudio = false;
+        boolean forceMuteVideo = false;
+        ChatRoom chatRoom = meetConference.getChatRoom();
+        if (chatRoom != null && !participant.hasModeratorRights() && !participant.shouldSuppressForceMute())
+        {
+            if (chatRoom.isAvModerationEnabled(MediaType.AUDIO))
+            {
+                forceMuteAudio = true;
+            }
+
+            if (chatRoom.isAvModerationEnabled(MediaType.VIDEO))
+            {
+                forceMuteVideo = true;
+            }
+        }
+
+        this.forceMuteAudio = forceMuteAudio;
+        this.forceMuteVideo = forceMuteVideo;
+
+        // If the participant is force muted, communicate it from the start instead of sending MuteIqs later.
+        this.startAudioMuted = startAudioMuted || forceMuteAudio;
+        this.startVideoMuted = startVideoMuted || forceMuteVideo;
         this.reInvite = reInvite;
         this.participant = participant;
         logger = parentLogger.createChildLogger(getClass().getName());
@@ -179,7 +210,11 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ColibriAllocation colibriAllocation;
         try
         {
-            colibriAllocation = colibriSessionManager.allocate(participant, offer.getContents());
+            colibriAllocation = colibriSessionManager.allocate(
+                    participant,
+                    offer.getContents(),
+                    forceMuteAudio,
+                    forceMuteVideo);
         }
         catch (BridgeSelectionFailedException e)
         {
@@ -356,21 +391,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             // a failure to invite the participant on the jingle level, we will
             // not trigger a retry here.
             meetConference.onInviteFailed(this);
-        }
-
-        // TODO: include force-mute in the initial allocation, instead of sending 2 additional colibri messages.
-        if (chatRoom != null && !participant.hasModeratorRights())
-        {
-            // if participant is not muted, but needs to be
-            if (chatRoom.isAvModerationEnabled(MediaType.AUDIO))
-            {
-                meetConference.muteParticipant(participant, MediaType.AUDIO);
-            }
-
-            if (chatRoom.isAvModerationEnabled(MediaType.VIDEO))
-            {
-                meetConference.muteParticipant(participant, MediaType.VIDEO);
-            }
         }
     }
 
