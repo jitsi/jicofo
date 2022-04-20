@@ -132,7 +132,7 @@ class CodecUtilTest : ShouldSpec() {
                     val red = CodecUtil.createAudioPayloadTypeExtensions().find { it.name == "red" }
                     red shouldNotBe null
                     val opusPt = Config.config.opus.pt()
-                    red!!.parameters.any { it.value == "${opusPt}/${opusPt}" } shouldBe true
+                    red!!.parameters.any { it.value == "$opusPt/$opusPt" } shouldBe true
                 }
             }
         }
