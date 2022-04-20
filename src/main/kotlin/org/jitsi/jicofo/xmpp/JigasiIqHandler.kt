@@ -110,6 +110,7 @@ class JigasiIqHandler(
             return
         }
 
+        logger.info("Selected $jigasiJid (request from ${request.iq.from})")
         // Forward the request to the selected Jigasi instance.
         val requestToJigasi = DialIq(request.iq).apply {
             from = null
