@@ -53,6 +53,7 @@ class CodecUtil {
                 // a=rtpmap:XXX VP9/90000
                 val vp9 = createPayloadTypeExtension(config.vp9.pt(), "VP9", 90000)
                 vp9.addVideoExtensions(options, config.vp9)
+                add(vp9)
             }
 
             if (options.rtx) {
