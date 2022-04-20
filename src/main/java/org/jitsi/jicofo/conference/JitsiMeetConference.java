@@ -112,8 +112,7 @@ public interface JitsiMeetConference
 
     /**
      * Handle a request to mute or unmute a participant. May block for a response from jitsi-videobridge.
-     * @param muterJid MUC jid of the participant that requested mute status change, or {@code null}. When {@code null},
-     * no permission checks will be performed.
+     * @param muterJid MUC jid of the participant that requested mute status change.
      * @param toBeMutedJid MUC jid of the participant whose mute status will be changed.
      * @param doMute {@code true} to mute, {@code false} to unmute.
      * @param mediaType the {@link MediaType} of the channel to mute, either AUDIO or VIDEO.
@@ -123,7 +122,7 @@ public interface JitsiMeetConference
      */
     @NotNull
     MuteResult handleMuteRequest(
-            Jid muterJid,
+            @NotNull Jid muterJid,
             Jid toBeMutedJid,
             boolean doMute,
             MediaType mediaType);

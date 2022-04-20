@@ -1469,22 +1469,19 @@ public class JitsiMeetConferenceImpl
      */
     @Override
     @NotNull
-    public MuteResult handleMuteRequest(Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
+    public MuteResult handleMuteRequest(@NotNull Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
     {
-        if (muterJid != null)
+        Participant muter = getParticipant(muterJid);
+        if (muter == null)
         {
-            Participant muter = getParticipant(muterJid);
-            if (muter == null)
-            {
-                logger.warn("Muter participant not found, jid=" + muterJid);
-                return MuteResult.ERROR;
-            }
-            // Only moderators can mute others
-            if (!muterJid.equals(toBeMutedJid) && !MemberRoleKt.hasModeratorRights(muter.getChatMember().getRole()))
-            {
-                logger.warn("Mute not allowed for non-moderator " + muterJid);
-                return MuteResult.NOT_ALLOWED;
-            }
+            logger.warn("Muter participant not found, jid=" + muterJid);
+            return MuteResult.ERROR;
+        }
+        // Only moderators can mute others
+        if (!muterJid.equals(toBeMutedJid) && !MemberRoleKt.hasModeratorRights(muter.getChatMember().getRole()))
+        {
+            logger.warn("Mute not allowed for non-moderator " + muterJid);
+            return MuteResult.NOT_ALLOWED;
         }
 
         Participant participant = getParticipant(toBeMutedJid);
@@ -1498,7 +1495,7 @@ public class JitsiMeetConferenceImpl
         if (!doMute)
         {
             // do not allow unmuting other participants even for the moderator
-            if (muterJid == null || !muterJid.equals(toBeMutedJid))
+            if (!muterJid.equals(toBeMutedJid))
             {
                 logger.warn("Unmute not allowed, muterJid=" + muterJid + ", toBeMutedJid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
