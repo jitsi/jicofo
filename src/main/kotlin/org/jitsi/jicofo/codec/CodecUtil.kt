@@ -123,19 +123,19 @@ class CodecUtil {
                     // RFC 2198 fmtp line
                     // Indicates Opus payload type (111) as primary/secondary encoding for RED (112)
                     // fmtp:112 111/111
-                    red.addParameterExtension(null, Config.config.opus.pt().toString() + "/" + Config.config.opus.pt())
+                    red.addParameterExtension(null, config.opus.pt().toString() + "/" + config.opus.pt())
 
                     add(red)
                 }
 
                 // a=rtpmap:111 opus/48000/2
-                val opus = createPayloadTypeExtension(Config.config.opus.pt(), "opus", 48000)
+                val opus = createPayloadTypeExtension(config.opus.pt(), "opus", 48000)
                 add(opus)
                 // Opus is always signaled with 2 channels, regardless of 'stereo'
                 opus.channels = 2
 
                 // fmtp:111 minptime=10
-                opus.addParameterExtension("minptime", Config.config.opus.minptime().toString())
+                opus.addParameterExtension("minptime", config.opus.minptime().toString())
                 if (options.stereo) {
                     // fmtp: 111 stereo=1
                     opus.addParameterExtension("stereo", "1")
@@ -160,7 +160,7 @@ class CodecUtil {
                 // a=rtpmap:104 ISAC/32000
                 add(createPayloadTypeExtension(config.isac32.pt(), "ISAC", 32000))
             }
-            if (Config.config.telephoneEvent.enabled()) {
+            if (config.telephoneEvent.enabled()) {
                 // rtpmap:126 telephone-event/8000
                 add(createPayloadTypeExtension(config.telephoneEvent.pt(), "telephone-event", 8000))
             }
