@@ -85,7 +85,10 @@ class VideoMuteIqHandler(
 private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.MuteIqHandler")
 
 private fun handleRequest(request: MuteRequest): IqProcessingResult {
-    if (request.doMute == null || request.jidToMute == null) {
+    val jidToMute = request.jidToMute
+    val doMute = request.doMute
+    val mediaType = request.mediaType
+    if (doMute == null || jidToMute == null || mediaType == null) {
         logger.warn("Mute request missing required fields: ${request.iq.toXML()}")
         return RejectedWithError(request.iq, StanzaError.Condition.bad_request)
     }
@@ -97,7 +100,7 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
 
     TaskPools.ioPool.execute {
         try {
-            when (conference.handleMuteRequest(request.iq.from, request.jidToMute, request.doMute, request.mediaType)) {
+            when (conference.handleMuteRequest(request.iq.from, jidToMute, doMute, mediaType)) {
                 MuteResult.SUCCESS -> {
                     request.connection.tryToSendStanza(IQ.createResultIQ(request.iq))
                     // If this was a remote mute, notify the participant that was muted.

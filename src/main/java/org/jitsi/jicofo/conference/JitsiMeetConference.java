@@ -123,9 +123,9 @@ public interface JitsiMeetConference
     @NotNull
     MuteResult handleMuteRequest(
             @NotNull Jid muterJid,
-            Jid toBeMutedJid,
+            @NotNull Jid toBeMutedJid,
             boolean doMute,
-            MediaType mediaType);
+            @NotNull MediaType mediaType);
 
     @NotNull
     OrderedJsonObject getDebugState();

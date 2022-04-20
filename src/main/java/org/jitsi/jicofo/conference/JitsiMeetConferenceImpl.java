@@ -1469,7 +1469,11 @@ public class JitsiMeetConferenceImpl
      */
     @Override
     @NotNull
-    public MuteResult handleMuteRequest(@NotNull Jid muterJid, Jid toBeMutedJid, boolean doMute, MediaType mediaType)
+    public MuteResult handleMuteRequest(
+            @NotNull Jid muterJid,
+            @NotNull Jid toBeMutedJid,
+            boolean doMute,
+            @NotNull MediaType mediaType)
     {
         Participant muter = getParticipant(muterJid);
         if (muter == null)
