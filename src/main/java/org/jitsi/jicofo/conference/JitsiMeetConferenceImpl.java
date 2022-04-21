@@ -1968,7 +1968,7 @@ public class JitsiMeetConferenceImpl
     private class ChatRoomListenerImpl implements ChatRoomListener
     {
         @Override
-        public void roomDestroyed(@NotNull String reason)
+        public void roomDestroyed(String reason)
         {
             logger.info("Room destroyed with reason=" + reason);
             stop();
