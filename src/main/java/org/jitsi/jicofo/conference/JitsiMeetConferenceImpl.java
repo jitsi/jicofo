@@ -582,10 +582,7 @@ public class JitsiMeetConferenceImpl
             transcriberManager = null;
         }
 
-        if (chatRoom.isJoined())
-        {
-            chatRoom.leave();
-        }
+        chatRoom.leave();
 
         chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
