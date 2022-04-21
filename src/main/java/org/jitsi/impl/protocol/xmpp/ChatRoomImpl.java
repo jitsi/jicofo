@@ -321,7 +321,10 @@ public class ChatRoomImpl
                 // FIXME smack4: there used to be a custom dispose() method
                 // if leave() fails, there might still be some listeners
                 // lingering around
-                muc.leave();
+                if (isJoined())
+                {
+                    muc.leave();
+                }
             }
             catch (NotConnectedException | InterruptedException | NoResponseException | XMPPException.XMPPErrorException
                     | MultiUserChatException.MucNotJoinedException e)
