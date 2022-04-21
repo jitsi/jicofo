@@ -18,9 +18,8 @@ package org.jitsi.jicofo.bridge;
 import java.util.*;
 
 /**
- * Implements a {@link BridgeSelectionStrategy} which tries to split each
- * conference to different bridges (without regard for the "region"). For
- * testing purposes only.
+ * Implements a {@link BridgeSelectionStrategy} which "splits" a conference to as many bridges as possible (always
+ * selects a bridge not in the conference or with the fewest endpoints from that conference). For testing purposes only.
  */
 class SplitBridgeSelectionStrategy
     extends BridgeSelectionStrategy
