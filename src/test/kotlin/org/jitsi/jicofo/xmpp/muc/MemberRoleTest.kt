@@ -24,9 +24,9 @@ import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.xmpp.muc.MemberRole.ADMINISTRATOR
-import org.jitsi.jicofo.xmpp.muc.MemberRole.PARTICIPANT
 import org.jitsi.jicofo.xmpp.muc.MemberRole.MODERATOR
 import org.jitsi.jicofo.xmpp.muc.MemberRole.OWNER
+import org.jitsi.jicofo.xmpp.muc.MemberRole.PARTICIPANT
 import org.jitsi.jicofo.xmpp.muc.MemberRole.VISITOR
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
