@@ -15,6 +15,8 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jitsi.utils.logging2.*;
+
 import java.util.*;
 
 /**
@@ -24,6 +26,8 @@ import java.util.*;
 class SplitBridgeSelectionStrategy
     extends BridgeSelectionStrategy
 {
+    private final static Logger logger = new LoggerImpl(SplitBridgeSelectionStrategy.class.getName());
+
     /**
      * Default constructor.
      */
@@ -50,5 +54,20 @@ class SplitBridgeSelectionStrategy
             .min(Map.Entry.comparingByValue())
             .map(Map.Entry::getKey)
             .orElse(null));
+    }
+
+    @Override
+    public Bridge select(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            String participantRegion,
+            boolean allowMultiBridge)
+    {
+        if (!allowMultiBridge) {
+            logger.warn("Force-enabling octo for SplitBridgeSelectionStrategy. To suppress this warning, enable octo"
+                    + " in jicofo.conf.");
+        }
+
+        return super.select(bridges, conferenceBridges, participantRegion, true);
     }
 }
