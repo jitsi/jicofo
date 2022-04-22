@@ -61,8 +61,13 @@ class MuteTest : JicofoHarnessTest() {
             mute() shouldBe SUCCESS
             unmute() shouldBe NOT_ALLOWED
         }
-        context("When the muter is a guest") {
-            muter.chatMember.role = MemberRole.GUEST
+        context("When the muter is a participant") {
+            muter.chatMember.role = MemberRole.PARTICIPANT
+            mute() shouldBe NOT_ALLOWED
+            unmute() shouldBe NOT_ALLOWED
+        }
+        context("When the muter is a visitor") {
+            muter.chatMember.role = MemberRole.VISITOR
             mute() shouldBe NOT_ALLOWED
             unmute() shouldBe NOT_ALLOWED
         }
