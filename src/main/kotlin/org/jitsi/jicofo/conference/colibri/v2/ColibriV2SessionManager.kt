@@ -34,6 +34,7 @@ import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.SyncEventEmitter
@@ -262,6 +263,8 @@ class ColibriV2SessionManager(
                 logger.info("Selecting bridge. Conference is pinned to version \"$version\"")
             }
 
+            val visitor = (participant.chatMember.role == MemberRole.VISITOR)
+
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
@@ -278,6 +281,7 @@ class ColibriV2SessionManager(
                 audioMuted = forceMuteAudio,
                 videoMuted = forceMuteVideo,
                 session = session,
+                visitor = (participant.chatMember.role == MemberRole.VISITOR),
                 supportsSourceNames = participant.hasSourceNameSupport()
             )
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)

@@ -40,6 +40,7 @@ import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smackx.muc.MUCRole
 import java.util.Collections.singletonList
 import java.util.UUID
 
@@ -90,6 +91,9 @@ internal class Colibri2Session(
             }
             if (participant.audioMuted || participant.videoMuted) {
                 setForceMute(participant.audioMuted, participant.videoMuted)
+            }
+            if (participant.visitor) {
+                setMucRole(MUCRole.visitor)
             }
             setTransport(
                 Transport.getBuilder().apply {

@@ -32,6 +32,8 @@ internal class ParticipantInfo(
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
     var videoMuted: Boolean = false,
+    /** Whether the participant is a MUC visitor. */
+    var visitor: Boolean = false,
     /* Whether the participant supports source name signaling */
     var supportsSourceNames: Boolean = false
 ) {
