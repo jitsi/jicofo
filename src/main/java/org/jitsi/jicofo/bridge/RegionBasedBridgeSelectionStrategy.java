@@ -120,7 +120,8 @@ public class RegionBasedBridgeSelectionStrategy
             String participantRegion,
             boolean allowMultiBridge)
     {
-        if (!allowMultiBridge) {
+        if (!allowMultiBridge)
+        {
             logger.warn("Octo is disabled, but the selection strategy is RegionBased. Enable octo in jicofo.conf to "
                     + "allow use of multiple bridges in a conference.");
         }

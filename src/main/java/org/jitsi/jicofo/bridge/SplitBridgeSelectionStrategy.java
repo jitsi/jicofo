@@ -63,7 +63,8 @@ class SplitBridgeSelectionStrategy
             String participantRegion,
             boolean allowMultiBridge)
     {
-        if (!allowMultiBridge) {
+        if (!allowMultiBridge)
+        {
             logger.warn("Force-enabling octo for SplitBridgeSelectionStrategy. To suppress this warning, enable octo"
                     + " in jicofo.conf.");
         }
