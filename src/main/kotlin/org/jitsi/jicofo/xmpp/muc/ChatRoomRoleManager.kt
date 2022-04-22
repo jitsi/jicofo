@@ -111,7 +111,7 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
 
     override val debugState
         get() = OrderedJsonObject().apply {
-            put("class", javaClass.simpleName)
+            put("class", this@AutoOwnerRoleManager.javaClass.simpleName)
             put("owner", owner?.jid?.toString() ?: "null")
         }
 }
@@ -159,5 +159,7 @@ class AuthenticationRoleManager(
 
     override fun stop() = authenticationAuthority.removeAuthenticationListener(authenticationListener)
 
-    override val debugState = OrderedJsonObject().apply { put("class", javaClass.simpleName) }
+    override val debugState = OrderedJsonObject().apply {
+        put("class", this@AuthenticationRoleManager.javaClass.simpleName)
+    }
 }
