@@ -72,11 +72,6 @@ public class JitsiMeetConferenceImpl
                JingleRequestHandler
 {
     /**
-     * A random generator.
-     */
-    private final static Random RANDOM = new Random();
-
-    /**
      * Name of MUC room that is hosting Jitsi Meet conference.
      */
     @NotNull
