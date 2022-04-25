@@ -25,6 +25,4 @@ import org.jitsi.jicofo.bridge.Bridge
 interface ColibriRequestCallback {
     /** A colibri request to a specific bridge failed. */
     fun requestFailed(bridge: Bridge)
-    /** A colibri request to a specific bridge succeeded. */
-    fun requestSucceeded(bridge: Bridge)
 }

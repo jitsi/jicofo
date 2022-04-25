@@ -220,15 +220,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             // Can not find a bridge to use.
             logger.error("Can not invite participant, no bridge available: " + participant.getChatMember().getName());
-
-            ChatRoom chatRoom = meetConference.getChatRoom();
-            if (chatRoom != null
-                    && !chatRoom.containsPresenceExtension(
-                    BridgeNotAvailablePacketExt.ELEMENT,
-                    BridgeNotAvailablePacketExt.NAMESPACE))
-            {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
-            }
             return;
         }
         catch (ColibriConferenceDisposedException e)

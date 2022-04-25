@@ -266,7 +266,11 @@ class ColibriV2SessionManager(
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
             val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region, version)
-                ?: throw BridgeSelectionFailedException()
+                ?: run {
+                    eventEmitter.fireEvent { bridgeSelectionFailed() }
+                    throw BridgeSelectionFailedException()
+                }
+            eventEmitter.fireEvent { bridgeSelectionSucceeded() }
             getOrCreateSession(bridge).let {
                 session = it.first
                 created = it.second

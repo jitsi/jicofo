@@ -2040,6 +2040,36 @@ public class JitsiMeetConferenceImpl
         {
             listener.bridgeRemoved(count);
         }
+
+        /**
+         * Bridge selection failed, update jicofo's presence in the room to reflect it.
+         */
+        @Override
+        public void bridgeSelectionFailed()
+        {
+            ChatRoom chatRoom = getChatRoom();
+            if (chatRoom != null
+                    && !chatRoom.containsPresenceExtension(
+                    BridgeNotAvailablePacketExt.ELEMENT,
+                    BridgeNotAvailablePacketExt.NAMESPACE))
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+            }
+        }
+
+        /**
+         * Bridge selection was successful, update jicofo's presence in the room to reflect it.
+         */
+        @Override
+        public void bridgeSelectionSucceeded()
+        {
+            // Remove "bridge not available" from Jicofo's presence
+            ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
+            if (chatRoom != null)
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
+            }
+        }
     }
 
     private class ColibriRequestCallbackImpl implements ColibriRequestCallback
@@ -2048,17 +2078,6 @@ public class JitsiMeetConferenceImpl
         public void requestFailed(@NotNull Bridge bridge)
         {
             onMultipleBridgesDown(Collections.singleton(bridge));
-        }
-
-        @Override
-        public void requestSucceeded(@NotNull Bridge bridge)
-        {
-            // Remove "bridge not available" from Jicofo's presence
-            ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
-            if (chatRoom != null)
-            {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
-            }
         }
     }
 }
