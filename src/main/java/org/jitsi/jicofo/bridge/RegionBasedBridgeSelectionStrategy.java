@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.utils.logging2.*;
 
 import java.util.*;
 
@@ -58,6 +59,8 @@ import java.util.*;
 public class RegionBasedBridgeSelectionStrategy
     extends BridgeSelectionStrategy
 {
+    private final static Logger logger = new LoggerImpl(RegionBasedBridgeSelectionStrategy.class.getName());
+
     /**
      * Map a region to the set of all region in its group (including itself).
      */
@@ -108,5 +111,21 @@ public class RegionBasedBridgeSelectionStrategy
     public String toString()
     {
         return getClass().getSimpleName() + " with region groups:" + BridgeConfig.config.getRegionGroups();
+    }
+
+    @Override
+    public Bridge select(
+            List<Bridge> bridges,
+            Map<Bridge, Integer> conferenceBridges,
+            String participantRegion,
+            boolean allowMultiBridge)
+    {
+        if (!allowMultiBridge)
+        {
+            logger.warn("Octo is disabled, but the selection strategy is RegionBased. Enable octo in jicofo.conf to "
+                    + "allow use of multiple bridges in a conference.");
+        }
+
+        return super.select(bridges, conferenceBridges, participantRegion, allowMultiBridge);
     }
 }
