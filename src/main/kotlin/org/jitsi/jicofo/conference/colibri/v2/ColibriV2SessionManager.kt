@@ -460,7 +460,6 @@ class ColibriV2SessionManager(
         val participantsToRemove = getSessionParticipants(sessionToRemove)
 
         removeParticipantInfosBySession(mapOf(sessionToRemove to participantsToRemove))
-        eventEmitter.fireEvent { failedBridgesRemoved(1) }
 
         logger.info("Removed participants: $participantsToRemove")
         participantsToRemove.map { it.id }

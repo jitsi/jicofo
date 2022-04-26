@@ -77,8 +77,6 @@ interface ColibriSessionManager {
     interface Listener {
         /** The number of bridges changed. */
         fun bridgeCountChanged(bridgeCount: Int)
-        /** A specific number of bridges were removed from the conference because they failed. */
-        fun failedBridgesRemoved(count: Int)
 
         fun bridgeSelectionFailed() {}
         fun bridgeSelectionSucceeded() {}

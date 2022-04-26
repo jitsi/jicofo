@@ -1670,6 +1670,7 @@ public class JitsiMeetConferenceImpl
 
         if (!participantIdsToReinvite.isEmpty())
         {
+            listener.bridgeRemoved(1);
             listener.participantsMoved(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
@@ -2033,12 +2034,6 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridgeCount)
             );
-        }
-
-        @Override
-        public void failedBridgesRemoved(int count)
-        {
-            listener.bridgeRemoved(count);
         }
 
         /**
