@@ -7,8 +7,7 @@ sealed class ColibriAllocationFailedException(message: String = "") : Exception(
 /** Bridge selection failed, i.e. there were no bridges available. */
 class BridgeSelectionFailedException : ColibriAllocationFailedException()
 class ColibriTimeoutException(val bridge: Bridge) : ColibriAllocationFailedException()
-class BridgeInGracefulShutdownException() : ColibriAllocationFailedException()
-class GenericColibriAllocationFailedException(message: String) : ColibriAllocationFailedException(message)
+class BridgeInGracefulShutdownException : ColibriAllocationFailedException()
 
 class ColibriConferenceDisposedException : ColibriAllocationFailedException()
 
