@@ -1164,6 +1164,11 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
+        if (participant.getChatMember().getRole() == MemberRole.VISITOR)
+        {
+            return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build();
+        }
+
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
