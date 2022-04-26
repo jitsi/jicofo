@@ -124,12 +124,13 @@ class ColibriV2SessionManager(
     }
 
     override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
-        participants.forEach { it.setInviteRunnable(null) }
         logger.debug { "Asked to remove participants: ${participants.map { it.endpointId}}" }
 
         val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
         logger.info("Removing participants: ${participantInfos.map { it.id }}")
-        removeParticipantInfos(participantInfos)
+        if (participantInfos.isNotEmpty()) {
+            removeParticipantInfos(participantInfos)
+        }
     }
 
     private fun removeParticipantInfos(participantsToRemove: Collection<ParticipantInfo>) = synchronized(syncRoot) {

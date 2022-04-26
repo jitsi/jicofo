@@ -139,7 +139,7 @@ public class Participant
      * with the specified channel allocator (if any).
      * @param inviteRunnable the channel allocator to set, or {@code null} to clear it.
      */
-    public void setInviteRunnable(Cancelable inviteRunnable)
+    void setInviteRunnable(Cancelable inviteRunnable)
     {
         synchronized (inviteRunnableSyncRoot)
         {

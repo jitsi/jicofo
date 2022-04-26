@@ -1767,6 +1767,10 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
+            for (Participant participant : participants)
+            {
+                participant.setInviteRunnable(null);
+            }
             colibriSessionManager.removeParticipants(participants);
             for (Participant participant : participants)
             {
