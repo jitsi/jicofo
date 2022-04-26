@@ -1770,10 +1770,6 @@ public class JitsiMeetConferenceImpl
             for (Participant participant : participants)
             {
                 participant.setInviteRunnable(null);
-            }
-            colibriSessionManager.removeParticipants(participants);
-            for (Participant participant : participants)
-            {
                 inviteParticipant(participant, true, false);
             }
         }

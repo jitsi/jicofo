@@ -123,23 +123,13 @@ class ColibriV2SessionManager(
         clear()
     }
 
-    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
-        logger.debug { "Asked to remove participants: ${participants.map { it.endpointId}}" }
+    override fun removeParticipant(participant: Participant) = synchronized(syncRoot) {
+        logger.debug { "Asked to remove ${participant.endpointId}}" }
 
-        val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
-        logger.info("Removing participants: ${participantInfos.map { it.id }}")
-        if (participantInfos.isNotEmpty()) {
-            removeParticipantInfos(participantInfos)
-        }
-    }
-
-    private fun removeParticipantInfos(participantsToRemove: Collection<ParticipantInfo>) = synchronized(syncRoot) {
-        val bySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
-        participantsToRemove.forEach {
-            bySession.computeIfAbsent(it.session) { mutableListOf() }.add(it)
-        }
-
-        removeParticipantInfosBySession(bySession)
+        participants[participant.endpointId]?.let {
+            logger.info("Removing ${it.id}")
+            removeParticipantInfosBySession(mapOf(it.session to listOf(it)))
+        } ?: logger.warn("Can not remove ${participant.endpointId} , no participantInfo")
     }
 
     private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {

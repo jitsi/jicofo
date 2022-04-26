@@ -33,14 +33,7 @@ interface ColibriSessionManager {
     fun expire()
 
     /** Remove a participant, expiring all resources allocated for it */
-    fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
-
-    /**
-     *  Remove a set of participants, expiring all resources allocated for them.
-     *
-     *  Defined in addition to [removeParticipant] to allow implementations to perform it atomically.
-     */
-    fun removeParticipants(participants: Collection<Participant>)
+    fun removeParticipant(participant: Participant)
 
     fun mute(participantId: String, doMute: Boolean, mediaType: MediaType): Boolean =
         mute(setOf(participantId), doMute, mediaType)
