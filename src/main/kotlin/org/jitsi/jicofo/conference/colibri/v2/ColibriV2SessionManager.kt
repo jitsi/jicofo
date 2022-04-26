@@ -450,17 +450,20 @@ class ColibriV2SessionManager(
         return participants[participant.endpointId]?.session?.id
     }
 
-    override fun removeBridges(bridges: Set<Bridge>): List<String> = synchronized(syncRoot) {
-        logger.info("Removing bridges: ${bridges.map { it.jid.resourceOrNull }}")
-        val sessionsToRemove = sessions.values.filter { bridges.contains(it.bridge) }
-        logger.info("Removing sessions: $sessionsToRemove")
-        val participantsToRemove = sessionsToRemove.flatMap { getSessionParticipants(it) }.map { it.id }
+    override fun removeBridge(bridge: Bridge): List<String> = synchronized(syncRoot) {
+        logger.info("Removing bridges: $bridge")
+        val sessionToRemove = sessions.values.find { it.bridge.jid == bridge.jid }
+            ?: run {
+                logger.warn("Can not remove bridge, no session")
+                return@synchronized emptyList()
+            }
+        val participantsToRemove = getSessionParticipants(sessionToRemove)
 
-        removeParticipantInfosBySession(sessionsToRemove.associateWith { getSessionParticipants(it) })
-        eventEmitter.fireEvent { failedBridgesRemoved(sessionsToRemove.size) }
+        removeParticipantInfosBySession(mapOf(sessionToRemove to participantsToRemove))
+        eventEmitter.fireEvent { failedBridgesRemoved(1) }
 
         logger.info("Removed participants: $participantsToRemove")
-        participantsToRemove
+        participantsToRemove.map { it.id }
     }
 
     override val debugState

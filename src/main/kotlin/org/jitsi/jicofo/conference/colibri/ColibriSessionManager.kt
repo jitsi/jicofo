@@ -64,10 +64,10 @@ interface ColibriSessionManager {
     fun getBridgeSessionId(participant: Participant): String?
 
     /**
-     * Stop using [bridges] (because they were detected to have failed).
+     * Stop using [bridge] (because they were detected to have failed).
      * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
      */
-    fun removeBridges(bridges: Set<Bridge>): List<String>
+    fun removeBridge(bridge: Bridge): List<String>
 
     val debugState: OrderedJsonObject
 

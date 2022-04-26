@@ -1662,11 +1662,11 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles the case of some bridges in the conference becoming non-operational.
-     * @param bridges the bridges that are non-operational.
+     * @param bridge the bridges to stop using.
      */
-    private void onMultipleBridgesDown(Set<Bridge> bridges)
+    private void onBridgeDown(Bridge bridge)
     {
-        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridges);
+        List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
 
         if (!participantIdsToReinvite.isEmpty())
         {
@@ -1947,7 +1947,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            onBridgeDown(bridge);
         }
 
         @Override
@@ -2077,7 +2077,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void requestFailed(@NotNull Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            onBridgeDown(bridge);
         }
     }
 }
