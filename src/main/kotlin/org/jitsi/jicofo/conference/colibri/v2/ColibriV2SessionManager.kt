@@ -128,9 +128,12 @@ class ColibriV2SessionManager(
 
         participants[participant.endpointId]?.let {
             logger.info("Removing ${it.id}")
-            removeParticipantInfosBySession(mapOf(it.session to listOf(it)))
+            removeSession(it.session)
         } ?: logger.warn("Can not remove ${participant.endpointId} , no participantInfo")
     }
+
+    private fun removeSession(session: Colibri2Session) =
+        removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
 
     private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
         var sessionRemoved = false
@@ -311,7 +314,7 @@ class ColibriV2SessionManager(
                 //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
                 //  hard to avoid right now.
                 logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
-                removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
+                removeSession(session)
                 remove(participantInfo)
                 throw e
             }
