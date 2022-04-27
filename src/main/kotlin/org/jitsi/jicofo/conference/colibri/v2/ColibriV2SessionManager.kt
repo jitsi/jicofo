@@ -125,17 +125,21 @@ class ColibriV2SessionManager(
             logger.info("Removing ${it.id}")
             removeSession(it.session)
         } ?: logger.warn("Can not remove ${participant.endpointId} , no participantInfo")
+        Unit
     }
 
-    private fun removeSession(session: Colibri2Session) =
+    private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> =
         removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
 
-    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
+    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>):
+        Set<ParticipantInfo> {
         var sessionRemoved = false
+        val participantsRemoved = mutableSetOf<ParticipantInfo>()
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             logger.debug { "Removing participants from session $session: ${sessionParticipantsToRemove.map { it.id }}" }
             session.expire(sessionParticipantsToRemove)
             sessionParticipantsToRemove.forEach { remove(it) }
+            participantsRemoved.addAll(sessionParticipantsToRemove)
 
             val removeSession = getSessionParticipants(session).isEmpty()
 
@@ -159,6 +163,8 @@ class ColibriV2SessionManager(
         if (sessionRemoved) {
             eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
         }
+
+        return participantsRemoved
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
@@ -305,15 +311,13 @@ class ColibriV2SessionManager(
             try {
                 return handleResponse(response, session, created, participantInfo, useSctp)
             } catch (e: Exception) {
-                // TODO: the conference does not know that participants were removed and need to be re-invited (they
-                //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
-                //  hard to avoid right now.
                 logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
-                removeSession(session)
+                // Add participantInfo just in case it wasn't there already (the set will take care of dups).
+                val removedParticipants = removeSession(session) + participantInfo
                 remove(participantInfo)
 
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
-                    eventEmitter.fireEvent { bridgeRemoved(session.bridge, emptySet()) }
+                    eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
                 }
                 throw e
             }

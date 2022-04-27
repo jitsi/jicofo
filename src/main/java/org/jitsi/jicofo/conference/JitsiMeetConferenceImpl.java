@@ -1655,16 +1655,24 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles the case of some bridges in the conference becoming non-operational.
+     * Handles the case of some bridges in the conference becoming non-operational. The bridge is assumed to still be
+     * used by {@link #colibriSessionManager}
      * @param bridge the bridges to stop using.
      */
     private void onBridgeDown(Bridge bridge)
     {
         List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
-
         if (!participantIdsToReinvite.isEmpty())
         {
             listener.bridgeRemoved(1);
+        }
+        reInviteParticipantsById(participantIdsToReinvite);
+    }
+
+    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
+    {
+        if (!participantIdsToReinvite.isEmpty())
+        {
             listener.participantsMoved(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
@@ -2061,9 +2069,12 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
-        public void bridgeRemoved(@NotNull Bridge bridge, @NotNull Collection<String> participantIds)
+        public void bridgeRemoved(@NotNull Bridge bridge, @NotNull List<String> participantIds)
         {
-            onBridgeDown(bridge);
+            listener.bridgeRemoved(1);
+            logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
+                    + participantIds);
+            reInviteParticipantsById(participantIds);
         }
     }
 }

@@ -86,7 +86,7 @@ interface ColibriSessionManager {
             /** The bridge that was removed. */
             bridge: Bridge,
             /** The list of participant IDs which were on the removed bridge. **/
-            participantIds: Collection<String>
+            participantIds: List<String>
         )
     }
 }
