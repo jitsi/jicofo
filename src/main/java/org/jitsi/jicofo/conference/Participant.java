@@ -237,6 +237,14 @@ public class Participant
     }
 
     /**
+     * @return {@code true} if this participant supports SSRC rewriting functionality.
+     */
+    public boolean hasSsrcRewritingSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SSRC_REWRITING);
+    }
+
+    /**
      * @return {@code true} if this participant supports receiving Jingle sources encoded as JSON instead of the
      * standard Jingle encoding.
      */

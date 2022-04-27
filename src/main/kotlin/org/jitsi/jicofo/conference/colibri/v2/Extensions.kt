@@ -134,6 +134,9 @@ internal fun ParticipantInfo.toEndpoint(
         if (supportsSourceNames) {
             addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
         }
+        if (supportsSsrcRewriting) {
+            addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
+        }
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
     if (!expire) {

@@ -33,7 +33,9 @@ internal class ParticipantInfo(
     /** Whether the participant is force video muted. */
     var videoMuted: Boolean = false,
     /* Whether the participant supports source name signaling */
-    var supportsSourceNames: Boolean = false
+    val supportsSourceNames: Boolean = false,
+    /* Whether the participant supports SSRC rewriting */
+    val supportsSsrcRewriting: Boolean = false
 ) {
     fun toJson() = OrderedJsonObject().apply {
         put("id", id)
@@ -43,5 +45,6 @@ internal class ParticipantInfo(
         put("audio_muted", audioMuted)
         put("video_muted", videoMuted)
         put("source_names", supportsSourceNames)
+        put("ssrc_rewriting", supportsSsrcRewriting)
     }
 }
