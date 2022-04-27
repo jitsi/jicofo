@@ -196,7 +196,8 @@ internal class Colibri2Session(
         /** Initial remote endpoints to be included in the relay. */
         initialParticipants: List<ParticipantInfo>,
         /**
-         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay * connection should have different values for [initiator].
+         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay
+         * connection should have different values for [initiator].
          */
         initiator: Boolean
     ) {

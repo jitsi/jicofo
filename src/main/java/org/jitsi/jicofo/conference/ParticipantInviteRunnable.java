@@ -429,7 +429,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         conferenceSources.stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
-        // Add sources advertised by the bridge.
 
         for (ContentPacketExtension cpe : offer.getContents())
         {
