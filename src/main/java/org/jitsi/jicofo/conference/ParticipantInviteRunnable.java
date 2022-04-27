@@ -217,6 +217,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             // Can not find a bridge to use.
             logger.error("Can not invite participant, no bridge available.");
+            // TODO: should we also cancel() in this case?
             return;
         }
         catch (ColibriAllocationFailedException e)

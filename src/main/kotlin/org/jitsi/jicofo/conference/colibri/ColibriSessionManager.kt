@@ -40,7 +40,7 @@ interface ColibriSessionManager {
     fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
-    @Throws(ColibriAllocationFailedException::class)
+    @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(
         participant: Participant,
         contents: List<ContentPacketExtension>,
