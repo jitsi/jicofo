@@ -125,7 +125,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
         )
         val participantInviteRunnable = ParticipantInviteRunnable(
             conference,
-            mockk(),
             colibriSessionManager,
             participant,
             false,

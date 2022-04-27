@@ -8,6 +8,7 @@ sealed class ColibriAllocationFailedException(message: String = "") : Exception(
 class BridgeSelectionFailedException : ColibriAllocationFailedException()
 class ColibriTimeoutException(val bridge: Bridge) : ColibriAllocationFailedException()
 class BridgeInGracefulShutdownException : ColibriAllocationFailedException()
+class GenericColibriAllocationFailedException(message: String) : ColibriAllocationFailedException(message)
 
 class ColibriConferenceDisposedException : ColibriAllocationFailedException()
 

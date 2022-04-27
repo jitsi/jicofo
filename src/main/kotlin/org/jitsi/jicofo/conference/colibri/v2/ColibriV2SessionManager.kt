@@ -18,6 +18,7 @@
 
 package org.jitsi.jicofo.conference.colibri.v2
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -31,8 +32,10 @@ import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
 import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
 import org.jitsi.jicofo.conference.colibri.ColibriParsingException
+import org.jitsi.jicofo.conference.colibri.ColibriRequestCallback
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
+import org.jitsi.jicofo.conference.colibri.GenericColibriAllocationFailedException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -57,9 +60,11 @@ import java.util.UUID
 /**
  * Implements [ColibriSessionManager] using colibri2.
  */
+@SuppressFBWarnings("BC_IMPOSSIBLE_INSTANCEOF")
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
+    private val colibriRequestCallback: ColibriRequestCallback,
     private val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger
 ) : ColibriSessionManager {
@@ -316,7 +321,20 @@ class ColibriV2SessionManager(
                 logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
                 removeSession(session)
                 remove(participantInfo)
-                throw e
+
+                when (e) {
+                    is ColibriConferenceDisposedException,
+                    is BadColibriRequestException,
+                    is BridgeInGracefulShutdownException -> Unit
+                    is ColibriTimeoutException -> colibriRequestCallback.requestFailed(session.bridge)
+                    is ColibriConferenceExpiredException -> if (e.restartConference) {
+                        colibriRequestCallback.requestFailed(session.bridge)
+                    }
+                    is BridgeFailedException -> if (e.restartConference) {
+                        colibriRequestCallback.requestFailed(session.bridge)
+                    }
+                }
+                throw GenericColibriAllocationFailedException(e.message ?: "error")
             }
         }
     }

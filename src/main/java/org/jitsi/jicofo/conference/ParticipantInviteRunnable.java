@@ -74,7 +74,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      */
     private final JitsiMeetConferenceImpl meetConference;
 
-    @NonNull private final ColibriRequestCallback colibriRequestCallback;
     @NonNull private final ColibriSessionManager colibriSessionManager;
 
     /**
@@ -123,7 +122,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      */
     public ParticipantInviteRunnable(
             JitsiMeetConferenceImpl meetConference,
-            @NonNull ColibriRequestCallback colibriRequestCallback,
             @NonNull ColibriSessionManager colibriSessionManager,
             @NonNull Participant participant,
             boolean startAudioMuted,
@@ -132,7 +130,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             Logger parentLogger)
     {
         this.meetConference = meetConference;
-        this.colibriRequestCallback = colibriRequestCallback;
         this.colibriSessionManager = colibriSessionManager;
 
         boolean forceMuteAudio = false;
@@ -219,51 +216,12 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         catch (BridgeSelectionFailedException e)
         {
             // Can not find a bridge to use.
-            logger.error("Can not invite participant, no bridge available: " + participant.getChatMember().getName());
-            return;
-        }
-        catch (ColibriConferenceDisposedException e)
-        {
-            logger.error("Canceling due to ", e);
-            cancel();
-            return;
-        }
-        catch (ColibriConferenceExpiredException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            if (e.getRestartConference())
-            {
-                colibriRequestCallback.requestFailed(e.getBridge());
-            }
-            return;
-        }
-        catch (BadColibriRequestException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            return;
-        }
-        catch (BridgeFailedException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            if (e.getRestartConference())
-            {
-                colibriRequestCallback.requestFailed(e.getBridge());
-            }
-            return;
-        }
-        catch (ColibriTimeoutException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            colibriRequestCallback.requestFailed(e.getBridge());
+            logger.error("Can not invite participant, no bridge available.");
             return;
         }
         catch (ColibriAllocationFailedException e)
         {
-            logger.error("Canceling due to unexpected exception", e);
+            logger.error("Failed to allocate colibri channels", e);
             cancel();
             return;
         }

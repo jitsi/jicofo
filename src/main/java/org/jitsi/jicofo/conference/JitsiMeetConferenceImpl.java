@@ -256,6 +256,7 @@ public class JitsiMeetConferenceImpl
         colibriSessionManager = new ColibriV2SessionManager(
                 jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                 jicofoServices.getBridgeSelector(),
+                colibriRequestCallback,
                 this,
                 logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
@@ -660,7 +661,6 @@ public class JitsiMeetConferenceImpl
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
         ParticipantInviteRunnable channelAllocator = new ParticipantInviteRunnable(
                 this,
-                colibriRequestCallback,
                 colibriSessionManager,
                 participant,
                 hasToStartAudioMuted(participant, justJoined),
