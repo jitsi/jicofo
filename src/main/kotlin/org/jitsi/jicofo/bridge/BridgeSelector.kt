@@ -181,7 +181,7 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
-        if (v != null) {
+        if (v != null && !OctoConfig.config.allowMixedVersions) {
             candidateBridges = candidateBridges.filter { it.version == v }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with the required version: $v")
