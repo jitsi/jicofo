@@ -46,6 +46,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.util.Collections.singletonList
 import java.util.UUID
 
 /**
@@ -123,7 +124,7 @@ class ColibriV2SessionManager(
 
         participants[participant.endpointId]?.let {
             logger.info("Removing ${it.id}")
-            removeSession(it.session)
+            removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
         } ?: logger.warn("Can not remove ${participant.endpointId} , no participantInfo")
         Unit
     }
