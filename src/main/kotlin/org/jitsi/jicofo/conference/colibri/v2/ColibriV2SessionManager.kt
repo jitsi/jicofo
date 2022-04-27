@@ -26,7 +26,6 @@ import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
-import org.jitsi.jicofo.conference.colibri.ColibriRequestCallback
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
@@ -56,7 +55,6 @@ import java.util.UUID
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
-    private val colibriRequestCallback: ColibriRequestCallback,
     private val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger
 ) : ColibriSessionManager {
@@ -315,7 +313,7 @@ class ColibriV2SessionManager(
                 remove(participantInfo)
 
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
-                    colibriRequestCallback.requestFailed(session.bridge)
+                    eventEmitter.fireEvent { bridgeRemoved(session.bridge, emptySet()) }
                 }
                 throw e
             }

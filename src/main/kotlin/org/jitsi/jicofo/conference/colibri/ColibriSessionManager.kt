@@ -80,5 +80,13 @@ interface ColibriSessionManager {
 
         fun bridgeSelectionFailed() {}
         fun bridgeSelectionSucceeded() {}
+
+        /** A bridge was removed from the conference due to a failure. **/
+        fun bridgeRemoved(
+            /** The bridge that was removed. */
+            bridge: Bridge,
+            /** The list of participant IDs which were on the removed bridge. **/
+            participantIds: Collection<String>
+        )
     }
 }

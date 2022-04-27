@@ -219,11 +219,6 @@ public class JitsiMeetConferenceImpl
     private final String jvbVersion;
 
     /**
-     * Callback for colibri requests failing/succeeding.
-     */
-    private final ColibriRequestCallback colibriRequestCallback = new ColibriRequestCallbackImpl();
-
-    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -256,7 +251,6 @@ public class JitsiMeetConferenceImpl
         colibriSessionManager = new ColibriV2SessionManager(
                 jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                 jicofoServices.getBridgeSelector(),
-                colibriRequestCallback,
                 this,
                 logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
@@ -2065,12 +2059,9 @@ public class JitsiMeetConferenceImpl
                 chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
             }
         }
-    }
 
-    private class ColibriRequestCallbackImpl implements ColibriRequestCallback
-    {
         @Override
-        public void requestFailed(@NotNull Bridge bridge)
+        public void bridgeRemoved(@NotNull Bridge bridge, @NotNull Collection<String> participantIds)
         {
             onBridgeDown(bridge);
         }
