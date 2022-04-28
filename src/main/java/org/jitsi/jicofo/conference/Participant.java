@@ -428,6 +428,12 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
+        if (hasSsrcRewritingSupport())
+        {
+            // Bridge will signal sources in this case.
+            return;
+        }
+
         if (!hasAudioSupport() || !hasVideoSupport())
         {
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
@@ -516,6 +522,12 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
+        if (hasSsrcRewritingSupport())
+        {
+            // Bridge will signal sources in this case.
+            return;
+        }
+
         if (!hasAudioSupport() || !hasVideoSupport())
         {
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());

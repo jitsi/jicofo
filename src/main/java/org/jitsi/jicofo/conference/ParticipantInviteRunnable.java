@@ -468,8 +468,16 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
     private @NonNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
-        // Take all sources from participants in the conference.
-        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        ConferenceSourceMap conferenceSources;
+
+        if (!participant.hasSsrcRewritingSupport()) {
+            // Take all sources from participants in the conference.
+            conferenceSources = meetConference.getSources().copy();
+        } else {
+            // Bridge will signal sources in this case.
+            conferenceSources = new ValidatingConferenceSourceMap();
+        }
+
         // Add the bridge's feedback sources.
         conferenceSources.add(colibriAllocation.getSources());
         if (ConferenceConfig.config.stripSimulcast())
