@@ -468,7 +468,9 @@ internal class Colibri2Session(
             )
 
             val endpoints = Endpoints.getBuilder()
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false)) }
+            participants.filter { !it.visitor }.forEach {
+                endpoints.addEndpoint(it.toEndpoint(create = true, expire = false))
+            }
             relay.setEndpoints(endpoints.build())
 
             relay.setTransport(
