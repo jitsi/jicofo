@@ -91,10 +91,10 @@ class BridgeSelector @JvmOverloads constructor(
         it.setStats(stats)
         return it
     } ?: Bridge(bridgeJid, clock).also { newBridge ->
-        logger.info("Added new videobridge: $newBridge")
         if (stats != null) {
             newBridge.setStats(stats)
         }
+        logger.info("Added new videobridge: $newBridge")
         bridges[bridgeJid] = newBridge
         eventEmitter.fireEvent { bridgeAdded(newBridge) }
     }
