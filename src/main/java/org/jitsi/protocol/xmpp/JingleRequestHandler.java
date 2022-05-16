@@ -22,7 +22,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jivesoftware.smack.packet.*;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.util.*;
 
 /**
