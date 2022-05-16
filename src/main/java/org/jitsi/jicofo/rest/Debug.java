@@ -21,8 +21,8 @@ import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.*;
 import org.json.simple.*;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
 import java.util.*;
 
 /**
