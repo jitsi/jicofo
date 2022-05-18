@@ -177,11 +177,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         finally
         {
-            if (canceled)
-            {
-                colibriSessionManager.removeParticipant(participant);
-            }
-
             participant.inviteRunnableCompleted(this);
         }
     }
@@ -215,9 +210,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         catch (BridgeSelectionFailedException e)
         {
-            // Can not find a bridge to use.
             logger.error("Can not invite participant, no bridge available.");
-            // TODO: should we also cancel() in this case?
+            cancel();
             return;
         }
         catch (ColibriAllocationFailedException e)
@@ -246,6 +240,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to invite participant: ", e);
+            colibriSessionManager.removeParticipant(participant);
+            cancel();
         }
     }
 
@@ -382,7 +378,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
         if (initiateSession)
         {
-            logger.info("Sending session-initiate to: " + address);
+            logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
             ack = jingle.initiateSession(
                     address,
                     offer.getContents(),
@@ -393,7 +389,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else
         {
-            logger.info("Sending transport-replace to: " + address);
+            logger.info("Sending transport-replace to: " + address + " sources=" + offer.getSources());
             // will throw OperationFailedExc if XMPP connection is broken
             ack = jingle.replaceTransport(
                     jingleSession,

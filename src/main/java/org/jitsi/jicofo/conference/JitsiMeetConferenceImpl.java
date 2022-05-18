@@ -1269,13 +1269,10 @@ public class JitsiMeetConferenceImpl
         }
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
-        // Update channel info - we may miss update during conference restart,
-        // but the state will be synced up after channels are allocated for this
-        // participant on the new bridge
         colibriSessionManager.updateParticipant(
                 participant,
                 getTransport(contents),
-                sourcesAccepted);
+                getSourcesForParticipant(participant));
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);

@@ -84,6 +84,9 @@ internal class Colibri2Session(
         val endpoint = Colibri2Endpoint.getBuilder().apply {
             setId(participant.id)
             setCreate(true)
+            if (participant.sources.isNotEmpty()) {
+                setSources(participant.sources.toColibriMediaSources())
+            }
             setStatsId(participant.statsId)
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)

@@ -120,12 +120,12 @@ class ColibriV2SessionManager(
     }
 
     override fun removeParticipant(participant: Participant) = synchronized(syncRoot) {
-        logger.debug { "Asked to remove ${participant.endpointId}}" }
+        logger.debug { "Asked to remove ${participant.endpointId}" }
 
         participants[participant.endpointId]?.let {
             logger.info("Removing ${it.id}")
             removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
-        } ?: logger.warn("Can not remove ${participant.endpointId} , no participantInfo")
+        } ?: logger.warn("Can not remove ${participant.endpointId}, no participantInfo")
         Unit
     }
 
@@ -275,6 +275,7 @@ class ColibriV2SessionManager(
             participantInfo = ParticipantInfo(
                 participant.endpointId,
                 participant.statId,
+                sources = participant.sources,
                 audioMuted = forceMuteAudio,
                 videoMuted = forceMuteVideo,
                 session = session,
