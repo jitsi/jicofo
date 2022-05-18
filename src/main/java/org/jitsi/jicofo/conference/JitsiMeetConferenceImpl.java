@@ -1652,9 +1652,9 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles the case of some bridges in the conference becoming non-operational. The bridge is assumed to still be
-     * used by {@link #colibriSessionManager}
-     * @param bridge the bridges to stop using.
+     * Handles the case of a bridge in the conference becoming non-operational. The bridge is assumed to still be
+     * used by {@link #colibriSessionManager}.
+     * @param bridge the bridge to stop using.
      */
     private void onBridgeDown(Bridge bridge)
     {
