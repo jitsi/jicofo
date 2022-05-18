@@ -313,13 +313,15 @@ class ColibriV2SessionManager(
             try {
                 return handleResponse(response, session, created, participantInfo, useSctp)
             } catch (e: Exception) {
-                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
+                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
                 // Add participantInfo just in case it wasn't there already (the set will take care of dups).
-                val removedParticipants = removeSession(session) + participantInfo
-                remove(participantInfo)
 
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
+                    val removedParticipants = removeSession(session) + participantInfo
+                    remove(participantInfo)
                     eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
+                } else {
+                    remove(participantInfo)
                 }
                 throw e
             }
