@@ -1770,7 +1770,27 @@ public class JitsiMeetConferenceImpl
             for (Participant participant : participants)
             {
                 participant.setInviteRunnable(null);
-                inviteParticipant(participant, true, false);
+                boolean restartJingle = ConferenceConfig.config.getReinviteMethod() == ReinviteMethod.RestartJingle;
+
+                if (restartJingle)
+                {
+                    EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+                    if (participantSources != null && !participantSources.isEmpty())
+                    {
+                        removeSources(participant, participantSources, false, true);
+                    }
+
+                    JingleSession jingleSession = participant.getJingleSession();
+                    if (jingleSession != null)
+                    {
+                        jingle.terminateSession(jingleSession, Reason.SUCCESS, "moving", true);
+                    }
+                    participant.setJingleSession(null);
+                }
+
+                // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a
+                // transport-replace (reInvite = true)
+                inviteParticipant(participant, !restartJingle, false);
             }
         }
     }
