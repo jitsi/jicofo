@@ -164,7 +164,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
 
             participantInviteRunnable.run()
 
-
             jingleContentsSlot.isCaptured shouldBe true
             jingleContentsSlot.captured.apply {
                 size shouldBe 1
