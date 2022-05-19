@@ -26,10 +26,11 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
+import java.util.*;
+
 import static org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension.*;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class JigasiSelectorTest
@@ -139,7 +140,7 @@ public class JigasiSelectorTest
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             emptyList(),                            /* exclude */
-            asList("region2", "region3"),           /* preferred regions */
+            List.of("region2", "region3"),           /* preferred regions */
             "region2",                              /* local region */
             false);                                 /* select transcriber*/
         assertEquals(jid1, res, "Wrong jigasi selected");
@@ -150,7 +151,7 @@ public class JigasiSelectorTest
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             emptyList(),                            /* exclude */
-            asList("region2", "region3"),           /* preferred regions */
+            List.of("region2", "region3"),           /* preferred regions */
             null,                                   /* local region */
             false);                                 /* select transcriber*/
         assertEquals(jid2, res, "Wrong jigasi selected");
@@ -186,7 +187,7 @@ public class JigasiSelectorTest
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             singletonList(jid2),                     /* exclude */
-            asList("region2", "region3"),            /* preferred regions */
+            List.of("region2", "region3"),            /* preferred regions */
             null,                                    /* local region */
             false);                                  /* select transcriber*/
         assertEquals(jid1, res, "Wrong jigasi selected");
@@ -241,7 +242,7 @@ public class JigasiSelectorTest
         res = JigasiDetector.selectJigasi(
             brewery.getInstances(),
             emptyList(),                             /* exclude */
-            asList("region2", "region3"),            /* preferred regions */
+            List.of("region2", "region3"),            /* preferred regions */
             null,                                    /* local region */
             true);                                   /* select transcriber*/
         assertEquals(jid4, res, "Wrong jigasi selected");

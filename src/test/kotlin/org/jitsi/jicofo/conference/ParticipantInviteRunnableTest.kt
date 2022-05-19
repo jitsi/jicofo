@@ -93,9 +93,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
         val jingleContentsSlot = slot<List<ContentPacketExtension>>()
         val sourcesContentsSlot = slot<ConferenceSourceMap>()
         val conference = mockk<JitsiMeetConferenceImpl> {
-            every { clientXmppProvider } returns mockk {
-                every { discoverFeatures(any()) } returns features
-            }
             every { config } returns JitsiMeetConfig(HashMap())
             every { sources } returns conferenceSources
             every { chatRoom } returns mockk {
@@ -120,6 +117,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 every { name } returns "participant"
                 every { role } returns MemberRole.OWNER
             },
+            features,
             LoggerImpl("test"),
             conference
         )
@@ -135,11 +133,9 @@ class ParticipantInviteRunnableTest : ShouldSpec({
         )
 
         context("When the participant supports audio and video") {
-            participantInviteRunnable.run()
-
-            // We must verify this *after* calling run(), because it is the invite runnable that discovers and sets the
-            // participant's features...
             participant.supportedMediaTypes shouldBe setOf(MediaType.AUDIO, MediaType.VIDEO)
+
+            participantInviteRunnable.run()
 
             jingleContentsSlot.isCaptured shouldBe true
             jingleContentsSlot.captured.apply {
@@ -164,12 +160,9 @@ class ParticipantInviteRunnableTest : ShouldSpec({
         }
         context("When the participant supports only audio") {
             features.remove(FEATURE_VIDEO)
+            participant.supportedMediaTypes shouldBe setOf(MediaType.AUDIO)
 
             participantInviteRunnable.run()
-
-            // We must verify this *after* calling run(), because it is the invite runnable that discovers and sets the
-            // participant's features...
-            participant.supportedMediaTypes shouldBe setOf(MediaType.AUDIO)
 
             jingleContentsSlot.isCaptured shouldBe true
             jingleContentsSlot.captured.apply {
