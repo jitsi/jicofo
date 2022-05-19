@@ -106,7 +106,7 @@ public class DiscoveryUtil
      */
     public final static String FEATURE_AUDIO_MUTE = "http://jitsi.org/protocol/audio-mute";
 
-    private static final List<String> defaultFeatures = Arrays.asList(
+    private static final List<String> defaultFeatures = List.of(
             FEATURE_AUDIO,
             FEATURE_VIDEO,
             FEATURE_SCTP,
