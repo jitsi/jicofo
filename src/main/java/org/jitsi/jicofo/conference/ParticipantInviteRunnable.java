@@ -325,10 +325,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private Offer createOffer()
         throws UnsupportedFeatureConfigurationException
     {
-        // Feature discovery
-        List<String> features = meetConference.getClientXmppProvider().discoverFeatures(participant.getMucJid());
-        participant.setSupportedFeatures(features);
-
         JitsiMeetConfig config = meetConference.getConfig();
 
         OfferOptions offerOptions = new OfferOptions();

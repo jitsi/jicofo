@@ -118,7 +118,7 @@ public class DiscoveryUtil
      */
     static public List<String> getDefaultParticipantFeatureSet()
     {
-        return defaultFeatures;
+        return new ArrayList<>(defaultFeatures);
     }
 
     /**
@@ -144,7 +144,6 @@ public class DiscoveryUtil
 
         long start = System.currentTimeMillis();
 
-        logger.info("Doing feature discovery for " + address);
 
         List<String> participantFeatures = null;
         try
@@ -163,14 +162,15 @@ public class DiscoveryUtil
             logger.warn(String.format( "Failed to discover features for %s: %s", address, e.getMessage()));
         }
 
+        long tookMillis = System.currentTimeMillis() - start;
         if (participantFeatures == null)
         {
-            logger.warn("Failed to discover features for "+ address + " assuming default feature set.");
+            logger.warn("Failed to discover features for "+ address + " assuming default feature set. Took " +
+                    "" + tookMillis + " ms.");
 
             return getDefaultParticipantFeatureSet();
         }
-
-        long tookMillis = System.currentTimeMillis() - start;
+        logger.info("Discovered features for " + address + " in " + tookMillis + " ms.");
 
         if (logger.isDebugEnabled())
         {

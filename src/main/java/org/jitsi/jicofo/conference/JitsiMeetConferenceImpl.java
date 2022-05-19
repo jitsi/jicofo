@@ -646,7 +646,12 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            final Participant participant = new Participant(chatRoomMember, logger, this);
+            // Discover the supported features early, so that any code that depends on the Participant's features works
+            // with the correct values. Note that this operation will block waiting for a disco#info response when
+            // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
+            // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
+            List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
+            final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);
