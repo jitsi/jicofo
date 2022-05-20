@@ -72,11 +72,6 @@ public class JitsiMeetConferenceImpl
                JingleRequestHandler
 {
     /**
-     * A random generator.
-     */
-    private final static Random RANDOM = new Random();
-
-    /**
      * Name of MUC room that is hosting Jitsi Meet conference.
      */
     @NotNull
@@ -222,11 +217,6 @@ public class JitsiMeetConferenceImpl
      * Requested bridge version from a pin. null if not pinned.
      */
     private final String jvbVersion;
-
-    /**
-     * Callback for colibri requests failing/succeeding.
-     */
-    private final ColibriRequestCallback colibriRequestCallback = new ColibriRequestCallbackImpl();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -670,7 +660,6 @@ public class JitsiMeetConferenceImpl
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
         ParticipantInviteRunnable channelAllocator = new ParticipantInviteRunnable(
                 this,
-                colibriRequestCallback,
                 colibriSessionManager,
                 participant,
                 hasToStartAudioMuted(participant, justJoined),
@@ -1285,13 +1274,10 @@ public class JitsiMeetConferenceImpl
         }
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
-        // Update channel info - we may miss update during conference restart,
-        // but the state will be synced up after channels are allocated for this
-        // participant on the new bridge
         colibriSessionManager.updateParticipant(
                 participant,
                 getTransport(contents),
-                sourcesAccepted);
+                getSourcesForParticipant(participant));
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
@@ -1671,13 +1657,22 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handles the case of some bridges in the conference becoming non-operational.
-     * @param bridges the bridges that are non-operational.
+     * Handles the case of a bridge in the conference becoming non-operational. The bridge is assumed to still be
+     * used by {@link #colibriSessionManager}.
+     * @param bridge the bridge to stop using.
      */
-    private void onMultipleBridgesDown(Set<Bridge> bridges)
+    private void onBridgeDown(Bridge bridge)
     {
-        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridges);
+        List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+        if (!participantIdsToReinvite.isEmpty())
+        {
+            listener.bridgeRemoved(1);
+        }
+        reInviteParticipantsById(participantIdsToReinvite);
+    }
 
+    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
+    {
         if (!participantIdsToReinvite.isEmpty())
         {
             listener.participantsMoved(participantIdsToReinvite.size());
@@ -1777,10 +1772,30 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            colibriSessionManager.removeParticipants(participants);
             for (Participant participant : participants)
             {
-                inviteParticipant(participant, true, false);
+                participant.setInviteRunnable(null);
+                boolean restartJingle = ConferenceConfig.config.getReinviteMethod() == ReinviteMethod.RestartJingle;
+
+                if (restartJingle)
+                {
+                    EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+                    if (participantSources != null && !participantSources.isEmpty())
+                    {
+                        removeSources(participant, participantSources, false, true);
+                    }
+
+                    JingleSession jingleSession = participant.getJingleSession();
+                    if (jingleSession != null)
+                    {
+                        jingle.terminateSession(jingleSession, Reason.SUCCESS, "moving", true);
+                    }
+                    participant.setJingleSession(null);
+                }
+
+                // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a
+                // transport-replace (reInvite = true)
+                inviteParticipant(participant, !restartJingle, false);
             }
         }
     }
@@ -1957,7 +1972,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            onBridgeDown(bridge);
         }
 
         @Override
@@ -2045,23 +2060,27 @@ public class JitsiMeetConferenceImpl
             );
         }
 
+        /**
+         * Bridge selection failed, update jicofo's presence in the room to reflect it.
+         */
         @Override
-        public void failedBridgesRemoved(int count)
+        public void bridgeSelectionFailed()
         {
-            listener.bridgeRemoved(count);
-        }
-    }
-
-    private class ColibriRequestCallbackImpl implements ColibriRequestCallback
-    {
-        @Override
-        public void requestFailed(@NotNull Bridge bridge)
-        {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            ChatRoom chatRoom = getChatRoom();
+            if (chatRoom != null
+                    && !chatRoom.containsPresenceExtension(
+                    BridgeNotAvailablePacketExt.ELEMENT,
+                    BridgeNotAvailablePacketExt.NAMESPACE))
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+            }
         }
 
+        /**
+         * Bridge selection was successful, update jicofo's presence in the room to reflect it.
+         */
         @Override
-        public void requestSucceeded(@NotNull Bridge bridge)
+        public void bridgeSelectionSucceeded()
         {
             // Remove "bridge not available" from Jicofo's presence
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
@@ -2069,6 +2088,15 @@ public class JitsiMeetConferenceImpl
             {
                 chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
             }
+        }
+
+        @Override
+        public void bridgeRemoved(@NotNull Bridge bridge, @NotNull List<String> participantIds)
+        {
+            listener.bridgeRemoved(1);
+            logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
+                    + participantIds);
+            reInviteParticipantsById(participantIds);
         }
     }
 }

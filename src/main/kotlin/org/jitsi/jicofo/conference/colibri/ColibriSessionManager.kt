@@ -33,21 +33,14 @@ interface ColibriSessionManager {
     fun expire()
 
     /** Remove a participant, expiring all resources allocated for it */
-    fun removeParticipant(participant: Participant) = removeParticipants(listOf(participant))
-
-    /**
-     *  Remove a set of participants, expiring all resources allocated for them.
-     *
-     *  Defined in addition to [removeParticipant] to allow implementations to perform it atomically.
-     */
-    fun removeParticipants(participants: Collection<Participant>)
+    fun removeParticipant(participant: Participant)
 
     fun mute(participantId: String, doMute: Boolean, mediaType: MediaType): Boolean =
         mute(setOf(participantId), doMute, mediaType)
     fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
-    @Throws(ColibriAllocationFailedException::class)
+    @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(
         participant: Participant,
         contents: List<ContentPacketExtension>,
@@ -71,10 +64,10 @@ interface ColibriSessionManager {
     fun getBridgeSessionId(participant: Participant): String?
 
     /**
-     * Stop using [bridges] (because they were detected to have failed).
-     * @return the list of participant IDs which were on one of the removed bridges and now need to be re-invited.
+     * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
+     * @return the list of participant IDs which were on the removed bridge and now need to be re-invited.
      */
-    fun removeBridges(bridges: Set<Bridge>): List<String>
+    fun removeBridge(bridge: Bridge): List<String>
 
     val debugState: OrderedJsonObject
 
@@ -84,7 +77,16 @@ interface ColibriSessionManager {
     interface Listener {
         /** The number of bridges changed. */
         fun bridgeCountChanged(bridgeCount: Int)
-        /** A specific number of bridges were removed from the conference because they failed. */
-        fun failedBridgesRemoved(count: Int)
+
+        fun bridgeSelectionFailed() {}
+        fun bridgeSelectionSucceeded() {}
+
+        /** A bridge was removed from the conference due to a failure. **/
+        fun bridgeRemoved(
+            /** The bridge that was removed. */
+            bridge: Bridge,
+            /** The list of participant IDs which were on the removed bridge. **/
+            participantIds: List<String>
+        )
     }
 }

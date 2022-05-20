@@ -84,6 +84,9 @@ internal class Colibri2Session(
         val endpoint = Colibri2Endpoint.getBuilder().apply {
             setId(participant.id)
             setCreate(true)
+            if (participant.sources.isNotEmpty()) {
+                setSources(participant.sources.toColibriMediaSources())
+            }
             setStatsId(participant.statsId)
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
@@ -196,7 +199,8 @@ internal class Colibri2Session(
         /** Initial remote endpoints to be included in the relay. */
         initialParticipants: List<ParticipantInfo>,
         /**
-         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay * connection should have different values for [initiator].
+         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay
+         * connection should have different values for [initiator].
          */
         initiator: Boolean
     ) {

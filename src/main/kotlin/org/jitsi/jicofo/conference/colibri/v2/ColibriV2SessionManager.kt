@@ -18,21 +18,15 @@
 
 package org.jitsi.jicofo.conference.colibri.v2
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
-import org.jitsi.jicofo.conference.colibri.BadColibriRequestException
-import org.jitsi.jicofo.conference.colibri.BridgeFailedException
-import org.jitsi.jicofo.conference.colibri.BridgeInGracefulShutdownException
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
-import org.jitsi.jicofo.conference.colibri.ColibriConferenceDisposedException
-import org.jitsi.jicofo.conference.colibri.ColibriConferenceExpiredException
-import org.jitsi.jicofo.conference.colibri.ColibriParsingException
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
-import org.jitsi.jicofo.conference.colibri.ColibriTimeoutException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -52,11 +46,13 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.util.Collections.singletonList
 import java.util.UUID
 
 /**
  * Implements [ColibriSessionManager] using colibri2.
  */
+@SuppressFBWarnings("BC_IMPOSSIBLE_INSTANCEOF")
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
@@ -123,30 +119,28 @@ class ColibriV2SessionManager(
         clear()
     }
 
-    override fun removeParticipants(participants: Collection<Participant>) = synchronized(syncRoot) {
-        participants.forEach { it.setInviteRunnable(null) }
-        logger.debug { "Asked to remove participants: ${participants.map { it.endpointId}}" }
+    override fun removeParticipant(participant: Participant) = synchronized(syncRoot) {
+        logger.debug { "Asked to remove ${participant.endpointId}" }
 
-        val participantInfos = participants.mapNotNull { this.participants[it.endpointId] }
-        logger.info("Removing participants: ${participantInfos.map { it.id }}")
-        removeParticipantInfos(participantInfos)
+        participants[participant.endpointId]?.let {
+            logger.info("Removing ${it.id}")
+            removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
+        } ?: logger.warn("Can not remove ${participant.endpointId}, no participantInfo")
+        Unit
     }
 
-    private fun removeParticipantInfos(participantsToRemove: Collection<ParticipantInfo>) = synchronized(syncRoot) {
-        val bySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
-        participantsToRemove.forEach {
-            bySession.computeIfAbsent(it.session) { mutableListOf() }.add(it)
-        }
+    private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> =
+        removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
 
-        removeParticipantInfosBySession(bySession)
-    }
-
-    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>) {
+    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>):
+        Set<ParticipantInfo> {
         var sessionRemoved = false
+        val participantsRemoved = mutableSetOf<ParticipantInfo>()
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             logger.debug { "Removing participants from session $session: ${sessionParticipantsToRemove.map { it.id }}" }
             session.expire(sessionParticipantsToRemove)
             sessionParticipantsToRemove.forEach { remove(it) }
+            participantsRemoved.addAll(sessionParticipantsToRemove)
 
             val removeSession = getSessionParticipants(session).isEmpty()
 
@@ -170,6 +164,8 @@ class ColibriV2SessionManager(
         if (sessionRemoved) {
             eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
         }
+
+        return participantsRemoved
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
@@ -239,7 +235,7 @@ class ColibriV2SessionManager(
             .associate { Pair(it.key.bridge, it.value.size) }
     }
 
-    @Throws(ColibriAllocationFailedException::class)
+    @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     override fun allocate(
         participant: Participant,
         contents: List<ContentPacketExtension>,
@@ -266,7 +262,11 @@ class ColibriV2SessionManager(
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
             val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region, version)
-                ?: throw BridgeSelectionFailedException()
+                ?: run {
+                    eventEmitter.fireEvent { bridgeSelectionFailed() }
+                    throw BridgeSelectionFailedException()
+                }
+            eventEmitter.fireEvent { bridgeSelectionSucceeded() }
             getOrCreateSession(bridge).let {
                 session = it.first
                 created = it.second
@@ -275,6 +275,7 @@ class ColibriV2SessionManager(
             participantInfo = ParticipantInfo(
                 participant.endpointId,
                 participant.statId,
+                sources = participant.sources,
                 audioMuted = forceMuteAudio,
                 videoMuted = forceMuteVideo,
                 session = session,
@@ -312,12 +313,16 @@ class ColibriV2SessionManager(
             try {
                 return handleResponse(response, session, created, participantInfo, useSctp)
             } catch (e: Exception) {
-                // TODO: the conference does not know that participants were removed and need to be re-invited (they
-                //  will eventually time-out ICE and trigger a restart). This is equivalent to colibri v1 and it's
-                //  hard to avoid right now.
-                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}", e)
-                removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
-                remove(participantInfo)
+                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
+                // Add participantInfo just in case it wasn't there already (the set will take care of dups).
+
+                if (e is ColibriAllocationFailedException && e.removeBridge) {
+                    val removedParticipants = removeSession(session) + participantInfo
+                    remove(participantInfo)
+                    eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
+                } else {
+                    remove(participantInfo)
+                }
                 throw e
             }
         }
@@ -332,20 +337,18 @@ class ColibriV2SessionManager(
     ): ColibriAllocation {
 
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
-        // bridge as non-operational to make [ParticipantInviteRunnable] do the right thing:
+        // bridge as non-operational so the caller can do the right thing:
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
-        // * Re-invite the participants on this bridge
+        // * Re-invite the participants (possibly on the same bridge) on this bridge
         // * Re-invite the participants on this bridge to a different bridge
-        //
-        // Once colibri v1 is removed, it will be easier to organize this better.
         if (!sessions.containsKey(session.bridge)) {
             logger.warn("The session was removed, ignoring allocation response.")
-            throw ColibriConferenceDisposedException()
+            throw ColibriAllocationFailedException("Session already removed", false)
         }
 
         if (response == null) {
             session.bridge.setIsOperational(false)
-            throw ColibriTimeoutException(session.bridge)
+            throw ColibriAllocationFailedException("Timeout", true)
         } else if (response is ErrorIQ) {
             // The reason in a colibri2 error extension, if one is present. If a reason is present we know the response
             // comes from a jitsi-videobridge instance. Otherwise, it might come from another component (e.g. the
@@ -360,46 +363,53 @@ class ColibriV2SessionManager(
                     // Most probably we sent a bad request.
                     // If we flag the bridge as non-operational we may disrupt other conferences.
                     // If we trigger a re-invite we may cause the same error repeating.
-                    throw BadColibriRequestException(response.error?.toXML()?.toString() ?: "null")
+                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toXML()?.toString()}", false)
                 }
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                         // The conference on the bridge has expired. The state between jicofo and the bridge is out of
                         // sync.
-                        throw ColibriConferenceExpiredException(session.bridge, true)
+                        throw ColibriAllocationFailedException("Conference not found", true)
                     } else {
                         // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
                         // because the occupant left.
-                        throw BridgeFailedException(session.bridge, true)
+                        throw ColibriAllocationFailedException("Item not found, bridge unavailable?", true)
                     }
                 }
                 conflict -> {
                     if (reason == null) {
                         // An error NOT coming from the bridge.
-                        throw BridgeFailedException(session.bridge, true)
+                        throw ColibriAllocationFailedException(
+                            "XMPP error: ${response.error?.toXML()}",
+                            true
+                        )
                     } else {
                         // An error coming from the bridge. The state between jicofo and the bridge must be out of sync.
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We don't bring the whole bridge down.
-                        throw BridgeFailedException(session.bridge, false)
+                        throw ColibriAllocationFailedException(
+                            "Colibri error: ${response.error?.toXML()}",
+                            false
+                        )
                     }
                 }
                 service_unavailable -> {
                     // This only happens if the bridge is in graceful-shutdown and we request a new conference.
-                    throw BridgeInGracefulShutdownException()
+                    // Since it's a new conference, remove the bridge and re-invite.
+                    throw ColibriAllocationFailedException("Bridge in graceful shutdown", true)
                 }
                 else -> {
                     session.bridge.setIsOperational(false)
-                    throw BridgeFailedException(session.bridge, true)
+                    throw ColibriAllocationFailedException("Error: ${response.error?.toXML()}", true)
                 }
             }
         }
 
         if (response !is ConferenceModifiedIQ) {
             session.bridge.setIsOperational(false)
-            throw BadColibriRequestException("Response of wrong type: ${response::class.java.name}")
+            throw ColibriAllocationFailedException("Response of wrong type: ${response::class.java.name}", false)
         }
 
         if (created) {
@@ -407,16 +417,16 @@ class ColibriV2SessionManager(
         }
 
         val transport = response.parseTransport(participantInfo.id)
-            ?: throw ColibriParsingException("failed to parse transport")
+            ?: throw ColibriAllocationFailedException("failed to parse transport", false)
         val sctpPort = transport.sctp?.port
         if (useSctp && sctpPort == null) {
             logger.error("Requested SCTP, but the response had no SCTP.")
-            throw BridgeFailedException(session.bridge, false)
+            throw ColibriAllocationFailedException("Requested SCTP, but the response had no SCTP", false)
         }
 
         return ColibriAllocation(
             session.feedbackSources,
-            transport.iceUdpTransport ?: throw ColibriParsingException("failed to parse transport"),
+            transport.iceUdpTransport ?: throw ColibriAllocationFailedException("failed to parse transport", false),
             session.bridge.region,
             session.id,
             sctpPort
@@ -455,17 +465,19 @@ class ColibriV2SessionManager(
         return participants[participant.endpointId]?.session?.id
     }
 
-    override fun removeBridges(bridges: Set<Bridge>): List<String> = synchronized(syncRoot) {
-        logger.info("Removing bridges: ${bridges.map { it.jid.resourceOrNull }}")
-        val sessionsToRemove = sessions.values.filter { bridges.contains(it.bridge) }
-        logger.info("Removing sessions: $sessionsToRemove")
-        val participantsToRemove = sessionsToRemove.flatMap { getSessionParticipants(it) }.map { it.id }
+    override fun removeBridge(bridge: Bridge): List<String> = synchronized(syncRoot) {
+        logger.info("Removing bridges: $bridge")
+        val sessionToRemove = sessions.values.find { it.bridge.jid == bridge.jid }
+            ?: run {
+                logger.warn("Can not remove bridge, no session")
+                return@synchronized emptyList()
+            }
+        val participantsToRemove = getSessionParticipants(sessionToRemove)
 
-        removeParticipantInfosBySession(sessionsToRemove.associateWith { getSessionParticipants(it) })
-        eventEmitter.fireEvent { failedBridgesRemoved(sessionsToRemove.size) }
+        removeParticipantInfosBySession(mapOf(sessionToRemove to participantsToRemove))
 
         logger.info("Removed participants: $participantsToRemove")
-        participantsToRemove
+        participantsToRemove.map { it.id }
     }
 
     override val debugState
