@@ -26,6 +26,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 
 @Path("/login")
 public class ShibbolethLogin
@@ -123,7 +124,7 @@ public class ShibbolethLogin
         StringBuilder sb = new StringBuilder();
 
         sb.append("<html><head><head/><body>\n");
-        sb.append("<h1>Hello ").append(HtmlEscapers.htmlEscaper().escape(displayName)).append("!<h1/>\n");
+        sb.append("<h1>Hello ").append(escapeHtml4(displayName)).append("!<h1/>\n");
         if (!close)
         {
             sb.append("<h2>You should be redirected back to the conference soon...<h2/>\n");
