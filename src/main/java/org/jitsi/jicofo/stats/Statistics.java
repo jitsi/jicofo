@@ -33,9 +33,4 @@ public class Statistics
      * The number of participants that requested to be re-invited via session-terminate.
      */
     public final AtomicInteger totalParticipantsRequestedRestart = new AtomicInteger();
-
-    /**
-     * The number of time a bridge as removed from a conference because it had failed.
-     */
-    public final AtomicInteger totalBridgesRemoved = new AtomicInteger();
 }

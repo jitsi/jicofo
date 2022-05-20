@@ -340,12 +340,6 @@ public class FocusManager
         statistics.totalParticipantsRequestedRestart.incrementAndGet();
     }
 
-    @Override
-    public void bridgeRemoved(int count)
-    {
-        statistics.totalBridgesRemoved.addAndGet(count);
-    }
-
     /**
      * Returns {@link JitsiMeetConference} for given MUC {@code roomName} or
      * {@code null} if no conference has been allocated yet.
@@ -428,7 +422,6 @@ public class FocusManager
         stats.put("conferences", getNonHealthCheckConferenceCount());
 
         JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("bridges_removed", statistics.totalBridgesRemoved.get());
         bridgeFailures.put("participants_moved", statistics.totalParticipantsMoved.get());
         stats.put("bridge_failures", bridgeFailures);
 
