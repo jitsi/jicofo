@@ -15,10 +15,8 @@
  */
 package org.jitsi.jicofo.auth.rest;
 
-import com.google.common.html.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.rest.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
