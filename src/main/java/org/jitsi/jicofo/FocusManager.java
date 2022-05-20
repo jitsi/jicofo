@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -408,7 +409,9 @@ public class FocusManager
         // Calculate the number of participants and conference size distribution
         int numParticipants = 0;
         int largestConferenceSize = 0;
-        int[] conferenceSizes = new int[22];
+        ConferenceSizeBuckets conferenceSizes = new ConferenceSizeBuckets();
+        // The sum of squares of conference sizes.
+        int endpointPairs = 0;
         Set<BaseJibri> jibriRecordersAndGateways = new HashSet<>();
         for (JitsiMeetConference conference : getConferences())
         {
@@ -428,13 +431,12 @@ public class FocusManager
             {
                 confSize = 1;
             }
+
             numParticipants += confSize;
+            endpointPairs += confSize * confSize;
             largestConferenceSize = Math.max(largestConferenceSize, confSize);
 
-            int conferenceSizeIndex = confSize < conferenceSizes.length
-                    ? confSize
-                    : conferenceSizes.length - 1;
-            conferenceSizes[conferenceSizeIndex]++;
+            conferenceSizes.addValue(confSize);
 
             jibriRecordersAndGateways.add(conference.getJibriRecorder());
             jibriRecordersAndGateways.add(conference.getJibriSipGateway());
@@ -442,12 +444,8 @@ public class FocusManager
 
         stats.put("largest_conference", largestConferenceSize);
         stats.put("participants", numParticipants);
-        JSONArray conferenceSizesJson = new JSONArray();
-        for (int size : conferenceSizes)
-        {
-            conferenceSizesJson.add(size);
-        }
-        stats.put("conference_sizes", conferenceSizesJson);
+        stats.put("conference_sizes", conferenceSizes.toJson());
+        stats.put("endpoint_pairs", endpointPairs);
 
         stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
 
