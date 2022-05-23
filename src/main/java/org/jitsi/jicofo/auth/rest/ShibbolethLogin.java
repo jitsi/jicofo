@@ -15,10 +15,8 @@
  */
 package org.jitsi.jicofo.auth.rest;
 
-import com.google.common.html.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.rest.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -125,7 +123,7 @@ public class ShibbolethLogin
         StringBuilder sb = new StringBuilder();
 
         sb.append("<html><head><head/><body>\n");
-        sb.append("<h1>Hello ").append(HtmlEscapers.htmlEscaper().escape(displayName)).append("!<h1/>\n");
+        sb.append("<h1>Hello!<h1/>\n");
         if (!close)
         {
             sb.append("<h2>You should be redirected back to the conference soon...<h2/>\n");

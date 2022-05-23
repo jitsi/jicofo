@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference;
 
-import org.checkerframework.checker.nullness.qual.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
@@ -74,7 +73,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      */
     private final JitsiMeetConferenceImpl meetConference;
 
-    @NonNull private final ColibriSessionManager colibriSessionManager;
+    @NotNull private final ColibriSessionManager colibriSessionManager;
 
     /**
      * A flag which indicates whether channel allocation is canceled. Raising
@@ -115,15 +114,15 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     /**
      * Override super's AbstractParticipant
      */
-    @NonNull private final Participant participant;
+    @NotNull private final Participant participant;
 
     /**
      * {@inheritDoc}
      */
     public ParticipantInviteRunnable(
             JitsiMeetConferenceImpl meetConference,
-            @NonNull ColibriSessionManager colibriSessionManager,
-            @NonNull Participant participant,
+            @NotNull ColibriSessionManager colibriSessionManager,
+            @NotNull Participant participant,
             boolean startAudioMuted,
             boolean startVideoMuted,
             boolean reInvite,
@@ -408,7 +407,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         return true;
     }
 
-    private @NonNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
+    private @NotNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
         // Take all sources from participants in the conference.
         ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
