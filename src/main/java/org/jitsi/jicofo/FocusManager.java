@@ -26,6 +26,7 @@ import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.jitsi.utils.queue.*;
+import org.jitsi.utils.stats.*;
 import org.json.simple.*;
 import org.jxmpp.jid.*;
 
