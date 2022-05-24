@@ -269,31 +269,6 @@ public class FocusManager
     }
 
     /**
-     * Destroys the conference for given room name.
-     * @param roomName full MUC room name to destroy.
-     * @param reason optional reason string that will be advertised to the
-     *               users upon exit.
-     */
-    public void destroyConference(EntityBareJid roomName, String reason)
-    {
-        synchronized (conferencesSyncRoot)
-        {
-            JitsiMeetConferenceImpl conference = getConference(roomName);
-            if (conference == null)
-            {
-                logger.error(
-                    "Unable to destroy the conference - not found: " + roomName);
-
-                return;
-            }
-
-            // It is unclear whether this needs to execute while holding the
-            // lock or not.
-            conference.destroy(reason);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -338,12 +313,6 @@ public class FocusManager
     public void participantRequestedRestart()
     {
         statistics.totalParticipantsRequestedRestart.incrementAndGet();
-    }
-
-    @Override
-    public void bridgeRemoved(int count)
-    {
-        statistics.totalBridgesRemoved.addAndGet(count);
     }
 
     /**
@@ -428,7 +397,6 @@ public class FocusManager
         stats.put("conferences", getNonHealthCheckConferenceCount());
 
         JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("bridges_removed", statistics.totalBridgesRemoved.get());
         bridgeFailures.put("participants_moved", statistics.totalParticipantsMoved.get());
         stats.put("bridge_failures", bridgeFailures);
 

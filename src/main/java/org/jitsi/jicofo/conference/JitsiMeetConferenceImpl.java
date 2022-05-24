@@ -1664,10 +1664,6 @@ public class JitsiMeetConferenceImpl
     private void onBridgeDown(Bridge bridge)
     {
         List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
-        if (!participantIdsToReinvite.isEmpty())
-        {
-            listener.bridgeRemoved(1);
-        }
         reInviteParticipantsById(participantIdsToReinvite);
     }
 
@@ -1923,11 +1919,6 @@ public class JitsiMeetConferenceImpl
          * A participant requested to be re-invited via session-terminate.
          */
         void participantRequestedRestart();
-
-        /**
-         * A number of bridges were removed from the conference because they were non-operational.
-         */
-        void bridgeRemoved(int count);
     }
 
     /**
@@ -2093,7 +2084,6 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(@NotNull Bridge bridge, @NotNull List<String> participantIds)
         {
-            listener.bridgeRemoved(1);
             logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
                     + participantIds);
             reInviteParticipantsById(participantIds);
