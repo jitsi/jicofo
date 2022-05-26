@@ -147,6 +147,7 @@ class ColibriV2SessionManager(
             if (removeSession) {
                 logger.info("Removing session with no remaining participants: $session")
                 sessions.remove(session.bridge)
+                participantsBySession.remove(session)
                 session.expireAllRelays()
                 sessions.values.forEach { otherSession ->
                     otherSession.expireRelay(session.bridge.relayId)
