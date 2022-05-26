@@ -44,7 +44,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
     private var harness: JicofoHarness? = null
     private val xmppConnection = MockXmppConnectionWrapper()
 
-    override fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {
+    override suspend fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {
         // Enable shibboleth authentication
         // TODO port to withLegacyConfig
         System.setProperty(AuthConfig.legacyLoginUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST)
@@ -52,7 +52,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
         harness = JicofoHarness()
     }
 
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
+    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
         xmppConnection.shutdown()
         harness?.shutdown()
         System.clearProperty(AuthConfig.legacyLoginUrlPropertyName)
