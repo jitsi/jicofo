@@ -30,7 +30,7 @@ class TaskPools {
 
         @JvmStatic
         val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
-            200, CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
+            3, CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
         )
 
         @JvmStatic
