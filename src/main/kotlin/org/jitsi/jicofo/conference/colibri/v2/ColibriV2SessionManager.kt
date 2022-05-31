@@ -274,12 +274,12 @@ class ColibriV2SessionManager(
                 // There is an existing session, and this is a new bridge.
                 if (!OctoConfig.config.enabled) {
                     logger.error("A new bridge was selected, but Octo is disabled")
-                    // This is a bridger selection failure, because the selector should not have returned a different
+                    // This is a bridge selection failure, because the selector should not have returned a different
                     // bridge when Octo is not enabled.
                     throw BridgeSelectionFailedException()
                 } else if (sessions.any { it.value.relayId == null } || bridge.relayId == null) {
                     logger.error("Can not enable Octo: one of the selected bridges does not support Octo.")
-                    // This is a bridger selection failure, because the selector should not have returned a different
+                    // This is a bridge selection failure, because the selector should not have returned a different
                     // bridge when one of the bridges doesn't support Octo (does not have a relay ID).
                     throw BridgeSelectionFailedException()
                 }
