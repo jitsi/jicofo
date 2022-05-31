@@ -31,7 +31,7 @@ import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
-import org.jitsi.xmpp.util.IQUtils
+import org.jitsi.xmpp.util.createError
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
@@ -50,23 +50,21 @@ class MockColibri2Server {
     fun handleConferenceModifyIq(request: ConferenceModifyIQ): IQ {
         val conference: Conference = if (request.create) {
             if (conferences.containsKey(request.meetingId)) {
-                return IQUtils.createError(request, conflict, "Conference already exists")
+                return createError(request, conflict, "Conference already exists")
             }
             val newConference = Conference(request.meetingId)
             conferences[request.meetingId] = newConference
             newConference
         } else {
             conferences[request.meetingId]
-                ?: return IQUtils.createError(request, item_not_found, "Conference not found")
+                ?: return createError(request, item_not_found, "Conference not found")
         }
 
         return try {
             conference.handleRequest(request)
         } catch (e: IqProcessingException) {
-            return IQUtils.createError(request, e.condition, e.message).apply {
-                // Make sure to tag the error as coming from a bridge, otherwise item_not_found may be misiterpreted.
-                addExtension(Colibri2Error())
-            }
+            // Make sure to tag the error as coming from a bridge, otherwise item_not_found may be misiterpreted.
+            return createError(request, e.condition, e.message, Colibri2Error())
         }
     }
     private fun expireConference(meetingId: String) = conferences.remove(meetingId)
