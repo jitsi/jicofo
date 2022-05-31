@@ -19,6 +19,7 @@
 package org.jitsi.jicofo.conference.colibri.v2
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -30,7 +31,7 @@ import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
-import org.jitsi.utils.event.SyncEventEmitter
+import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
@@ -61,7 +62,7 @@ class ColibriV2SessionManager(
 ) : ColibriSessionManager {
     private val logger = createChildLogger(parentLogger)
 
-    private val eventEmitter = SyncEventEmitter<ColibriSessionManager.Listener>()
+    private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
@@ -84,8 +85,6 @@ class ColibriV2SessionManager(
 
     /**
      * Protects access to [sessions], [participants] and [participantsBySession].
-     *
-     * Note that we currently fire some events via [eventEmitter] while holding this lock.
      */
     private val syncRoot = Any()
 
@@ -147,6 +146,7 @@ class ColibriV2SessionManager(
             if (removeSession) {
                 logger.info("Removing session with no remaining participants: $session")
                 sessions.remove(session.bridge)
+                participantsBySession.remove(session)
                 session.expireAllRelays()
                 sessions.values.forEach { otherSession ->
                     otherSession.expireRelay(session.bridge.relayId)

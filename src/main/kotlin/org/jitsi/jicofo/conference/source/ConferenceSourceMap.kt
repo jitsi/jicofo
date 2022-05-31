@@ -156,7 +156,6 @@ open class ConferenceSourceMap(
     /**
      * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
      */
-    @JvmOverloads
     open fun stripSimulcast() = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) ->
             val stripped = sources.stripSimulcast()

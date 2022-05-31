@@ -29,8 +29,19 @@
         <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
         <Source name="MuteIqHandler.kt"/>
       </And>
+      <!-- False positives with kotlin 1.6. -->
+      <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
+      <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
     </Or>
   </And>
+</Match>
+
+<Match>
+  <Or>
+    <!-- Exposure of internal representation is not a concern. -->
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Or>
 </Match>
 
 <Match>

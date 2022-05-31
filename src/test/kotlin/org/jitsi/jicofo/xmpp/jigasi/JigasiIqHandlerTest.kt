@@ -61,7 +61,7 @@ class JigasiIqHandlerTest : ShouldSpec() {
         type = IQ.Type.set
     }
 
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
+    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
         jicofo.shutdown()
         participant.shutdown()
         jigasi1.shutdown()
@@ -124,7 +124,7 @@ class JigasiIqHandlerTest : ShouldSpec() {
                     jigasi2.response = MockJigasi.Response.Success
                     every { jigasiDetector.selectSipJigasi(any(), any()) } answers {
                         jigasi1.jid
-                    } andThen {
+                    } andThenAnswer {
                         jigasi2.jid
                     }
 

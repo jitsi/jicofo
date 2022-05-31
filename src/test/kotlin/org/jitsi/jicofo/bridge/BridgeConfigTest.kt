@@ -80,7 +80,7 @@ class BridgeConfigTest : ShouldSpec() {
             }
         }
         context("Region groups") {
-            config.regionGroups shouldBe emptyList()
+            config.regionGroups shouldBe emptySet()
 
             withNewConfig(
                 """

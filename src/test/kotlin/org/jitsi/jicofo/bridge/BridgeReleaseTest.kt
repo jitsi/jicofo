@@ -34,7 +34,7 @@ class BridgeReleaseTest : ShouldSpec() {
 
     val clock = FakeClock()
 
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
+    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
         setNewConfig("", true)
     }
     init {
