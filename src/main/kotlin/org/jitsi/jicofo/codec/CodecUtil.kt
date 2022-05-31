@@ -142,7 +142,8 @@ class CodecUtil {
                 if (options.opusMaxAverageBitrate != null) {
                     opus.addParameterExtension("maxaveragebitrate", options.opusMaxAverageBitrate.toString())
                 }
-                if (config.opus.useInbandFec()) {
+                // Avoid double FEC if RED is offered already.
+                if (config.opus.useInbandFec() && !config.opus.red.enabled()) {
                     // fmtp:111 useinbandfec=1
                     opus.addParameterExtension("useinbandfec", "1")
                 }
