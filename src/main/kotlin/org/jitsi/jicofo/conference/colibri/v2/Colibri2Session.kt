@@ -54,6 +54,12 @@ internal class Colibri2Session(
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+    /**
+     * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
+     * change in the context of a session. We maintain the invariant that whenever a a conference has multiple sessions,
+     * they all have non-null relay IDs.
+     */
+    val relayId: String? = bridge.relayId
 
     /**
      * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request
@@ -205,8 +211,7 @@ internal class Colibri2Session(
         initiator: Boolean
     ) {
         logger.info(
-            "Creating relay $relayId (initiator=$initiator), " +
-                "initial participants: ${initialParticipants.map { it.id }}"
+            "Creating relay $relayId (initiator=$initiator), initial participants: ${initialParticipants.map { it.id }}"
         )
         if (relays.containsKey(relayId)) {
             throw IllegalStateException("Relay $relayId already exists")

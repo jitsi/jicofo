@@ -19,6 +19,7 @@
 package org.jitsi.jicofo.conference.colibri.v2
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
@@ -149,14 +150,16 @@ class ColibriV2SessionManager(
                 participantsBySession.remove(session)
                 session.expireAllRelays()
                 sessions.values.forEach { otherSession ->
-                    otherSession.expireRelay(session.bridge.relayId)
+                    session.relayId?.let { otherSession.expireRelay(it) }
                 }
                 sessionRemoved = true
             } else {
                 // If the session was removed the relays themselves are expired, so there's no need to expire individual
                 // endpoints within a relay.
                 sessions.values.filter { it != session }.forEach { otherSession ->
-                    otherSession.expireRemoteParticipants(sessionParticipantsToRemove, session.bridge.relayId)
+                    session.relayId?.let {
+                        otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
+                    }
                 }
             }
         }
@@ -267,6 +270,20 @@ class ColibriV2SessionManager(
                     throw BridgeSelectionFailedException()
                 }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
+            if (sessions.isNotEmpty() && sessions.none { it.key == bridge }) {
+                // There is an existing session, and this is a new bridge.
+                if (!OctoConfig.config.enabled) {
+                    logger.error("A new bridge was selected, but Octo is disabled")
+                    // This is a bridger selection failure, because the selector should not have returned a different
+                    // bridge when Octo is not enabled.
+                    throw BridgeSelectionFailedException()
+                } else if (sessions.any { it.value.relayId == null } || bridge.relayId == null) {
+                    logger.error("Can not enable Octo: one of the selected bridges does not support Octo.")
+                    // This is a bridger selection failure, because the selector should not have returned a different
+                    // bridge when one of the bridges doesn't support Octo (does not have a relay ID).
+                    throw BridgeSelectionFailedException()
+                }
+            }
             getOrCreateSession(bridge).let {
                 session = it.first
                 created = it.second
@@ -286,13 +303,15 @@ class ColibriV2SessionManager(
             if (created) {
                 sessions.values.filter { it != session }.forEach {
                     logger.debug { "Creating relays between $session and $it." }
-                    it.createRelay(session.bridge.relayId, getSessionParticipants(session), initiator = true)
-                    session.createRelay(it.bridge.relayId, getSessionParticipants(it), initiator = false)
+                    // We already made sure that relayId is not null when there are multiple sessions.
+                    it.createRelay(session.relayId!!, getSessionParticipants(session), initiator = true)
+                    session.createRelay(it.relayId!!, getSessionParticipants(it), initiator = false)
                 }
             } else {
                 sessions.values.filter { it != session }.forEach {
                     logger.debug { "Adding a relayed endpoint to $it for ${participantInfo.id}." }
-                    it.updateRemoteParticipant(participantInfo, session.bridge.relayId, create = true)
+                    // We already made sure that relayId is not null when there are multiple sessions.
+                    it.updateRemoteParticipant(participantInfo, session.relayId!!, create = true)
                 }
             }
         }
@@ -456,7 +475,8 @@ class ColibriV2SessionManager(
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
             sessions.values.filter { it != participantInfo.session }.forEach {
-                it.updateRemoteParticipant(participantInfo, participantInfo.session.bridge.relayId, false)
+                // We make sure that relayId is not null when there are multiple sessions.
+                it.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
             }
         }
     }
@@ -519,7 +539,8 @@ class ColibriV2SessionManager(
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
                 return
             }
-            sessions.values.find { it.bridge.relayId == relayId }?.setRelayTransport(transport, session.bridge.relayId)
+            // We make sure relayId is not null when there are multiple sessions.
+            sessions.values.find { it.relayId == relayId }?.setRelayTransport(transport, session.relayId!!)
                 ?: { logger.warn("Response for a relay that is no longer active. Ignoring.") }
         }
     }
