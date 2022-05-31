@@ -113,7 +113,6 @@ class CodecUtil {
             options: OfferOptions = OfferOptions()
         ): Collection<PayloadTypePacketExtension> = buildList {
             if (config.opus.enabled()) {
-                var addedRed: Boolean = false
                 // Though RED has a payload type of its own and can be used to encode multiple other payload types, we need
                 // it to be advertised with the same clock rate as opus, so it's defined here.
                 // Add the RED payload type before Opus, so that it is the selected codec.
@@ -127,7 +126,6 @@ class CodecUtil {
                     red.addParameterExtension(null, config.opus.pt().toString() + "/" + config.opus.pt())
 
                     add(red)
-                    addedRed = true
                 }
 
                 // a=rtpmap:111 opus/48000/2
@@ -145,10 +143,10 @@ class CodecUtil {
                 if (options.opusMaxAverageBitrate != null) {
                     opus.addParameterExtension("maxaveragebitrate", options.opusMaxAverageBitrate.toString())
                 }
-                if (config.opus.useInbandFec()) {
+                // Avoid double FEC if RED is offered already.
+                if (config.opus.useInbandFec() && !config.opus.red.enabled()) {
                     // fmtp:111 useinbandfec=1
-                    val fecval = addedRed.compareTo(true).toString()
-                    opus.addParameterExtension("useinbandfec", fecval)
+                    opus.addParameterExtension("useinbandfec", "1")
                 }
                 if (config.tcc.enabled() && options.tcc) {
                     // a=rtcp-fb:111 transport-cc
