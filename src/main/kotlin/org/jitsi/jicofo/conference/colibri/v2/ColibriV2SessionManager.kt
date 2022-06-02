@@ -392,7 +392,9 @@ class ColibriV2SessionManager(
                     } else {
                         // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
                         // because the occupant left.
-                        throw ColibriAllocationFailedException("Item not found, bridge unavailable?", true)
+                        // This is probably a wrong selection decision, and if we re-try we run the risk of it
+                        // repeating.
+                        throw ColibriAllocationFailedException("Item not found, bridge unavailable?", false)
                     }
                 }
                 conflict -> {
