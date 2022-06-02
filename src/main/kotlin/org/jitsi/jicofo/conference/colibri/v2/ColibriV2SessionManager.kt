@@ -410,11 +410,8 @@ class ColibriV2SessionManager(
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
-                        // We don't bring the whole bridge down.
-                        throw ColibriAllocationFailedException(
-                            "Colibri error: ${response.error?.toXML()}",
-                            false
-                        )
+                        // We remove the bridge from the conference (expiring it) and re-invite the participants.
+                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toXML()}", true)
                     }
                 }
                 service_unavailable -> {
