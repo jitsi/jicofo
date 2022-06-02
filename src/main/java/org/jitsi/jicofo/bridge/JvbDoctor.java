@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -127,6 +128,11 @@ public class JvbDoctor
         tasks.put(bridge, healthTask);
 
         logger.info("Scheduled health-check task for: " + bridge);
+    }
+
+    @Override
+    public void bridgeIsShuttingDown(@NotNull Bridge bridge)
+    {
     }
 
     private class HealthCheckTask extends AbstractHealthCheckTask

@@ -88,7 +88,12 @@ class BridgeSelector @JvmOverloads constructor(
     @JvmOverloads
     @Synchronized
     fun addJvbAddress(bridgeJid: Jid, stats: ColibriStatsExtension? = null): Bridge = bridges[bridgeJid]?.let {
+        val wasShutingDown = it.isShuttingDown
         it.setStats(stats)
+        if (!wasShutingDown && it.isShuttingDown) {
+            logger.info("${it.jid} entered SHUTTING_DOWN")
+            eventEmitter.fireEvent { bridgeIsShuttingDown(it) }
+        }
         return it
     } ?: Bridge(bridgeJid, clock).also { newBridge ->
         if (stats != null) {
@@ -181,6 +186,12 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
+        candidateBridges = candidateBridges.filter { !it.isShuttingDown }.toList()
+        if (candidateBridges.isEmpty()) {
+            logger.warn("All operational bridges are SHUTTING_DOWN")
+            return null
+        }
+
         if (v != null && !OctoConfig.config.allowMixedVersions) {
             candidateBridges = candidateBridges.filter { it.version == v }
             if (candidateBridges.isEmpty()) {
@@ -236,5 +247,6 @@ class BridgeSelector @JvmOverloads constructor(
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)
         fun bridgeAdded(bridge: Bridge)
+        fun bridgeIsShuttingDown(bridge: Bridge) {}
     }
 }
