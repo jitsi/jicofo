@@ -170,7 +170,7 @@ internal class Colibri2Session(
     /** Expire the entire conference. */
     internal fun expire() {
         relays.clear()
-        val request =  createRequest().setExpire(true)
+        val request = createRequest().setExpire(true)
         xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
     /** Expire the colibri2 endpoint for a specific participant */
