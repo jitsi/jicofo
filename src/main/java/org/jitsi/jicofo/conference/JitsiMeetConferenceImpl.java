@@ -1656,17 +1656,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * Handles the case of a bridge in the conference becoming non-operational. The bridge is assumed to still be
-     * used by {@link #colibriSessionManager}.
-     * @param bridge the bridge to stop using.
-     */
-    private void onBridgeDown(Bridge bridge)
-    {
-        List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
-        reInviteParticipantsById(participantIdsToReinvite);
-    }
-
     private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
     {
         if (!participantIdsToReinvite.isEmpty())
@@ -1961,9 +1950,25 @@ public class JitsiMeetConferenceImpl
     private class BridgeSelectorEventHandler implements BridgeSelector.EventHandler
     {
         @Override
-        public void bridgeRemoved(Bridge bridge)
+        public void bridgeIsShuttingDown(@NotNull Bridge bridge)
         {
-            onBridgeDown(bridge);
+            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Bridge " + bridge.getJid() + " is shutting down, re-inviting " + participantIdsToReinvite);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
+        }
+
+        @Override
+        public void bridgeRemoved(@NotNull Bridge bridge)
+        {
+            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Removed " + bridge.getJid() + ", re-inviting " + participantIdsToReinvite);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
         }
 
         @Override

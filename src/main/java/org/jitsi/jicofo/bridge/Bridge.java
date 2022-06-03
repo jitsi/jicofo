@@ -120,6 +120,11 @@ public class Bridge
     private boolean shutdownInProgress = false /* we assume it is not shutting down */;
 
     /**
+     * Whether the bridge is in SHUTTING_DOWN mode.
+     */
+    private boolean shuttingDown = false;
+
+    /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
     private boolean draining = true; /* Default to true to prevent unwanted selection before reading actual state */
@@ -211,6 +216,11 @@ public class Bridge
         if (Boolean.parseBoolean(stats.getValueAsString(SHUTDOWN_IN_PROGRESS)))
         {
             shutdownInProgress = true;
+        }
+
+        if (Boolean.parseBoolean(stats.getValueAsString("shutting_down")))
+        {
+            shuttingDown = true;
         }
 
         String drainStr = stats.getValueAsString(DRAIN);
@@ -454,6 +464,10 @@ public class Bridge
     {
         return shutdownInProgress;
     }
+    public boolean isShuttingDown()
+    {
+        return shuttingDown;
+    }
 
     /**
      * @return true if the bridge is currently in drain mode
@@ -475,6 +489,7 @@ public class Bridge
         o.put("region", String.valueOf(region));
         o.put("drain", isDraining());
         o.put("graceful-shutdown", isInGracefulShutdown());
+        o.put("shutting-down", isShuttingDown());
         o.put("overloaded", isOverloaded());
         o.put("relay-id", String.valueOf(relayId));
         o.put("healthy", healthy);
