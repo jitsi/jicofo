@@ -111,8 +111,7 @@ class ColibriV2SessionManager(
         logger.info("Expiring.")
         sessions.values.forEach { session ->
             logger.debug { "Expiring $session" }
-            session.expire(getSessionParticipants(session))
-            session.expireAllRelays()
+            session.expire()
         }
         sessions.clear()
         eventEmitter.fireEvent { bridgeCountChanged(0) }
@@ -129,8 +128,16 @@ class ColibriV2SessionManager(
         Unit
     }
 
-    private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> =
-        removeParticipantInfosBySession(mapOf(session to getSessionParticipants(session)))
+    private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
+        val participants = getSessionParticipants(session)
+        session.expire()
+        sessions.remove(session.bridge)
+        participantsBySession.remove(session)
+        session.relayId?.let { removedRelayId ->
+            sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
+        }
+        return participants.toSet()
+    }
 
     private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>):
         Set<ParticipantInfo> {
@@ -138,22 +145,19 @@ class ColibriV2SessionManager(
         val participantsRemoved = mutableSetOf<ParticipantInfo>()
         bySession.forEach { (session, sessionParticipantsToRemove) ->
             logger.debug { "Removing participants from session $session: ${sessionParticipantsToRemove.map { it.id }}" }
-            session.expire(sessionParticipantsToRemove)
-            sessionParticipantsToRemove.forEach { remove(it) }
-            participantsRemoved.addAll(sessionParticipantsToRemove)
-
-            val removeSession = getSessionParticipants(session).isEmpty()
-
+            val remaining = getSessionParticipants(session) - sessionParticipantsToRemove.toSet()
+            val removeSession = remaining.isEmpty()
             if (removeSession) {
                 logger.info("Removing session with no remaining participants: $session")
-                sessions.remove(session.bridge)
-                participantsBySession.remove(session)
-                session.expireAllRelays()
-                sessions.values.forEach { otherSession ->
-                    session.relayId?.let { otherSession.expireRelay(it) }
-                }
+                val sessionParticipantsRemoved = removeSession(session)
+
+                participantsRemoved.addAll(sessionParticipantsRemoved)
                 sessionRemoved = true
             } else {
+                session.expire(sessionParticipantsToRemove)
+                sessionParticipantsToRemove.forEach { remove(it) }
+                participantsRemoved.addAll(sessionParticipantsToRemove)
+
                 // If the session was removed the relays themselves are expired, so there's no need to expire individual
                 // endpoints within a relay.
                 sessions.values.filter { it != session }.forEach { otherSession ->
@@ -333,9 +337,8 @@ class ColibriV2SessionManager(
                 return handleResponse(response, session, created, participantInfo, useSctp)
             } catch (e: Exception) {
                 logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
-                // Add participantInfo just in case it wasn't there already (the set will take care of dups).
-
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
+                    // Add participantInfo just in case it wasn't there already (the set will take care of dups).
                     val removedParticipants = removeSession(session) + participantInfo
                     remove(participantInfo)
                     eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
@@ -409,11 +412,8 @@ class ColibriV2SessionManager(
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
-                        // We don't bring the whole bridge down.
-                        throw ColibriAllocationFailedException(
-                            "Colibri error: ${response.error?.toXML()}",
-                            false
-                        )
+                        // We remove the bridge from the conference (expiring it) and re-invite the participants.
+                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toXML()}", true)
                     }
                 }
                 service_unavailable -> {
