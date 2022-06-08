@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
 
 import java.util.*;
@@ -93,18 +94,20 @@ public class RegionBasedBridgeSelectionStrategy
             return null;
         }
 
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+        String region = participantRegion == null ? JicofoConfig.config.localRegion() : participantRegion;
+
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet(
                 () -> notLoadedAlreadyInConferenceInRegionGroup(
-                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> notLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                        bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> notLoadedInRegion(bridges, conferenceBridges, region).orElseGet(
+                () -> notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet(
                 () -> leastLoadedAlreadyInConferenceInRegionGroup(
-                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> leastLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))))))));
+                        bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> leastLoadedInRegion(bridges, conferenceBridges, region).orElseGet(
+                () -> leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, region).orElseGet(
+                () -> leastLoaded(bridges, conferenceBridges, region).orElse(null))))))))));
     }
 
     @Override
