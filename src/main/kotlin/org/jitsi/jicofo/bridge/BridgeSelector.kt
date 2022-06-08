@@ -105,11 +105,9 @@ class BridgeSelector @JvmOverloads constructor(
     }
 
     /**
-     * Removes Jitsi Videobridge XMPP address from the list videobridge
-     * instances available in the system .
+     * Removes a [Bridge] with a specific JID from the list of videobridge instances.
      *
-     * @param bridgeJid the JID of videobridge to be removed from this selector's
-     * set of videobridges.
+     * @param bridgeJid the JID of bridge to remove.
      */
     @Synchronized
     fun removeJvbAddress(bridgeJid: Jid) {

@@ -16,6 +16,7 @@
 package org.jitsi.jicofo.bridge;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
 
 import java.util.*;
@@ -93,18 +94,39 @@ public class RegionBasedBridgeSelectionStrategy
             return null;
         }
 
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+        String localRegion = JicofoConfig.config.localRegion();
+        String r = participantRegion == null ? localRegion : participantRegion;
+        if (localRegion != null)
+        {
+            if (conferenceBridges.isEmpty() && !Objects.equals(r, JicofoConfig.config.localRegion()))
+            {
+                // Selecting an initial bridge for a participant not in the local region. This is most likely because
+                // exactly one of the first two participants in the conference is not in the local region, and we're
+                // selecting for it first. I.e. there is another participant in the local region which will be
+                // subsequently invited.
+                Set<String> regionGroup = regionGroups.get(r);
+                if (regionGroup != null && regionGroup.contains(localRegion))
+                {
+                    // With the above assumption, there are two participants in the local region group. Therefore,
+                    // they will use the same bridge. Prefer to use a bridge in the local region.
+                    r = localRegion;
+                }
+            }
+        }
+
+        final String region = r;
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet(
                 () -> notLoadedAlreadyInConferenceInRegionGroup(
-                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> notLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
+                        bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> notLoadedInRegion(bridges, conferenceBridges, region).orElseGet(
+                () -> notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet(
                 () -> leastLoadedAlreadyInConferenceInRegionGroup(
-                        bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> leastLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(participantRegion)).orElseGet(
-                () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, participantRegion).orElseGet(
-                () -> leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null))))))))));
+                        bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> leastLoadedInRegion(bridges, conferenceBridges, region).orElseGet(
+                () -> leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet(
+                () -> nonLoadedAlreadyInConference(bridges, conferenceBridges, region).orElseGet(
+                () -> leastLoaded(bridges, conferenceBridges, region).orElse(null))))))))));
     }
 
     @Override
