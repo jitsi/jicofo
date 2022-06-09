@@ -586,7 +586,14 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info("Member joined:" + chatRoomMember.getName());
+            logger.info(
+                    "Member joined:" + chatRoomMember.getName()
+                            + " stats-id=" + chatRoomMember.getStatsId()
+                            + " region=" + chatRoomMember.getRegion()
+                            + " audioMuted=" + chatRoomMember.isAudioMuted()
+                            + " videoMuted=" + chatRoomMember.isVideoMuted()
+                            + " isJibri=" + chatRoomMember.isJibri()
+                            + " isJigasi=" + chatRoomMember.isJigasi());
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
             hasHadAtLeastOneParticipant = true;
 
