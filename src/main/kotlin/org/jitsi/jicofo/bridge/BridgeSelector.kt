@@ -113,7 +113,7 @@ class BridgeSelector @JvmOverloads constructor(
     fun removeJvbAddress(bridgeJid: Jid) {
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
-            if (!it.isInGracefulShutdown) {
+            if (!it.isInGracefulShutdown && !it.isShuttingDown) {
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
