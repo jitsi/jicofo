@@ -57,21 +57,10 @@ class Bridge @JvmOverloads internal constructor(
     )
 
     /**
-     * The last reported packet rate in packets per second.
-     */
-    private var lastReportedPacketRatePps = 0
-
-    /**
      * The last report stress level
      */
     var lastReportedStressLevel = 0.0
         private set
-
-    /**
-     * For older bridges which don't support reporting their stress level we'll fall back
-     * to calculating the stress manually via the packet rate.
-     */
-    private var usePacketRateStatForStress = true
 
     /**
      * Holds bridge version (if known - not all bridge version are capable of
@@ -187,24 +176,11 @@ class Bridge @JvmOverloads internal constructor(
         val stressLevel = stats.getDouble("stress_level")
         if (stressLevel != null) {
             lastReportedStressLevel = stressLevel
-            usePacketRateStatForStress = false
         }
         val averageParticipantStress =
             stats.getDouble("average_participant_stress")
         if (averageParticipantStress != null) {
             this.averageParticipantStress = averageParticipantStress
-        }
-        var packetRateDown: Int? = null
-        var packetRateUp: Int? = null
-        try {
-            packetRateDown =
-                stats.getValueAsInt(ColibriStatsExtension.PACKET_RATE_DOWNLOAD)
-            packetRateUp =
-                stats.getValueAsInt(ColibriStatsExtension.PACKET_RATE_UPLOAD)
-        } catch (ignored: NumberFormatException) {
-        }
-        if (packetRateDown != null && packetRateUp != null) {
-            lastReportedPacketRatePps = packetRateDown + packetRateUp
         }
         if (java.lang.Boolean.parseBoolean(
                 stats.getValueAsString(
@@ -300,37 +276,11 @@ class Bridge @JvmOverloads internal constructor(
      * @return this bridge's stress level
      */
     val stress: Double
-        get() = if (usePacketRateStatForStress) {
-            stressFromPacketRate
-        } else {
-            // While a stress of 1 indicates a bridge is fully loaded, we allow
+        get() =
+        // While a stress of 1 indicates a bridge is fully loaded, we allow
             // larger values to keep sorting correctly.
             lastReportedStressLevel +
                 recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
-        }
-
-    /**
-     * Returns the "stress" of the bridge. The stress is computed based on the
-     * total packet rate reported by the bridge and the video stream diff
-     * estimation since the last update from the bridge. Note that this is techincally
-     * deprecated and only exists for backwards compatibility with bridges who don't
-     * yet support reporting their stress level directly.
-     *
-     * @return the sum of the last total reported packet rate (in pps) and an
-     * estimation of the packet rate of the streams that we estimate that the bridge
-     * hasn't reported to Jicofo yet. The estimation is the product of the
-     * number of unreported streams and a constant C (which we set to 500 pps).
-     */
-    private val stressFromPacketRate: Double
-        get() =
-            // While a stress of 1 indicates a bridge is fully loaded, we allow
-            // larger values to keep sorting correctly.
-            (
-                lastReportedPacketRatePps +
-                    recentlyAddedEndpointCount.coerceAtLeast(0) *
-                    BridgeConfig.config.averageParticipantPacketRatePps()
-                ) /
-                BridgeConfig.config.maxBridgePacketRatePps().toDouble()
 
     /**
      * @return true if the stress of the bridge is greater-than-or-equal to the threshold.
@@ -345,7 +295,6 @@ class Bridge @JvmOverloads internal constructor(
             o["release"] = releaseId.toString()
             o["stress"] = stress
             o["operational"] = isOperational
-            o["packet_rate"] = lastReportedPacketRatePps
             o["region"] = region.toString()
             o["drain"] = isDraining
             o["graceful-shutdown"] = isInGracefulShutdown
