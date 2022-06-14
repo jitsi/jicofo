@@ -277,7 +277,7 @@ class Bridge @JvmOverloads internal constructor(
      */
     val stress: Double
         get() =
-        // While a stress of 1 indicates a bridge is fully loaded, we allow
+            // While a stress of 1 indicates a bridge is fully loaded, we allow
             // larger values to keep sorting correctly.
             lastReportedStressLevel +
                 recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
