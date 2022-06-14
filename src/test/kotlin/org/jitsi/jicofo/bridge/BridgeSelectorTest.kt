@@ -142,17 +142,6 @@ class BridgeSelectorTest : ShouldSpec() {
 
             splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb2
         }
-        context("Colibri2 support") {
-            val selector = BridgeSelector(clock)
-            val jvb1 = selector.addJvbAddress(jid1).apply { setStats(stress = 0.2, colibri2 = false) }
-            selector.selectBridge() shouldBe null
-
-            val jvb2 = selector.addJvbAddress(jid2).apply { setStats(stress = 0.9) }
-            selector.selectBridge() shouldBe jvb2
-
-            jvb2.setStats(stress = 0.9, gracefulShutdown = true)
-            selector.selectBridge() shouldBe jvb2
-        }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
             selector.lostBridges() shouldBe 0
