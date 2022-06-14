@@ -46,16 +46,16 @@ class BridgeSelectorTest : ShouldSpec() {
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
 
             // Bridge 1 is down
-            jvb1.setIsOperational(false)
+            jvb1.isOperational = false
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb2, jvb3)
 
             // Bridge 2 is down
-            jvb2.setIsOperational(false)
+            jvb2.isOperational = false
             bridgeSelector.selectBridge() shouldBe jvb3
 
             // Bridge 1 is up again, but 3 is down instead
-            jvb1.setIsOperational(true)
-            jvb3.setIsOperational(false)
+            jvb1.isOperational = true
+            jvb3.isOperational = false
             // We need to elapse time after setting isOperational=true because isOperational=false is sticky
             clock.elapse(BridgeConfig.config.failureResetThreshold)
             bridgeSelector.selectBridge() shouldBe jvb1
@@ -73,17 +73,17 @@ class BridgeSelectorTest : ShouldSpec() {
             bridgeSelector.selectBridge() shouldBe jvb1
 
             // Jvb 1 is gone
-            jvb1.setIsOperational(false)
+            jvb1.isOperational = false
             bridgeSelector.selectBridge() shouldBe jvb2
 
             // All bridges down
-            jvb2.setIsOperational(false)
-            jvb3.setIsOperational(false)
+            jvb2.isOperational = false
+            jvb3.isOperational = false
             bridgeSelector.selectBridge() shouldBe null
 
-            jvb1.setIsOperational(true)
-            jvb2.setIsOperational(true)
-            jvb3.setIsOperational(true)
+            jvb1.isOperational = true
+            jvb2.isOperational = true
+            jvb3.isOperational = true
             // We need to elapse time after setting isOperational=true because isOperational=false is sticky
             clock.elapse(BridgeConfig.config.failureResetThreshold)
 

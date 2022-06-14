@@ -218,7 +218,7 @@ class ColibriV2SessionManager(
     override val bridgeCount: Int
         get() = synchronized(syncRoot) { sessions.size }
     override val bridgeRegions: Set<String>
-        get() = synchronized(syncRoot) { sessions.keys.map { it.region }.toSet() }
+        get() = synchronized(syncRoot) { sessions.keys.map { it.region }.filterNotNull().toSet() }
 
     /**
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
@@ -369,7 +369,7 @@ class ColibriV2SessionManager(
         }
 
         if (response == null) {
-            session.bridge.setIsOperational(false)
+            session.bridge.isOperational = false
             throw ColibriAllocationFailedException("Timeout", true)
         } else if (response is ErrorIQ) {
             // The reason in a colibri2 error extension, if one is present. If a reason is present we know the response
@@ -422,14 +422,14 @@ class ColibriV2SessionManager(
                     throw ColibriAllocationFailedException("Bridge in graceful shutdown", true)
                 }
                 else -> {
-                    session.bridge.setIsOperational(false)
+                    session.bridge.isOperational = false
                     throw ColibriAllocationFailedException("Error: ${response.error?.toXML()}", true)
                 }
             }
         }
 
         if (response !is ConferenceModifiedIQ) {
-            session.bridge.setIsOperational(false)
+            session.bridge.isOperational = false
             throw ColibriAllocationFailedException("Response of wrong type: ${response::class.java.name}", false)
         }
 

@@ -78,22 +78,22 @@ class BridgeTest : ShouldSpec({
         val failureResetThreshold = BridgeConfig.config.failureResetThreshold
         bridge.isOperational shouldBe true
 
-        bridge.setIsOperational(false)
+        bridge.isOperational = false
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold.times(100))
         bridge.isOperational shouldBe false
 
-        bridge.setIsOperational(true)
+        bridge.isOperational = true
         bridge.isOperational shouldBe true
 
-        bridge.setIsOperational(false)
+        bridge.isOperational = false
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold.dividedBy(2))
         bridge.isOperational shouldBe false
 
-        bridge.setIsOperational(true)
+        bridge.isOperational = true
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold)
