@@ -201,12 +201,6 @@ class BridgeSelector @JvmOverloads constructor(
             }
         }
 
-        candidateBridges = candidateBridges.filter { it.supportsColibri2() }
-        if (candidateBridges.isEmpty()) {
-            logger.warn("There are no bridges with colibri2 support.")
-            return null
-        }
-
         // If there are active bridges, prefer those.
         val activeBridges = candidateBridges.filter { !it.isDraining }.toList()
         if (!activeBridges.isEmpty())

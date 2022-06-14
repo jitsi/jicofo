@@ -91,11 +91,6 @@ class Bridge @JvmOverloads internal constructor(
     private var releaseId: String? = null
 
     /**
-     * Whether the bridge supports colibri2.
-     */
-    private var colibri2 = false
-
-    /**
      * Stores the `operational` status of the bridge, which is
      * `true` if the bridge has been successfully used by the focus to
      * allocate channels. It is reset to `false` when the focus fails
@@ -226,9 +221,6 @@ class Bridge @JvmOverloads internal constructor(
         if (drainStr != null) {
             isDraining = java.lang.Boolean.parseBoolean(drainStr)
         }
-        if (java.lang.Boolean.parseBoolean(stats.getValueAsString("colibri2"))) {
-            colibri2 = true
-        }
         val newVersion = stats.getValueAsString(ColibriStatsExtension.VERSION)
         if (newVersion != null) {
             version = newVersion
@@ -254,10 +246,6 @@ class Bridge @JvmOverloads internal constructor(
                     "checks for this bridge are effectively disabled."
             )
         }
-    }
-
-    fun supportsColibri2(): Boolean {
-        return colibri2
     }
 
     /**
