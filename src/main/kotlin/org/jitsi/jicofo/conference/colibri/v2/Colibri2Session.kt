@@ -55,6 +55,12 @@ internal class Colibri2Session(
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+    /**
+     * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
+     * change in the context of a session. We maintain the invariant that whenever a a conference has multiple sessions,
+     * they all have non-null relay IDs.
+     */
+    val relayId: String? = bridge.relayId
 
     /**
      * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request
@@ -85,6 +91,9 @@ internal class Colibri2Session(
         val endpoint = Colibri2Endpoint.getBuilder().apply {
             setId(participant.id)
             setCreate(true)
+            if (participant.sources.isNotEmpty()) {
+                setSources(participant.sources.toColibriMediaSources())
+            }
             setStatsId(participant.statsId)
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
@@ -162,6 +171,13 @@ internal class Colibri2Session(
         xmppConnection.sendIqAndLogResponse(request.build(), logger)
     }
 
+    /** Expire the entire conference. */
+    internal fun expire() {
+        relays.clear()
+        val request = createRequest().setExpire(true)
+        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+    }
+    /** Expire the colibri2 endpoint for a specific participant */
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
     /** Expire the colibri2 endpoints for a set of participants. */
     internal fun expire(participantsToExpire: List<ParticipantInfo>) {
@@ -200,13 +216,13 @@ internal class Colibri2Session(
         /** Initial remote endpoints to be included in the relay. */
         initialParticipants: List<ParticipantInfo>,
         /**
-         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay * connection should have different values for [initiator].
+         * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay
+         * connection should have different values for [initiator].
          */
         initiator: Boolean
     ) {
         logger.info(
-            "Creating relay $relayId (initiator=$initiator), " +
-                "initial participants: ${initialParticipants.map { it.id }}"
+            "Creating relay $relayId (initiator=$initiator), initial participants: ${initialParticipants.map { it.id }}"
         )
         if (relays.containsKey(relayId)) {
             throw IllegalStateException("Relay $relayId already exists")

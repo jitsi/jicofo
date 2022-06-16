@@ -43,17 +43,17 @@
 
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>9.4.44.v20210927</jetty.version>
+    <jetty.version>11.0.9</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.4.4</smack.version>
-    <kotlin.version>1.5.31</kotlin.version>
-    <kotest.version>4.6.3</kotest.version>
+    <kotlin.version>1.6.21</kotlin.version>
+    <kotest.version>5.3.0</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
-    <jersey.version>2.35</jersey.version>
-    <jitsi.utils.version>1.0-109-g31bfa99</jitsi.utils.version>
-    <jicoco.version>1.1-101-g2170967</jicoco.version>
-    <spotbugs.version>4.2.0</spotbugs.version>
-    <junit.version>5.8.1</junit.version>
+    <jersey.version>3.0.4</jersey.version>
+    <jitsi.utils.version>1.0-115-gb93957d</jitsi.utils.version>
+    <jicoco.version>1.1-109-gd47a5e0</jicoco.version>
+    <spotbugs.version>4.6.0</spotbugs.version>
+    <junit.version>5.8.2</junit.version>
   </properties>
 
   <dependencies>
@@ -131,7 +131,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-xmpp-extensions</artifactId>
-      <version>1.0-48-g1883667</version>
+      <version>1.0-53-g0113a6b</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -435,7 +435,7 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.4.2.2</version>
+        <version>4.7.0.0</version>
         <configuration>
           <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
           <includeTests>true</includeTests>
@@ -457,7 +457,7 @@
       <plugin>
         <groupId>com.github.gantsign.maven</groupId>
         <artifactId>ktlint-maven-plugin</artifactId>
-        <version>1.11.0</version>
+        <version>1.13.1</version>
         <configuration>
           <sourceRoots>
             <sourceRoot>${project.basedir}/src/main/kotlin</sourceRoot>

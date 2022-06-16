@@ -80,8 +80,8 @@ fun ConferenceSourceMap.toColibriMediaSources(): Sources {
             }
             mediaSource.addSource(source.toPacketExtension(encodeMsid = false))
         }
-        endpointSourceSet.ssrcGroups.forEach { ssrcGroup ->
-            if (ssrcGroup.ssrcs.isEmpty()) return@forEach
+        endpointSourceSet.ssrcGroups.forEach group@{ ssrcGroup ->
+            if (ssrcGroup.ssrcs.isEmpty()) return@group
 
             val firstSource = endpointSourceSet.sources.firstOrNull() { ssrcGroup.ssrcs.contains(it.ssrc) }
                 ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")

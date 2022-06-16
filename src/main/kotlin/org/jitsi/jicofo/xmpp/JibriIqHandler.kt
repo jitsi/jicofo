@@ -58,6 +58,7 @@ class JibriIqHandler(
         conferenceStore.getAllConferences().forEach { conference ->
             when (val result = conference.handleJibriRequest(request)) {
                 is AcceptedWithResponse, is AcceptedWithNoResponse, is RejectedWithError -> return result
+                else -> Unit // Proceed to the next conference
             }
         }
 

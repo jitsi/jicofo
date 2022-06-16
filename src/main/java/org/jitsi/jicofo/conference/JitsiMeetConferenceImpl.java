@@ -72,11 +72,6 @@ public class JitsiMeetConferenceImpl
                JingleRequestHandler
 {
     /**
-     * A random generator.
-     */
-    private final static Random RANDOM = new Random();
-
-    /**
      * Name of MUC room that is hosting Jitsi Meet conference.
      */
     @NotNull
@@ -222,11 +217,6 @@ public class JitsiMeetConferenceImpl
      * Requested bridge version from a pin. null if not pinned.
      */
     private final String jvbVersion;
-
-    /**
-     * Callback for colibri requests failing/succeeding.
-     */
-    private final ColibriRequestCallback colibriRequestCallback = new ColibriRequestCallbackImpl();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -596,7 +586,14 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            logger.info("Member joined:" + chatRoomMember.getName());
+            logger.info(
+                    "Member joined:" + chatRoomMember.getName()
+                            + " stats-id=" + chatRoomMember.getStatsId()
+                            + " region=" + chatRoomMember.getRegion()
+                            + " audioMuted=" + chatRoomMember.isAudioMuted()
+                            + " videoMuted=" + chatRoomMember.isVideoMuted()
+                            + " isJibri=" + chatRoomMember.isJibri()
+                            + " isJigasi=" + chatRoomMember.isJigasi());
             getFocusManager().getStatistics().totalParticipants.incrementAndGet();
             hasHadAtLeastOneParticipant = true;
 
@@ -646,7 +643,12 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            final Participant participant = new Participant(chatRoomMember, logger, this);
+            // Discover the supported features early, so that any code that depends on the Participant's features works
+            // with the correct values. Note that this operation will block waiting for a disco#info response when
+            // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
+            // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
+            List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
+            final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);
@@ -665,7 +667,6 @@ public class JitsiMeetConferenceImpl
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
         ParticipantInviteRunnable channelAllocator = new ParticipantInviteRunnable(
                 this,
-                colibriRequestCallback,
                 colibriSessionManager,
                 participant,
                 hasToStartAudioMuted(participant, justJoined),
@@ -1285,13 +1286,10 @@ public class JitsiMeetConferenceImpl
         }
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
-        // Update channel info - we may miss update during conference restart,
-        // but the state will be synced up after channels are allocated for this
-        // participant on the new bridge
         colibriSessionManager.updateParticipant(
                 participant,
                 getTransport(contents),
-                sourcesAccepted);
+                getSourcesForParticipant(participant));
 
         // Propagate [participant]'s sources to the other participants.
         propagateNewSources(participant, sourcesAccepted);
@@ -1670,14 +1668,8 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * Handles the case of some bridges in the conference becoming non-operational.
-     * @param bridges the bridges that are non-operational.
-     */
-    private void onMultipleBridgesDown(Set<Bridge> bridges)
+    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
     {
-        List<String> participantIdsToReinvite = colibriSessionManager.removeBridges(bridges);
-
         if (!participantIdsToReinvite.isEmpty())
         {
             listener.participantsMoved(participantIdsToReinvite.size());
@@ -1777,10 +1769,30 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            colibriSessionManager.removeParticipants(participants);
             for (Participant participant : participants)
             {
-                inviteParticipant(participant, true, false);
+                participant.setInviteRunnable(null);
+                boolean restartJingle = ConferenceConfig.config.getReinviteMethod() == ReinviteMethod.RestartJingle;
+
+                if (restartJingle)
+                {
+                    EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
+                    if (participantSources != null && !participantSources.isEmpty())
+                    {
+                        removeSources(participant, participantSources, false, true);
+                    }
+
+                    JingleSession jingleSession = participant.getJingleSession();
+                    if (jingleSession != null)
+                    {
+                        jingle.terminateSession(jingleSession, Reason.SUCCESS, "moving", true);
+                    }
+                    participant.setJingleSession(null);
+                }
+
+                // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a
+                // transport-replace (reInvite = true)
+                inviteParticipant(participant, !restartJingle, false);
             }
         }
     }
@@ -1908,11 +1920,6 @@ public class JitsiMeetConferenceImpl
          * A participant requested to be re-invited via session-terminate.
          */
         void participantRequestedRestart();
-
-        /**
-         * A number of bridges were removed from the conference because they were non-operational.
-         */
-        void bridgeRemoved(int count);
     }
 
     /**
@@ -1955,9 +1962,25 @@ public class JitsiMeetConferenceImpl
     private class BridgeSelectorEventHandler implements BridgeSelector.EventHandler
     {
         @Override
-        public void bridgeRemoved(Bridge bridge)
+        public void bridgeIsShuttingDown(@NotNull Bridge bridge)
         {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Bridge " + bridge.getJid() + " is shutting down, re-inviting " + participantIdsToReinvite);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
+        }
+
+        @Override
+        public void bridgeRemoved(@NotNull Bridge bridge)
+        {
+            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Removed " + bridge.getJid() + ", re-inviting " + participantIdsToReinvite);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
         }
 
         @Override
@@ -2045,23 +2068,27 @@ public class JitsiMeetConferenceImpl
             );
         }
 
+        /**
+         * Bridge selection failed, update jicofo's presence in the room to reflect it.
+         */
         @Override
-        public void failedBridgesRemoved(int count)
+        public void bridgeSelectionFailed()
         {
-            listener.bridgeRemoved(count);
-        }
-    }
-
-    private class ColibriRequestCallbackImpl implements ColibriRequestCallback
-    {
-        @Override
-        public void requestFailed(@NotNull Bridge bridge)
-        {
-            onMultipleBridgesDown(Collections.singleton(bridge));
+            ChatRoom chatRoom = getChatRoom();
+            if (chatRoom != null
+                    && !chatRoom.containsPresenceExtension(
+                    BridgeNotAvailablePacketExt.ELEMENT,
+                    BridgeNotAvailablePacketExt.NAMESPACE))
+            {
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+            }
         }
 
+        /**
+         * Bridge selection was successful, update jicofo's presence in the room to reflect it.
+         */
         @Override
-        public void requestSucceeded(@NotNull Bridge bridge)
+        public void bridgeSelectionSucceeded()
         {
             // Remove "bridge not available" from Jicofo's presence
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
@@ -2069,6 +2096,14 @@ public class JitsiMeetConferenceImpl
             {
                 chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
             }
+        }
+
+        @Override
+        public void bridgeRemoved(@NotNull Bridge bridge, @NotNull List<String> participantIds)
+        {
+            logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
+                    + participantIds);
+            reInviteParticipantsById(participantIds);
         }
     }
 }

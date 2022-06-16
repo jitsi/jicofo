@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -127,6 +128,11 @@ public class JvbDoctor
         tasks.put(bridge, healthTask);
 
         logger.info("Scheduled health-check task for: " + bridge);
+    }
+
+    @Override
+    public void bridgeIsShuttingDown(@NotNull Bridge bridge)
+    {
     }
 
     private class HealthCheckTask extends AbstractHealthCheckTask
@@ -318,8 +324,8 @@ public class JvbDoctor
 
             logger.debug("Checking presence for health for: " + bridge);
 
-            boolean healthy = bridge.isHealthy() &&
-                    bridge.getTimeSinceLastPresence().compareTo(config.getPresenceHealthTimeout()) < 0;
+            boolean healthy = bridge.isHealthy();
+            boolean timeout = bridge.getTimeSinceLastPresence().compareTo(config.getPresenceHealthTimeout()) > 0;
 
             // Sync on start/stop and bridges state
             synchronized (JvbDoctor.this)
@@ -327,7 +333,17 @@ public class JvbDoctor
                 if (taskInvalid())
                     return;
 
-                if (healthy)
+                if (timeout)
+                {
+                    logger.warn("Health check timed out for: " + bridge);
+                    listener.healthCheckTimedOut(bridge.getJid());
+                }
+                else if (!healthy)
+                {
+                    logger.warn("JVB reported unhealthy" + bridge);
+                    listener.healthCheckFailed(bridge.getJid());
+                }
+                else // healthy
                 {
                     if (logger.isDebugEnabled())
                     {
@@ -336,11 +352,6 @@ public class JvbDoctor
                     // TODO: we should be able to do this directly when we receive presence with healthy=true, but
                     // I don't want to modify the flow right now.
                     listener.healthCheckPassed(bridge.getJid());
-                }
-                else
-                {
-                    logger.warn("Health check timed out for: " + bridge);
-                    listener.healthCheckTimedOut(bridge.getJid());
                 }
             }
         }

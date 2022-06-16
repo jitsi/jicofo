@@ -224,7 +224,6 @@ public class MockParticipant
 
         processStanza(invite);
 
-        logger.warn("XXX: "+invite.toXML());
         JingleIQ user1Accept = generateSessionAccept(invite, createTransportMap(invite));
 
         logger.info(nick + " accept: " + user1Accept.toXML());

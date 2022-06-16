@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2021-Present 8x8 Inc
+ * Copyright @ 2022 - present 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri
+package org.jitsi.jicofo
 
-import org.jitsi.jicofo.bridge.Bridge
-
-/**
- * A callback interface to use when a colibri request fails or succeeds.
- */
-interface ColibriRequestCallback {
-    /** A colibri request to a specific bridge failed. */
-    fun requestFailed(bridge: Bridge)
-    /** A colibri request to a specific bridge succeeded. */
-    fun requestSucceeded(bridge: Bridge)
-}
+enum class ReinviteMethod { RestartJingle, ReplaceTransport }

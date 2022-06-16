@@ -91,6 +91,10 @@ class ConferenceConfig private constructor() {
     fun getSourceSignalingDelayMs(conferenceSize: Int) =
         sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
 
+    val reinviteMethod: ReinviteMethod by config {
+        "jicofo.conference.reinvite-method".from(newConfig)
+    }
+
     /**
      * Whether to strip simulcast streams when signaling receivers. This option requires that jitsi-videobridge
      * uses the first SSRC in the SIM group as the target SSRC when rewriting streams, as this is the only SSRC

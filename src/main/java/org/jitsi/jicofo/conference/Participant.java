@@ -99,7 +99,8 @@ public class Participant
     /**
      * The list of XMPP features supported by this participant.
      */
-    private List<String> supportedFeatures = new ArrayList<>();
+    @NotNull
+    private final List<String> supportedFeatures;
 
     /**
      * The conference in which this participant participates.
@@ -125,13 +126,23 @@ public class Participant
      */
     public Participant(
             @NotNull ChatRoomMember roomMember,
+            @NotNull List<String> supportedFeatures,
             Logger parentLogger,
             JitsiMeetConferenceImpl conference)
     {
+        this.supportedFeatures = supportedFeatures;
         this.conference = conference;
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
+    }
+
+    public Participant(
+            @NotNull ChatRoomMember roomMember,
+            Logger parentLogger,
+            JitsiMeetConferenceImpl conference)
+    {
+        this(roomMember, DiscoveryUtil.getDefaultParticipantFeatureSet(), parentLogger, conference);
     }
 
     /**
@@ -139,7 +150,7 @@ public class Participant
      * with the specified channel allocator (if any).
      * @param inviteRunnable the channel allocator to set, or {@code null} to clear it.
      */
-    public void setInviteRunnable(Cancelable inviteRunnable)
+    void setInviteRunnable(Cancelable inviteRunnable)
     {
         synchronized (inviteRunnableSyncRoot)
         {
@@ -354,22 +365,6 @@ public class Participant
     public boolean hasSctpSupport()
     {
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_SCTP);
-    }
-
-    /**
-     * Sets the list of features supported by this participant.
-     *
-     * @param supportedFeatures the list of features to set.
-     * @see DiscoveryUtil for the list of predefined feature constants.
-     */
-    public void setSupportedFeatures(@NotNull List<String> supportedFeatures)
-            throws UnsupportedFeatureConfigurationException
-    {
-        this.supportedFeatures = supportedFeatures;
-        if (!hasBundleSupport())
-        {
-            throw new UnsupportedFeatureConfigurationException("Participant doesn't support bundle, which is required");
-        }
     }
 
     /**

@@ -25,6 +25,10 @@ class OctoConfig {
         "jicofo.octo.enabled".from(newConfig)
     }
 
+    val allowMixedVersions: Boolean by config {
+        "jicofo.octo.allow-mixed-versions".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = OctoConfig()

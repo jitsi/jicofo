@@ -88,29 +88,32 @@ class BridgeSelector @JvmOverloads constructor(
     @JvmOverloads
     @Synchronized
     fun addJvbAddress(bridgeJid: Jid, stats: ColibriStatsExtension? = null): Bridge = bridges[bridgeJid]?.let {
+        val wasShutingDown = it.isShuttingDown
         it.setStats(stats)
+        if (!wasShutingDown && it.isShuttingDown) {
+            logger.info("${it.jid} entered SHUTTING_DOWN")
+            eventEmitter.fireEvent { bridgeIsShuttingDown(it) }
+        }
         return it
     } ?: Bridge(bridgeJid, clock).also { newBridge ->
-        logger.info("Added new videobridge: $newBridge")
         if (stats != null) {
             newBridge.setStats(stats)
         }
+        logger.info("Added new videobridge: $newBridge")
         bridges[bridgeJid] = newBridge
         eventEmitter.fireEvent { bridgeAdded(newBridge) }
     }
 
     /**
-     * Removes Jitsi Videobridge XMPP address from the list videobridge
-     * instances available in the system .
+     * Removes a [Bridge] with a specific JID from the list of videobridge instances.
      *
-     * @param bridgeJid the JID of videobridge to be removed from this selector's
-     * set of videobridges.
+     * @param bridgeJid the JID of bridge to remove.
      */
     @Synchronized
     fun removeJvbAddress(bridgeJid: Jid) {
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
-            if (!it.isInGracefulShutdown) {
+            if (!it.isInGracefulShutdown && !it.isShuttingDown) {
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
@@ -181,7 +184,13 @@ class BridgeSelector @JvmOverloads constructor(
             return null
         }
 
-        if (v != null) {
+        candidateBridges = candidateBridges.filter { !it.isShuttingDown }.toList()
+        if (candidateBridges.isEmpty()) {
+            logger.warn("All operational bridges are SHUTTING_DOWN")
+            return null
+        }
+
+        if (v != null && !OctoConfig.config.allowMixedVersions) {
             candidateBridges = candidateBridges.filter { it.version == v }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with the required version: $v")
@@ -236,5 +245,6 @@ class BridgeSelector @JvmOverloads constructor(
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)
         fun bridgeAdded(bridge: Bridge)
+        fun bridgeIsShuttingDown(bridge: Bridge) {}
     }
 }

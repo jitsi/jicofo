@@ -210,7 +210,10 @@ open class JicofoServices {
         put("jigasi", xmppServices.jigasiStats)
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", AbstractOperationSetJingle.getStats())
-        healthChecker?.let { put("slow_health_check", it.totalSlowHealthChecks) }
+        healthChecker?.let {
+            put("slow_health_check", it.totalSlowHealthChecks)
+            put("healthy", it.result == null)
+        }
     }
 
     fun getDebugState(full: Boolean) = OrderedJsonObject().apply {

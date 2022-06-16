@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.rest;
+package org.jitsi.jicofo.auth.rest;
 
-import com.google.common.html.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.auth.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import javax.servlet.http.*;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.*;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -40,10 +38,9 @@ public class ShibbolethLogin
      *
      * @param request <tt>HttpServletRequest</tt> instance used to obtain
      *                Shibboleth attributes.
-     * @param name the name of Shibboleth attribute to get.
-     *
+     * @param name    the name of Shibboleth attribute to get.
      * @return Shibboleth attribute value retrieved from the request or
-     *         <tt>null</tt> if there is no value for given <tt>name</tt>.
+     * <tt>null</tt> if there is no value for given <tt>name</tt>.
      */
     private static String getShibAttr(HttpServletRequest request, String name)
     {
@@ -58,7 +55,7 @@ public class ShibbolethLogin
     @NotNull
     private final ShibbolethAuthAuthority shibbolethAuthAuthority;
 
-    ShibbolethLogin(@NotNull ShibbolethAuthAuthority shibbolethAuthAuthority)
+    public ShibbolethLogin(@NotNull ShibbolethAuthAuthority shibbolethAuthAuthority)
     {
         this.shibbolethAuthAuthority = shibbolethAuthAuthority;
     }
@@ -126,7 +123,7 @@ public class ShibbolethLogin
         StringBuilder sb = new StringBuilder();
 
         sb.append("<html><head><head/><body>\n");
-        sb.append("<h1>Hello ").append(HtmlEscapers.htmlEscaper().escape(displayName)).append("!<h1/>\n");
+        sb.append("<h1>Hello!<h1/>\n");
         if (!close)
         {
             sb.append("<h2>You should be redirected back to the conference soon...<h2/>\n");
@@ -135,38 +132,38 @@ public class ShibbolethLogin
         // Store session-id script
         String script =
             "<script>\n" +
-                "(function() {\n" +
-                " var sessionId = '" + sessionId + "';\n" +
-                " localStorage.setItem('sessionId', sessionId);\n" +
-                " console.info('sessionID :' + sessionId);\n" +
-                " var displayName = '" + displayName + "';\n" +
-                " console.info('displayName :' + displayName);\n" +
-                " var settings = localStorage.getItem('features/base/settings');\n" +
-                " console.info('settings :' + settings);\n" +
-                " if (settings){\n" +
-                "     try {\n" +
-                "            var settingsObj = JSON.parse(settings);\n" +
-                "            if ( settingsObj && !settingsObj.displayName ) {\n" +
-                "                settingsObj.displayName = displayName;\n" +
-                "                localStorage.setItem('features/base/settings', JSON.stringify(settingsObj));\n" +
-                "         }\n" +
-                "     }\n" +
-                "   catch(e){\n" +
-                "     console.error('Unable to parse settings JSON');\n" +
-                "   }\n" +
-                " }\n" ;
+                    "(function() {\n" +
+                    " var sessionId = '" + sessionId + "';\n" +
+                    " localStorage.setItem('sessionId', sessionId);\n" +
+                    " console.info('sessionID :' + sessionId);\n" +
+                    " var displayName = '" + displayName + "';\n" +
+                    " console.info('displayName :' + displayName);\n" +
+                    " var settings = localStorage.getItem('features/base/settings');\n" +
+                    " console.info('settings :' + settings);\n" +
+                    " if (settings){\n" +
+                    "     try {\n" +
+                    "            var settingsObj = JSON.parse(settings);\n" +
+                    "            if ( settingsObj && !settingsObj.displayName ) {\n" +
+                    "                settingsObj.displayName = displayName;\n" +
+                    "                localStorage.setItem('features/base/settings', JSON.stringify(settingsObj));\n" +
+                    "         }\n" +
+                    "     }\n" +
+                    "   catch(e){\n" +
+                    "     console.error('Unable to parse settings JSON');\n" +
+                    "   }\n" +
+                    " }\n";
         if (close)
         {
             // Pass session id and close the popup
-            script += "var opener = window.opener;\n"+
-                    "if (opener) {\n"+
+            script += "var opener = window.opener;\n" +
+                    "if (opener) {\n" +
                     "   var res = opener.postMessage(" +
                     "      { sessionId: sessionId },\n" +
-                    "      window.opener.location.href);\n"+
+                    "      window.opener.location.href);\n" +
                     "   console.info('res: ', res);\n" +
-                    "   window.close();\n"+
+                    "   window.close();\n" +
                     "} else {\n" +
-                    "   console.error('No opener !');\n"+
+                    "   console.error('No opener !');\n" +
                     "}\n";
         }
         else
@@ -182,7 +179,6 @@ public class ShibbolethLogin
         return sb.toString();
     }
 }
-
 class BadRequestExceptionWithMessage extends BadRequestException
 {
     public BadRequestExceptionWithMessage(String message)
