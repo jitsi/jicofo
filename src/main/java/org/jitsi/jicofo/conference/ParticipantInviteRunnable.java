@@ -470,12 +470,15 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     {
         ConferenceSourceMap conferenceSources;
 
-        if (!participant.hasSsrcRewritingSupport()) {
+        if (!participant.hasSsrcRewritingSupport())
+        {
             // Take all sources from participants in the conference.
             conferenceSources = meetConference.getSources().copy();
-        } else {
+        }
+        else
+        {
             // Bridge will signal sources in this case.
-            conferenceSources = new ValidatingConferenceSourceMap();
+            conferenceSources = new ConferenceSourceMap();
         }
 
         // Add the bridge's feedback sources.
