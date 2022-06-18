@@ -19,6 +19,7 @@ import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.auth.*;
+import org.jitsi.jicofo.auth.rest.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.utils.version.*;
 

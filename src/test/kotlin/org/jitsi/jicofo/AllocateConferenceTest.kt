@@ -29,7 +29,7 @@ class AllocateConferenceTest : JicofoHarnessTest() {
     private val from = JidCreate.bareFrom("from@example.com")
     private val xmppConnection = MockXmppConnection(from)
 
-    override fun afterSpec(spec: Spec) = super.afterSpec(spec).also { xmppConnection.disconnect() }
+    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also { xmppConnection.disconnect() }
 
     init {
         context("Handling a ConferenceIQ") {

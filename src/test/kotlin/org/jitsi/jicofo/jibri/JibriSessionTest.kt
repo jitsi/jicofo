@@ -84,7 +84,7 @@ class JibriSessionTest : ShouldSpec({
         every { mockXmppConnection.sendIqAndGetResponse(capture(iqRequests)) } answers {
             // First return error
             IQ.createErrorResponse(arg(1), StanzaError.Condition.service_unavailable)
-        } andThen {
+        } andThenAnswer {
             // Then return a successful response
             JibriIq().apply {
                 status = JibriIq.Status.PENDING
@@ -127,7 +127,7 @@ class JibriSessionTest : ShouldSpec({
                 status = JibriIq.Status.OFF
                 failureReason = JibriIq.FailureReason.BUSY
             }
-        } andThen {
+        } andThenAnswer {
             JibriIq().apply {
                 type = IQ.Type.result
                 from = iq.captured.to

@@ -23,9 +23,9 @@ import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
 
-import javax.servlet.http.*;
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import jakarta.servlet.http.*;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.*;
 import java.time.*;
 import java.util.*;
 

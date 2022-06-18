@@ -152,6 +152,9 @@ class RegionBasedSelectionTest : ShouldSpec() {
                             bridges[EuCentral][Low] to maxBp
                         )
                     ) shouldBe bridges[UsEast][Low]
+                    context("Initial selection in the local region group, but not in the local region") {
+                        select(participantRegion = UsWest, conferenceBridges = emptyMap()) shouldBe bridges[UsEast][Low]
+                    }
                 }
             }
         }
@@ -161,6 +164,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
 private const val maxBp = 10
 const val maxBpConfig = "jicofo.bridge.max-bridge-participants=$maxBp"
 val regionGroupsConfig = """
+    jicofo.local-region = ${UsEast.region}
     jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
     jicofo.bridge.region-groups = [
        [ "${UsEast.region}", "${UsWest.region}" ],

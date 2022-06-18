@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference;
 
-import org.checkerframework.checker.nullness.qual.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
@@ -74,8 +73,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      */
     private final JitsiMeetConferenceImpl meetConference;
 
-    @NonNull private final ColibriRequestCallback colibriRequestCallback;
-    @NonNull private final ColibriSessionManager colibriSessionManager;
+    @NotNull private final ColibriSessionManager colibriSessionManager;
 
     /**
      * A flag which indicates whether channel allocation is canceled. Raising
@@ -116,23 +114,21 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     /**
      * Override super's AbstractParticipant
      */
-    @NonNull private final Participant participant;
+    @NotNull private final Participant participant;
 
     /**
      * {@inheritDoc}
      */
     public ParticipantInviteRunnable(
             JitsiMeetConferenceImpl meetConference,
-            @NonNull ColibriRequestCallback colibriRequestCallback,
-            @NonNull ColibriSessionManager colibriSessionManager,
-            @NonNull Participant participant,
+            @NotNull ColibriSessionManager colibriSessionManager,
+            @NotNull Participant participant,
             boolean startAudioMuted,
             boolean startVideoMuted,
             boolean reInvite,
             Logger parentLogger)
     {
         this.meetConference = meetConference;
-        this.colibriRequestCallback = colibriRequestCallback;
         this.colibriSessionManager = colibriSessionManager;
 
         boolean forceMuteAudio = false;
@@ -180,11 +176,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         finally
         {
-            if (canceled)
-            {
-                colibriSessionManager.removeParticipant(participant);
-            }
-
             participant.inviteRunnableCompleted(this);
         }
     }
@@ -218,61 +209,13 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         catch (BridgeSelectionFailedException e)
         {
-            // Can not find a bridge to use.
-            logger.error("Can not invite participant, no bridge available: " + participant.getChatMember().getName());
-
-            ChatRoom chatRoom = meetConference.getChatRoom();
-            if (chatRoom != null
-                    && !chatRoom.containsPresenceExtension(
-                    BridgeNotAvailablePacketExt.ELEMENT,
-                    BridgeNotAvailablePacketExt.NAMESPACE))
-            {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
-            }
-            return;
-        }
-        catch (ColibriConferenceDisposedException e)
-        {
-            logger.error("Canceling due to ", e);
+            logger.error("Can not invite participant, no bridge available.");
             cancel();
-            return;
-        }
-        catch (ColibriConferenceExpiredException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            if (e.getRestartConference())
-            {
-                colibriRequestCallback.requestFailed(e.getBridge());
-            }
-            return;
-        }
-        catch (BadColibriRequestException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            return;
-        }
-        catch (BridgeFailedException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            if (e.getRestartConference())
-            {
-                colibriRequestCallback.requestFailed(e.getBridge());
-            }
-            return;
-        }
-        catch (ColibriTimeoutException e)
-        {
-            logger.error("Canceling due to", e);
-            cancel();
-            colibriRequestCallback.requestFailed(e.getBridge());
             return;
         }
         catch (ColibriAllocationFailedException e)
         {
-            logger.error("Canceling due to unexpected exception", e);
+            logger.error("Failed to allocate colibri channels", e);
             cancel();
             return;
         }
@@ -296,6 +239,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to invite participant: ", e);
+            colibriSessionManager.removeParticipant(participant);
+            cancel();
         }
     }
 
@@ -325,10 +270,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private Offer createOffer()
         throws UnsupportedFeatureConfigurationException
     {
-        // Feature discovery
-        List<String> features = meetConference.getClientXmppProvider().discoverFeatures(participant.getMucJid());
-        participant.setSupportedFeatures(features);
-
         JitsiMeetConfig config = meetConference.getConfig();
 
         OfferOptions offerOptions = new OfferOptions();
@@ -432,7 +373,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
         if (initiateSession)
         {
-            logger.info("Sending session-initiate to: " + address);
+            logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
             ack = jingle.initiateSession(
                     address,
                     offer.getContents(),
@@ -443,7 +384,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else
         {
-            logger.info("Sending transport-replace to: " + address);
+            logger.info("Sending transport-replace to: " + address + " sources=" + offer.getSources());
             // will throw OperationFailedExc if XMPP connection is broken
             ack = jingle.replaceTransport(
                     jingleSession,
@@ -466,7 +407,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         return true;
     }
 
-    private @NonNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
+    private @NotNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
         ConferenceSourceMap conferenceSources;
 
@@ -490,7 +431,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         conferenceSources.stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
-        // Add sources advertised by the bridge.
 
         for (ContentPacketExtension cpe : offer.getContents())
         {
