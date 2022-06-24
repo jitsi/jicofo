@@ -146,7 +146,7 @@ fun Cascade.removeNode(
 }
 
 /** Validate a node, or throw IllegalStateException. */
-fun Cascade.validateNode(node: CascadeNode) {
+private fun Cascade.validateNode(node: CascadeNode) {
     node.links.entries.forEach { (key, link) ->
         check(key != node.relayId) {
             "$node has a link to itself"

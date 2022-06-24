@@ -1,5 +1,6 @@
 package org.jitsi.jicofo.cascade
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
@@ -49,6 +50,17 @@ class CascadeTest : ShouldSpec() {
             should("validate") {
                 cascade.validate()
             }
+            should("not call a callback when removing any node") {
+                nodes.forEach {
+                    var called = false
+                    cascade.removeNode(it) { _, _ ->
+                        called = true
+                        setOf()
+                    }
+                    called shouldBe false
+                }
+                cascade.validate()
+            }
         }
         context("creating a mesh with two nodes") {
             val cascade = TestCascade()
@@ -87,6 +99,31 @@ class CascadeTest : ShouldSpec() {
             should("validate") {
                 cascade.validate()
             }
+            should("not call a callback when removing a leaf node") {
+                for (i in 1 until numNodes) {
+                    var called = false
+                    cascade.removeNode(nodes[i]) { _, _ ->
+                        called = true
+                        setOf()
+                    }
+                    called shouldBe false
+                }
+                cascade.validate()
+            }
+            should("call the callback when removing the core node") {
+                var called = true
+                cascade.removeNode(nodes[0]) { _, _ ->
+                    called = true
+                    setOf()
+                }
+                called shouldBe true
+            }
+            should("fail validation if not repaired after removing the core node") {
+                cascade.removeNode(nodes[0]) { _, _ -> setOf() }
+                shouldThrow<IllegalStateException> {
+                    cascade.validate()
+                }
+            }
         }
 
         context("creating a star topology") {
@@ -110,6 +147,30 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate") {
                 cascade.validate()
+            }
+            should("not call a callback when removing a leaf node") {
+                for (i in 1 until numNodes) {
+                    var called = false
+                    cascade.removeNode(nodes[i]) { _, _ ->
+                        called = true
+                        setOf()
+                    }
+                    called shouldBe false
+                }
+            }
+            should("call the callback when removing the core node") {
+                var called = true
+                cascade.removeNode(nodes[0]) { _, _ ->
+                    called = true
+                    setOf()
+                }
+                called shouldBe true
+            }
+            should("fail validation if not repaired after removing the core node") {
+                cascade.removeNode(nodes[0]) { _, _ -> setOf() }
+                shouldThrow<IllegalStateException> {
+                    cascade.validate()
+                }
             }
         }
     }
