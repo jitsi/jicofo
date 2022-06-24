@@ -1,5 +1,6 @@
 package org.jitsi.jicofo.cascade
 
+import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
@@ -9,19 +10,21 @@ class TestCascade : Cascade {
 }
 
 class TestCascadeNode(override val relayId: String) : CascadeNode {
-    override val links = HashSet<CascadeLink>()
+    override val links = HashMap<String, CascadeLink>()
     override fun addLink(node: CascadeNode, meshId: String) {
-        links.add(TestCascadeLink(node.relayId, meshId))
+        links[node.relayId] = TestCascadeLink(node.relayId, meshId)
     }
 
-    override fun toString(): String = "$relayId: [${links.joinToString()}]"
+    override fun toString(): String = "$relayId: [${links.values.joinToString()}]"
 }
 
 class TestCascadeLink(override val relayId: String, override val meshId: String) : CascadeLink {
-    override fun toString(): String = "$meshId -> $relayId"
+    override fun toString(): String = "$meshId->$relayId"
 }
 
 class CascadeTest : ShouldSpec() {
+    override fun isolationMode() = IsolationMode.InstancePerLeaf
+
     private val numNodes = 5
     init {
         context("creating a cascade with a single mesh") {
@@ -36,12 +39,15 @@ class CascadeTest : ShouldSpec() {
 
                     nodes.forEach { other ->
                         if (other === node) {
-                            node.links.none { it.relayId == other.relayId } shouldBe true
+                            node.links.contains(other.relayId) shouldBe false
                         } else {
-                            node.links.count { it.relayId == other.relayId } shouldBe 1
+                            node.links[other.relayId]?.relayId shouldBe other.relayId
                         }
                     }
                 }
+            }
+            should("validate") {
+                cascade.validate()
             }
         }
         context("creating a mesh with two nodes") {
@@ -70,13 +76,16 @@ class CascadeTest : ShouldSpec() {
                     set.forEach { node ->
                         set.forEach { other ->
                             if (other === node) {
-                                node.links.none { it.relayId == other.relayId } shouldBe true
+                                node.links.contains(other.relayId) shouldBe false
                             } else {
-                                node.links.count { it.relayId == other.relayId } shouldBe 1
+                                node.links[other.relayId]?.relayId shouldBe other.relayId
                             }
                         }
                     }
                 }
+            }
+            should("validate") {
+                cascade.validate()
             }
         }
 
@@ -98,6 +107,9 @@ class CascadeTest : ShouldSpec() {
                 for (i in 1 until numNodes) {
                     nodes[i].links.size shouldBe 1
                 }
+            }
+            should("validate") {
+                cascade.validate()
             }
         }
     }
