@@ -178,6 +178,10 @@ fun Cascade.validateMesh(meshId: String) {
                 check(node.links.contains(other.relayId)) {
                     "$node has no link to $other in mesh $meshId"
                 }
+                val link = node.links[other.relayId]
+                check (link!!.meshId == meshId) {
+                    "link from $node to $other has meshId ${link.meshId}, not expected $meshId"
+                }
             }
         }
     }
