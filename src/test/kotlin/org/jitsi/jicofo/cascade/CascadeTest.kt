@@ -226,7 +226,8 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate when repaired correctly removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[2], "B"),
+                    setOf(
+                        Triple(nodes[1], nodes[2], "B"),
                         Triple(nodes[1], nodes[3], "C"),
                         Triple(nodes[1], nodes[4], "D")
                     )
