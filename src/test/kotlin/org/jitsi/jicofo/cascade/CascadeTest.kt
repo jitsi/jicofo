@@ -211,7 +211,7 @@ class CascadeTest : ShouldSpec() {
                 }
             }
             should("call the callback when removing the core node") {
-                var called = true
+                var called = false
                 cascade.removeNode(nodes[0]) { _, _ ->
                     called = true
                     setOf()
@@ -223,6 +223,15 @@ class CascadeTest : ShouldSpec() {
                 shouldThrow<IllegalStateException> {
                     cascade.validate()
                 }
+            }
+            should("validate when repaired correctly removing the core node") {
+                cascade.removeNode(nodes[0]) { _, _ ->
+                    setOf(Triple(nodes[1], nodes[2], "B"),
+                        Triple(nodes[1], nodes[3], "C"),
+                        Triple(nodes[1], nodes[4], "D")
+                    )
+                }
+                cascade.validate()
             }
         }
     }
