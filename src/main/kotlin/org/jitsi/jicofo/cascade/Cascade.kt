@@ -133,11 +133,10 @@ fun Cascade.removeNode(
     }
 
     val meshes = node.links.values.map { it.meshId }.toSet()
-    val remainingMeshes = meshes.filter { hasMesh(it) }.toSet()
 
-    if (remainingMeshes.size > 1) {
+    if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
-        val newLinks = repairFn(this, remainingMeshes)
+        val newLinks = repairFn(this, meshes)
         newLinks.forEach { (node, other, mesh) ->
             node.addBidirectionalLink(other, mesh)
         }
