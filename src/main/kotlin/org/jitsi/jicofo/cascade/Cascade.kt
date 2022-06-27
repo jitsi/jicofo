@@ -162,7 +162,7 @@ private fun Cascade.validateNode(node: CascadeNode) {
         checkNotNull(backLink) {
             "$node has link to $other, but $other has no link to $node"
         }
-        check (link.meshId == backLink.meshId) {
+        check(link.meshId == backLink.meshId) {
             "$node links to $other in mesh ${link.meshId}, but backlink has mesh ${backLink.meshId}"
         }
     }
@@ -179,7 +179,7 @@ fun Cascade.validateMesh(meshId: String) {
                     "$node has no link to $other in mesh $meshId"
                 }
                 val link = node.links[other.relayId]
-                check (link!!.meshId == meshId) {
+                check(link!!.meshId == meshId) {
                     "link from $node to $other has meshId ${link.meshId}, not expected $meshId"
                 }
             }
@@ -207,8 +207,7 @@ private fun Cascade.visitNode(
                 "$node has link to node ${it.relayId} not found in cascade"
             }
             visitNode(linkedNode, node, visitedNodes, validatedMeshes)
-        }
-        else {
+        } else {
             check(it.relayId == parent?.relayId || validatedMeshes.contains(it.meshId)) {
                 "Multiple paths found to ${bridges[it.relayId]}"
             }
@@ -220,7 +219,7 @@ private fun Cascade.visitNode(
 fun Cascade.validate() {
     if (bridges.isEmpty()) {
         /* Empty cascade is trivially valid */
-        return;
+        return
     }
     val firstNode = bridges.values.first()
 
@@ -229,7 +228,7 @@ fun Cascade.validate() {
 
     visitNode(firstNode, null, visitedNodes, validatedMeshes)
 
-    check (visitedNodes.size == bridges.size) {
+    check(visitedNodes.size == bridges.size) {
         val unvisitedNodes = bridges.keys.subtract(visitedNodes)
         "Nodes ${unvisitedNodes.joinToString()} not reachable from initial node $firstNode"
     }

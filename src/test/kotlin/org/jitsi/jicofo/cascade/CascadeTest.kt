@@ -126,21 +126,22 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate if repaired correctly (1) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3],"C"))
+                    setOf(Triple(nodes[1], nodes[3], "C"))
                 }
                 cascade.validate()
             }
             should("validate if repaired correctly (2) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3],"A"),
-                        Triple(nodes[2], nodes[3],"A")
+                    setOf(
+                        Triple(nodes[1], nodes[3], "A"),
+                        Triple(nodes[2], nodes[3], "A")
                     )
                 }
                 cascade.validate()
             }
             should("not validate if repaired incorrectly (1) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3],"A"))
+                    setOf(Triple(nodes[1], nodes[3], "A"))
                 }
                 shouldThrow<IllegalStateException> {
                     cascade.validate()
@@ -148,7 +149,8 @@ class CascadeTest : ShouldSpec() {
             }
             should("not validate if repaired incorrectly (2) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3],"C"),
+                    setOf(
+                        Triple(nodes[1], nodes[3], "C"),
                         Triple(nodes[2], nodes[4], "D")
                     )
                 }
@@ -156,7 +158,6 @@ class CascadeTest : ShouldSpec() {
                     cascade.validate()
                 }
             }
-
         }
 
         context("creating a star topology") {
