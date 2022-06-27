@@ -210,7 +210,7 @@ private fun Cascade.visitNode(
         }
         else {
             check(it.relayId == parent?.relayId || validatedMeshes.contains(it.meshId)) {
-                "Multiple paths found to ${it.relayId}"
+                "Multiple paths found to ${bridges[it.relayId]}"
             }
         }
     }
