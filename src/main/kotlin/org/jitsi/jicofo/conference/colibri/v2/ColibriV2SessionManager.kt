@@ -133,6 +133,7 @@ class ColibriV2SessionManager(
         session.expire()
         sessions.remove(session.bridge)
         participantsBySession.remove(session)
+        participants.forEach { remove(it) }
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
@@ -503,7 +504,7 @@ class ColibriV2SessionManager(
 
         removeParticipantInfosBySession(mapOf(sessionToRemove to participantsToRemove))
 
-        logger.info("Removed participants: $participantsToRemove")
+        logger.info("Removed participants: ${participantsToRemove.map { it.id }}")
         participantsToRemove.map { it.id }
     }
 
