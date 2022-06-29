@@ -24,7 +24,6 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
@@ -144,25 +143,11 @@ internal fun ParticipantInfo.toEndpoint(
     }
 }.build()
 
-/**
- * Sends an IQ and dispatches an IO thread to wait for a response and log any errors.
- * TODO: better error handling
- */
-internal fun AbstractXMPPConnection.sendIqAndLogResponse(iq: IQ, logger: Logger) {
+internal fun AbstractXMPPConnection.sendIqAndHandleResponseAsync(iq: IQ, block: (IQ?) -> Unit) {
     val stanzaCollector = createStanzaCollectorAndSend(iq)
     TaskPools.ioPool.submit {
         try {
-            when (val response: IQ? = stanzaCollector.nextResult()) {
-                null -> {
-                    logger.error("Request to ${iq.to} timed out")
-                    logger.debug { "Request timed out: ${iq.toXML()}" }
-                }
-                // For colibri2 all success responses should be conference-modified.
-                !is ConferenceModifiedIQ -> {
-                    logger.error("Received an unexpected colibri2 response: ${response.toXML()}")
-                    logger.debug { "The request was: ${iq.toXML()}" }
-                }
-            }
+            block(stanzaCollector.nextResult())
         } finally {
             stanzaCollector.cancel()
         }

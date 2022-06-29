@@ -133,6 +133,7 @@ class ColibriV2SessionManager(
         session.expire()
         sessions.remove(session.bridge)
         participantsBySession.remove(session)
+        participants.forEach { remove(it) }
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
@@ -454,6 +455,15 @@ class ColibriV2SessionManager(
         )
     }
 
+    internal fun sessionFailed(session: Colibri2Session) = synchronized(syncRoot) {
+        // Make sure the same instance is still in use. Especially with long timeouts (15s) it's possible that it's
+        // already been removed
+        if (sessions.values.contains(session)) {
+            val removedParticipants = removeSession(session)
+            eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
+        }
+    }
+
     override fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,
@@ -494,7 +504,7 @@ class ColibriV2SessionManager(
 
         removeParticipantInfosBySession(mapOf(sessionToRemove to participantsToRemove))
 
-        logger.info("Removed participants: $participantsToRemove")
+        logger.info("Removed participants: ${participantsToRemove.map { it.id }}")
         participantsToRemove.map { it.id }
     }
 
