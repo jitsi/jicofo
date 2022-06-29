@@ -24,7 +24,6 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ

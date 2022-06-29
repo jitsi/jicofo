@@ -288,10 +288,10 @@ internal class Colibri2Session(
      * failure.
      */
     private fun sendRequest(iq: IQ, name: String) {
-        logger.debug { "Sending $name request: ${iq.toXML()}"}
+        logger.debug { "Sending $name request: ${iq.toXML()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) {
             when (it) {
-                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}"}
+                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}" }
                 null -> logger.info("$name request timed out. Ignoring.")
                 else -> {
                     logger.error("Received error response for $name, session failed: ${it.toXML()}")
