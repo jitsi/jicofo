@@ -454,6 +454,15 @@ class ColibriV2SessionManager(
         )
     }
 
+    internal fun sessionFailed(session: Colibri2Session) = synchronized(syncRoot) {
+        // Make sure the same instance is still in use. Especially with long timeouts (15s) it's possible that it's
+        // already been removed
+        if (sessions.values.contains(session)) {
+            val removedParticipants = removeSession(session)
+            eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
+        }
+    }
+
     override fun updateParticipant(
         participant: Participant,
         transport: IceUdpTransportPacketExtension?,

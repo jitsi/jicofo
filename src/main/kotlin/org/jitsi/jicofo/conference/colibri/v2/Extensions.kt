@@ -168,3 +168,14 @@ internal fun AbstractXMPPConnection.sendIqAndLogResponse(iq: IQ, logger: Logger)
         }
     }
 }
+
+internal fun AbstractXMPPConnection.sendIqAndHandleResponseAsync(iq: IQ, block: (IQ?) -> Unit) {
+    val stanzaCollector = createStanzaCollectorAndSend(iq)
+    TaskPools.ioPool.submit {
+        try {
+            block(stanzaCollector.nextResult())
+        } finally {
+            stanzaCollector.cancel()
+        }
+    }
+}
