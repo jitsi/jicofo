@@ -294,7 +294,7 @@ internal class Colibri2Session(
                 is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}"}
                 null -> logger.info("$name request timed out. Ignoring.")
                 else -> {
-                    logger.error("Received error response for $name, session failed.")
+                    logger.error("Received error response for $name, session failed: ${it.toXML()}")
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                 }
             }
