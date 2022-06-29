@@ -147,8 +147,6 @@ internal class Colibri2Session(
         }
 
         request.addEndpoint(endpoint.build())
-        logger.trace { "Sending endpoint update: ${request.build().toXML()}" }
-
         sendRequest(request.build(), "updateParticipant")
     }
 
@@ -184,7 +182,6 @@ internal class Colibri2Session(
         participantsToExpire.forEach { request.addExpire(it.id) }
 
         logger.debug { "Expiring endpoint: ${participantsToExpire.map { it.id }}" }
-        logger.trace { "Expiring endpoints: ${request.build().toXML()}" }
         sendRequest(request.build(), "expire(participantsToExpire)")
     }
 
@@ -283,7 +280,6 @@ internal class Colibri2Session(
 
         relayIds.forEach { relays.remove(it) }
 
-        logger.trace("Expiring relays $relayIds: ${request.build().toXML()}")
         sendRequest(request.build(), "expireRelays")
     }
 
@@ -292,9 +288,10 @@ internal class Colibri2Session(
      * failure.
      */
     private fun sendRequest(iq: IQ, name: String) {
+        logger.debug { "Sending $name request: ${iq.toXML()}"}
         xmppConnection.sendIqAndHandleResponseAsync(iq) {
             when (it) {
-                is ConferenceModifiedIQ -> Unit
+                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}"}
                 null -> logger.info("$name request timed out. Ignoring.")
                 else -> {
                     logger.error("Received error response for $name, session failed.")
@@ -408,7 +405,6 @@ internal class Colibri2Session(
             relay.setTransport(Transport.getBuilder().apply { setIceUdpExtension(transport) }.build())
             request.addRelay(relay.build())
 
-            logger.debug { "Setting transport: ${request.build().toXML()}" }
             sendRequest(request.build(), "Relay.setTransport")
         }
 
@@ -430,8 +426,6 @@ internal class Colibri2Session(
             endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false))
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
-            logger.debug { "${if (create) "Creating" else "Updating"} endpoint ${participant.id}" }
-            logger.trace { "Sending ${request.build().toXML()}" }
             sendRequest(request.build(), "Relay.updateParticipant")
         }
 
@@ -446,8 +440,6 @@ internal class Colibri2Session(
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
 
-            logger.debug { "Expiring ${participants.map { it.id }}" }
-            logger.trace { "Sending ${request.build().toXML()}" }
             sendRequest(request.build(), "Relay.expireParticipants")
         }
 
