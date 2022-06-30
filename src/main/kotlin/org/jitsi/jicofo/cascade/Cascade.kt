@@ -144,6 +144,23 @@ fun Cascade.removeNode(
     }
 }
 
+/** Return a set of all nodes "behind" a given node link. */
+/* TODO: would this be better as an iterator? */
+fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode): Set<CascadeNode> {
+    val link = requireNotNull(from.links[toward.relayId]) {
+        "$from does not have a link to $toward"
+    }
+    val set = mutableSetOf(toward)
+    toward.links.values.forEach {
+        if (it.relayId == from.relayId || it.meshId == link.meshId) {
+            return@forEach
+        }
+        val next = checkNotNull(bridges[it.relayId])
+        set.addAll(getNodesBehind(toward, next))
+    }
+    return set
+}
+
 /** Validate a node, or throw IllegalStateException. */
 private fun Cascade.validateNode(node: CascadeNode) {
     node.links.entries.forEach { (key, link) ->
@@ -186,7 +203,7 @@ fun Cascade.validateMesh(meshId: String) {
     }
 }
 
-private fun Cascade.visitNode(
+private fun Cascade.visitNodeForValidation(
     node: CascadeNode,
     parent: CascadeNode?,
     visitedNodes: MutableSet<String>,
@@ -205,7 +222,7 @@ private fun Cascade.visitNode(
             checkNotNull(linkedNode) {
                 "$node has link to node ${it.relayId} not found in cascade"
             }
-            visitNode(linkedNode, node, visitedNodes, validatedMeshes)
+            visitNodeForValidation(linkedNode, node, visitedNodes, validatedMeshes)
         } else {
             check(it.relayId == parent?.relayId || validatedMeshes.contains(it.meshId)) {
                 "Multiple paths found to ${bridges[it.relayId]}"
@@ -225,7 +242,7 @@ fun Cascade.validate() {
     val visitedNodes = HashSet<String>()
     val validatedMeshes = HashSet<String>()
 
-    visitNode(firstNode, null, visitedNodes, validatedMeshes)
+    visitNodeForValidation(firstNode, null, visitedNodes, validatedMeshes)
 
     check(visitedNodes.size == bridges.size) {
         val unvisitedNodes = bridges.keys.subtract(visitedNodes)

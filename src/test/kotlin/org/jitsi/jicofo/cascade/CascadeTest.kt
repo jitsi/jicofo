@@ -68,6 +68,15 @@ class CascadeTest : ShouldSpec() {
             should("validate") {
                 cascade.validate()
             }
+            should("enumerate only one node behind each link") {
+                nodes.forEach { node ->
+                    nodes.forEach { other ->
+                        if (node != other) {
+                            cascade.getNodesBehind(node, other).shouldContainExactly(other)
+                        }
+                    }
+                }
+            }
             should("not call a callback when removing any node") {
                 nodes.forEach {
                     var called = false
@@ -80,7 +89,7 @@ class CascadeTest : ShouldSpec() {
                 cascade.validate()
             }
         }
-        context("creating a mesh with two nodes") {
+        context("creating a cascade with two meshes") {
             val cascade = TestCascade()
             val nodes = Array(numNodes) { i -> TestCascadeNode(i.toString()) }
             cascade.addNodeToMesh(nodes[0], "A")
@@ -116,6 +125,17 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate") {
                 cascade.validate()
+            }
+            should("enumerate only one node behind each leaf node from the core node") {
+                for (i in 1 until numNodes) {
+                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactly(nodes[i])
+                }
+            }
+            should("enumerate the nodes of the far mesh behind the core node from each leaf node") {
+                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactly(nodes[0], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactly(nodes[0], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2])
+                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
@@ -199,6 +219,17 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate") {
                 cascade.validate()
+            }
+            should("enumerate only one node behind each leaf node from the core node") {
+                for (i in 1 until numNodes) {
+                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactly(nodes[i])
+                }
+            }
+            should("enumerate all the other nodes behind the core node from each leaf node") {
+                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactly(nodes[0], nodes[2], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2], nodes[4])
+                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2], nodes[3])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
