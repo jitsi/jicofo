@@ -216,7 +216,10 @@ class BridgeSelector @JvmOverloads constructor(
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
-        )
+        ).also {
+            // The bridge was selected for an endpoint, increment its counter.
+            it?.endpointAdded()
+        }
     }
 
     val stats: JSONObject
