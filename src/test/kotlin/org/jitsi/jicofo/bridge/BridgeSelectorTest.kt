@@ -21,10 +21,12 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.util.context
 import org.jitsi.metaconfig.MetaconfigSettings
 import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.ms
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeSelectorTest : ShouldSpec() {
@@ -36,6 +38,15 @@ class BridgeSelectorTest : ShouldSpec() {
         val jid1 = JidCreate.from("jvb1.example.com")
         val jid2 = JidCreate.from("jvb2@example.com")
         val jid3 = JidCreate.from("jvb3@example.com/goldengate")
+
+        context("Stress from new endpoints") {
+            val bridgeSelector = BridgeSelector(clock)
+            val bridge = bridgeSelector.addJvbAddress(jid1).apply { setStats() }
+            bridge.stress shouldBe 0
+            bridgeSelector.selectBridge()
+            // The stress should increase because it was recently selected.
+            bridge.stress shouldNotBe 0
+        }
 
         context("Selection based on operational status") {
             val bridgeSelector = BridgeSelector(clock)
@@ -96,6 +107,8 @@ class BridgeSelectorTest : ShouldSpec() {
             jvb1.setStats(stress = .01)
             jvb2.setStats(stress = 0.0)
             jvb3.setStats(stress = .01)
+            // Reset recently added endpoints (100ms needed because of the bucket size).
+            clock.elapse(BridgeConfig.config.participantRampupInterval + 100.ms)
             bridgeSelector.selectBridge() shouldBe jvb2
         }
         context(config = regionBasedConfig, name = "Mixing versions") {
