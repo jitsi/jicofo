@@ -246,6 +246,11 @@ public class Participant
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_JSON_SOURCES);
     }
 
+    public boolean supportsReceivingMultipleVideoStreams()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_RECEIVE_MULTIPLE_STREAMS);
+    }
+
     /**
      * Returns <tt>true</tt> if this participant supports 'lip-sync' or
      * <tt>false</tt> otherwise.
