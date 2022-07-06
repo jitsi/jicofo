@@ -18,6 +18,7 @@
 
 package org.jitsi.jicofo.cascade
 
+import kotlin.collections.HashSet
 import kotlin.streams.toList
 
 /**
@@ -117,7 +118,7 @@ fun Cascade.removeNode(
     }
     bridges.remove(node.relayId)
 
-    node.links.entries.forEach { (key, value) ->
+    node.links.keys.forEach { key ->
         val other = bridges[key]
         checkNotNull(other) {
             "Cascade does not contain node for $key"
@@ -147,18 +148,23 @@ fun Cascade.removeNode(
 /** Return a set of all nodes "behind" a given node link. */
 /* TODO: would this be better as an iterator? */
 fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode): Set<CascadeNode> {
+    val set = LinkedHashSet<CascadeNode>()
+    getNodesBehind(from, toward, set)
+    return set
+}
+
+private fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode, nodes: MutableSet<CascadeNode>) {
     val link = requireNotNull(from.links[toward.relayId]) {
         "$from does not have a link to $toward"
     }
-    val set = mutableSetOf(toward)
+    nodes.add(toward)
     toward.links.values.forEach {
         if (it.relayId == from.relayId || it.meshId == link.meshId) {
             return@forEach
         }
         val next = checkNotNull(bridges[it.relayId])
-        set.addAll(getNodesBehind(toward, next))
+        getNodesBehind(toward, next, nodes)
     }
-    return set
 }
 
 /** Validate a node, or throw IllegalStateException. */
