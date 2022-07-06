@@ -81,16 +81,6 @@ public class DiscoveryUtil
      */
     public final static String FEATURE_JSON_SOURCES = "http://jitsi.org/json-encoded-sources";
 
-    /**
-     * RTCP mux feature name.
-     */
-    public final static String FEATURE_RTCP_MUX = "urn:ietf:rfc:5761";
-
-    /**
-     * RTP bundle feature name.
-     */
-    public final static String FEATURE_RTP_BUNDLE = "urn:ietf:rfc:5888";
-
     public final static String FEATURE_OPUS_RED = "http://jitsi.org/opus-red";
 
     /**
@@ -109,9 +99,7 @@ public class DiscoveryUtil
     private static final List<String> defaultFeatures = List.of(
             FEATURE_AUDIO,
             FEATURE_VIDEO,
-            FEATURE_SCTP,
-            FEATURE_RTCP_MUX,
-            FEATURE_RTP_BUNDLE);
+            FEATURE_SCTP);
 
     /**
      * Returns default participant feature set(all features).
