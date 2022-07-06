@@ -53,7 +53,8 @@ class Bridge @JvmOverloads internal constructor(
      */
     private val newEndpointsRate = RateTracker(
         BridgeConfig.config.participantRampupInterval(),
-        Duration.ofMillis(100)
+        Duration.ofMillis(100),
+        clock
     )
 
     /**

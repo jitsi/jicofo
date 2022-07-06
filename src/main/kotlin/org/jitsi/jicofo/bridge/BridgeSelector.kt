@@ -114,6 +114,7 @@ class BridgeSelector @JvmOverloads constructor(
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
             if (!it.isInGracefulShutdown && !it.isShuttingDown) {
+                logger.warn("Lost a bridge: $bridgeJid")
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
@@ -216,7 +217,10 @@ class BridgeSelector @JvmOverloads constructor(
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
-        )
+        ).also {
+            // The bridge was selected for an endpoint, increment its counter.
+            it?.endpointAdded()
+        }
     }
 
     val stats: JSONObject
