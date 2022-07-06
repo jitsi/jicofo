@@ -22,6 +22,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
 class TestCascade : Cascade {
@@ -72,7 +73,7 @@ class CascadeTest : ShouldSpec() {
                 nodes.forEach { node ->
                     nodes.forEach { other ->
                         if (node != other) {
-                            cascade.getNodesBehind(node, other).shouldContainExactly(other)
+                            cascade.getNodesBehind(node, other).shouldContainExactlyInAnyOrder(other)
                         }
                     }
                 }
@@ -128,14 +129,14 @@ class CascadeTest : ShouldSpec() {
             }
             should("enumerate only one node behind each leaf node from the core node") {
                 for (i in 1 until numNodes) {
-                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactly(nodes[i])
+                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactlyInAnyOrder(nodes[i])
                 }
             }
             should("enumerate the nodes of the far mesh behind the core node from each leaf node") {
-                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactly(nodes[0], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactly(nodes[0], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2])
-                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2])
+                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
+                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
@@ -222,14 +223,14 @@ class CascadeTest : ShouldSpec() {
             }
             should("enumerate only one node behind each leaf node from the core node") {
                 for (i in 1 until numNodes) {
-                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactly(nodes[i])
+                    cascade.getNodesBehind(nodes[0], nodes[i]).shouldContainExactlyInAnyOrder(nodes[i])
                 }
             }
             should("enumerate all the other nodes behind the core node from each leaf node") {
-                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactly(nodes[0], nodes[2], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2], nodes[4])
-                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactly(nodes[0], nodes[1], nodes[2], nodes[3])
+                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[2], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[4])
+                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[3])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {

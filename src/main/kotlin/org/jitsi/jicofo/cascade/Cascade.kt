@@ -148,7 +148,7 @@ fun Cascade.removeNode(
 /** Return a set of all nodes "behind" a given node link. */
 /* TODO: would this be better as an iterator? */
 fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode): Set<CascadeNode> {
-    val set = LinkedHashSet<CascadeNode>()
+    val set = HashSet<CascadeNode>()
     getNodesBehind(from, toward, set)
     return set
 }
