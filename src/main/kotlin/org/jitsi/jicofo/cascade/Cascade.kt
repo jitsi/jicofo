@@ -42,7 +42,7 @@ interface CascadeNode {
  */
 interface CascadeLink {
     val relayId: String
-    val meshId: String
+    val meshId: String?
 }
 
 fun Cascade.containsNode(node: CascadeNode) =
@@ -51,7 +51,7 @@ fun Cascade.containsNode(node: CascadeNode) =
 fun Cascade.hasMesh(meshId: String): Boolean =
     bridges.values.stream().anyMatch { node -> node.links.values.any { it.meshId == meshId } }
 
-fun Cascade.getMeshNodes(meshId: String): List<CascadeNode> =
+fun Cascade.getMeshNodes(meshId: String?): List<CascadeNode> =
     bridges.values.stream().filter { node -> node.links.values.any { it.meshId == meshId } }.toList()
 
 fun CascadeNode.addBidirectionalLink(otherNode: CascadeNode, meshId: String) {
@@ -108,7 +108,7 @@ fun Cascade.addMesh(existingNode: CascadeNode, newNode: CascadeNode, meshId: Str
 
 fun Cascade.removeNode(
     node: CascadeNode,
-    repairFn: (Cascade, Set<String>) -> Set<Triple<CascadeNode, CascadeNode, String>>
+    repairFn: (Cascade, Set<String?>) -> Set<Triple<CascadeNode, CascadeNode, String>>
 ) {
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */
@@ -191,7 +191,7 @@ private fun Cascade.validateNode(node: CascadeNode) {
 }
 
 /** Validate a mesh, or throw IllegalStateException. */
-fun Cascade.validateMesh(meshId: String) {
+fun Cascade.validateMesh(meshId: String?) {
     val meshNodes = getMeshNodes(meshId)
 
     meshNodes.forEach { node ->
@@ -213,7 +213,7 @@ private fun Cascade.visitNodeForValidation(
     node: CascadeNode,
     parent: CascadeNode?,
     visitedNodes: MutableSet<String>,
-    validatedMeshes: MutableSet<String>
+    validatedMeshes: MutableSet<String?>
 ) {
     validateNode(node)
     visitedNodes.add(node.relayId)
@@ -246,7 +246,7 @@ fun Cascade.validate() {
     val firstNode = bridges.values.first()
 
     val visitedNodes = HashSet<String>()
-    val validatedMeshes = HashSet<String>()
+    val validatedMeshes = HashSet<String?>()
 
     visitNodeForValidation(firstNode, null, visitedNodes, validatedMeshes)
 
