@@ -19,11 +19,15 @@ package org.jitsi.jicofo.bridge
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
+import org.jitsi.config.withNewConfig
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeSelectionStrategyTest : ShouldSpec() {
     init {
-        val strategy: BridgeSelectionStrategy = RegionBasedBridgeSelectionStrategy()
+        val localRegion = "local-region"
+        val strategy: RegionBasedBridgeSelectionStrategy = createWithNewConfig("jicofo.local-region=$localRegion") {
+            RegionBasedBridgeSelectionStrategy()
+        }
 
         context("testRegionBasedSelection") {
             val region1 = "region1"
@@ -139,4 +143,12 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
 
 private fun createBridge(region: String, stress: Double) = Bridge(JidCreate.from(region)).apply {
     setStats(stress = stress, region = region)
+}
+
+private fun <T : Any> createWithNewConfig(config: String, block: () -> T): T {
+    lateinit var ret: T
+    withNewConfig(config) {
+        ret = block()
+    }
+    return ret
 }

@@ -67,6 +67,8 @@ public class RegionBasedBridgeSelectionStrategy
      */
     private final Map<String, Set<String>> regionGroups = new HashMap<>();
 
+    public final String localRegion = JicofoConfig.config.localRegion();
+
     /**
      * Default constructor.
      */
@@ -94,7 +96,6 @@ public class RegionBasedBridgeSelectionStrategy
             return null;
         }
 
-        String localRegion = JicofoConfig.config.localRegion();
         String r = participantRegion == null ? localRegion : participantRegion;
         if (localRegion != null)
         {
