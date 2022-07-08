@@ -31,11 +31,12 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
 
         context("testRegionBasedSelection") {
             val region1 = "region1"
-            val region2 = "region2"
+            val region2 = localRegion
             val region3 = "region3"
             val bridge1 = Bridge(JidCreate.from("bridge1")).apply { setStats(region = region1) }
             val bridge2 = Bridge(JidCreate.from("bridge2")).apply { setStats(region = region2) }
             val bridge3 = Bridge(JidCreate.from("bridge3")).apply { setStats(region = region3) }
+            val localBridge = bridge2
 
             val allBridges = listOf(bridge1, bridge2, bridge3)
             val conferenceBridges: MutableMap<Bridge, Int> = HashMap()
@@ -45,16 +46,14 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, region2, true) shouldBe bridge2
 
             // Or a bridge in the local region otherwise
-            // This is not actually implemented.
-            // val localBridge = bridge1
-            // strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe localBridge
-            // strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
+            //strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe localBridge
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
 
             conferenceBridges[bridge3] = 1
             strategy.select(allBridges, conferenceBridges, region3, true) shouldBe bridge3
             strategy.select(allBridges, conferenceBridges, region2, true) shouldBe bridge2
-            // A participant in an unknown region should be allocated on the existing conference bridge.
-            strategy.select(allBridges, conferenceBridges, null, true) shouldBe bridge3
+            // A participant in an unknown region should be allocated on a local bridge.
+            strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
 
             conferenceBridges[bridge2] = 1
             // A participant in an unknown region should be allocated on the least loaded (according to the order of
