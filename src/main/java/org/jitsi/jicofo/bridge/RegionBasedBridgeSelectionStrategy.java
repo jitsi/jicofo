@@ -99,19 +99,26 @@ public class RegionBasedBridgeSelectionStrategy
         String r = participantRegion == null ? localRegion : participantRegion;
         if (localRegion != null)
         {
+            Set<String> regionGroup = getRegionGroup(r);
+
             if (conferenceBridges.isEmpty() && !Objects.equals(r, JicofoConfig.config.localRegion()))
             {
                 // Selecting an initial bridge for a participant not in the local region. This is most likely because
                 // exactly one of the first two participants in the conference is not in the local region, and we're
                 // selecting for it first. I.e. there is another participant in the local region which will be
                 // subsequently invited.
-                Set<String> regionGroup = regionGroups.get(r);
-                if (regionGroup != null && regionGroup.contains(localRegion))
+                if (regionGroup.contains(localRegion))
                 {
                     // With the above assumption, there are two participants in the local region group. Therefore,
                     // they will use the same bridge. Prefer to use a bridge in the local region.
                     r = localRegion;
                 }
+            }
+
+            // If there are no bridges in the participant region or region group, select from the local region instead.
+            if (bridges.stream().noneMatch(b -> regionGroup.contains(b.getRegion())))
+            {
+                r = localRegion;
             }
         }
 

@@ -46,7 +46,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, region2, true) shouldBe bridge2
 
             // Or a bridge in the local region otherwise
-            //strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe localBridge
+            strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe localBridge
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
 
             conferenceBridges[bridge3] = 1
