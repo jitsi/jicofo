@@ -227,10 +227,14 @@ class CascadeTest : ShouldSpec() {
                 }
             }
             should("enumerate all the other nodes behind the core node from each leaf node") {
-                cascade.getNodesBehind(nodes[1], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[2], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[3], nodes[4])
-                cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[4])
-                cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[3])
+                cascade.getNodesBehind(nodes[1], nodes[0])
+                    .shouldContainExactlyInAnyOrder(nodes[0], nodes[2], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[2], nodes[0])
+                    .shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[3], nodes[4])
+                cascade.getNodesBehind(nodes[3], nodes[0])
+                    .shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[4])
+                cascade.getNodesBehind(nodes[4], nodes[0])
+                    .shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[3])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
