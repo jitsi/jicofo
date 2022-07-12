@@ -26,7 +26,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
 class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
-    override val bridges = HashMap<String, TestCascadeNode>()
+    override val bridges = HashMap<String?, TestCascadeNode>()
 }
 
 class TestCascadeNode(override val relayId: String) : CascadeNode<TestCascadeNode, TestCascadeLink> {

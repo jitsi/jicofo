@@ -25,14 +25,14 @@ import kotlin.streams.toList
  * A representation of a cascade of bridges.
  */
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
-    val bridges: MutableMap<String, N>
+    val bridges: MutableMap<String?, N>
 }
 
 /**
  * A representation of a single bridge in a cascade
  */
 interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
-    val relayId: String
+    val relayId: String?
     val relays: MutableMap<String, L>
     fun addLink(node: N, meshId: String)
 }
@@ -41,7 +41,7 @@ interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
  * A representation of a link between bridges in a cascade
  */
 interface CascadeLink {
-    val relayId: String
+    val relayId: String?
     val meshId: String?
 }
 
@@ -216,7 +216,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validateMesh(meshId: 
 private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.visitNodeForValidation(
     node: N,
     parent: N?,
-    visitedNodes: MutableSet<String>,
+    visitedNodes: MutableSet<String?>,
     validatedMeshes: MutableSet<String?>
 ) {
     validateNode(node)
@@ -249,7 +249,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
     }
     val firstNode = bridges.values.first()
 
-    val visitedNodes = HashSet<String>()
+    val visitedNodes = HashSet<String?>()
     val validatedMeshes = HashSet<String?>()
 
     visitNodeForValidation(firstNode, null, visitedNodes, validatedMeshes)

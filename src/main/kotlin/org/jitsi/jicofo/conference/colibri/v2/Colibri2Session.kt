@@ -19,6 +19,7 @@ package org.jitsi.jicofo.conference.colibri.v2
 
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.cascade.CascadeLink
+import org.jitsi.jicofo.cascade.CascadeNode
 import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
@@ -48,7 +49,7 @@ internal class Colibri2Session(
     val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
     parentLogger: Logger
-) {
+) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
@@ -56,10 +57,10 @@ internal class Colibri2Session(
     val id = UUID.randomUUID().toString()
     /**
      * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
-     * change in the context of a session. We maintain the invariant that whenever a a conference has multiple sessions,
+     * change in the context of a session. We maintain the invariant that whenever a conference has multiple sessions,
      * they all have non-null relay IDs.
      */
-    val relayId: String? = bridge.relayId
+    override val relayId: String? = bridge.relayId
 
     /**
      * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request
@@ -73,7 +74,11 @@ internal class Colibri2Session(
     internal var feedbackSources: ConferenceSourceMap = ConferenceSourceMap()
 
     /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
-    private val relays = mutableMapOf<String, Relay>()
+    override val relays = mutableMapOf<String, Relay>()
+
+    override fun addLink(node: Colibri2Session, meshId: String) {
+        TODO("Not yet implemented")
+    }
 
     /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
     internal fun sendAllocationRequest(
@@ -320,7 +325,7 @@ internal class Colibri2Session(
     /**
      * Represents a colibri2 relay connection to another bridge.
      */
-    private inner class Relay(
+    internal inner class Relay(
         /** The relayId of the remote bridge. */
         override val relayId: String,
         /**
