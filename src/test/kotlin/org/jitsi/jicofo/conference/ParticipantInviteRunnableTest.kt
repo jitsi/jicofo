@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference
 
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
@@ -50,14 +51,16 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 )
             )
         )
+        val jid1 = JidCreate.entityFullFrom("conference@example.com/p1")
+        val jid2 = JidCreate.entityFullFrom("conference@example.com/p2")
         val conferenceSources = ConferenceSourceMap(
-            JidCreate.entityFullFrom("conference@example.com/p1") to EndpointSourceSet(
+            jid1 to EndpointSourceSet(
                 setOf(
                     Source(1L, MediaType.AUDIO, "audio-p1"),
                     Source(2L, MediaType.VIDEO, "video-p1"),
                 )
             ),
-            JidCreate.entityFullFrom("conference@example.com/p2") to EndpointSourceSet(
+            jid2 to EndpointSourceSet(
                 setOf(
                     Source(11L, MediaType.AUDIO, "audio-p2"),
                     Source(12L, MediaType.VIDEO, "video-p2"),
@@ -144,16 +147,25 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 }
 
                 sourcesContentsSlot.isCaptured shouldBe true
-                sourcesContentsSlot.captured.values.apply {
+                sourcesContentsSlot.captured.apply {
                     should("Have some audio sources") {
-                        any { it.hasAudio } shouldBe true
+                        values.all { it.hasAudio } shouldBe true
                     }
                     should("Have video sources iff video is supported") {
-                        any { it.hasVideo } shouldBe supportsVideo
+                        values.all { it.hasVideo } shouldBe supportsVideo
                     }
-                    should("Have SSRC groups iff video is supported") {
-                        // TODO: check if simulcast is properly stripped?
-                        any { it.ssrcGroups.isNotEmpty() } shouldBe supportsVideo
+
+                    // p1 has no groups
+                    this[jid1]!!.ssrcGroups.shouldBeEmpty()
+
+                    // p2 has simulcast. It should be stripped, but RTX retained.
+                    val p2ssrcGroups = this[jid2]!!.ssrcGroups
+                    if (!supportsVideo) {
+                        p2ssrcGroups.shouldBeEmpty()
+                    } else {
+                        println("XXX p2ssrcGroups=$p2ssrcGroups")
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Sim } shouldBe false
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Fid } shouldBe true
                     }
                 }
             }
