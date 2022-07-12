@@ -24,17 +24,17 @@ import kotlin.streams.toList
 /**
  * A representation of a cascade of bridges.
  */
-interface Cascade {
-    val bridges: MutableMap<String, CascadeNode>
+interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
+    val bridges: MutableMap<String, N>
 }
 
 /**
  * A representation of a single bridge in a cascade
  */
-interface CascadeNode {
+interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
     val relayId: String
-    val relays: MutableMap<String, CascadeLink>
-    fun addLink(node: CascadeNode, meshId: String)
+    val relays: MutableMap<String, L>
+    fun addLink(node: N, meshId: String)
 }
 
 /**
@@ -45,16 +45,16 @@ interface CascadeLink {
     val meshId: String?
 }
 
-fun Cascade.containsNode(node: CascadeNode) =
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
     bridges[node.relayId] === node
 
-fun Cascade.hasMesh(meshId: String): Boolean =
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String): Boolean =
     bridges.values.stream().anyMatch { node -> node.relays.values.any { it.meshId == meshId } }
 
-fun Cascade.getMeshNodes(meshId: String?): List<CascadeNode> =
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
     bridges.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
 
-fun CascadeNode.addBidirectionalLink(otherNode: CascadeNode, meshId: String) {
+fun <N : CascadeNode<N, L>, L : CascadeLink> N.addBidirectionalLink(otherNode: N, meshId: String) {
     require(!this.relays.contains(otherNode.relayId)) {
         "$this already has a link to $otherNode"
     }
@@ -65,7 +65,7 @@ fun CascadeNode.addBidirectionalLink(otherNode: CascadeNode, meshId: String) {
     this.addLink(otherNode, meshId)
 }
 
-fun Cascade.addNodeToMesh(newNode: CascadeNode, meshId: String) {
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode: N, meshId: String) {
     require(!containsNode(newNode)) {
         "Cascade $this already contains node $newNode"
     }
@@ -89,7 +89,7 @@ fun Cascade.addNodeToMesh(newNode: CascadeNode, meshId: String) {
     bridges[newNode.relayId] = newNode
 }
 
-fun Cascade.addMesh(existingNode: CascadeNode, newNode: CascadeNode, meshId: String) {
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode: N, newNode: N, meshId: String) {
     require(containsNode(existingNode)) {
         "Cascade $this does not contain node $existingNode"
     }
@@ -106,9 +106,9 @@ fun Cascade.addMesh(existingNode: CascadeNode, newNode: CascadeNode, meshId: Str
     bridges[newNode.relayId] = newNode
 }
 
-fun Cascade.removeNode(
-    node: CascadeNode,
-    repairFn: (Cascade, Set<String?>) -> Set<Triple<CascadeNode, CascadeNode, String>>
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
+    node: N,
+    repairFn: (Cascade<N, L>, Set<String?>) -> Set<Triple<N, N, String>>
 ) {
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */
@@ -147,13 +147,17 @@ fun Cascade.removeNode(
 
 /** Return a set of all nodes "behind" a given node link. */
 /* TODO: would this be better as an iterator? */
-fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode): Set<CascadeNode> {
-    val set = HashSet<CascadeNode>()
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(from: N, toward: N): Set<N> {
+    val set = HashSet<N>()
     getNodesBehind(from, toward, set)
     return set
 }
 
-private fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode, nodes: MutableSet<CascadeNode>) {
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(
+    from: N,
+    toward: N,
+    nodes: MutableSet<N>
+) {
     val link = requireNotNull(from.relays[toward.relayId]) {
         "$from does not have a link to $toward"
     }
@@ -168,7 +172,7 @@ private fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode, nodes
 }
 
 /** Validate a node, or throw IllegalStateException. */
-private fun Cascade.validateNode(node: CascadeNode) {
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validateNode(node: N) {
     node.relays.entries.forEach { (key, link) ->
         check(key != node.relayId) {
             "$node has a link to itself"
@@ -191,7 +195,7 @@ private fun Cascade.validateNode(node: CascadeNode) {
 }
 
 /** Validate a mesh, or throw IllegalStateException. */
-fun Cascade.validateMesh(meshId: String?) {
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validateMesh(meshId: String?) {
     val meshNodes = getMeshNodes(meshId)
 
     meshNodes.forEach { node ->
@@ -209,9 +213,9 @@ fun Cascade.validateMesh(meshId: String?) {
     }
 }
 
-private fun Cascade.visitNodeForValidation(
-    node: CascadeNode,
-    parent: CascadeNode?,
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.visitNodeForValidation(
+    node: N,
+    parent: N?,
     visitedNodes: MutableSet<String>,
     validatedMeshes: MutableSet<String?>
 ) {
@@ -238,7 +242,7 @@ private fun Cascade.visitNodeForValidation(
 }
 
 /** Validate a cascade, or throw IllegalStateException */
-fun Cascade.validate() {
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
     if (bridges.isEmpty()) {
         /* Empty cascade is trivially valid */
         return

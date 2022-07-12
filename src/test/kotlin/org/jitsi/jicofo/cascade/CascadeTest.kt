@@ -25,13 +25,13 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
-class TestCascade : Cascade {
-    override val bridges = HashMap<String, CascadeNode>()
+class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
+    override val bridges = HashMap<String, TestCascadeNode>()
 }
 
-class TestCascadeNode(override val relayId: String) : CascadeNode {
-    override val relays = HashMap<String, CascadeLink>()
-    override fun addLink(node: CascadeNode, meshId: String) {
+class TestCascadeNode(override val relayId: String) : CascadeNode<TestCascadeNode, TestCascadeLink> {
+    override val relays = HashMap<String, TestCascadeLink>()
+    override fun addLink(node: TestCascadeNode, meshId: String) {
         relays[node.relayId] = TestCascadeLink(node.relayId, meshId)
     }
 
