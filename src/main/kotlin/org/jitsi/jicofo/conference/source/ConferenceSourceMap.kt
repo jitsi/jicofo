@@ -121,6 +121,9 @@ open class ConferenceSourceMap(
         }
     }
 
+    operator fun plus(other: ConferenceSourceMap) = copy().apply { add(other) }
+    operator fun minus(other: ConferenceSourceMap) = copy().apply { remove(other) }
+
     /**
      * Creates a list of [ContentPacketExtension]s that describe the sources in this [ConferenceSourceMap].
      */

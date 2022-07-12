@@ -58,9 +58,9 @@ public class Participant
     }
 
     /**
-     * List of remote source addition or removal operations that have not yet been signaled to this participant.
+     * The layer which keeps track of which sources have been signaled to this participant.
      */
-    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
+    private final SourceSignaling sourceSignaling = new SourceSignaling();
 
     /**
      * Used to synchronize access to {@link #inviteRunnable}.
@@ -415,36 +415,34 @@ public class Participant
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
         }
 
+        synchronized (sourceSignaling)
+        {
+            sourceSignaling.addSources(sources);
+        }
+
         JingleSession jingleSession = getJingleSession();
         if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-add.");
-            remoteSourcesQueue.sourceAdd(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
 
         int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
-        if (delayMs > 0)
+        synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            synchronized (signalQueuedSourcesTaskSyncRoot)
-            {
-                remoteSourcesQueue.sourceAdd(sources);
-                scheduleSignalingOfQueuedSources(delayMs);
-            }
+            scheduleSignalingOfQueuedSources(delayMs);
         }
-        else
+    }
+
+    /**
+     * Reset the set of sources that have been signaled to the participant.
+     */
+    public void resetSignaledSources(@NotNull ConferenceSourceMap sources)
+    {
+        synchronized (sourceSignaling)
         {
-            OperationSetJingle jingle = conference.getJingle();
-            if (jingle == null)
-            {
-                logger.error("Can not send Jingle source-add, no Jingle API available.");
-                return;
-            }
-            jingle.sendAddSourceIQ(
-                    sources,
-                    jingleSession,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+            sourceSignaling.reset(sources);
         }
     }
 
@@ -503,36 +501,23 @@ public class Participant
             sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
         }
 
+        synchronized (sourceSignaling)
+        {
+            sourceSignaling.removeSources(sources);
+        }
+
         JingleSession jingleSession = getJingleSession();
         if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
-            remoteSourcesQueue.sourceRemove(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
 
         int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
-        if (delayMs > 0)
+        synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            synchronized (signalQueuedSourcesTaskSyncRoot)
-            {
-                remoteSourcesQueue.sourceRemove(sources);
-                scheduleSignalingOfQueuedSources(delayMs);
-            }
-        }
-        else
-        {
-            OperationSetJingle jingle = conference.getJingle();
-            if (jingle == null)
-            {
-                logger.error("Can not send Jingle source-remove, no Jingle API available.");
-                return;
-            }
-            jingle.sendRemoveSourceIQ(
-                    sources,
-                    jingleSession,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+            scheduleSignalingOfQueuedSources(delayMs);
         }
     }
 
@@ -558,21 +543,18 @@ public class Participant
         boolean encodeSourcesAsJson
                 = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : sourceSignaling.update())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
             ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
             logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingle.sendAddSourceIQ(
-                        sourcesToAddOrRemove.getSources(),
-                        jingleSession,
-                        encodeSourcesAsJson);
+                jingle.sendAddSourceIQ(sources, jingleSession, encodeSourcesAsJson);
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
+                jingle.sendRemoveSourceIQ(sources, jingleSession, encodeSourcesAsJson);
             }
         }
     }
@@ -605,7 +587,7 @@ public class Participant
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("id", getEndpointId());
-        o.put("remote_sources_queue", remoteSourcesQueue.getDebugState());
+        o.put("source_signaling", sourceSignaling.getDebugState());
         o.put("invite_runnable", inviteRunnable != null ? "Running" : "Not running");
         //o.put("room_member", roomMember.getDebugState());
         o.put("jingle_session", jingleSession == null ? "null" : "not null");

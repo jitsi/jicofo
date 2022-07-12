@@ -371,6 +371,9 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                 colibriAllocation.getBridgeSessionId(),
                 colibriAllocation.getRegion()));
 
+        // We're about to send a jingle message that will initialize or reset the sources signaled to the participant.
+        // Reflect this in the participant state.
+        participant.resetSignaledSources(offer.getSources());
         if (initiateSession)
         {
             logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
