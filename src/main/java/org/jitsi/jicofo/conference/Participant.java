@@ -60,7 +60,7 @@ public class Participant
     /**
      * The layer which keeps track of which sources have been signaled to this participant.
      */
-    private final SourceSignaling sourceSignaling = new SourceSignaling();
+    private final SourceSignaling sourceSignaling;
 
     /**
      * Used to synchronize access to {@link #inviteRunnable}.
@@ -135,6 +135,7 @@ public class Participant
         this.roomMember = roomMember;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
+        sourceSignaling = new SourceSignaling(hasAudioSupport(), hasVideoSupport());
     }
 
     public Participant(
@@ -410,11 +411,6 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
-        if (!hasAudioSupport() || !hasVideoSupport())
-        {
-            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
-        }
-
         synchronized (sourceSignaling)
         {
             sourceSignaling.addSources(sources);
@@ -437,12 +433,15 @@ public class Participant
 
     /**
      * Reset the set of sources that have been signaled to the participant.
+     * @param sources set of remote sources to be signaled to the participant (pre-filtering!)
+     * @return the set of sources that should be signaled in the initial offer (after filtering is applied!)
      */
-    public void resetSignaledSources(@NotNull ConferenceSourceMap sources)
+    @NotNull
+    public ConferenceSourceMap resetSignaledSources(@NotNull ConferenceSourceMap sources)
     {
         synchronized (sourceSignaling)
         {
-            sourceSignaling.reset(sources);
+            return sourceSignaling.reset(sources);
         }
     }
 
@@ -473,21 +472,6 @@ public class Participant
         }
     }
 
-    public Set<MediaType> getSupportedMediaTypes()
-    {
-        Set<MediaType> supportedMediaTypes = new HashSet<>();
-        if (hasVideoSupport())
-        {
-            supportedMediaTypes.add(MediaType.VIDEO);
-        }
-        if (hasAudioSupport())
-        {
-            supportedMediaTypes.add(MediaType.AUDIO);
-        }
-
-        return supportedMediaTypes;
-    }
-
     /**
      * Remove a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
@@ -496,11 +480,6 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
-        if (!hasAudioSupport() || !hasVideoSupport())
-        {
-            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
-        }
-
         synchronized (sourceSignaling)
         {
             sourceSignaling.removeSources(sources);
