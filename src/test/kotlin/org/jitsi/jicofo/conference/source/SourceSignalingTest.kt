@@ -116,7 +116,7 @@ class SourceSignalingTest : ShouldSpec() {
             sourceSignaling.debugState.shouldBeValidJson()
         }
         context("Filtering") {
-            val sourceSignaling = SourceSignaling(audio = true, video = false)
+            val sourceSignaling = SourceSignaling(audio = true, video = false, stripSimulcast = true)
 
             sourceSignaling.reset(s1 + s2).shouldBe(
                 ConferenceSourceMap(

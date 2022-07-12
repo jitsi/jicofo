@@ -1070,10 +1070,7 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
-        final ConferenceSourceMap finalSources = (ConferenceConfig.config.stripSimulcast())
-                ? sources.copy().stripSimulcast().unmodifiable()
-                : sources.copy().unmodifiable();
-        if (finalSources.isEmpty())
+        if (sources.isEmpty())
         {
             logger.debug("No new sources to propagate.");
             return;
@@ -1081,7 +1078,7 @@ public class JitsiMeetConferenceImpl
 
         participants.values().stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
-            .forEach(participant -> participant.addRemoteSources(finalSources));
+            .forEach(participant -> participant.addRemoteSources(sources));
     }
 
 
@@ -1385,10 +1382,7 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
-        final ConferenceSourceMap finalSources = ConferenceConfig.config.stripSimulcast()
-                ? sources.copy().stripSimulcast().unmodifiable()
-                : sources.copy().unmodifiable();
-        if (finalSources.isEmpty())
+        if (sources.isEmpty())
         {
             logger.debug("No sources to remove.");
             return;
@@ -1396,7 +1390,7 @@ public class JitsiMeetConferenceImpl
 
         participants.values().stream()
                 .filter(participant -> participant != except)
-                .forEach(participant -> participant.removeRemoteSources(finalSources));
+                .forEach(participant -> participant.removeRemoteSources(sources));
     }
 
     /**

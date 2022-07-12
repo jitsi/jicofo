@@ -416,10 +416,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
         // Add the bridge's feedback sources.
         conferenceSources.add(colibriAllocation.getSources());
-        if (ConferenceConfig.config.stripSimulcast())
-        {
-            conferenceSources.stripSimulcast();
-        }
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
 

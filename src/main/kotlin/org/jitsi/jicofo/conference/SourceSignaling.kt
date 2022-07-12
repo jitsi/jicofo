@@ -26,7 +26,8 @@ import org.json.simple.JSONObject
 
 class SourceSignaling(
     audio: Boolean = true,
-    video: Boolean = true
+    video: Boolean = true,
+    private val stripSimulcast: Boolean = true
 ) {
     /** The set of media types supported by the endpoint. */
     private val supportedMediaTypes: Set<MediaType> = buildSet {
@@ -84,5 +85,8 @@ class SourceSignaling(
      * Filter out certain sources which should not be signaled to this endpoint. E.g. filter out video for endpoints
      * which don't support video.
      */
-    private fun ConferenceSourceMap.filter(): ConferenceSourceMap = copy().stripByMediaType(supportedMediaTypes)
+    private fun ConferenceSourceMap.filter(): ConferenceSourceMap = copy().apply {
+        stripByMediaType(supportedMediaTypes)
+        if (stripSimulcast) stripSimulcast()
+    }
 }
