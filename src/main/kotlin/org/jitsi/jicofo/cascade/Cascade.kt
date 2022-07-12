@@ -33,7 +33,7 @@ interface Cascade {
  */
 interface CascadeNode {
     val relayId: String
-    val links: MutableMap<String, CascadeLink>
+    val relays: MutableMap<String, CascadeLink>
     fun addLink(node: CascadeNode, meshId: String)
 }
 
@@ -49,16 +49,16 @@ fun Cascade.containsNode(node: CascadeNode) =
     bridges[node.relayId] === node
 
 fun Cascade.hasMesh(meshId: String): Boolean =
-    bridges.values.stream().anyMatch { node -> node.links.values.any { it.meshId == meshId } }
+    bridges.values.stream().anyMatch { node -> node.relays.values.any { it.meshId == meshId } }
 
 fun Cascade.getMeshNodes(meshId: String?): List<CascadeNode> =
-    bridges.values.stream().filter { node -> node.links.values.any { it.meshId == meshId } }.toList()
+    bridges.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
 
 fun CascadeNode.addBidirectionalLink(otherNode: CascadeNode, meshId: String) {
-    require(!this.links.contains(otherNode.relayId)) {
+    require(!this.relays.contains(otherNode.relayId)) {
         "$this already has a link to $otherNode"
     }
-    require(!otherNode.links.contains(this.relayId)) {
+    require(!otherNode.relays.contains(this.relayId)) {
         "$otherNode already has a link to $this"
     }
     otherNode.addLink(this, meshId)
@@ -118,22 +118,22 @@ fun Cascade.removeNode(
     }
     bridges.remove(node.relayId)
 
-    node.links.keys.forEach { key ->
+    node.relays.keys.forEach { key ->
         val other = bridges[key]
         checkNotNull(other) {
             "Cascade does not contain node for $key"
         }
-        val backLink = other.links[node.relayId]
+        val backLink = other.relays[node.relayId]
         checkNotNull(backLink) {
             "Node $other does not have backlink to $node"
         }
         check(backLink.relayId == node.relayId) {
             "Backlink from $other to $node points to ${backLink.relayId}"
         }
-        other.links.remove(node.relayId)
+        other.relays.remove(node.relayId)
     }
 
-    val meshes = node.links.values.map { it.meshId }.toSet()
+    val meshes = node.relays.values.map { it.meshId }.toSet()
 
     if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
@@ -154,11 +154,11 @@ fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode): Set<CascadeN
 }
 
 private fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode, nodes: MutableSet<CascadeNode>) {
-    val link = requireNotNull(from.links[toward.relayId]) {
+    val link = requireNotNull(from.relays[toward.relayId]) {
         "$from does not have a link to $toward"
     }
     nodes.add(toward)
-    toward.links.values.forEach {
+    toward.relays.values.forEach {
         if (it.relayId == from.relayId || it.meshId == link.meshId) {
             return@forEach
         }
@@ -169,7 +169,7 @@ private fun Cascade.getNodesBehind(from: CascadeNode, toward: CascadeNode, nodes
 
 /** Validate a node, or throw IllegalStateException. */
 private fun Cascade.validateNode(node: CascadeNode) {
-    node.links.entries.forEach { (key, link) ->
+    node.relays.entries.forEach { (key, link) ->
         check(key != node.relayId) {
             "$node has a link to itself"
         }
@@ -180,7 +180,7 @@ private fun Cascade.validateNode(node: CascadeNode) {
         checkNotNull(other) {
             "$node has link to $key not found in cascade"
         }
-        val backLink = other.links[node.relayId]
+        val backLink = other.relays[node.relayId]
         checkNotNull(backLink) {
             "$node has link to $other, but $other has no link to $node"
         }
@@ -197,10 +197,10 @@ fun Cascade.validateMesh(meshId: String?) {
     meshNodes.forEach { node ->
         meshNodes.forEach { other ->
             if (other != node) {
-                check(node.links.contains(other.relayId)) {
+                check(node.relays.contains(other.relayId)) {
                     "$node has no link to $other in mesh $meshId"
                 }
-                val link = node.links[other.relayId]
+                val link = node.relays[other.relayId]
                 check(link!!.meshId == meshId) {
                     "link from $node to $other has meshId ${link.meshId}, not expected $meshId"
                 }
@@ -218,7 +218,7 @@ private fun Cascade.visitNodeForValidation(
     validateNode(node)
     visitedNodes.add(node.relayId)
 
-    node.links.values.forEach {
+    node.relays.values.forEach {
         if (!visitedNodes.contains(it.relayId)) {
             if (!validatedMeshes.contains(it.meshId)) {
                 validateMesh(it.meshId)

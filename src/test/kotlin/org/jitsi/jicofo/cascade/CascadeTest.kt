@@ -30,15 +30,15 @@ class TestCascade : Cascade {
 }
 
 class TestCascadeNode(override val relayId: String) : CascadeNode {
-    override val links = HashMap<String, CascadeLink>()
+    override val relays = HashMap<String, CascadeLink>()
     override fun addLink(node: CascadeNode, meshId: String) {
-        links[node.relayId] = TestCascadeLink(node.relayId, meshId)
+        relays[node.relayId] = TestCascadeLink(node.relayId, meshId)
     }
 
-    override fun toString(): String = "$relayId: [${links.values.joinToString()}]"
+    override fun toString(): String = "$relayId: [${relays.values.joinToString()}]"
 }
 
-class TestCascadeLink(override val relayId: String, override val meshId: String) : CascadeLink {
+class TestCascadeLink(override val relayId: String, override val meshId: String?) : CascadeLink {
     override fun toString(): String = "$meshId->$relayId"
 }
 
@@ -55,13 +55,13 @@ class CascadeTest : ShouldSpec() {
             should("cause all the nodes to be connected") {
                 nodes.forEach { node ->
                     cascade.containsNode(node) shouldBe true
-                    node.links.size shouldBe numNodes - 1
+                    node.relays.size shouldBe numNodes - 1
 
                     nodes.forEach { other ->
                         if (other === node) {
-                            node.links.contains(other.relayId) shouldBe false
+                            node.relays.contains(other.relayId) shouldBe false
                         } else {
-                            node.links[other.relayId]?.relayId shouldBe other.relayId
+                            node.relays[other.relayId]?.relayId shouldBe other.relayId
                         }
                     }
                 }
@@ -107,18 +107,18 @@ class CascadeTest : ShouldSpec() {
                 aNodes.map { it.relayId }.shouldContainExactly("0", "1", "2")
                 bNodes.map { it.relayId }.shouldContainExactly("0", "3", "4")
 
-                nodes[0].links.size shouldBe 4
+                nodes[0].relays.size shouldBe 4
                 for (i in 1 until numNodes) {
-                    nodes[i].links.size shouldBe 2
+                    nodes[i].relays.size shouldBe 2
                 }
 
                 arrayOf(aNodes, bNodes).forEach { set ->
                     set.forEach { node ->
                         set.forEach { other ->
                             if (other === node) {
-                                node.links.contains(other.relayId) shouldBe false
+                                node.relays.contains(other.relayId) shouldBe false
                             } else {
-                                node.links[other.relayId]?.relayId shouldBe other.relayId
+                                node.relays[other.relayId]?.relayId shouldBe other.relayId
                             }
                         }
                     }
@@ -213,9 +213,9 @@ class CascadeTest : ShouldSpec() {
                 for (m in 'B'..'E') {
                     cascade.getMeshNodes(m.toString()).size shouldBe 2
                 }
-                nodes[0].links.size shouldBe 4
+                nodes[0].relays.size shouldBe 4
                 for (i in 1 until numNodes) {
-                    nodes[i].links.size shouldBe 1
+                    nodes[i].relays.size shouldBe 1
                 }
             }
             should("validate") {
