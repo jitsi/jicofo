@@ -159,22 +159,25 @@ open class ConferenceSourceMap(
     /**
      * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
      */
-    open fun stripSimulcast() = synchronized(syncRoot) {
+    fun stripSimulcast() = map { it.stripSimulcast() }
+
+    open fun map(transform: (EndpointSourceSet) -> EndpointSourceSet) = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) ->
-            val stripped = sources.stripSimulcast()
-            if (stripped.isEmpty()) {
+            val transformed = transform(sources)
+            if (transformed.isEmpty()) {
                 endpointSourceSets.remove(owner)
             } else {
-                endpointSourceSets[owner] = stripped
+                endpointSourceSets[owner] = transformed
             }
         }
+
         this
     }
 
     /**
      * Remove all sources from this [ConferenceSourceMap] unless their media type is in [retain].
      */
-    open fun stripByMediaType(
+    fun stripByMediaType(
         /** The set of media types to retain, all other media types will be removed */
         retain: Set<MediaType>
     ) = synchronized(syncRoot) {
@@ -182,16 +185,16 @@ open class ConferenceSourceMap(
             // Nothing to strip.
             return this
         }
-        endpointSourceSets.forEach { (owner, sources) ->
+
+        map {sources ->
             val strippedSources = sources.sources.filter { retain.contains(it.mediaType) }.toSet()
             if (strippedSources.isEmpty()) {
-                endpointSourceSets.remove(owner)
+                EndpointSourceSet.EMPTY
             } else {
                 val strippedSsrcGroups = sources.ssrcGroups.filter { retain.contains(it.mediaType) }.toSet()
-                endpointSourceSets[owner] = EndpointSourceSet(strippedSources, strippedSsrcGroups)
+                EndpointSourceSet(strippedSources, strippedSsrcGroups)
             }
         }
-        this
     }
 
     /** Expanded JSON format used for debugging */
@@ -225,9 +228,6 @@ class UnmodifiableConferenceSourceMap(
     override fun remove(owner: Jid?) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 
-    override fun stripSimulcast() =
-        throw UnsupportedOperationException("stripSimulcast() not supported in unmodifiable view")
-
-    override fun stripByMediaType(retain: Set<MediaType>) =
-        throw UnsupportedOperationException("stripByMediaType() is not supported in unmodifiable view")
+    override fun map(transform: (EndpointSourceSet) -> EndpointSourceSet) =
+        throw UnsupportedOperationException("map() not supported in unmodifiable view")
 }
