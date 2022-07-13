@@ -147,26 +147,25 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 }
 
                 sourcesContentsSlot.isCaptured shouldBe true
-                sourcesContentsSlot.captured.apply {
-                    should("Have some audio sources") {
-                        values.all { it.hasAudio } shouldBe true
-                    }
-                    should("Have video sources iff video is supported") {
-                        values.all { it.hasVideo } shouldBe supportsVideo
-                    }
+                val sources = sourcesContentsSlot.captured
+                should("Have some audio sources") {
+                    sources.values.all { it.hasAudio } shouldBe true
+                }
+                should("Have video sources iff video is supported") {
+                    sources.values.all { it.hasVideo } shouldBe supportsVideo
+                }
 
-                    should("Have the correct SSRC groups") {
-                        // p1 has no groups
-                        this[jid1]!!.ssrcGroups.shouldBeEmpty()
+                should("Have the correct SSRC groups") {
+                    // p1 has no groups
+                    sources[jid1]!!.ssrcGroups.shouldBeEmpty()
 
-                        // p2 has simulcast. It should be stripped, but RTX should be retained.
-                        val p2ssrcGroups = this[jid2]!!.ssrcGroups
-                        if (!supportsVideo) {
-                            p2ssrcGroups.shouldBeEmpty()
-                        } else {
-                            p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Sim } shouldBe false
-                            p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Fid } shouldBe true
-                        }
+                    // p2 has simulcast. It should be stripped, but RTX should be retained.
+                    val p2ssrcGroups = sources[jid2]!!.ssrcGroups
+                    if (!supportsVideo) {
+                        p2ssrcGroups.shouldBeEmpty()
+                    } else {
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Sim } shouldBe false
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Fid } shouldBe true
                     }
                 }
             }
