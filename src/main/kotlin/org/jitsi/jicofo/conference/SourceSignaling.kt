@@ -109,10 +109,12 @@ class SourceSignaling(
 private fun ConferenceSourceMap.filterMultiStream() = map { ess ->
     val desktopSourceName = ess.sources.find { it.videoType == VideoType.Desktop }?.name
     if (desktopSourceName != null) {
-        val sources = ess.sources.filter { it.mediaType != MediaType.VIDEO || it.name == desktopSourceName }.toSet()
-        val ssrcs = sources.map { it.ssrc }.toSet()
-        val ssrcGroups = ess.ssrcGroups.filter { (it.ssrcs - ssrcs).isNotEmpty() }.toSet()
-        EndpointSourceSet(sources, ssrcGroups)
+        val remainingSources = ess.sources.filter {
+            it.mediaType != MediaType.VIDEO || it.name == desktopSourceName
+        }.toSet()
+        val remainingSsrcs = remainingSources.map { it.ssrc }.toSet()
+        val remainingGroups = ess.ssrcGroups.filter { it.ssrcs.any { it in remainingSsrcs } }.toSet()
+        EndpointSourceSet(remainingSources, remainingGroups)
     } else {
         ess
     }

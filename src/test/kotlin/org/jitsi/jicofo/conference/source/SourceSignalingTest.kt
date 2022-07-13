@@ -35,19 +35,28 @@ class SourceSignalingTest : ShouldSpec() {
         val e3a = Source(3, MediaType.AUDIO)
         val s3 = ConferenceSourceMap(jid3 to EndpointSourceSet(e3a)).unmodifiable
 
-        val jid4 = JidCreate.from("jid3")
+        val jid4 = JidCreate.from("jid4")
         val e4a1 = Source(4, MediaType.AUDIO)
         val e4v1a = Source(43, MediaType.VIDEO, name = "e4-v1")
         val e4v1b = Source(44, MediaType.VIDEO, name = "e4-v1")
         val e4v1c = Source(45, MediaType.VIDEO, name = "e4-v1")
+        val e4v1a_r = Source(53, MediaType.VIDEO, name = "e4-v1")
+        val e4v1b_r = Source(54, MediaType.VIDEO, name = "e4-v1")
+        val e4v1c_r = Source(55, MediaType.VIDEO, name = "e4-v1")
+        val e4vgroups = setOf(
+            SsrcGroup(SsrcGroupSemantics.Sim, listOf(43, 44, 45)),
+            SsrcGroup(SsrcGroupSemantics.Fid, listOf(43, 53)),
+            SsrcGroup(SsrcGroupSemantics.Fid, listOf(44, 54)),
+            SsrcGroup(SsrcGroupSemantics.Fid, listOf(45, 55))
+        )
         val e4ss1a = Source(46, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
         val e4ss1b = Source(47, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
         val e4ss1c = Source(48, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
         val s4audio = ConferenceSourceMap(jid4 to EndpointSourceSet(e4a1))
         val s4video = ConferenceSourceMap(
             jid4 to EndpointSourceSet(
-                setOf(e4v1a, e4v1b, e4v1c),
-                setOf()
+                setOf(e4v1a, e4v1b, e4v1c, e4v1a_r, e4v1b_r, e4v1c_r),
+                e4vgroups
             )
         )
         val s4ss = ConferenceSourceMap(
