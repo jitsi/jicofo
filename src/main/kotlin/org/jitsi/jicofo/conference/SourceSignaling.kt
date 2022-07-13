@@ -70,10 +70,10 @@ class SourceSignaling(
         val sourcesToRemove = ss - us
         reset(updatedSources)
         return buildList {
-            if (sourcesToAdd.isNotEmpty())
-                add(SourcesToAddOrRemove(Add, sourcesToAdd))
             if (sourcesToRemove.isNotEmpty())
                 add(SourcesToAddOrRemove(Remove, sourcesToRemove))
+            if (sourcesToAdd.isNotEmpty())
+                add(SourcesToAddOrRemove(Add, sourcesToAdd))
         }
     }
 
