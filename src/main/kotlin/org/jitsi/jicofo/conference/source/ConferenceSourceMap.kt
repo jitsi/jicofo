@@ -186,7 +186,7 @@ open class ConferenceSourceMap(
             return this
         }
 
-        map {sources ->
+        map { sources ->
             val strippedSources = sources.sources.filter { retain.contains(it.mediaType) }.toSet()
             if (strippedSources.isEmpty()) {
                 EndpointSourceSet.EMPTY

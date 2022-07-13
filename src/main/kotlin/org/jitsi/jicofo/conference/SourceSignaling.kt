@@ -20,6 +20,8 @@ package org.jitsi.jicofo.conference
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
@@ -27,7 +29,14 @@ import org.json.simple.JSONObject
 class SourceSignaling(
     audio: Boolean = true,
     video: Boolean = true,
-    private val stripSimulcast: Boolean = true
+    private val stripSimulcast: Boolean = true,
+    /**
+     * Whether the endpoint supports receiving multiple video streams. If it doesn't, we make sure to only signal the
+     * screensharing (desktop) source when another endpoint has both camera and screensharing.
+     *
+     * We assume at most one desktop source and at most one camera source.
+     */
+    private val supportsReceivingMultipleStreams: Boolean = true
 ) {
     /** The set of media types supported by the endpoint. */
     private val supportedMediaTypes: Set<MediaType> = buildSet {
@@ -88,5 +97,23 @@ class SourceSignaling(
     private fun ConferenceSourceMap.filter(): ConferenceSourceMap = copy().apply {
         stripByMediaType(supportedMediaTypes)
         if (stripSimulcast) stripSimulcast()
+        if (!supportsReceivingMultipleStreams) {
+            filterMultiStream()
+        }
+    }
+}
+
+/**
+ * If an endpoint has a screensharing (desktop) source, filter out all other video sources.
+ */
+private fun ConferenceSourceMap.filterMultiStream() = map { ess ->
+    val desktopSourceName = ess.sources.find { it.videoType == VideoType.Desktop }?.name
+    if (desktopSourceName != null) {
+        val sources = ess.sources.filter { it.mediaType != MediaType.VIDEO || it.name == desktopSourceName }.toSet()
+        val ssrcs = sources.map { it.ssrc }.toSet()
+        val ssrcGroups = ess.ssrcGroups.filter { (it.ssrcs - ssrcs).isNotEmpty() }.toSet()
+        EndpointSourceSet(sources, ssrcGroups)
+    } else {
+        ess
     }
 }

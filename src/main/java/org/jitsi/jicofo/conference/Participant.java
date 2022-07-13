@@ -136,7 +136,11 @@ public class Participant
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
         sourceSignaling = new SourceSignaling(
-                hasAudioSupport(), hasVideoSupport(), ConferenceConfig.config.stripSimulcast());
+                hasAudioSupport(),
+                hasVideoSupport(),
+                ConferenceConfig.config.stripSimulcast(),
+                supportsReceivingMultipleVideoStreams()
+        );
     }
 
     public Participant(
