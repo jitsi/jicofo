@@ -26,6 +26,7 @@ import kotlin.streams.toList
  */
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
     val bridges: MutableMap<String?, N>
+    fun addLinkBetween(node: N, otherNode: N, meshId: String)
 }
 
 /**
@@ -34,7 +35,6 @@ interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
 interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
     val relayId: String?
     val relays: MutableMap<String, L>
-    fun addLink(node: N, meshId: String)
 }
 
 /**
@@ -54,17 +54,6 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: Strin
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
     bridges.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> N.addBidirectionalLink(otherNode: N, meshId: String) {
-    require(!this.relays.contains(otherNode.relayId)) {
-        "$this already has a link to $otherNode"
-    }
-    require(!otherNode.relays.contains(this.relayId)) {
-        "$otherNode already has a link to $this"
-    }
-    otherNode.addLink(this, meshId)
-    this.addLink(otherNode, meshId)
-}
-
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode: N, meshId: String) {
     require(!containsNode(newNode)) {
         "Cascade $this already contains node $newNode"
@@ -75,7 +64,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode
         return
     } else if (bridges.size == 1) {
         val onlyNode = bridges.values.first()
-        onlyNode.addBidirectionalLink(newNode, meshId)
+        addLinkBetween(onlyNode, newNode, meshId)
         bridges[newNode.relayId] = newNode
         return
     }
@@ -85,7 +74,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode
         "meshId $meshId must correspond to an existing mesh ID when size ${bridges.size} > 1"
     }
 
-    meshNodes.forEach { node -> node.addBidirectionalLink(newNode, meshId) }
+    meshNodes.forEach { node -> addLinkBetween(node, newNode, meshId) }
     bridges[newNode.relayId] = newNode
 }
 
@@ -102,7 +91,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode:
         "Cascade $this already contains mesh $meshId"
     }
 
-    existingNode.addBidirectionalLink(newNode, meshId)
+    addLinkBetween(existingNode, newNode, meshId)
     bridges[newNode.relayId] = newNode
 }
 
@@ -139,7 +128,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
         val newLinks = repairFn(this, meshes)
         newLinks.forEach { (node, other, mesh) ->
-            node.addBidirectionalLink(other, mesh)
+            addLinkBetween(node, other, mesh)
         }
         /* TODO: validate that the newly-added links have left us with a valid cascade? */
     }

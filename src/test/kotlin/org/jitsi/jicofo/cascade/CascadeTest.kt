@@ -27,11 +27,22 @@ import io.kotest.matchers.shouldBe
 
 class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
     override val bridges = HashMap<String?, TestCascadeNode>()
+
+    override fun addLinkBetween(node: TestCascadeNode, otherNode: TestCascadeNode, meshId: String) {
+        require(!node.relays.contains(otherNode.relayId)) {
+            "$this already has a link to $otherNode"
+        }
+        require(!otherNode.relays.contains(node.relayId)) {
+            "$otherNode already has a link to $this"
+        }
+        node.addLink(otherNode, meshId)
+        otherNode.addLink(node, meshId)
+    }
 }
 
 class TestCascadeNode(override val relayId: String) : CascadeNode<TestCascadeNode, TestCascadeLink> {
     override val relays = HashMap<String, TestCascadeLink>()
-    override fun addLink(node: TestCascadeNode, meshId: String) {
+    internal fun addLink(node: TestCascadeNode, meshId: String) {
         relays[node.relayId] = TestCascadeLink(node.relayId, meshId)
     }
 

@@ -76,10 +76,6 @@ internal class Colibri2Session(
     /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
     override val relays = mutableMapOf<String, Relay>()
 
-    override fun addLink(node: Colibri2Session, meshId: String) {
-        TODO("Not yet implemented")
-    }
-
     /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
     internal fun sendAllocationRequest(
         participant: ParticipantInfo,
