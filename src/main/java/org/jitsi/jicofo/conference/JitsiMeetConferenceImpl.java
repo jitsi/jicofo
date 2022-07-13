@@ -26,6 +26,7 @@ import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
+import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -594,7 +595,6 @@ public class JitsiMeetConferenceImpl
                             + " videoMuted=" + chatRoomMember.isVideoMuted()
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi());
-            getFocusManager().getStatistics().totalParticipants.incrementAndGet();
             hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
@@ -649,6 +649,13 @@ public class JitsiMeetConferenceImpl
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
+
+            Statistics statistics = getFocusManager().getStatistics();
+            statistics.totalParticipants.incrementAndGet();
+            if (!participant.supportsReceivingMultipleVideoStreams())
+            {
+                statistics.totalParticipantsNoMultiStream.incrementAndGet();
+            }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);

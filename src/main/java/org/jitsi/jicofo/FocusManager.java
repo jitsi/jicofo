@@ -395,6 +395,7 @@ public class FocusManager
         // so we'll merge stats from different "child" objects here.
         JSONObject stats = new JSONObject();
         stats.put("total_participants", statistics.totalParticipants.get());
+        stats.put("total_participants_no_multi_stream", statistics.totalParticipantsNoMultiStream.get());
         stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
         stats.put("conferences", getNonHealthCheckConferenceCount());
 

@@ -20,6 +20,11 @@ public class Statistics
     public final AtomicInteger totalParticipants = new AtomicInteger(0);
 
     /**
+     * Total number of participants with no support for receiving multiple streams.
+     */
+    public final AtomicInteger totalParticipantsNoMultiStream = new AtomicInteger(0);
+
+    /**
      * The number of participants that were moved away from a failed bridge.
      */
     public final AtomicInteger totalParticipantsMoved = new AtomicInteger();
