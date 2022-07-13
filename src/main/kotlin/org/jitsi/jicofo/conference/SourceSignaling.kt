@@ -54,7 +54,7 @@ class SourceSignaling(
      * The pre-filtered set of updated sources, i.e. [signaledSources] with any requested changes made via [addSources]
      * or [removeSources].
      */
-    private var updatedSources = signaledSources.copy()
+    private var updatedSources = ConferenceSourceMap()
 
     fun addSources(sourcesToAdd: ConferenceSourceMap) = updatedSources.add(sourcesToAdd)
     fun removeSources(sourcesToRemove: ConferenceSourceMap) = updatedSources.remove(sourcesToRemove)
