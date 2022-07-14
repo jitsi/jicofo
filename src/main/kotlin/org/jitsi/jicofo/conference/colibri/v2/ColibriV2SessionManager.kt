@@ -70,7 +70,7 @@ class ColibriV2SessionManager(
     /**
      * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
      */
-    private val sessions = mutableMapOf<Bridge, Colibri2Session>()
+    private val sessions = mutableMapOf<String?, Colibri2Session>()
 
     /**
      * The set of participants that have associated colibri2 endpoints allocated, mapped by their ID. A participant is
@@ -131,7 +131,7 @@ class ColibriV2SessionManager(
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.expire()
-        sessions.remove(session.bridge)
+        sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
         session.relayId?.let { removedRelayId ->
@@ -219,20 +219,20 @@ class ColibriV2SessionManager(
     override val bridgeCount: Int
         get() = synchronized(syncRoot) { sessions.size }
     override val bridgeRegions: Set<String>
-        get() = synchronized(syncRoot) { sessions.keys.map { it.region }.filterNotNull().toSet() }
+        get() = synchronized(syncRoot) { sessions.values.mapNotNull { it.bridge.region }.toSet() }
 
     /**
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
      * a boolean indicating whether the session was just created (true) or existed (false).
      */
     private fun getOrCreateSession(bridge: Bridge): Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
-        var session = sessions[bridge]
+        var session = sessions[bridge.relayId]
         if (session != null) {
             return Pair(session, false)
         }
 
         session = Colibri2Session(this, bridge, logger)
-        sessions[bridge] = session
+        sessions[bridge.relayId] = session
         return Pair(session, true)
     }
 
@@ -275,7 +275,7 @@ class ColibriV2SessionManager(
                     throw BridgeSelectionFailedException()
                 }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
-            if (sessions.isNotEmpty() && sessions.none { it.key == bridge }) {
+            if (sessions.isNotEmpty() && sessions.none { it.value.bridge == bridge }) {
                 // There is an existing session, and this is a new bridge.
                 if (!OctoConfig.config.enabled) {
                     logger.error("A new bridge was selected, but Octo is disabled")
@@ -364,7 +364,7 @@ class ColibriV2SessionManager(
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
         // * Re-invite the participants (possibly on the same bridge) on this bridge
         // * Re-invite the participants on this bridge to a different bridge
-        if (!sessions.containsKey(session.bridge)) {
+        if (!sessions.containsKey(session.bridge.relayId)) {
             logger.warn("The session was removed, ignoring allocation response.")
             throw ColibriAllocationFailedException("Session already removed", false)
         }
@@ -543,7 +543,7 @@ class ColibriV2SessionManager(
         logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
-            if (!sessions.containsKey(session.bridge) || sessions[session.bridge] != session) {
+            if (!sessions.containsKey(session.bridge.relayId) || sessions[session.bridge.relayId] != session) {
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
                 return
             }
