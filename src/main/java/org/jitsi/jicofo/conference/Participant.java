@@ -139,7 +139,7 @@ public class Participant
                 hasAudioSupport(),
                 hasVideoSupport(),
                 ConferenceConfig.config.stripSimulcast(),
-                supportsReceivingMultipleVideoStreams()
+                supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.getMultiStreamBackwardCompat()
         );
     }
 
