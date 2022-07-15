@@ -23,6 +23,7 @@ import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.cascade.Cascade
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
@@ -60,7 +61,7 @@ class ColibriV2SessionManager(
     private val bridgeSelector: BridgeSelector,
     private val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger
-) : ColibriSessionManager {
+) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger)
 
     private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
@@ -70,7 +71,7 @@ class ColibriV2SessionManager(
     /**
      * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
      */
-    private val sessions = mutableMapOf<String?, Colibri2Session>()
+    override val sessions = mutableMapOf<String?, Colibri2Session>()
 
     /**
      * The set of participants that have associated colibri2 endpoints allocated, mapped by their ID. A participant is
@@ -241,6 +242,10 @@ class ColibriV2SessionManager(
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
             .associate { Pair(it.key.bridge, it.value.size) }
+    }
+
+    override fun addLinkBetween(node: Colibri2Session, otherNode: Colibri2Session, meshId: String) {
+        TODO("Not yet implemented")
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)

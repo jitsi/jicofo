@@ -45,7 +45,7 @@ import java.util.Collections.singletonList
 import java.util.UUID
 
 /** Represents a colibri2 session with one specific bridge. */
-internal class Colibri2Session(
+class Colibri2Session(
     val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
     parentLogger: Logger
@@ -321,7 +321,7 @@ internal class Colibri2Session(
     /**
      * Represents a colibri2 relay connection to another bridge.
      */
-    internal inner class Relay(
+    inner class Relay(
         /** The relayId of the remote bridge. */
         override val relayId: String,
         /**
@@ -340,7 +340,7 @@ internal class Colibri2Session(
         private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", relayId) }
 
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
-        fun start(initialParticipants: List<ParticipantInfo>) {
+        internal fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
             logger.trace { "Sending create relay: ${request.toXML()}" }
 

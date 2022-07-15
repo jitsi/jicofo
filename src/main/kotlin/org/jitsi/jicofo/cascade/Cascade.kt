@@ -25,7 +25,7 @@ import kotlin.streams.toList
  * A representation of a cascade of bridges.
  */
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
-    val bridges: MutableMap<String?, N>
+    val sessions: MutableMap<String?, N>
     fun addLinkBetween(node: N, otherNode: N, meshId: String)
 }
 
@@ -46,36 +46,36 @@ interface CascadeLink {
 }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
-    bridges[node.relayId] === node
+    sessions[node.relayId] === node
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String): Boolean =
-    bridges.values.stream().anyMatch { node -> node.relays.values.any { it.meshId == meshId } }
+    sessions.values.stream().anyMatch { node -> node.relays.values.any { it.meshId == meshId } }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
-    bridges.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
+    sessions.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode: N, meshId: String) {
     require(!containsNode(newNode)) {
         "Cascade $this already contains node $newNode"
     }
 
-    if (bridges.isEmpty()) {
-        bridges[newNode.relayId] = newNode
+    if (sessions.isEmpty()) {
+        sessions[newNode.relayId] = newNode
         return
-    } else if (bridges.size == 1) {
-        val onlyNode = bridges.values.first()
+    } else if (sessions.size == 1) {
+        val onlyNode = sessions.values.first()
         addLinkBetween(onlyNode, newNode, meshId)
-        bridges[newNode.relayId] = newNode
+        sessions[newNode.relayId] = newNode
         return
     }
 
     val meshNodes = getMeshNodes(meshId)
     require(meshNodes.isNotEmpty()) {
-        "meshId $meshId must correspond to an existing mesh ID when size ${bridges.size} > 1"
+        "meshId $meshId must correspond to an existing mesh ID when size ${sessions.size} > 1"
     }
 
     meshNodes.forEach { node -> addLinkBetween(node, newNode, meshId) }
-    bridges[newNode.relayId] = newNode
+    sessions[newNode.relayId] = newNode
 }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode: N, newNode: N, meshId: String) {
@@ -92,7 +92,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode:
     }
 
     addLinkBetween(existingNode, newNode, meshId)
-    bridges[newNode.relayId] = newNode
+    sessions[newNode.relayId] = newNode
 }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
@@ -102,13 +102,13 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */
     }
-    check(bridges[node.relayId] === node) {
+    check(sessions[node.relayId] === node) {
         "Bridge entry for ${node.relayId} is not $node"
     }
-    bridges.remove(node.relayId)
+    sessions.remove(node.relayId)
 
     node.relays.keys.forEach { key ->
-        val other = bridges[key]
+        val other = sessions[key]
         checkNotNull(other) {
             "Cascade does not contain node for $key"
         }
@@ -155,7 +155,7 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehin
         if (it.relayId == from.relayId || it.meshId == link.meshId) {
             return@forEach
         }
-        val next = checkNotNull(bridges[it.relayId])
+        val next = checkNotNull(sessions[it.relayId])
         getNodesBehind(toward, next, nodes)
     }
 }
@@ -169,7 +169,7 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validateNode(
         check(key == link.relayId) {
             "$node link indexed by $key links to $link"
         }
-        val other = bridges[key]
+        val other = sessions[key]
         checkNotNull(other) {
             "$node has link to $key not found in cascade"
         }
@@ -217,14 +217,14 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.visitNodeForV
                 validateMesh(it.meshId)
                 validatedMeshes.add(it.meshId)
             }
-            val linkedNode = bridges[it.relayId]
+            val linkedNode = sessions[it.relayId]
             checkNotNull(linkedNode) {
                 "$node has link to node ${it.relayId} not found in cascade"
             }
             visitNodeForValidation(linkedNode, node, visitedNodes, validatedMeshes)
         } else {
             check(it.relayId == parent?.relayId || validatedMeshes.contains(it.meshId)) {
-                "Multiple paths found to ${bridges[it.relayId]}"
+                "Multiple paths found to ${sessions[it.relayId]}"
             }
         }
     }
@@ -232,19 +232,19 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.visitNodeForV
 
 /** Validate a cascade, or throw IllegalStateException */
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
-    if (bridges.isEmpty()) {
+    if (sessions.isEmpty()) {
         /* Empty cascade is trivially valid */
         return
     }
-    val firstNode = bridges.values.first()
+    val firstNode = sessions.values.first()
 
     val visitedNodes = HashSet<String?>()
     val validatedMeshes = HashSet<String?>()
 
     visitNodeForValidation(firstNode, null, visitedNodes, validatedMeshes)
 
-    check(visitedNodes.size == bridges.size) {
-        val unvisitedNodes = bridges.keys.subtract(visitedNodes)
+    check(visitedNodes.size == sessions.size) {
+        val unvisitedNodes = sessions.keys.subtract(visitedNodes)
         "Nodes ${unvisitedNodes.joinToString()} not reachable from initial node $firstNode"
     }
 }

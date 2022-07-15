@@ -23,7 +23,7 @@ import org.jitsi.utils.OrderedJsonObject
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
  */
-internal class ParticipantInfo(
+class ParticipantInfo(
     val id: String,
     val statsId: String?,
     var sources: ConferenceSourceMap = ConferenceSourceMap(),

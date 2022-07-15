@@ -26,7 +26,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
 class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
-    override val bridges = HashMap<String?, TestCascadeNode>()
+    override val sessions = HashMap<String?, TestCascadeNode>()
 
     override fun addLinkBetween(node: TestCascadeNode, otherNode: TestCascadeNode, meshId: String) {
         require(!node.relays.contains(otherNode.relayId)) {
