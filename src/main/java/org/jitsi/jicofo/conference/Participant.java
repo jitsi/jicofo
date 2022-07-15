@@ -191,7 +191,10 @@ public class Participant
 
         sourceSignaling.remoteDesktopSourceIsMutedChanged(owner, muted);
         // Signal updates, if any, immediately.
-        scheduleSignalingOfQueuedSources(0);
+        synchronized (signalQueuedSourcesTaskSyncRoot)
+        {
+            scheduleSignalingOfQueuedSources();
+        }
     }
 
     public Participant(
@@ -480,10 +483,9 @@ public class Participant
             return;
         }
 
-        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
         synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            scheduleSignalingOfQueuedSources(delayMs);
+            scheduleSignalingOfQueuedSources();
         }
     }
 
@@ -504,11 +506,10 @@ public class Participant
     /**
      * Schedule a task to signal all queued remote sources to the remote side. If a task is already scheduled, does
      * not schedule a new one (the existing task will send all latest queued sources).
-     *
-     * @param delayMs the delay in milliseconds after which the task is to execute.
      */
-    private void scheduleSignalingOfQueuedSources(int delayMs)
+    private void scheduleSignalingOfQueuedSources()
     {
+        int delayMs =  ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
         synchronized (signalQueuedSourcesTaskSyncRoot)
         {
             if (signalQueuedSourcesTask == null)
@@ -549,10 +550,9 @@ public class Participant
             return;
         }
 
-        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
         synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            scheduleSignalingOfQueuedSources(delayMs);
+            scheduleSignalingOfQueuedSources();
         }
     }
 
