@@ -656,6 +656,10 @@ public class JitsiMeetConferenceImpl
             {
                 statistics.totalParticipantsNoMultiStream.incrementAndGet();
             }
+            if (!participant.hasSourceNameSupport())
+            {
+                statistics.totalParticipantsNoSourceName.incrementAndGet();
+            }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);

@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -396,6 +395,7 @@ public class FocusManager
         JSONObject stats = new JSONObject();
         stats.put("total_participants", statistics.totalParticipants.get());
         stats.put("total_participants_no_multi_stream", statistics.totalParticipantsNoMultiStream.get());
+        stats.put("total_participants_no_source_name", statistics.totalParticipantsNoSourceName.get());
         stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
         stats.put("conferences", getNonHealthCheckConferenceCount());
 
