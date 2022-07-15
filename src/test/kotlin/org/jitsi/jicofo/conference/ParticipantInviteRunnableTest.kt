@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference
 
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
@@ -50,14 +51,16 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 )
             )
         )
+        val jid1 = JidCreate.entityFullFrom("conference@example.com/p1")
+        val jid2 = JidCreate.entityFullFrom("conference@example.com/p2")
         val conferenceSources = ConferenceSourceMap(
-            JidCreate.entityFullFrom("conference@example.com/p1") to EndpointSourceSet(
+            jid1 to EndpointSourceSet(
                 setOf(
                     Source(1L, MediaType.AUDIO, "audio-p1"),
                     Source(2L, MediaType.VIDEO, "video-p1"),
                 )
             ),
-            JidCreate.entityFullFrom("conference@example.com/p2") to EndpointSourceSet(
+            jid2 to EndpointSourceSet(
                 setOf(
                     Source(11L, MediaType.AUDIO, "audio-p2"),
                     Source(12L, MediaType.VIDEO, "video-p2"),
@@ -85,10 +88,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             )
         }
 
-        val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
-            remove(FEATURE_SCTP)
-        }
-
         // Capture the jingle contents that the invite runnable will send via Jingle.
         val jingleContentsSlot = slot<List<ContentPacketExtension>>()
         val sourcesContentsSlot = slot<ConferenceSourceMap>()
@@ -111,74 +110,64 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 } returns true
             }
         }
-        val participant = Participant(
-            mockk {
-                every { occupantJid } returns JidCreate.entityFullFrom("conference@example.com/participant")
-                every { name } returns "participant"
-                every { role } returns MemberRole.OWNER
-            },
-            features,
-            LoggerImpl("test"),
-            conference
-        )
-        val participantInviteRunnable = ParticipantInviteRunnable(
-            conference,
-            colibriSessionManager,
-            participant,
-            false,
-            false,
-            false,
-            LoggerImpl("test")
-        )
-
-        context("When the participant supports audio and video") {
-            participant.supportedMediaTypes shouldBe setOf(MediaType.AUDIO, MediaType.VIDEO)
-
-            participantInviteRunnable.run()
-
-            jingleContentsSlot.isCaptured shouldBe true
-            jingleContentsSlot.captured.apply {
-                size shouldBe 2
-                any { it.name == "video" } shouldBe true
-                any { it.name == "audio" } shouldBe true
+        listOf(true, false).forEach { supportsVideo ->
+            val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
+                remove(FEATURE_SCTP)
+                if (!supportsVideo) remove(FEATURE_VIDEO)
             }
 
-            sourcesContentsSlot.isCaptured shouldBe true
-            sourcesContentsSlot.captured.values.apply {
+            val participant = Participant(
+                mockk {
+                    every { occupantJid } returns JidCreate.entityFullFrom("conference@example.com/participant")
+                    every { name } returns "participant"
+                    every { role } returns MemberRole.OWNER
+                    every { sourceInfos } returns emptySet()
+                },
+                features,
+                LoggerImpl("test"),
+                conference
+            )
+            val participantInviteRunnable = ParticipantInviteRunnable(
+                conference,
+                colibriSessionManager,
+                participant,
+                false,
+                false,
+                false,
+                LoggerImpl("test")
+            )
+
+            context("When the participant ${if (supportsVideo) "supports" else "does not support"} video") {
+                participantInviteRunnable.run()
+
+                jingleContentsSlot.isCaptured shouldBe true
+                jingleContentsSlot.captured.apply {
+                    size shouldBe if (supportsVideo) 2 else 1
+                    any { it.name == "video" } shouldBe supportsVideo
+                    any { it.name == "audio" } shouldBe true
+                }
+
+                sourcesContentsSlot.isCaptured shouldBe true
+                val sources = sourcesContentsSlot.captured
                 should("Have some audio sources") {
-                    any { it.hasAudio } shouldBe true
+                    sources.values.all { it.hasAudio } shouldBe true
                 }
-                should("Have some video sources") {
-                    any { it.hasVideo } shouldBe true
+                should("Have video sources iff video is supported") {
+                    sources.values.all { it.hasVideo } shouldBe supportsVideo
                 }
-                should("Have some source groups") {
-                    // TODO: check if simulcast is properly stripped?
-                    any { it.ssrcGroups.isNotEmpty() } shouldBe true
-                }
-            }
-        }
-        context("When the participant supports only audio") {
-            features.remove(FEATURE_VIDEO)
-            participant.supportedMediaTypes shouldBe setOf(MediaType.AUDIO)
 
-            participantInviteRunnable.run()
+                should("Have the correct SSRC groups") {
+                    // p1 has no groups
+                    sources[jid1]!!.ssrcGroups.shouldBeEmpty()
 
-            jingleContentsSlot.isCaptured shouldBe true
-            jingleContentsSlot.captured.apply {
-                size shouldBe 1
-                any { it.name == "audio" } shouldBe true
-            }
-
-            sourcesContentsSlot.isCaptured shouldBe true
-            sourcesContentsSlot.captured.values.apply {
-                should("have some audio sources") {
-                    any { it.hasAudio } shouldBe true
-                }
-                should("have no video sources") {
-                    any { it.hasVideo } shouldBe false
-                }
-                should("have no source groups") {
-                    any { it.ssrcGroups.isNotEmpty() } shouldBe false
+                    // p2 has simulcast. It should be stripped, but RTX should be retained.
+                    val p2ssrcGroups = sources[jid2]!!.ssrcGroups
+                    if (!supportsVideo) {
+                        p2ssrcGroups.shouldBeEmpty()
+                    } else {
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Sim } shouldBe false
+                        p2ssrcGroups.any { it.semantics == SsrcGroupSemantics.Fid } shouldBe true
+                    }
                 }
             }
         }

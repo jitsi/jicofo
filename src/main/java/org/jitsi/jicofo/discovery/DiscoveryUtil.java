@@ -77,6 +77,11 @@ public class DiscoveryUtil
     public final static String FEATURE_SOURCE_NAMES = "http://jitsi.org/source-name";
 
     /**
+     * Supports receiving multiple video streams.
+     */
+    public final static String FEATURE_RECEIVE_MULTIPLE_STREAMS = "http://jitsi.org/receive-multiple-video-streams";
+
+    /**
      * Jingle sources encoded as JSON.
      */
     public final static String FEATURE_JSON_SOURCES = "http://jitsi.org/json-encoded-sources";

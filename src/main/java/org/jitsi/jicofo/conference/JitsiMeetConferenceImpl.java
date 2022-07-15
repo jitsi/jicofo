@@ -26,6 +26,7 @@ import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.colibri.v2.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
+import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -594,7 +595,6 @@ public class JitsiMeetConferenceImpl
                             + " videoMuted=" + chatRoomMember.isVideoMuted()
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi());
-            getFocusManager().getStatistics().totalParticipants.incrementAndGet();
             hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
@@ -649,6 +649,17 @@ public class JitsiMeetConferenceImpl
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
+
+            Statistics statistics = getFocusManager().getStatistics();
+            statistics.totalParticipants.incrementAndGet();
+            if (!participant.supportsReceivingMultipleVideoStreams())
+            {
+                statistics.totalParticipantsNoMultiStream.incrementAndGet();
+            }
+            if (!participant.hasSourceNameSupport())
+            {
+                statistics.totalParticipantsNoSourceName.incrementAndGet();
+            }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
             inviteParticipant(participant, false, justJoined);
@@ -1070,10 +1081,7 @@ public class JitsiMeetConferenceImpl
      */
     private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
     {
-        final ConferenceSourceMap finalSources = (ConferenceConfig.config.stripSimulcast())
-                ? sources.copy().stripSimulcast().unmodifiable()
-                : sources.copy().unmodifiable();
-        if (finalSources.isEmpty())
+        if (sources.isEmpty())
         {
             logger.debug("No new sources to propagate.");
             return;
@@ -1081,7 +1089,7 @@ public class JitsiMeetConferenceImpl
 
         participants.values().stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
-            .forEach(participant -> participant.addRemoteSources(finalSources));
+            .forEach(participant -> participant.addRemoteSources(sources));
     }
 
 
@@ -1385,10 +1393,7 @@ public class JitsiMeetConferenceImpl
      */
     private void sendSourceRemove(ConferenceSourceMap sources, Participant except)
     {
-        final ConferenceSourceMap finalSources = ConferenceConfig.config.stripSimulcast()
-                ? sources.copy().stripSimulcast().unmodifiable()
-                : sources.copy().unmodifiable();
-        if (finalSources.isEmpty())
+        if (sources.isEmpty())
         {
             logger.debug("No sources to remove.");
             return;
@@ -1396,7 +1401,7 @@ public class JitsiMeetConferenceImpl
 
         participants.values().stream()
                 .filter(participant -> participant != except)
-                .forEach(participant -> participant.removeRemoteSources(finalSources));
+                .forEach(participant -> participant.removeRemoteSources(sources));
     }
 
     /**
@@ -1878,6 +1883,21 @@ public class JitsiMeetConferenceImpl
         return jibriSipGateway;
     }
 
+    /**
+     * Notifies this conference that one of the participants' screensharing source has changed its "mute" status.
+     */
+    void desktopSourceIsMutedChanged(Participant participant, boolean desktopSourceIsMuted)
+    {
+        if (!ConferenceConfig.config.getMultiStreamBackwardCompat())
+        {
+            return;
+        }
+
+        participants.values().stream()
+                .filter(p -> p != participant)
+                .filter(p -> !p.supportsReceivingMultipleVideoStreams())
+                .forEach(p -> p.remoteDesktopSourceIsMutedChanged(participant.getMucJid(), desktopSourceIsMuted));
+    }
 
     /**
      * {@inheritDoc}
@@ -2033,6 +2053,11 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+            Participant participant = getParticipant(member.getOccupantJid());
+            if (participant != null)
+            {
+                participant.presenceChanged();
+            }
         }
 
         @Override
