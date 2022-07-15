@@ -236,7 +236,7 @@ public class ChatMemberImpl
         }
         catch (Exception e)
         {
-            logger.info("Ignoring invalid SourceInfo JSON");
+            logger.warn("Ignoring invalid SourceInfo JSON", e);
             return;
         }
 
