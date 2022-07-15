@@ -119,6 +119,13 @@ public class Participant
     private final Object signalQueuedSourcesTaskSyncRoot = new Object();
 
     /**
+     * Whether the screensharing source of this participant (if it exists) is muted. If a screensharing source doesn't
+     * exists this stays false (though the source and the mute status are communicated separately so they may not
+     * always be in sync)
+     */
+    private boolean desktopSourceIsMuted = false;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
@@ -133,6 +140,7 @@ public class Participant
         this.supportedFeatures = supportedFeatures;
         this.conference = conference;
         this.roomMember = roomMember;
+        updateDesktopSourceIsMuted(roomMember.getSourceInfos());
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
         sourceSignaling = new SourceSignaling(
@@ -141,6 +149,49 @@ public class Participant
                 ConferenceConfig.config.stripSimulcast(),
                 supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.getMultiStreamBackwardCompat()
         );
+    }
+
+    /**
+     * Notify this {@link Participant} that the underlying {@link ChatRoomMember}'s presence changed.
+     */
+    void presenceChanged()
+    {
+        if (updateDesktopSourceIsMuted(roomMember.getSourceInfos()))
+        {
+            conference.desktopSourceIsMutedChanged(this, desktopSourceIsMuted);
+        }
+    }
+
+    /**
+     * Update the value of {@link #desktopSourceIsMuted} based on the advertised {@link SourceInfo}s.
+     * @return true if the value of {@link #desktopSourceIsMuted} changed as a result of this call.
+     */
+    private boolean updateDesktopSourceIsMuted(@NotNull Set<SourceInfo> sourceInfos)
+    {
+        boolean newValue = sourceInfos.stream().anyMatch(si -> si.getVideoType() == VideoType.Desktop && si.getMuted());
+        if (desktopSourceIsMuted != newValue)
+        {
+            desktopSourceIsMuted = newValue;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Notify this participant that another participant's (identified by {@code owner}) screensharing source was muted
+     * or unmuted.
+     */
+    void remoteDesktopSourceIsMutedChanged(Jid owner, Boolean muted)
+    {
+        // This is only needed for backwards compatibility with clients that don't support receiving multiple streams.
+        if (supportsReceivingMultipleVideoStreams())
+        {
+            return;
+        }
+
+        sourceSignaling.remoteDesktopSourceIsMutedChanged(owner, muted);
+        // Signal updates, if any, immediately.
+        scheduleSignalingOfQueuedSources(0);
     }
 
     public Participant(

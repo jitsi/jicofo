@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.jicofo.conference.source.SourceInfo
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
 import org.jitsi.jicofo.xmpp.muc.MemberRole
@@ -116,6 +117,8 @@ class JibriChatRoomMember(
     override fun getRole(): MemberRole = TODO("Not yet implemented")
     override fun setRole(role: MemberRole?) = TODO("Not yet implemented")
     override fun getJid(): Jid = TODO("Not yet implemented")
+    override fun getSourceInfos(): MutableSet<SourceInfo> = TODO("Not yet implemented")
+
     override fun getJoinOrderNumber(): Int = TODO("Not yet implemented")
     override fun isRobot(): Boolean = TODO("Not yet implemented")
     override fun isJigasi(): Boolean = TODO("Not yet implemented")

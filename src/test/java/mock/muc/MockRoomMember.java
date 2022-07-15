@@ -17,11 +17,15 @@
  */
 package mock.muc;
 
+import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
+
+import java.util.*;
 
 /**
  * @author Pawel Domas
@@ -93,6 +97,12 @@ public class MockRoomMember
     public Jid getJid()
     {
         return address;
+    }
+
+    @Override
+    public @NotNull Set<SourceInfo> getSourceInfos()
+    {
+        return Collections.emptySet();
     }
 
     @Override

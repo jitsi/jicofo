@@ -21,10 +21,12 @@ import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
+import org.jxmpp.jid.Jid
 
 class SourceSignaling(
     audio: Boolean = true,
@@ -56,8 +58,32 @@ class SourceSignaling(
      */
     private var updatedSources = ConferenceSourceMap()
 
-    fun addSources(sourcesToAdd: ConferenceSourceMap) = updatedSources.add(sourcesToAdd)
-    fun removeSources(sourcesToRemove: ConferenceSourceMap) = updatedSources.remove(sourcesToRemove)
+    /**
+     * In the case when [supportsReceivingMultipleStreams] is false, stores any screensharing sources which are
+     * signaled to be muted, so that they can be restored once unmuted.
+     */
+    private val mutedDesktopSources = ConferenceSourceMap()
+
+    fun addSources(sourcesToAdd: ConferenceSourceMap) {
+        sourcesToAdd.copy().entries.forEach { (owner, ess) ->
+            if (mutedDesktopSources[owner] == NO_SOURCES) {
+                // owner's desktop source was muted before the source details were signaled. Suppress and save the
+                // desktop sources.
+                val desktopSources = ess.getDesktopSources()
+                if (!desktopSources.isEmpty()) {
+                    mutedDesktopSources.remove(owner)
+                    mutedDesktopSources.add(owner, desktopSources)
+                    sourcesToAdd.remove(ConferenceSourceMap(owner, desktopSources))
+                }
+            }
+        }
+        updatedSources.add(sourcesToAdd)
+    }
+
+    fun removeSources(sourcesToRemove: ConferenceSourceMap) {
+        updatedSources.remove(sourcesToRemove)
+        mutedDesktopSources.remove(sourcesToRemove)
+    }
 
     /**
      * Update [signaledSources] to [updatedSources]. Return the set of operations ([Add] or [Remove]) needed to be
@@ -101,6 +127,35 @@ class SourceSignaling(
             filterMultiStream()
         }
     }
+
+    /**
+     * Notifies this instance that a remote participant (identified by [owner]) has muted or unmuted their screensharing
+     * source.
+     */
+    fun remoteDesktopSourceIsMutedChanged(owner: Jid, muted: Boolean) {
+        if (muted) {
+            // so that we can fall back to the video source
+            val allParticipantSources = updatedSources[owner] ?: EndpointSourceSet()
+            var desktopSources = allParticipantSources.getDesktopSources()
+
+            // The source was muted. If there was a screensharing source signaled (desktopSources is not empty)
+            // we remove it from [updatedSources], so that we can signal a source-remove with the next update.
+            updatedSources.remove(ConferenceSourceMap(owner, desktopSources))
+            // If the source was not signaled yet, save NO_SOURCES in the map to remember that it is muted once it
+            // is signaled.
+            mutedDesktopSources.add(owner, if (desktopSources.isEmpty()) NO_SOURCES else desktopSources)
+        } else {
+            val unmutedDesktopSources = mutedDesktopSources[owner]
+
+            // Remove it from the muted map so future calls to [addSources] are allowed to add it.
+            mutedDesktopSources.remove(owner)
+            // If there was a screensharing source previously signaled, and it is not the NO_SOURCES placeholder, add
+            // it to [updatedSources] so that is signaled with the next update.
+            if (unmutedDesktopSources != null && unmutedDesktopSources != NO_SOURCES) {
+                updatedSources.add(owner, unmutedDesktopSources)
+            }
+        }
+    }
 }
 
 /**
@@ -119,3 +174,17 @@ private fun ConferenceSourceMap.filterMultiStream() = map { ess ->
         ess
     }
 }
+
+private fun EndpointSourceSet.getDesktopSources(): EndpointSourceSet {
+    val desktopSourceName = sources.find { it.videoType == VideoType.Desktop }?.name
+    return if (desktopSourceName != null) {
+        val desktopSources = sources.filter { it.name == desktopSourceName }.toSet()
+        val desktopSsrcs = desktopSources.map { it.ssrc }.toSet()
+        val desktopGroups = ssrcGroups.filter { it.ssrcs.any { it in desktopSsrcs } }.toSet()
+        EndpointSourceSet(desktopSources, desktopGroups)
+    } else {
+        EndpointSourceSet()
+    }
+}
+
+private val NO_SOURCES = EndpointSourceSet(Source(987654321, MediaType.VIDEO))

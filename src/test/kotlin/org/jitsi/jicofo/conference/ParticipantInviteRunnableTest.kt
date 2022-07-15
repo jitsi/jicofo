@@ -121,6 +121,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { occupantJid } returns JidCreate.entityFullFrom("conference@example.com/participant")
                     every { name } returns "participant"
                     every { role } returns MemberRole.OWNER
+                    every { sourceInfos } returns emptySet()
                 },
                 features,
                 LoggerImpl("test"),
