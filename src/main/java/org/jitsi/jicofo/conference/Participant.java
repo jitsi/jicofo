@@ -509,7 +509,7 @@ public class Participant
      */
     private void scheduleSignalingOfQueuedSources()
     {
-        int delayMs =  ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
+        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
         synchronized (signalQueuedSourcesTaskSyncRoot)
         {
             if (signalQueuedSourcesTask == null)
