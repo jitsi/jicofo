@@ -24,6 +24,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.cascade.Cascade
+import org.jitsi.jicofo.cascade.getNodesBehind
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
@@ -244,8 +245,12 @@ class ColibriV2SessionManager(
             .associate { Pair(it.key.bridge, it.value.size) }
     }
 
-    override fun addLinkBetween(node: Colibri2Session, otherNode: Colibri2Session, meshId: String) {
-        TODO("Not yet implemented")
+    override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
+        val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getSessionParticipants(it) }
+        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap { getSessionParticipants(it) }
+
+        session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true)
+        otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false)
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
