@@ -137,26 +137,40 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
 /** Return a set of all nodes "behind" a given node link. */
 /* TODO: would this be better as an iterator? */
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(from: N, toward: N): Set<N> {
-    val set = HashSet<N>()
-    getNodesBehind(from, toward, set)
-    return set
-}
-
-private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(
-    from: N,
-    toward: N,
-    nodes: MutableSet<N>
-) {
+    val nodes = HashSet<N>()
     val link = requireNotNull(from.relays[toward.relayId]) {
         "$from does not have a link to $toward"
     }
+    getNodesBehind(link, toward, nodes)
+    return nodes
+}
+
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(fromMesh: String, toward: N): Set<N> {
+    val nodes = HashSet<N>()
     nodes.add(toward)
     toward.relays.values.forEach {
-        if (it.relayId == from.relayId || it.meshId == link.meshId) {
+        if (it.meshId == fromMesh) {
             return@forEach
         }
         val next = checkNotNull(sessions[it.relayId])
-        getNodesBehind(toward, next, nodes)
+        getNodesBehind(it, next, nodes)
+    }
+
+    return nodes
+}
+
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(
+    link: L,
+    toward: N,
+    nodes: MutableSet<N>
+) {
+    nodes.add(toward)
+    toward.relays.values.forEach {
+        if (it.meshId == link.meshId) {
+            return@forEach
+        }
+        val next = checkNotNull(sessions[it.relayId])
+        getNodesBehind(it, next, nodes)
     }
 }
 

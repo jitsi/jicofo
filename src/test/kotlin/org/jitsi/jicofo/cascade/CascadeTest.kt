@@ -87,6 +87,7 @@ class CascadeTest : ShouldSpec() {
                             cascade.getNodesBehind(node, other).shouldContainExactlyInAnyOrder(other)
                         }
                     }
+                    cascade.getNodesBehind("A", node).shouldContainExactlyInAnyOrder(node)
                 }
             }
             should("not call a callback when removing any node") {
@@ -148,6 +149,9 @@ class CascadeTest : ShouldSpec() {
                 cascade.getNodesBehind(nodes[2], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[3], nodes[4])
                 cascade.getNodesBehind(nodes[3], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
                 cascade.getNodesBehind(nodes[4], nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
+
+                cascade.getNodesBehind("A", nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[3], nodes[4])
+                cascade.getNodesBehind("B", nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
