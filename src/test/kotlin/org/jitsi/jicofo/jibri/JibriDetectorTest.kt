@@ -12,9 +12,9 @@ import org.jitsi.jicofo.conference.source.SourceInfo
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
 import org.jitsi.jicofo.xmpp.muc.MemberRole
-import org.jitsi.test.time.FakeClock
 import org.jitsi.utils.mins
 import org.jitsi.utils.ms
+import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt.Health.HEALTHY
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt.Health.UNHEALTHY
