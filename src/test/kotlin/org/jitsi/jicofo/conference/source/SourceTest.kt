@@ -32,21 +32,24 @@ class SourceTest : ShouldSpec() {
             val packetExtension = SourcePacketExtension().apply {
                 ssrc = 1
                 name = "name-1"
+                videoType = "camera"
                 addChildExtension(ParameterPacketExtension("msid", "msid"))
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
-                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid")
+                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", videoType = VideoType.Camera)
         }
         context("To XML") {
             val msidValue = "msid-value"
             val nameValue = "source-name-value"
-            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue)
+            val videoType = VideoType.Desktop
+            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, videoType = videoType)
             val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
             val extension = source.toPacketExtension(owner = ownerJid)
 
             extension.ssrc shouldBe 1
             extension.name shouldBe nameValue
+            extension.videoType shouldBe videoType.toString()
             val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
 
@@ -58,6 +61,16 @@ class SourceTest : ShouldSpec() {
             Source(1, MediaType.VIDEO, name = "test-name", msid = "msid").compactJson shouldBe
                 """
                 {"s":1,"n":"test-name","m":"msid"}
+                """.trimIndent()
+            Source(
+                1,
+                MediaType.VIDEO,
+                videoType = VideoType.Desktop,
+                name = "test-name",
+                msid = "msid"
+            ).compactJson shouldBe
+                """
+                {"s":1,"n":"test-name","m":"msid","v":"d"}
                 """.trimIndent()
             Source(1, MediaType.AUDIO).compactJson shouldBe """
             {"s":1}

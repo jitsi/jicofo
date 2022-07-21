@@ -371,6 +371,9 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                 colibriAllocation.getBridgeSessionId(),
                 colibriAllocation.getRegion()));
 
+        // We're about to send a jingle message that will initialize or reset the sources signaled to the participant.
+        // Reflect this in the participant state.
+        ConferenceSourceMap sources = participant.resetSignaledSources(offer.getSources());
         if (initiateSession)
         {
             logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
@@ -379,7 +382,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     offer.getContents(),
                     additionalExtensions,
                     meetConference,
-                    offer.getSources(),
+                    sources,
                     ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
         }
         else
@@ -390,7 +393,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     jingleSession,
                     offer.getContents(),
                     additionalExtensions,
-                    offer.getSources(),
+                    sources,
                     ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
         }
 
@@ -413,11 +416,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
         // Add the bridge's feedback sources.
         conferenceSources.add(colibriAllocation.getSources());
-        if (ConferenceConfig.config.stripSimulcast())
-        {
-            conferenceSources.stripSimulcast();
-        }
-        conferenceSources.stripByMediaType(participant.getSupportedMediaTypes());
         // Remove the participant's own sources (if they're present)
         conferenceSources.remove(participant.getMucJid());
 
