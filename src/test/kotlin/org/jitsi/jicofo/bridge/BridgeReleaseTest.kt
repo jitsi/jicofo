@@ -22,7 +22,7 @@ import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.setNewConfig
-import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
 /**

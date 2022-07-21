@@ -25,8 +25,8 @@ import io.kotest.matchers.shouldNotBe
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.util.context
 import org.jitsi.metaconfig.MetaconfigSettings
-import org.jitsi.test.time.FakeClock
 import org.jitsi.utils.ms
+import org.jitsi.utils.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeSelectorTest : ShouldSpec() {
