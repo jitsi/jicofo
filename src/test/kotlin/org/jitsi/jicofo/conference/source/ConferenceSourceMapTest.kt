@@ -158,6 +158,16 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
             }
         }
+        context("Operator plus") {
+            val a = ConferenceSourceMap(jid1 to endpoint1SourceSet)
+            val b = ConferenceSourceMap(jid2 to endpoint2SourceSet)
+            (a + b) shouldBe ConferenceSourceMap(jid1 to endpoint1SourceSet, jid2 to endpoint2SourceSet)
+        }
+        context("Operator minus") {
+            val a = ConferenceSourceMap(jid1 to endpoint1SourceSet, jid2 to endpoint2SourceSet)
+            val b = ConferenceSourceMap(jid1 to endpoint1SourceSet)
+            (a - b) shouldBe ConferenceSourceMap(jid2 to endpoint2SourceSet)
+        }
         context("To Jingle") {
             val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
             val contents = conferenceSourceMap.toJingle()

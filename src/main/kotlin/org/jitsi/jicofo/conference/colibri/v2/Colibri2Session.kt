@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference.colibri.v2
 
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -151,9 +150,7 @@ internal class Colibri2Session(
         }
 
         request.addEndpoint(endpoint.build())
-        logger.trace { "Sending endpoint update: ${request.build().toXML()}" }
-
-        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+        sendRequest(request.build(), "updateParticipant")
     }
 
     internal fun updateForceMute(participants: Set<ParticipantInfo>) {
@@ -167,14 +164,14 @@ internal class Colibri2Session(
             )
         }
 
-        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+        sendRequest(request.build(), "updateForceMute")
     }
 
     /** Expire the entire conference. */
     internal fun expire() {
         relays.clear()
         val request = createRequest().setExpire(true)
-        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+        sendRequest(request.build(), "expire")
     }
     /** Expire the colibri2 endpoint for a specific participant */
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
@@ -188,8 +185,7 @@ internal class Colibri2Session(
         participantsToExpire.forEach { request.addExpire(it.id) }
 
         logger.debug { "Expiring endpoint: ${participantsToExpire.map { it.id }}" }
-        logger.trace { "Expiring endpoints: ${request.build().toXML()}" }
-        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+        sendRequest(request.build(), "expire(participantsToExpire)")
     }
 
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
@@ -287,8 +283,25 @@ internal class Colibri2Session(
 
         relayIds.forEach { relays.remove(it) }
 
-        logger.trace("Expiring relays $relayIds: ${request.build().toXML()}")
-        xmppConnection.sendIqAndLogResponse(request.build(), logger)
+        sendRequest(request.build(), "expireRelays")
+    }
+
+    /**
+     * Send an IQ async, and handle timeouts and errors: timeouts are just logged, while errors trigger a session
+     * failure.
+     */
+    private fun sendRequest(iq: IQ, name: String) {
+        logger.debug { "Sending $name request: ${iq.toXML()}" }
+        xmppConnection.sendIqAndHandleResponseAsync(iq) {
+            when (it) {
+                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}" }
+                null -> logger.info("$name request timed out. Ignoring.")
+                else -> {
+                    logger.error("Received error response for $name, session failed: ${it.toXML()}")
+                    colibriSessionManager.sessionFailed(this@Colibri2Session)
+                }
+            }
+        }
     }
 
     override fun toString() = "Colibri2Session[bridge=${bridge.jid.resourceOrNull}, id=$id]"
@@ -326,56 +339,41 @@ internal class Colibri2Session(
 
         private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", id) }
 
-        /** Whether the transport has been updated with the remote side's candidates, DTLS fingerprints etc. */
-        private var transportUpdated = false
-
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
         fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
             logger.trace { "Sending create relay: ${request.toXML()}" }
-            val stanzaCollector = xmppConnection.createStanzaCollectorAndSend(request)
-            TaskPools.ioPool.submit { waitForResponse(stanzaCollector) }
-        }
 
-        /**
-         * Waits for a response to the relay allocation request. When a response is received, parse the contained
-         * transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
-         * TODO: act on errors (remove both bridges?)
-         */
-        private fun waitForResponse(stanzaCollector: StanzaCollector) {
-            val response: IQ?
-            try {
-                response = stanzaCollector.nextResult()
-            } finally {
-                logger.debug("Cancelling.")
-                stanzaCollector.cancel()
-            }
-            logger.trace { "Received response: ${response?.toXML()}" }
-            if (response !is ConferenceModifiedIQ) {
-                logger.error("Received error: ${response?.toXML() ?: "timeout"}")
-                return
-            }
-
-            // TODO: We just assume that the response has a single [Colibri2Relay].
-            val transport = response.relays.firstOrNull()?.transport
-                ?: run {
-                    logger.error("No transport in response: ${response.toXML()}")
-                    return
+            xmppConnection.sendIqAndHandleResponseAsync(request) { response ->
+                // Wait for a response to the relay allocation request. When a response is received, parse the contained
+                // transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
+                logger.trace { "Received response: ${response?.toXML()}" }
+                if (response !is ConferenceModifiedIQ) {
+                    logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    colibriSessionManager.sessionFailed(this@Colibri2Session)
+                    return@sendIqAndHandleResponseAsync
                 }
-            val iceUdpTransport = transport.iceUdpTransport
-            if (iceUdpTransport == null) {
-                logger.error("Response has no iceUdpTransport")
-                return
-            }
 
-            // Forward the response to the corresponding [Colibri2Session]
-            colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
+                // TODO: We just assume that the response has a single [Colibri2Relay].
+                val transport = response.relays.firstOrNull()?.transport
+                    ?: run {
+                        logger.error("No transport in response: ${response.toXML()}")
+                        colibriSessionManager.sessionFailed(this@Colibri2Session)
+                        return@sendIqAndHandleResponseAsync
+                    }
+                val iceUdpTransport = transport.iceUdpTransport
+                if (iceUdpTransport == null) {
+                    logger.error("Response has no iceUdpTransport")
+                    colibriSessionManager.sessionFailed(this@Colibri2Session)
+                    return@sendIqAndHandleResponseAsync
+                }
+
+                // Forward the response to the corresponding [Colibri2Session]
+                colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
+            }
         }
 
-        /**
-         * Sends a colibri2 message setting/updating the remote-side transport of this relay.
-         *
-         */
+        /** Sends a colibri2 message setting/updating the remote-side transport of this relay. */
         fun setTransport(
             /**
              * The transport info as received by the remote side. We update some of the fields as required based on the
@@ -410,9 +408,7 @@ internal class Colibri2Session(
             relay.setTransport(Transport.getBuilder().apply { setIceUdpExtension(transport) }.build())
             request.addRelay(relay.build())
 
-            logger.debug { "Setting transport: ${request.build().toXML()}" }
-            xmppConnection.sendIqAndLogResponse(request.build(), logger)
-            transportUpdated = true
+            sendRequest(request.build(), "Relay.setTransport")
         }
 
         fun toJson() = OrderedJsonObject().apply {
@@ -421,7 +417,6 @@ internal class Colibri2Session(
             put("ice_controlling", iceControlling)
             put("dtls_setup", dtlsSetup)
             put("websocket_active", websocketActive)
-            put("transport_updated", transportUpdated)
         }
 
         /** Update or create a relay endpoint for a specific participant. */
@@ -434,9 +429,7 @@ internal class Colibri2Session(
             endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false))
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
-            logger.debug { "${if (create) "Creating" else "Updating"} endpoint ${participant.id}" }
-            logger.trace { "Sending ${request.build().toXML()}" }
-            xmppConnection.sendIqAndLogResponse(request.build(), logger)
+            sendRequest(request.build(), "Relay.updateParticipant")
         }
 
         /** Expire relay endpoints for a set of participants. */
@@ -450,9 +443,7 @@ internal class Colibri2Session(
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
 
-            logger.debug { "Expiring ${participants.map { it.id }}" }
-            logger.trace { "Sending ${request.build().toXML()}" }
-            xmppConnection.sendIqAndLogResponse(request.build(), logger)
+            sendRequest(request.build(), "Relay.expireParticipants")
         }
 
         /** Create a request to create a relay (this is just the initial request). */

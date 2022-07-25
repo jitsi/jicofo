@@ -114,17 +114,21 @@ class BridgeSelector @JvmOverloads constructor(
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
             if (!it.isInGracefulShutdown && !it.isShuttingDown) {
+                logger.warn("Lost a bridge: $bridgeJid")
                 lostBridges.incrementAndGet()
             }
             eventEmitter.fireEvent { bridgeRemoved(it) }
         }
     }
 
-    override fun healthCheckPassed(bridgeJid: Jid) = bridges[bridgeJid]?.setIsOperational(true) ?: Unit
+    override fun healthCheckPassed(bridgeJid: Jid) {
+        bridges[bridgeJid]?.isOperational = true
+    }
+
     override fun healthCheckFailed(bridgeJid: Jid) = bridges[bridgeJid]?.let {
         // When a bridge returns a non-healthy status, we mark it as non-operational AND we move all conferences
         // away from it.
-        it.setIsOperational(false)
+        it.isOperational = false
         eventEmitter.fireEvent { bridgeRemoved(it) }
     } ?: Unit
 
@@ -142,7 +146,7 @@ class BridgeSelector @JvmOverloads constructor(
         // attempted to be moved to another failing bridge).
         // The other possible case is that the bridge is not responding to jicofo, and is also unavailable to
         // endpoints. In this case we rely on endpoints reporting ICE failures to jicofo, which then trigger a move.
-        it.setIsOperational(false)
+        it.isOperational = false
     } ?: Unit
 
     /**
@@ -166,7 +170,7 @@ class BridgeSelector @JvmOverloads constructor(
         version: String? = null
     ): Bridge? {
 
-        var v = conferenceBridges.keys.firstOrNull()?.version
+        var v = conferenceBridges.keys.firstOrNull()?.fullVersion
         if (v == null) {
             v = version
         } else if (version != null && version != v) {
@@ -191,17 +195,11 @@ class BridgeSelector @JvmOverloads constructor(
         }
 
         if (v != null && !OctoConfig.config.allowMixedVersions) {
-            candidateBridges = candidateBridges.filter { it.version == v }
+            candidateBridges = candidateBridges.filter { it.fullVersion == v }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with the required version: $v")
                 return null
             }
-        }
-
-        candidateBridges = candidateBridges.filter { it.supportsColibri2() }
-        if (candidateBridges.isEmpty()) {
-            logger.warn("There are no bridges with colibri2 support.")
-            return null
         }
 
         // If there are active bridges, prefer those.
@@ -219,7 +217,10 @@ class BridgeSelector @JvmOverloads constructor(
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
-        )
+        ).also {
+            // The bridge was selected for an endpoint, increment its counter.
+            it?.endpointAdded()
+        }
     }
 
     val stats: JSONObject

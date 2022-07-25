@@ -20,7 +20,7 @@ package org.jitsi.jicofo.bridge
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.FocusManager
-import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.time.FakeClock
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate

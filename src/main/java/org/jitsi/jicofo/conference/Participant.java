@@ -58,9 +58,9 @@ public class Participant
     }
 
     /**
-     * List of remote source addition or removal operations that have not yet been signaled to this participant.
+     * The layer which keeps track of which sources have been signaled to this participant.
      */
-    private final SourceAddRemoveQueue remoteSourcesQueue = new SourceAddRemoveQueue();
+    private final SourceSignaling sourceSignaling;
 
     /**
      * Used to synchronize access to {@link #inviteRunnable}.
@@ -119,6 +119,13 @@ public class Participant
     private final Object signalQueuedSourcesTaskSyncRoot = new Object();
 
     /**
+     * Whether the screensharing source of this participant (if it exists) is muted. If a screensharing source doesn't
+     * exists this stays false (though the source and the mute status are communicated separately so they may not
+     * always be in sync)
+     */
+    private boolean desktopSourceIsMuted = false;
+
+    /**
      * Creates new {@link Participant} for given chat room member.
      *
      * @param roomMember the {@link ChatRoomMember} that represent this
@@ -133,8 +140,61 @@ public class Participant
         this.supportedFeatures = supportedFeatures;
         this.conference = conference;
         this.roomMember = roomMember;
+        updateDesktopSourceIsMuted(roomMember.getSourceInfos());
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("participant", getEndpointId());
+        sourceSignaling = new SourceSignaling(
+                hasAudioSupport(),
+                hasVideoSupport(),
+                ConferenceConfig.config.stripSimulcast(),
+                supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.getMultiStreamBackwardCompat()
+        );
+    }
+
+    /**
+     * Notify this {@link Participant} that the underlying {@link ChatRoomMember}'s presence changed.
+     */
+    void presenceChanged()
+    {
+        if (updateDesktopSourceIsMuted(roomMember.getSourceInfos()))
+        {
+            conference.desktopSourceIsMutedChanged(this, desktopSourceIsMuted);
+        }
+    }
+
+    /**
+     * Update the value of {@link #desktopSourceIsMuted} based on the advertised {@link SourceInfo}s.
+     * @return true if the value of {@link #desktopSourceIsMuted} changed as a result of this call.
+     */
+    private boolean updateDesktopSourceIsMuted(@NotNull Set<SourceInfo> sourceInfos)
+    {
+        boolean newValue = sourceInfos.stream().anyMatch(si -> si.getVideoType() == VideoType.Desktop && si.getMuted());
+        if (desktopSourceIsMuted != newValue)
+        {
+            desktopSourceIsMuted = newValue;
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Notify this participant that another participant's (identified by {@code owner}) screensharing source was muted
+     * or unmuted.
+     */
+    void remoteDesktopSourceIsMutedChanged(Jid owner, Boolean muted)
+    {
+        // This is only needed for backwards compatibility with clients that don't support receiving multiple streams.
+        if (supportsReceivingMultipleVideoStreams())
+        {
+            return;
+        }
+
+        sourceSignaling.remoteDesktopSourceIsMutedChanged(owner, muted);
+        // Signal updates, if any, immediately.
+        synchronized (signalQueuedSourcesTaskSyncRoot)
+        {
+            scheduleSignalingOfQueuedSources();
+        }
     }
 
     public Participant(
@@ -230,16 +290,6 @@ public class Participant
     }
 
     /**
-     * Returns <tt>true</tt> if this participant supports RTP bundle and RTCP
-     * mux.
-     */
-    public boolean hasBundleSupport()
-    {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_RTCP_MUX)
-                && supportedFeatures.contains(DiscoveryUtil.FEATURE_RTP_BUNDLE);
-    }
-
-    /**
      * @return {@code true} if this participant supports source name signaling.
      */
     public boolean hasSourceNameSupport()
@@ -262,6 +312,11 @@ public class Participant
     public boolean supportsJsonEncodedSources()
     {
         return supportedFeatures.contains(DiscoveryUtil.FEATURE_JSON_SOURCES);
+    }
+
+    public boolean supportsReceivingMultipleVideoStreams()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_RECEIVE_MULTIPLE_STREAMS);
     }
 
     /**
@@ -429,52 +484,46 @@ public class Participant
             return;
         }
 
-        if (!hasAudioSupport() || !hasVideoSupport())
+        synchronized (sourceSignaling)
         {
-            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
+            sourceSignaling.addSources(sources);
         }
 
         JingleSession jingleSession = getJingleSession();
         if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-add.");
-            remoteSourcesQueue.sourceAdd(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
 
-        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
-        if (delayMs > 0)
+        synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            synchronized (signalQueuedSourcesTaskSyncRoot)
-            {
-                remoteSourcesQueue.sourceAdd(sources);
-                scheduleSignalingOfQueuedSources(delayMs);
-            }
+            scheduleSignalingOfQueuedSources();
         }
-        else
+    }
+
+    /**
+     * Reset the set of sources that have been signaled to the participant.
+     * @param sources set of remote sources to be signaled to the participant (pre-filtering!)
+     * @return the set of sources that should be signaled in the initial offer (after filtering is applied!)
+     */
+    @NotNull
+    public ConferenceSourceMap resetSignaledSources(@NotNull ConferenceSourceMap sources)
+    {
+        synchronized (sourceSignaling)
         {
-            OperationSetJingle jingle = conference.getJingle();
-            if (jingle == null)
-            {
-                logger.error("Can not send Jingle source-add, no Jingle API available.");
-                return;
-            }
-            jingle.sendAddSourceIQ(
-                    sources,
-                    jingleSession,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+            return sourceSignaling.reset(sources);
         }
     }
 
     /**
      * Schedule a task to signal all queued remote sources to the remote side. If a task is already scheduled, does
      * not schedule a new one (the existing task will send all latest queued sources).
-     *
-     * @param delayMs the delay in milliseconds after which the task is to execute.
      */
-    private void scheduleSignalingOfQueuedSources(int delayMs)
+    private void scheduleSignalingOfQueuedSources()
     {
+        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
         synchronized (signalQueuedSourcesTaskSyncRoot)
         {
             if (signalQueuedSourcesTask == null)
@@ -494,21 +543,6 @@ public class Participant
         }
     }
 
-    public Set<MediaType> getSupportedMediaTypes()
-    {
-        Set<MediaType> supportedMediaTypes = new HashSet<>();
-        if (hasVideoSupport())
-        {
-            supportedMediaTypes.add(MediaType.VIDEO);
-        }
-        if (hasAudioSupport())
-        {
-            supportedMediaTypes.add(MediaType.AUDIO);
-        }
-
-        return supportedMediaTypes;
-    }
-
     /**
      * Remove a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
@@ -523,41 +557,22 @@ public class Participant
             return;
         }
 
-        if (!hasAudioSupport() || !hasVideoSupport())
+        synchronized (sourceSignaling)
         {
-            sources = sources.copy().stripByMediaType(getSupportedMediaTypes());
+            sourceSignaling.removeSources(sources);
         }
 
         JingleSession jingleSession = getJingleSession();
         if (jingleSession == null)
         {
             logger.debug("No Jingle session yet, queueing source-remove.");
-            remoteSourcesQueue.sourceRemove(sources);
             // No need to schedule, the sources will be signaled when the session is established.
             return;
         }
 
-        int delayMs = ConferenceConfig.config.getSourceSignalingDelayMs(conference.getParticipantCount());
-        if (delayMs > 0)
+        synchronized (signalQueuedSourcesTaskSyncRoot)
         {
-            synchronized (signalQueuedSourcesTaskSyncRoot)
-            {
-                remoteSourcesQueue.sourceRemove(sources);
-                scheduleSignalingOfQueuedSources(delayMs);
-            }
-        }
-        else
-        {
-            OperationSetJingle jingle = conference.getJingle();
-            if (jingle == null)
-            {
-                logger.error("Can not send Jingle source-remove, no Jingle API available.");
-                return;
-            }
-            jingle.sendRemoveSourceIQ(
-                    sources,
-                    jingleSession,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
+            scheduleSignalingOfQueuedSources();
         }
     }
 
@@ -583,21 +598,18 @@ public class Participant
         boolean encodeSourcesAsJson
                 = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
 
-        for (SourcesToAddOrRemove sourcesToAddOrRemove : remoteSourcesQueue.clear())
+        for (SourcesToAddOrRemove sourcesToAddOrRemove : sourceSignaling.update())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
             ConferenceSourceMap sources = sourcesToAddOrRemove.getSources();
             logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingle.sendAddSourceIQ(
-                        sourcesToAddOrRemove.getSources(),
-                        jingleSession,
-                        encodeSourcesAsJson);
+                jingle.sendAddSourceIQ(sources, jingleSession, encodeSourcesAsJson);
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingle.sendRemoveSourceIQ(sourcesToAddOrRemove.getSources(), jingleSession, encodeSourcesAsJson);
+                jingle.sendRemoveSourceIQ(sources, jingleSession, encodeSourcesAsJson);
             }
         }
     }
@@ -630,7 +642,7 @@ public class Participant
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("id", getEndpointId());
-        o.put("remote_sources_queue", remoteSourcesQueue.getDebugState());
+        o.put("source_signaling", sourceSignaling.getDebugState());
         o.put("invite_runnable", inviteRunnable != null ? "Running" : "Not running");
         //o.put("room_member", roomMember.getDebugState());
         o.put("jingle_session", jingleSession == null ? "null" : "not null");

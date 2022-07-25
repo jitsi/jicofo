@@ -17,9 +17,13 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+
+import java.util.*;
 
 /**
  * This interface represents chat room participants. Instances are retrieved
@@ -63,6 +67,11 @@ public interface ChatRoomMember
      * Returns the JID of the user (outside the MUC), i.e. the "real" JID.
      */
     Jid getJid();
+
+    /**
+     * Get the latest {@link SourceInfo}s advertised by this chat member in presence.
+     */
+    @NotNull Set<SourceInfo> getSourceInfos();
 
     /**
      * Returns the user's MUC address.

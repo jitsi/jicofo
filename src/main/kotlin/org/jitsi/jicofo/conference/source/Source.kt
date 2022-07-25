@@ -32,7 +32,9 @@ data class Source(
     /** Optional name */
     val name: String? = null,
     /** Optional msid */
-    val msid: String? = null
+    val msid: String? = null,
+    /** Optional video type (camera or desktop) */
+    val videoType: VideoType? = null
 ) {
     /** Create a [Source] from an XML extension. */
     constructor(mediaType: MediaType, sourcePacketExtension: SourcePacketExtension) : this(
@@ -40,7 +42,8 @@ data class Source(
         mediaType,
         sourcePacketExtension.name,
         sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
-            .filter { it.name == "msid" }.map { it.value }.firstOrNull()
+            .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
+        if (sourcePacketExtension.videoType == null) null else VideoType.parseString(sourcePacketExtension.videoType)
     )
 
     /** Serializes this [Source] to XML */
@@ -59,6 +62,10 @@ data class Source(
         if (encodeMsid && msid != null) {
             addChildExtension(ParameterPacketExtension("msid", msid))
         }
+
+        this@Source.videoType?.let {
+            videoType = it.toString()
+        }
     }
 
     /**
@@ -75,6 +82,9 @@ data class Source(
             msid?.let {
                 append(""","m":"$it"""")
             }
+            if (videoType == VideoType.Desktop) {
+                append(""","v":"d"""")
+            }
             append("}")
         }
     }
@@ -85,6 +95,7 @@ data class Source(
         put("media_type", mediaType.toString())
         put("name", name ?: "null")
         put("msid", msid ?: "null")
+        put("videoType", videoType ?: "null")
     }
 
     companion object {

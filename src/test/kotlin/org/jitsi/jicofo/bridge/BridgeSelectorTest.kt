@@ -21,10 +21,12 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeIn
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.util.context
 import org.jitsi.metaconfig.MetaconfigSettings
-import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.ms
+import org.jitsi.utils.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
 
 class BridgeSelectorTest : ShouldSpec() {
@@ -37,6 +39,15 @@ class BridgeSelectorTest : ShouldSpec() {
         val jid2 = JidCreate.from("jvb2@example.com")
         val jid3 = JidCreate.from("jvb3@example.com/goldengate")
 
+        context("Stress from new endpoints") {
+            val bridgeSelector = BridgeSelector(clock)
+            val bridge = bridgeSelector.addJvbAddress(jid1).apply { setStats() }
+            bridge.stress shouldBe 0
+            bridgeSelector.selectBridge()
+            // The stress should increase because it was recently selected.
+            bridge.stress shouldNotBe 0
+        }
+
         context("Selection based on operational status") {
             val bridgeSelector = BridgeSelector(clock)
             val jvb1 = bridgeSelector.addJvbAddress(jid1).apply { setStats() }
@@ -46,16 +57,16 @@ class BridgeSelectorTest : ShouldSpec() {
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
 
             // Bridge 1 is down
-            jvb1.setIsOperational(false)
+            jvb1.isOperational = false
             bridgeSelector.selectBridge() shouldBeIn setOf(jvb2, jvb3)
 
             // Bridge 2 is down
-            jvb2.setIsOperational(false)
+            jvb2.isOperational = false
             bridgeSelector.selectBridge() shouldBe jvb3
 
             // Bridge 1 is up again, but 3 is down instead
-            jvb1.setIsOperational(true)
-            jvb3.setIsOperational(false)
+            jvb1.isOperational = true
+            jvb3.isOperational = false
             // We need to elapse time after setting isOperational=true because isOperational=false is sticky
             clock.elapse(BridgeConfig.config.failureResetThreshold)
             bridgeSelector.selectBridge() shouldBe jvb1
@@ -73,17 +84,17 @@ class BridgeSelectorTest : ShouldSpec() {
             bridgeSelector.selectBridge() shouldBe jvb1
 
             // Jvb 1 is gone
-            jvb1.setIsOperational(false)
+            jvb1.isOperational = false
             bridgeSelector.selectBridge() shouldBe jvb2
 
             // All bridges down
-            jvb2.setIsOperational(false)
-            jvb3.setIsOperational(false)
+            jvb2.isOperational = false
+            jvb3.isOperational = false
             bridgeSelector.selectBridge() shouldBe null
 
-            jvb1.setIsOperational(true)
-            jvb2.setIsOperational(true)
-            jvb3.setIsOperational(true)
+            jvb1.isOperational = true
+            jvb2.isOperational = true
+            jvb3.isOperational = true
             // We need to elapse time after setting isOperational=true because isOperational=false is sticky
             clock.elapse(BridgeConfig.config.failureResetThreshold)
 
@@ -96,6 +107,8 @@ class BridgeSelectorTest : ShouldSpec() {
             jvb1.setStats(stress = .01)
             jvb2.setStats(stress = 0.0)
             jvb3.setStats(stress = .01)
+            // Reset recently added endpoints (100ms needed because of the bucket size).
+            clock.elapse(BridgeConfig.config.participantRampupInterval + 100.ms)
             bridgeSelector.selectBridge() shouldBe jvb2
         }
         context(config = regionBasedConfig, name = "Mixing versions") {
@@ -141,17 +154,6 @@ class BridgeSelectorTest : ShouldSpec() {
             splitSelector.removeJvbAddress(jid1)
 
             splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb2
-        }
-        context("Colibri2 support") {
-            val selector = BridgeSelector(clock)
-            val jvb1 = selector.addJvbAddress(jid1).apply { setStats(stress = 0.2, colibri2 = false) }
-            selector.selectBridge() shouldBe null
-
-            val jvb2 = selector.addJvbAddress(jid2).apply { setStats(stress = 0.9) }
-            selector.selectBridge() shouldBe jvb2
-
-            jvb2.setStats(stress = 0.9, gracefulShutdown = true)
-            selector.selectBridge() shouldBe jvb2
         }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
