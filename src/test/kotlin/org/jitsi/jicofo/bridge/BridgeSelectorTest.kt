@@ -157,19 +157,21 @@ class BridgeSelectorTest : ShouldSpec() {
         }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
-            selector.lostBridges() shouldBe 0
+            // TODO use MetricsContainer.reset() instead
+            val initialLostBridges = BridgeSelector.lostBridges.get()
+            //BridgeSelector.lostBridges.get() shouldBe initialLostBridges
 
             val jvb1 = selector.addJvbAddress(jid1)
-            selector.lostBridges() shouldBe 0
+            BridgeSelector.lostBridges.get() shouldBe initialLostBridges
 
             should("Increment the lost bridges stat when a bridge goes away") {
                 selector.removeJvbAddress(jvb1.jid)
-                selector.lostBridges() shouldBe 1
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
             }
             should("Not increment the lost bridges stat when a bridge in graceful-shutdown goes away") {
                 jvb1.setStats(gracefulShutdown = true)
                 selector.removeJvbAddress(jvb1.jid)
-                selector.lostBridges() shouldBe 0
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
             }
         }
         xcontext("Performance") {

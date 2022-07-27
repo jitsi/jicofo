@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge
 
+import JicofoMetricsContainer
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
@@ -27,7 +28,6 @@ import org.json.simple.JSONObject
 import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -62,19 +62,9 @@ class BridgeSelector @JvmOverloads constructor(
      */
     private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
 
-    val bridgeCount: Int
-        @Synchronized
-        get() = bridges.size
-
     val operationalBridgeCount: Int
         @Synchronized
         get() = bridges.values.count { it.isOperational && !it.isInGracefulShutdown }
-
-    /**
-     * The number of bridges which disconnected without going into graceful shutdown first.
-     */
-    private val lostBridges = AtomicInteger()
-    fun lostBridges() = lostBridges.get()
 
     /**
      * Adds a bridge to this selector, or if a bridge with the given JID
@@ -101,6 +91,7 @@ class BridgeSelector @JvmOverloads constructor(
         }
         logger.info("Added new videobridge: $newBridge")
         bridges[bridgeJid] = newBridge
+        bridgeCount.inc()
         eventEmitter.fireEvent { bridgeAdded(newBridge) }
     }
 
@@ -115,8 +106,9 @@ class BridgeSelector @JvmOverloads constructor(
         bridges.remove(bridgeJid)?.let {
             if (!it.isInGracefulShutdown && !it.isShuttingDown) {
                 logger.warn("Lost a bridge: $bridgeJid")
-                lostBridges.incrementAndGet()
+                lostBridges.inc()
             }
+            bridgeCount.dec()
             eventEmitter.fireEvent { bridgeRemoved(it) }
         }
     }
@@ -228,7 +220,7 @@ class BridgeSelector @JvmOverloads constructor(
         get() = bridgeSelectionStrategy.stats.apply {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            this["bridge_count"] = bridgeCount
+            this["bridge_count"] = bridgeCount.get()
             this["operational_bridge_count"] = bridges.values.count { it.isOperational }
             this["in_shutdown_bridge_count"] = bridges.values.count { it.isInGracefulShutdown }
             this["lost_bridges"] = lostBridges.get()
@@ -242,6 +234,17 @@ class BridgeSelector @JvmOverloads constructor(
                 bridges.values.forEach { put(it.jid.toString(), it.debugState) }
             }
         }
+
+    companion object {
+        @JvmField
+        val lostBridges = JicofoMetricsContainer.instance.registerCounter(
+            "bridge_selector_lost_bridges", "Number of bridges which disconnected unexpectedly."
+        )
+        @JvmField
+        val bridgeCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "bridge_selector_bridge_count", "The current number of bridges"
+        )
+    }
 
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)
