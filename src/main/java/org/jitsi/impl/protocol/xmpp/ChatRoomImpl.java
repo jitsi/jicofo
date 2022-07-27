@@ -212,6 +212,7 @@ public class ChatRoomImpl
         throws SmackException, XMPPException, InterruptedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
+        resetState();
         joinAs(xmppProvider.getConfig().getUsername());
     }
 
@@ -225,6 +226,30 @@ public class ChatRoomImpl
         return mainRoom;
     }
 
+    /**
+     * Prepare this {@link ChatRoomImpl} for a call to {@link #joinAs(Resourcepart)}, which send initial presence to
+     * the MUC. Resets any state that might have been set the previous time the MUC was joined.
+     */
+    private void resetState()
+    {
+        synchronized (members)
+        {
+            if (!members.isEmpty())
+            {
+                logger.warn("Removing " + members.size() + " stale members.");
+                members.clear();
+            }
+        }
+
+        role = null;
+        lastPresenceSent = null;
+        meetingId = null;
+        logger.addContext("meeting_id", "");
+        isBreakoutRoom = false;
+        mainRoom = null;
+        avModerationEnabled.clear();
+        whitelists.clear();
+    }
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
