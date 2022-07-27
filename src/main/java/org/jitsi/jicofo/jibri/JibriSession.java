@@ -164,9 +164,6 @@ public class JibriSession
      */
     private Jid terminator;
 
-    @NotNull
-    private final JibriStats stats = JibriStats.getGlobalStats();
-
     /**
      * Creates new {@link JibriSession} instance.
      * @param stateListener the listener to be notified about this session state changes.
@@ -230,7 +227,7 @@ public class JibriSession
     {
         if (failureReason != null)
         {
-            stats.sessionFailed(getJibriType());
+            JibriStats.sessionFailed(getJibriType());
         }
         stateListener.onSessionStateChanged(this, newStatus, failureReason);
     }
@@ -286,7 +283,7 @@ public class JibriSession
         }
         catch (Exception e)
         {
-            stats.sessionFailed(getJibriType());
+            JibriStats.sessionFailed(getJibriType());
 
             throw e;
         }

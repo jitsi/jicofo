@@ -159,7 +159,7 @@ class BridgeSelectorTest : ShouldSpec() {
             val selector = BridgeSelector(clock)
             // TODO use MetricsContainer.reset() instead
             val initialLostBridges = BridgeSelector.lostBridges.get()
-            //BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+            // BridgeSelector.lostBridges.get() shouldBe initialLostBridges
 
             val jvb1 = selector.addJvbAddress(jid1)
             BridgeSelector.lostBridges.get() shouldBe initialLostBridges

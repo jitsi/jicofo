@@ -17,7 +17,7 @@
  */
 import org.jitsi.metrics.MetricsContainer
 
-class JicofoMetricsContainer private constructor(): MetricsContainer() {
+class JicofoMetricsContainer private constructor() : MetricsContainer() {
     companion object {
         @JvmStatic
         val instance = JicofoMetricsContainer()
