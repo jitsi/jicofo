@@ -16,7 +16,7 @@
  */
 package org.jitsi.jicofo.jibri
 
-import JicofoMetricsContainer
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.json.simple.JSONObject
 
 /**

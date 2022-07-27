@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jitsi.jicofo.metrics
+
 import org.jitsi.metrics.MetricsContainer
 
-class JicofoMetricsContainer private constructor() : MetricsContainer() {
+class JicofoMetricsContainer private constructor(): MetricsContainer() {
     companion object {
         @JvmStatic
         val instance = JicofoMetricsContainer()
