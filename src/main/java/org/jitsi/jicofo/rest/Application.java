@@ -21,6 +21,8 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.auth.rest.*;
 import org.jitsi.jicofo.health.*;
+import org.jitsi.jicofo.metrics.*;
+import org.jitsi.rest.prometheus.*;
 import org.jitsi.utils.version.*;
 
 import java.time.*;
@@ -57,6 +59,11 @@ public class Application
         if (shibbolethAuthAuthority != null)
         {
             register(new ShibbolethLogin(shibbolethAuthAuthority));
+        }
+
+        if (RestConfig.config.getEnablePrometheus())
+        {
+            register(new Prometheus(JicofoMetricsContainer.getInstance()));
         }
     }
 }
