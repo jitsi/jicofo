@@ -32,7 +32,6 @@ import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
-import org.json.simple.JSONObject
 import org.jxmpp.jid.Jid
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -51,7 +50,8 @@ class JigasiIqHandler(
     private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
 
     private val stats = Stats()
-    val statsJson = stats.toJson()
+    val statsJson: OrderedJsonObject
+        get() = stats.toJson()
 
     override fun handleRequest(request: IqRequest<DialIq>): IqProcessingResult {
         val conferenceJid = request.iq.from.asEntityBareJidIfPossible()
@@ -213,7 +213,7 @@ class JigasiIqHandler(
                 "Timeouts for requrests sent to jigasi instances."
             )
 
-            fun statsJson() = JSONObject().apply {
+            fun statsJson() = OrderedJsonObject().apply {
                 put("rejected_requests", rejectedRequests.get())
                 put("accepted_requests", acceptedRequests.get())
                 put("retries", retries.get())

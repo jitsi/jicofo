@@ -44,9 +44,7 @@ import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
-import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
-import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger

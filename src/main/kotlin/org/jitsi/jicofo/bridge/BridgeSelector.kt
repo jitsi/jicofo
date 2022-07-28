@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.bridge
 
-import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.OctoConfig
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
