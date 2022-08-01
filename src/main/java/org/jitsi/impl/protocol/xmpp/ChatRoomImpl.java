@@ -260,6 +260,7 @@ public class ChatRoomImpl
             whitelists.clear();
         }
     }
+
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
@@ -415,15 +416,14 @@ public class ChatRoomImpl
         }
         else
         {
-            ChatMemberImpl member = getChatMember(occupantJid);
+            ChatMemberImpl member = members.get(occupantJid);
             if (member != null)
             {
                 member.resetCachedRole();
             }
             else
             {
-                logger.error(
-                    "Role reset for: " + occupantJid + " who does not exist");
+                logger.error("Role reset for: " + occupantJid + " who does not exist");
             }
         }
     }
