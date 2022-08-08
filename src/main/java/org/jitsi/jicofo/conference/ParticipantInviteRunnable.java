@@ -414,7 +414,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     {
         ConferenceSourceMap conferenceSources;
 
-        if (!participant.hasSsrcRewritingSupport())
+        if (!participant.useSsrcRewriting())
         {
             // Take all sources from participants in the conference.
             conferenceSources = meetConference.getSources().copy();

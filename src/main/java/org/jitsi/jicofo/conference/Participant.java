@@ -306,6 +306,14 @@ public class Participant
     }
 
     /**
+     * @return {@code true} if SSRC rewriting should be used for this participant.
+     */
+    public boolean useSsrcRewriting()
+    {
+        return ConferenceConfig.config.getUseSsrcRewriting() && hasSsrcRewritingSupport();
+    }
+
+    /**
      * @return {@code true} if this participant supports receiving Jingle sources encoded as JSON instead of the
      * standard Jingle encoding.
      */
@@ -478,7 +486,7 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
-        if (hasSsrcRewritingSupport())
+        if (useSsrcRewriting())
         {
             // Bridge will signal sources in this case.
             return;
@@ -551,7 +559,7 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
-        if (hasSsrcRewritingSupport())
+        if (useSsrcRewriting())
         {
             // Bridge will signal sources in this case.
             return;

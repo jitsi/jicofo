@@ -133,7 +133,7 @@ internal fun ParticipantInfo.toEndpoint(
         if (supportsSourceNames) {
             addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
         }
-        if (supportsSsrcRewriting) {
+        if (useSsrcRewriting) {
             addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
         }
     }
