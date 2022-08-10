@@ -259,11 +259,12 @@ public class FocusManager
 
             conferences.put(room, conference);
             conferencesCache.add(conference);
-            if (includeInStatistics)
-            {
-                conferenceCount.inc();
-                Statistics.totalConferencesCreated.inc();
-            }
+        }
+
+        if (includeInStatistics)
+        {
+            conferenceCount.inc();
+            Statistics.totalConferencesCreated.inc();
         }
 
         return conference;
