@@ -28,7 +28,7 @@ class RestConfig private constructor() {
     val enabled = httpServerConfig.isEnabled()
 
     val enablePrometheus: Boolean by config {
-        "jicofo.rest.enable-prometheus".from(JitsiConfig.newConfig)
+        "jicofo.rest.prometheus.enabled".from(JitsiConfig.newConfig)
     }
 
     companion object {

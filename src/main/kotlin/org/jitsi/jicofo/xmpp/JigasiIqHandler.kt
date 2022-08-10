@@ -210,7 +210,7 @@ class JigasiIqHandler(
             )
             val singleInstanceTimeouts = JicofoMetricsContainer.instance.registerCounter(
                 "${prefix}_instance_timeouts",
-                "Timeouts for requrests sent to jigasi instances."
+                "Timeouts for requests sent to jigasi instances."
             )
 
             fun statsJson() = OrderedJsonObject().apply {
