@@ -51,7 +51,7 @@
     <slf4j.version>1.7.32</slf4j.version>
     <jersey.version>3.0.4</jersey.version>
     <jitsi.utils.version>1.0-119-ga7b23ff</jitsi.utils.version>
-    <jicoco.version>1.1-113-g4e7ea8b</jicoco.version>
+    <jicoco.version>1.1-115-g332f4e7</jicoco.version>
     <spotbugs.version>4.6.0</spotbugs.version>
     <junit.version>5.8.2</junit.version>
   </properties>
@@ -116,6 +116,11 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco-config</artifactId>
+      <version>${jicoco.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-metrics</artifactId>
       <version>${jicoco.version}</version>
     </dependency>
     <dependency>

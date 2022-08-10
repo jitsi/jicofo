@@ -145,7 +145,7 @@ public class JicofoHealthChecker implements HealthCheckService
         {
             throw new RuntimeException(
                     "No operational bridges available (total bridge count: "
-                            + bridgeSelector.getBridgeCount() + ")");
+                            + BridgeSelector.bridgeCount.get() + ")");
         }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing

@@ -650,15 +650,14 @@ public class JitsiMeetConferenceImpl
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
-            Statistics statistics = getFocusManager().getStatistics();
-            statistics.totalParticipants.incrementAndGet();
+            Statistics.totalParticipants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
             {
-                statistics.totalParticipantsNoMultiStream.incrementAndGet();
+                Statistics.totalParticipantsNoMultiStream.inc();
             }
             if (!participant.hasSourceNameSupport())
             {
-                statistics.totalParticipantsNoSourceName.incrementAndGet();
+                Statistics.totalParticipantsNoSourceName.inc();
             }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
@@ -989,7 +988,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
-        listener.participantIceFailed();
+        Statistics.totalParticipantsIceFailed.inc();
 
         return null;
     }
@@ -1024,7 +1023,7 @@ public class JitsiMeetConferenceImpl
 
         if (restartRequested)
         {
-            listener.participantRequestedRestart();
+            Statistics.totalParticipantsRequestedRestart.inc();
         }
 
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
@@ -1672,7 +1671,7 @@ public class JitsiMeetConferenceImpl
     {
         if (!participantIdsToReinvite.isEmpty())
         {
-            listener.participantsMoved(participantIdsToReinvite.size());
+            Statistics.totalParticipantsMoved.addAndGet(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
                 List<Participant> participantsToReinvite = new ArrayList<>();
@@ -1918,23 +1917,6 @@ public class JitsiMeetConferenceImpl
          * @param conference the conference instance that has ended.
          */
         void conferenceEnded(JitsiMeetConferenceImpl conference);
-
-        /**
-         * {@code count} participants were moved away from a failed bridge.
-         *
-         * @param count the number of participants that were moved.
-         */
-        void participantsMoved(int count);
-
-        /**
-         * A participant reported that its ICE connection to the bridge failed.
-         */
-        void participantIceFailed();
-
-        /**
-         * A participant requested to be re-invited via session-terminate.
-         */
-        void participantRequestedRestart();
     }
 
     /**
