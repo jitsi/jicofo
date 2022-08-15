@@ -27,6 +27,7 @@ import kotlin.streams.toList
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
     val sessions: MutableMap<String?, N>
     fun addLinkBetween(node: N, otherNode: N, meshId: String)
+    fun removeLinkTo(node: N, otherNode: N)
 }
 
 /**
@@ -95,9 +96,9 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode:
     sessions[newNode.relayId] = newNode
 }
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
+fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     node: N,
-    repairFn: (Cascade<N, L>, Set<String?>) -> Set<Triple<N, N, String>>
+    repairFn: (C, Set<String?>) -> Set<Triple<N, N, String>>
 ) {
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */
@@ -120,6 +121,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.removeNode(
             "Backlink from $other to $node points to ${backLink.relayId}"
         }
         other.relays.remove(node.relayId)
+        removeLinkTo(other, node)
     }
 
     val meshes = node.relays.values.map { it.meshId }.toSet()

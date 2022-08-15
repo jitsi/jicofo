@@ -28,6 +28,8 @@ import io.kotest.matchers.shouldBe
 class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
     override val sessions = HashMap<String?, TestCascadeNode>()
 
+    var linksRemoved = 0
+
     override fun addLinkBetween(node: TestCascadeNode, otherNode: TestCascadeNode, meshId: String) {
         require(!node.relays.contains(otherNode.relayId)) {
             "$this already has a link to $otherNode"
@@ -37,6 +39,10 @@ class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
         }
         node.addLink(otherNode, meshId)
         otherNode.addLink(node, meshId)
+    }
+
+    override fun removeLinkTo(node: TestCascadeNode, otherNode: TestCascadeNode) {
+        linksRemoved++
     }
 }
 
@@ -100,6 +106,7 @@ class CascadeTest : ShouldSpec() {
                     called shouldBe false
                 }
                 cascade.validate()
+                cascade.linksRemoved shouldBe 4 + 3 + 2 + 1
             }
         }
         context("creating a cascade with two meshes") {
@@ -163,6 +170,7 @@ class CascadeTest : ShouldSpec() {
                     called shouldBe false
                 }
                 cascade.validate()
+                cascade.linksRemoved shouldBe 3 + 2 + 1
             }
             should("call the callback when removing the core node") {
                 var called = true

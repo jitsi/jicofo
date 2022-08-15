@@ -26,6 +26,7 @@ import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.cascade.Cascade
 import org.jitsi.jicofo.cascade.addNodeToMesh
 import org.jitsi.jicofo.cascade.getNodesBehind
+import org.jitsi.jicofo.cascade.removeNode
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
@@ -131,12 +132,18 @@ class ColibriV2SessionManager(
         Unit
     }
 
+    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<String?>):
+        Set<Triple<Colibri2Session, Colibri2Session, String>> {
+        TODO("not implemented yet")
+    }
+
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.expire()
         sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
+        removeNode(session, ::repairMesh)
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
@@ -254,6 +261,12 @@ class ColibriV2SessionManager(
         otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false)
     }
 
+    override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {
+        otherSession.relayId?.let { removedRelayId ->
+            session.expireRelay(removedRelayId)
+        }
+    }
+
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     override fun allocate(
         participant: Participant,
@@ -317,8 +330,17 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)
             if (created) {
-                val meshId = "0" // TODO - get from bridge selection somehow
-                addNodeToMesh(session, meshId)
+                if (true) { // TODO
+                    sessions.values.filter { it != session }.forEach {
+                        logger.debug { "Creating relays between $session and $it." }
+                        // We already made sure that relayId is not null when there are multiple sessions.
+                        it.createRelay(session.relayId!!, getSessionParticipants(session), initiator = true)
+                        session.createRelay(it.relayId!!, getSessionParticipants(it), initiator = false)
+                    }
+                } else {
+                    val meshId = "0" // TODO - get from bridge selection somehow
+                    addNodeToMesh(session, meshId)
+                }
             } else {
                 // TODO: add the new participant to each session as the relay it's seen as coming from
                 sessions.values.filter { it != session }.forEach {
