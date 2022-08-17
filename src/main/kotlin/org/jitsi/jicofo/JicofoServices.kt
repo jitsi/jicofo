@@ -37,15 +37,14 @@ import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
-import org.jitsi.rest.JettyBundleActivatorConfig
 import org.jitsi.rest.createServer
-import org.jitsi.rest.isEnabled
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
@@ -137,15 +136,14 @@ open class JicofoServices {
     private val jettyServer: Server?
 
     init {
-        val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
-        jettyServer = if (httpServerConfig.isEnabled()) {
-            logger.info("Starting HTTP server with config: $httpServerConfig.")
+        jettyServer = if (RestConfig.config.enabled) {
+            logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
                 authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
                 healthChecker
             )
-            createServer(httpServerConfig).also {
+            createServer(RestConfig.config.httpServerConfig).also {
                 it.servletContextHandler.addServlet(
                     ServletHolder(ServletContainer(restApp)),
                     "/*"
