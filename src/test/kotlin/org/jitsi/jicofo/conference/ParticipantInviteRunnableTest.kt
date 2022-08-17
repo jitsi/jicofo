@@ -79,7 +79,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             )
         )
         val colibriSessionManager = mockk<ColibriSessionManager> {
-            every { allocate(any(), any(), any(), any()) } returns ColibriAllocation(
+            every { allocate(any(), any()) } returns ColibriAllocation(
                 feedbackSources,
                 IceUdpTransportPacketExtension(),
                 null,
@@ -97,6 +97,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             every { chatRoom } returns mockk {
                 every { hasMember(any()) } returns true
             }
+            every { getSourcesForParticipant(any()) } returns ConferenceSourceMap()
             every { jingle } returns mockk {
                 every {
                     initiateSession(
@@ -122,6 +123,8 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { name } returns "participant"
                     every { role } returns MemberRole.OWNER
                     every { sourceInfos } returns emptySet()
+                    every { statsId } returns "statsId"
+                    every { region } returns "region"
                 },
                 features,
                 LoggerImpl("test"),

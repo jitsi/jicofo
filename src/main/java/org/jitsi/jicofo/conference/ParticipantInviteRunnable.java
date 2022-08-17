@@ -201,11 +201,15 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ColibriAllocation colibriAllocation;
         try
         {
-            colibriAllocation = colibriSessionManager.allocate(
-                    participant,
-                    offer.getContents(),
+            ParticipantAllocationOptions participantOptions = new ParticipantAllocationOptions(
+                    participant.getEndpointId(),
+                    participant.getStatId(),
+                    participant.getChatMember().getRegion(),
+                    participant.getSources(),
+                    participant.hasSourceNameSupport(),
                     forceMuteAudio,
                     forceMuteVideo);
+            colibriAllocation = colibriSessionManager.allocate(participantOptions, offer.getContents());
         }
         catch (BridgeSelectionFailedException e)
         {
@@ -239,7 +243,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         catch (SmackException.NotConnectedException e)
         {
             logger.error("Failed to invite participant: ", e);
-            colibriSessionManager.removeParticipant(participant);
+            colibriSessionManager.removeParticipant(participant.getEndpointId());
             cancel();
         }
     }

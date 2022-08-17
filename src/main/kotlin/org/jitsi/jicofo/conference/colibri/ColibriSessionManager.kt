@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.conference.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
-import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -33,7 +32,7 @@ interface ColibriSessionManager {
     fun expire()
 
     /** Remove a participant, expiring all resources allocated for it */
-    fun removeParticipant(participant: Participant)
+    fun removeParticipant(participantId: String)
 
     fun mute(participantId: String, doMute: Boolean, mediaType: MediaType): Boolean =
         mute(setOf(participantId), doMute, mediaType)
@@ -42,26 +41,24 @@ interface ColibriSessionManager {
     val bridgeRegions: Set<String>
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(
-        participant: Participant,
+        participant: ParticipantAllocationOptions,
         contents: List<ContentPacketExtension>,
-        forceMuteAudio: Boolean,
-        forceMuteVideo: Boolean
     ): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */
     fun updateParticipant(
-        participant: Participant,
+        participantId: String,
         transport: IceUdpTransportPacketExtension? = null,
         sources: ConferenceSourceMap? = null,
-    ) = updateParticipant(participant, transport, sources, false)
+    ) = updateParticipant(participantId, transport, sources, false)
 
     fun updateParticipant(
-        participant: Participant,
+        participantId: String,
         transport: IceUdpTransportPacketExtension? = null,
         sources: ConferenceSourceMap? = null,
         suppressLocalBridgeUpdate: Boolean = false
     )
-    fun getBridgeSessionId(participant: Participant): String?
+    fun getBridgeSessionId(participantId: String): String?
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
@@ -90,3 +87,13 @@ interface ColibriSessionManager {
         )
     }
 }
+
+data class ParticipantAllocationOptions(
+    val id: String,
+    val statsId: String?,
+    val region: String?,
+    val sources: ConferenceSourceMap,
+    val supportsSourceNames: Boolean,
+    val forceMuteAudio: Boolean,
+    val forceMuteVideo: Boolean
+)

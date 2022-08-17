@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference.colibri.v2
 
+import org.jitsi.jicofo.conference.colibri.ParticipantAllocationOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.OrderedJsonObject
 
@@ -32,9 +33,19 @@ internal class ParticipantInfo(
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
     var videoMuted: Boolean = false,
-    /* Whether the participant supports source name signaling */
+    /** Whether the participant supports source name signaling */
     var supportsSourceNames: Boolean = false
 ) {
+    constructor(options: ParticipantAllocationOptions, session: Colibri2Session) : this(
+        id = options.id,
+        statsId = options.statsId,
+        sources = options.sources,
+        audioMuted = options.forceMuteAudio,
+        videoMuted = options.forceMuteVideo,
+        supportsSourceNames = options.supportsSourceNames,
+        session = session,
+    )
+
     fun toJson() = OrderedJsonObject().apply {
         put("id", id)
         put("stats_id", statsId.toString())

@@ -862,7 +862,7 @@ public class JitsiMeetConferenceImpl
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
         }
 
-        colibriSessionManager.removeParticipant(participant);
+        colibriSessionManager.removeParticipant(participant.getEndpointId());
     }
 
     @Override
@@ -972,7 +972,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant.getEndpointId());
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
@@ -1018,7 +1018,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant);
+        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant.getEndpointId());
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)
@@ -1108,7 +1108,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.updateParticipant(participant, getTransport(contentList), null);
+        colibriSessionManager.updateParticipant(participant.getEndpointId(), getTransport(contentList), null);
     }
 
     /**
@@ -1211,7 +1211,7 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        colibriSessionManager.updateParticipant(participant, null, participant.getSources());
+        colibriSessionManager.updateParticipant(participant.getEndpointId(), null, participant.getSources());
 
         propagateNewSources(participant, sourcesAccepted);
 
@@ -1289,7 +1289,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
         colibriSessionManager.updateParticipant(
-                participant,
+                participant.getEndpointId(),
                 getTransport(contents),
                 getSourcesForParticipant(participant));
 
@@ -1372,7 +1372,7 @@ public class JitsiMeetConferenceImpl
         }
 
         colibriSessionManager.updateParticipant(
-                participant,
+                participant.getEndpointId(),
                 null,
                 participant.getSources(),
                 !removeColibriSourcesFromLocalBridge);

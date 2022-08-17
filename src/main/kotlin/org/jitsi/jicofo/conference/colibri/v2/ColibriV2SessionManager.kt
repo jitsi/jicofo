@@ -24,11 +24,11 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
-import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
+import org.jitsi.jicofo.conference.colibri.ParticipantAllocationOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -118,13 +118,13 @@ class ColibriV2SessionManager(
         clear()
     }
 
-    override fun removeParticipant(participant: Participant) = synchronized(syncRoot) {
-        logger.debug { "Asked to remove ${participant.endpointId}" }
+    override fun removeParticipant(participantId: String) = synchronized(syncRoot) {
+        logger.debug { "Asked to remove $participantId" }
 
-        participants[participant.endpointId]?.let {
+        participants[participantId]?.let {
             logger.info("Removing ${it.id}")
             removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
-        } ?: logger.warn("Can not remove ${participant.endpointId}, no participantInfo")
+        } ?: logger.warn("Can not remove $participantId, no participantInfo")
         Unit
     }
 
@@ -245,19 +245,17 @@ class ColibriV2SessionManager(
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     override fun allocate(
-        participant: Participant,
-        contents: List<ContentPacketExtension>,
-        forceMuteAudio: Boolean,
-        forceMuteVideo: Boolean
+        participant: ParticipantAllocationOptions,
+        contents: List<ContentPacketExtension>
     ): ColibriAllocation {
-        logger.info("Allocating for ${participant.endpointId}")
+        logger.info("Allocating for ${participant.id}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
         val created: Boolean
         val participantInfo: ParticipantInfo
         val useSctp = contents.any { it.name == "data" }
         synchronized(syncRoot) {
-            if (participants.containsKey(participant.endpointId)) {
+            if (participants.containsKey(participant.id)) {
                 throw IllegalStateException("participant already exists")
             }
 
@@ -269,7 +267,7 @@ class ColibriV2SessionManager(
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = bridgeSelector.selectBridge(getBridges(), participant.chatMember.region, version)
+            val bridge = bridgeSelector.selectBridge(getBridges(), participant.region, version)
                 ?: run {
                     eventEmitter.fireEvent { bridgeSelectionFailed() }
                     throw BridgeSelectionFailedException()
@@ -294,15 +292,7 @@ class ColibriV2SessionManager(
                 created = it.second
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
-            participantInfo = ParticipantInfo(
-                participant.endpointId,
-                participant.statId,
-                sources = participant.sources,
-                audioMuted = forceMuteAudio,
-                videoMuted = forceMuteVideo,
-                session = session,
-                supportsSourceNames = participant.hasSourceNameSupport()
-            )
+            participantInfo = ParticipantInfo(participant, session)
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)
             if (created) {
@@ -465,18 +455,18 @@ class ColibriV2SessionManager(
     }
 
     override fun updateParticipant(
-        participant: Participant,
+        participantId: String,
         transport: IceUdpTransportPacketExtension?,
         sources: ConferenceSourceMap?,
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
-        logger.info("Updating $participant with transport=$transport, sources=$sources")
+        logger.info("Updating $participantId with transport=$transport, sources=$sources")
 
-        val participantInfo = participants[participant.endpointId]
+        val participantInfo = participants[participantId]
             ?: run {
                 // This can happen after a colibri session is removed due to a failure to allocate, since we never
                 // notify the JitsiMeetConferenceImpl object of the failure.
-                logger.error("No ParticipantInfo for ${participant.endpointId}")
+                logger.error("No ParticipantInfo for $participantId")
                 return
             }
         if (!suppressLocalBridgeUpdate) {
@@ -493,8 +483,8 @@ class ColibriV2SessionManager(
         }
     }
 
-    override fun getBridgeSessionId(participant: Participant): String? = synchronized(syncRoot) {
-        return participants[participant.endpointId]?.session?.id
+    override fun getBridgeSessionId(participantId: String): String? = synchronized(syncRoot) {
+        return participants[participantId]?.session?.id
     }
 
     override fun removeBridge(bridge: Bridge): List<String> = synchronized(syncRoot) {
