@@ -21,7 +21,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
-import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 
 interface ColibriSessionManager {
@@ -40,10 +40,7 @@ interface ColibriSessionManager {
     val bridgeCount: Int
     val bridgeRegions: Set<String>
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
-    fun allocate(
-        participant: ParticipantAllocationOptions,
-        contents: List<ContentPacketExtension>,
-    ): ColibriAllocation
+    fun allocate(participant: ParticipantAllocationOptions): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */
     fun updateParticipant(
@@ -96,5 +93,6 @@ data class ParticipantAllocationOptions(
     val supportsSourceNames: Boolean,
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,
-    val useSctp: Boolean
+    val useSctp: Boolean,
+    val medias: Set<Media>
 )

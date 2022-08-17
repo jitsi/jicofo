@@ -20,6 +20,7 @@ package org.jitsi.jicofo.conference.colibri.v2
 import org.jitsi.jicofo.conference.colibri.ParticipantAllocationOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.xmpp.extensions.colibri2.Media
 
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
@@ -30,6 +31,7 @@ internal class ParticipantInfo(
     var sources: ConferenceSourceMap = ConferenceSourceMap(),
     var session: Colibri2Session,
     val useSctp: Boolean,
+    val medias: Set<Media>,
     /** Whether the participant is force audio muted. */
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
@@ -42,6 +44,7 @@ internal class ParticipantInfo(
         statsId = options.statsId,
         sources = options.sources,
         useSctp = options.useSctp,
+        medias = options.medias,
         audioMuted = options.forceMuteAudio,
         videoMuted = options.forceMuteVideo,
         supportsSourceNames = options.supportsSourceNames,

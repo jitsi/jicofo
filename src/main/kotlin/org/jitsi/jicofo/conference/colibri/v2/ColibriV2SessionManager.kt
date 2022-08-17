@@ -37,7 +37,6 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
-import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
@@ -244,10 +243,7 @@ class ColibriV2SessionManager(
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
-    override fun allocate(
-        participant: ParticipantAllocationOptions,
-        contents: List<ContentPacketExtension>
-    ): ColibriAllocation {
+    override fun allocate(participant: ParticipantAllocationOptions): ColibriAllocation {
         logger.info("Allocating for ${participant.id}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
@@ -292,7 +288,7 @@ class ColibriV2SessionManager(
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant, session)
-            stanzaCollector = session.sendAllocationRequest(participantInfo, contents)
+            stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {

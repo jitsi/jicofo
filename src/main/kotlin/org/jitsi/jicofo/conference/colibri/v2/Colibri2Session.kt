@@ -34,7 +34,6 @@ import org.jitsi.xmpp.extensions.colibri2.Endpoints
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Sctp
 import org.jitsi.xmpp.extensions.colibri2.Transport
-import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
@@ -75,14 +74,7 @@ internal class Colibri2Session(
     private val relays = mutableMapOf<String, Relay>()
 
     /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
-    internal fun sendAllocationRequest(
-        participant: ParticipantInfo,
-        /**
-         * A list of Jingle [ContentPacketExtension]s, which describe the media types and RTP header extensions, i.e.
-         * the information contained in colibri2 [Media] elements.
-         */
-        contents: List<ContentPacketExtension>
-    ): StanzaCollector {
+    internal fun sendAllocationRequest(participant: ParticipantInfo): StanzaCollector {
 
         val request = createRequest(!created)
         val endpoint = Colibri2Endpoint.getBuilder().apply {
@@ -110,7 +102,7 @@ internal class Colibri2Session(
                 }.build()
             )
         }
-        contents.forEach { it.toMedia()?.let<Media, Unit> { media -> endpoint.addMedia(media) } }
+        participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())
 
         logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }

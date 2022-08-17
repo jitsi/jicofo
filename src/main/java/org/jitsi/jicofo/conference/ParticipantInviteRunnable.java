@@ -25,6 +25,7 @@ import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
+import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -201,6 +202,18 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ColibriAllocation colibriAllocation;
         try
         {
+            Set<Media> medias = new HashSet<>();
+            offer.getContents().forEach(content -> {
+                Media media = Util.toMedia(content);
+                if (media != null)
+                {
+                    medias.add(media);
+                }
+                else
+                {
+                    logger.warn("Failed to convert ContentPacketExtension to Media: " + content.toXML());
+                }
+            });
             ParticipantAllocationOptions participantOptions = new ParticipantAllocationOptions(
                     participant.getEndpointId(),
                     participant.getStatId(),
@@ -209,8 +222,9 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     participant.hasSourceNameSupport(),
                     forceMuteAudio,
                     forceMuteVideo,
-                    offer.getContents().stream().anyMatch(c -> c.getName() == "data"));
-            colibriAllocation = colibriSessionManager.allocate(participantOptions, offer.getContents());
+                    offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
+                    medias);
+            colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }
         catch (BridgeSelectionFailedException e)
         {
