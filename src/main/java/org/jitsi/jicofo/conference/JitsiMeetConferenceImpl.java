@@ -252,11 +252,11 @@ public class JitsiMeetConferenceImpl
         colibriSessionManager = new ColibriV2SessionManager(
                 jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                 jicofoServices.getBridgeSelector(),
-                this,
                 getRoomName().toString(),
                 () -> chatRoom == null ? null : chatRoom.getMeetingId(),
                 config.getCallStatsEnabled(),
                 config.getRtcStatsEnabled(),
+                jvbVersion,
                 logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 
@@ -1638,14 +1638,6 @@ public class JitsiMeetConferenceImpl
     public int getParticipantCount()
     {
         return participants.size();
-    }
-
-    /**
-     * Get pinned bridge version. Returns null if not pinned.
-     */
-    public String getBridgeVersion()
-    {
-        return jvbVersion;
     }
 
     private void onBridgeUp(Jid bridgeJid)

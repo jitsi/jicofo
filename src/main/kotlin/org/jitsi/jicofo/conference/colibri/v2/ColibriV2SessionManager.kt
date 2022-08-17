@@ -23,7 +23,6 @@ import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
-import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.conference.colibri.ColibriAllocation
 import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
@@ -57,7 +56,6 @@ import java.util.UUID
 class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
-    private val conference: JitsiMeetConferenceImpl,
     internal val conferenceName: String,
     /**
      * A function which returns the meeting ID associated with the conference. Needed because it is not always known
@@ -66,6 +64,7 @@ class ColibriV2SessionManager(
     private val getMeetingId: () -> String?,
     internal val callstatsEnabled: Boolean,
     internal val rtcStatsEnabled: Boolean,
+    private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager {
     private val logger = createChildLogger(parentLogger)
@@ -257,15 +256,14 @@ class ColibriV2SessionManager(
                 throw IllegalStateException("participant already exists")
             }
 
-            val version = conference.bridgeVersion
-            if (version != null) {
-                logger.info("Selecting bridge. Conference is pinned to version \"$version\"")
+            if (bridgeVersion != null) {
+                logger.info("Selecting bridge. Conference is pinned to version \"$bridgeVersion\"")
             }
 
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = bridgeSelector.selectBridge(getBridges(), participant.region, version)
+            val bridge = bridgeSelector.selectBridge(getBridges(), participant.region, bridgeVersion)
                 ?: run {
                     eventEmitter.fireEvent { bridgeSelectionFailed() }
                     throw BridgeSelectionFailedException()
