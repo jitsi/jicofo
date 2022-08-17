@@ -135,6 +135,11 @@ public class TranscriberManager
         }
         if (isRequestingTranscriber(presence) && !active)
         {
+            if (jigasiDetector == null)
+            {
+                logger.warn("Transcription requested, but jigasiDetector is not configured.");
+                return;
+            }
             executorService.execute(() -> this.startTranscribing(conference.getBridgeRegions()));
         }
     }

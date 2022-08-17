@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -28,6 +29,8 @@ import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smackx.muc.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.parts.*;
+
+import java.util.*;
 
 /**
  * Stripped Smack implementation of {@link ChatRoomMember}.
@@ -107,6 +110,9 @@ public class ChatMemberImpl
      * Indicates whether the member's video sources are currently muted.
      */
     private boolean isVideoMuted = true;
+
+    @NotNull
+    private Set<SourceInfo> sourceInfos = Collections.emptySet();
 
     public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom, Logger parentLogger,
                           int joinOrderNumber)
@@ -221,6 +227,29 @@ public class ChatMemberImpl
     @Override
     public boolean isVideoMuted() { return isVideoMuted; }
 
+    private void setSourceInfo(String sourceInfoString)
+    {
+        Set<SourceInfo> sourceInfos;
+        try
+        {
+            sourceInfos = SourceInfoKt.parseSourceInfoJson(sourceInfoString);
+        }
+        catch (Exception e)
+        {
+            logger.warn("Ignoring invalid SourceInfo JSON", e);
+            return;
+        }
+
+        this.sourceInfos = sourceInfos;
+    }
+
+    @Override
+    @NotNull
+    public Set<SourceInfo> getSourceInfos()
+    {
+        return sourceInfos;
+    }
+
     /**
      * Does presence processing.
      *
@@ -253,6 +282,9 @@ public class ChatMemberImpl
                 this.robot = newStatus;
             }
         }
+
+        StandardExtensionElement sourceInfo = presence.getExtension("SourceInfo", "jabber:client");
+        setSourceInfo(sourceInfo == null ? "{}" : sourceInfo.getText());
 
         // We recognize jigasi by the existence of a "feature" extension in its presence.
         FeaturesExtension features = presence.getExtension(FeaturesExtension.class);

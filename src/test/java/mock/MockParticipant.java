@@ -477,7 +477,7 @@ public class MockParticipant
 
     private Source addLocalSSRC(String media, long ssrc)
     {
-        Source source = new Source(ssrc, MediaType.parseString(media), null, null);
+        Source source = new Source(ssrc, MediaType.parseString(media), null, null, null);
 
         localSSRCs.add(getMyJid(), new EndpointSourceSet(source));
 

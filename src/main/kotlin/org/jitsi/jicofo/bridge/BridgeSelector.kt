@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge
 
 import org.jitsi.jicofo.OctoConfig
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -27,7 +28,6 @@ import org.json.simple.JSONObject
 import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -62,19 +62,9 @@ class BridgeSelector @JvmOverloads constructor(
      */
     private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
 
-    val bridgeCount: Int
-        @Synchronized
-        get() = bridges.size
-
     val operationalBridgeCount: Int
         @Synchronized
         get() = bridges.values.count { it.isOperational && !it.isInGracefulShutdown }
-
-    /**
-     * The number of bridges which disconnected without going into graceful shutdown first.
-     */
-    private val lostBridges = AtomicInteger()
-    fun lostBridges() = lostBridges.get()
 
     /**
      * Adds a bridge to this selector, or if a bridge with the given JID
@@ -101,6 +91,7 @@ class BridgeSelector @JvmOverloads constructor(
         }
         logger.info("Added new videobridge: $newBridge")
         bridges[bridgeJid] = newBridge
+        bridgeCount.inc()
         eventEmitter.fireEvent { bridgeAdded(newBridge) }
     }
 
@@ -114,17 +105,22 @@ class BridgeSelector @JvmOverloads constructor(
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
             if (!it.isInGracefulShutdown && !it.isShuttingDown) {
-                lostBridges.incrementAndGet()
+                logger.warn("Lost a bridge: $bridgeJid")
+                lostBridges.inc()
             }
+            bridgeCount.dec()
             eventEmitter.fireEvent { bridgeRemoved(it) }
         }
     }
 
-    override fun healthCheckPassed(bridgeJid: Jid) = bridges[bridgeJid]?.setIsOperational(true) ?: Unit
+    override fun healthCheckPassed(bridgeJid: Jid) {
+        bridges[bridgeJid]?.isOperational = true
+    }
+
     override fun healthCheckFailed(bridgeJid: Jid) = bridges[bridgeJid]?.let {
         // When a bridge returns a non-healthy status, we mark it as non-operational AND we move all conferences
         // away from it.
-        it.setIsOperational(false)
+        it.isOperational = false
         eventEmitter.fireEvent { bridgeRemoved(it) }
     } ?: Unit
 
@@ -142,7 +138,7 @@ class BridgeSelector @JvmOverloads constructor(
         // attempted to be moved to another failing bridge).
         // The other possible case is that the bridge is not responding to jicofo, and is also unavailable to
         // endpoints. In this case we rely on endpoints reporting ICE failures to jicofo, which then trigger a move.
-        it.setIsOperational(false)
+        it.isOperational = false
     } ?: Unit
 
     /**
@@ -166,7 +162,7 @@ class BridgeSelector @JvmOverloads constructor(
         version: String? = null
     ): Bridge? {
 
-        var v = conferenceBridges.keys.firstOrNull()?.version
+        var v = conferenceBridges.keys.firstOrNull()?.fullVersion
         if (v == null) {
             v = version
         } else if (version != null && version != v) {
@@ -191,17 +187,11 @@ class BridgeSelector @JvmOverloads constructor(
         }
 
         if (v != null && !OctoConfig.config.allowMixedVersions) {
-            candidateBridges = candidateBridges.filter { it.version == v }
+            candidateBridges = candidateBridges.filter { it.fullVersion == v }
             if (candidateBridges.isEmpty()) {
                 logger.warn("There are no bridges with the required version: $v")
                 return null
             }
-        }
-
-        candidateBridges = candidateBridges.filter { it.supportsColibri2() }
-        if (candidateBridges.isEmpty()) {
-            logger.warn("There are no bridges with colibri2 support.")
-            return null
         }
 
         // If there are active bridges, prefer those.
@@ -219,7 +209,10 @@ class BridgeSelector @JvmOverloads constructor(
             conferenceBridges,
             participantRegion,
             OctoConfig.config.enabled
-        )
+        ).also {
+            // The bridge was selected for an endpoint, increment its counter.
+            it?.endpointAdded()
+        }
     }
 
     val stats: JSONObject
@@ -227,7 +220,7 @@ class BridgeSelector @JvmOverloads constructor(
         get() = bridgeSelectionStrategy.stats.apply {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            this["bridge_count"] = bridgeCount
+            this["bridge_count"] = bridgeCount.get()
             this["operational_bridge_count"] = bridges.values.count { it.isOperational }
             this["in_shutdown_bridge_count"] = bridges.values.count { it.isInGracefulShutdown }
             this["lost_bridges"] = lostBridges.get()
@@ -241,6 +234,17 @@ class BridgeSelector @JvmOverloads constructor(
                 bridges.values.forEach { put(it.jid.toString(), it.debugState) }
             }
         }
+
+    companion object {
+        @JvmField
+        val lostBridges = JicofoMetricsContainer.instance.registerCounter(
+            "bridge_selector_lost_bridges", "Number of bridges which disconnected unexpectedly."
+        )
+        @JvmField
+        val bridgeCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "bridge_selector_bridge_count", "The current number of bridges"
+        )
+    }
 
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)

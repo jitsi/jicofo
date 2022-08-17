@@ -20,8 +20,9 @@ package org.jitsi.jicofo;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.metrics.*;
 import org.jitsi.jicofo.stats.*;
-import org.jitsi.jicofo.util.*;
+import org.jitsi.metrics.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -68,6 +69,9 @@ public class FocusManager
      * {@code #getConferenceCount()} is safe.
      */
     private final Map<EntityBareJid, JitsiMeetConferenceImpl> conferences = new ConcurrentHashMap<>();
+    private final LongGaugeMetric conferenceCount = JicofoMetricsContainer.getInstance().registerLongGauge(
+            "conferences",
+            "Running count of conferences (excluding internal conferences created for health checks).");
 
     private final List<JitsiMeetConference> conferencesCache = new CopyOnWriteArrayList<>();
 
@@ -82,11 +86,6 @@ public class FocusManager
      * Holds the conferences that are currently pinned to a specific bridge version.
      */
     private final Map<EntityBareJid, PinnedConference> pinnedConferences = new HashMap<>();
-
-    /**
-     * A class that holds Jicofo-wide statistics
-     */
-    private final Statistics statistics = new Statistics();
 
     /**
      * Clock to use for pin timeouts.
@@ -264,7 +263,8 @@ public class FocusManager
 
         if (includeInStatistics)
         {
-            statistics.totalConferencesCreated.incrementAndGet();
+            conferenceCount.inc();
+            Statistics.totalConferencesCreated.inc();
         }
 
         return conference;
@@ -282,6 +282,10 @@ public class FocusManager
         {
             conferences.remove(roomName);
             conferencesCache.remove(conference);
+            if (conference.includeInStatistics())
+            {
+                conferenceCount.dec();
+            }
 
             // It is not clear whether the code below necessarily needs to
             // hold the lock or not.
@@ -297,24 +301,6 @@ public class FocusManager
                 listener.conferenceEnded(roomName);
             }
         }
-    }
-
-    @Override
-    public void participantsMoved(int count)
-    {
-        statistics.totalParticipantsMoved.addAndGet(count);
-    }
-
-    @Override
-    public void participantIceFailed()
-    {
-        statistics.totalParticipantsIceFailed.incrementAndGet();
-    }
-
-    @Override
-    public void participantRequestedRestart()
-    {
-        statistics.totalParticipantsRequestedRestart.incrementAndGet();
     }
 
     /**
@@ -353,13 +339,6 @@ public class FocusManager
         return conferencesCache;
     }
 
-    private int getNonHealthCheckConferenceCount()
-    {
-        return (int)conferences.values().stream()
-            .filter(JitsiMeetConferenceImpl::includeInStatistics)
-            .count();
-    }
-
     /**
      * Add the listener that will be notified about conference focus
      * allocation/disposal.
@@ -394,17 +373,19 @@ public class FocusManager
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge stats from different "child" objects here.
         JSONObject stats = new JSONObject();
-        stats.put("total_participants", statistics.totalParticipants.get());
-        stats.put("total_conferences_created", statistics.totalConferencesCreated.get());
-        stats.put("conferences", getNonHealthCheckConferenceCount());
+        stats.put("total_participants", Statistics.totalParticipants.get());
+        stats.put("total_participants_no_multi_stream", Statistics.totalParticipantsNoMultiStream.get());
+        stats.put("total_participants_no_source_name", Statistics.totalParticipantsNoSourceName.get());
+        stats.put("total_conferences_created", Statistics.totalConferencesCreated.get());
+        stats.put("conferences", conferenceCount.get());
 
         JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("participants_moved", statistics.totalParticipantsMoved.get());
+        bridgeFailures.put("participants_moved", Statistics.totalParticipantsMoved.get());
         stats.put("bridge_failures", bridgeFailures);
 
         JSONObject participantNotifications = new JSONObject();
-        participantNotifications.put("ice_failed", statistics.totalParticipantsIceFailed.get());
-        participantNotifications.put("request_restart", statistics.totalParticipantsRequestedRestart.get());
+        participantNotifications.put("ice_failed", Statistics.totalParticipantsIceFailed.get());
+        participantNotifications.put("request_restart", Statistics.totalParticipantsRequestedRestart.get());
         stats.put("participant_notifications", participantNotifications);
 
         // Calculate the number of participants and conference size distribution
@@ -453,11 +434,6 @@ public class FocusManager
         stats.put("queues", QueueStatistics.Companion.getStatistics());
 
         return stats;
-    }
-
-    public @NotNull Statistics getStatistics()
-    {
-        return statistics;
     }
 
     @NotNull

@@ -20,7 +20,7 @@ import io.kotest.matchers.ints.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.test.time.FakeClock
+import org.jitsi.utils.time.FakeClock
 import org.jitsi.utils.times
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.impl.JidCreate
@@ -78,22 +78,22 @@ class BridgeTest : ShouldSpec({
         val failureResetThreshold = BridgeConfig.config.failureResetThreshold
         bridge.isOperational shouldBe true
 
-        bridge.setIsOperational(false)
+        bridge.isOperational = false
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold.times(100))
         bridge.isOperational shouldBe false
 
-        bridge.setIsOperational(true)
+        bridge.isOperational = true
         bridge.isOperational shouldBe true
 
-        bridge.setIsOperational(false)
+        bridge.isOperational = false
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold.dividedBy(2))
         bridge.isOperational shouldBe false
 
-        bridge.setIsOperational(true)
+        bridge.isOperational = true
         bridge.isOperational shouldBe false
 
         clock.elapse(failureResetThreshold)

@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.OrderedJsonObject
@@ -49,30 +50,31 @@ class JigasiIqHandler(
     private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
 
     private val stats = Stats()
-    val statsJson = stats.toJson()
+    val statsJson: OrderedJsonObject
+        get() = stats.toJson()
 
     override fun handleRequest(request: IqRequest<DialIq>): IqProcessingResult {
         val conferenceJid = request.iq.from.asEntityBareJidIfPossible()
             ?: return RejectedWithError(request, StanzaError.Condition.bad_request).also {
                 logger.warn("Rejected request with invalid conferenceJid: ${request.iq.from}")
-                stats.requestRejected()
+                Stats.rejectedRequests.inc()
             }
 
         val conference = conferenceStore.getConference(conferenceJid)
             ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
                 logger.warn("Rejected request for non-existent conference: $conferenceJid")
-                stats.requestRejected()
+                Stats.rejectedRequests.inc()
             }
 
         if (!conference.acceptJigasiRequest(request.iq.from)) {
             return RejectedWithError(request, StanzaError.Condition.forbidden).also {
                 logger.warn("Rejected request from unauthorized user: ${request.iq.from}")
-                stats.requestRejected()
+                Stats.rejectedRequests.inc()
             }
         }
 
         logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toXML()}")
-        stats.requestAccepted()
+        Stats.acceptedRequests.inc()
 
         TaskPools.ioPool.execute {
             try {
@@ -129,15 +131,15 @@ class JigasiIqHandler(
             null, is ErrorIQ -> {
                 if (responseFromJigasi == null) {
                     logger.warn("Jigasi instance timed out: $jigasiJid")
-                    stats.singleInstanceTimeout()
+                    Stats.singleInstanceTimeouts.inc()
                 } else {
                     logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toXML()}")
-                    stats.singleInstanceError()
+                    Stats.singleInstanceErrors.inc()
                 }
 
                 if (retryCount > 0) {
                     logger.info("Will retry up to $retryCount more times.")
-                    stats.retry()
+                    Stats.retries.inc()
                     // Do not try the same instance again.
                     inviteJigasi(request, conferenceRegions, retryCount - 1, exclude + jigasiJid)
                 } else {
@@ -172,40 +174,52 @@ class JigasiIqHandler(
     }
 
     class Stats {
-        /** User requests which were rejected (e.g. not authorized, bad request). */
-        private val rejectedRequests = AtomicInteger()
-        /** User requests which were accepted. */
-        private val acceptedRequests = AtomicInteger()
         /** User requests which failed due to no jigasi instances being available. */
         private val requestsFailedNoInstanceAvailable = AtomicInteger()
         /** User requests which failed due to the jigasi XMPP connection not being connected. */
         private val requestsFailedXmppNotConnected = AtomicInteger()
         /** User requests which failed because all jigasi instances (up to the max retry count) failed. */
         private val requestsFailedAllInstancesFailed = AtomicInteger()
-        /** Errors received from jigasi instances. */
-        private val singleInstanceErrors = AtomicInteger()
-        /** Timeouts for requests send to jigasi instances. */
-        private val singleInstanceTimeouts = AtomicInteger()
-        /** A request was retried with a different jigasi instance. */
-        private val retries = AtomicInteger()
 
-        fun requestRejected() = rejectedRequests.incrementAndGet()
-        fun requestAccepted() = acceptedRequests.incrementAndGet()
         fun noInstanceAvailable() = requestsFailedNoInstanceAvailable.incrementAndGet()
         fun xmppNotConnected() = requestsFailedXmppNotConnected.incrementAndGet()
         fun allInstancesFailed() = requestsFailedAllInstancesFailed.incrementAndGet()
-        fun singleInstanceError() = singleInstanceErrors.incrementAndGet()
-        fun singleInstanceTimeout() = singleInstanceTimeouts.incrementAndGet()
-        fun retry() = retries.incrementAndGet()
 
-        fun toJson() = OrderedJsonObject().apply {
-            this["rejected_requests"] = rejectedRequests.get()
-            this["accepted_requests"] = acceptedRequests.get()
+        fun toJson() = statsJson().apply {
             this["requests_failed_no_instance"] = requestsFailedNoInstanceAvailable.get()
             this["requests_failed_xmpp_not_connected"] = requestsFailedXmppNotConnected.get()
-            this["instance_errors"] = singleInstanceErrors.get()
-            this["instance_timeout"] = singleInstanceTimeouts.get()
-            this["retries"] = retries.get()
+        }
+
+        companion object {
+            private const val prefix = "jigasi_iq_handler"
+            val rejectedRequests = JicofoMetricsContainer.instance.registerCounter(
+                "${prefix}_rejected_requests",
+                "User requests which were rejected (e.g. not authorized, bad request)."
+            )
+            val acceptedRequests = JicofoMetricsContainer.instance.registerCounter(
+                "${prefix}_accepted_requests",
+                "User requests which were accepted."
+            )
+            val retries = JicofoMetricsContainer.instance.registerCounter(
+                "${prefix}_retries",
+                "Requests retried with a different jigasi instance."
+            )
+            val singleInstanceErrors = JicofoMetricsContainer.instance.registerCounter(
+                "${prefix}_instance_errors",
+                "Errors received from jigasi instances."
+            )
+            val singleInstanceTimeouts = JicofoMetricsContainer.instance.registerCounter(
+                "${prefix}_instance_timeouts",
+                "Timeouts for requests sent to jigasi instances."
+            )
+
+            fun statsJson() = OrderedJsonObject().apply {
+                put("rejected_requests", rejectedRequests.get())
+                put("accepted_requests", acceptedRequests.get())
+                put("retries", retries.get())
+                put("instance_errors", singleInstanceErrors.get())
+                put("instance_timeout", singleInstanceTimeouts.get())
+            }
         }
     }
 }
