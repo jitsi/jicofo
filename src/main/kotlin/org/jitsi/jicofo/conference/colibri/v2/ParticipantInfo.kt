@@ -29,6 +29,7 @@ internal class ParticipantInfo(
     val statsId: String?,
     var sources: ConferenceSourceMap = ConferenceSourceMap(),
     var session: Colibri2Session,
+    val useSctp: Boolean,
     /** Whether the participant is force audio muted. */
     var audioMuted: Boolean = false,
     /** Whether the participant is force video muted. */
@@ -40,6 +41,7 @@ internal class ParticipantInfo(
         id = options.id,
         statsId = options.statsId,
         sources = options.sources,
+        useSctp = options.useSctp,
         audioMuted = options.forceMuteAudio,
         videoMuted = options.forceMuteVideo,
         supportsSourceNames = options.supportsSourceNames,

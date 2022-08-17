@@ -208,7 +208,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     participant.getSources(),
                     participant.hasSourceNameSupport(),
                     forceMuteAudio,
-                    forceMuteVideo);
+                    forceMuteVideo,
+                    offer.getContents().stream().anyMatch(c -> c.getName() == "data"));
             colibriAllocation = colibriSessionManager.allocate(participantOptions, offer.getContents());
         }
         catch (BridgeSelectionFailedException e)

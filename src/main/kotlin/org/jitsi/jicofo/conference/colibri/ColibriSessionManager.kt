@@ -95,5 +95,6 @@ data class ParticipantAllocationOptions(
     val sources: ConferenceSourceMap,
     val supportsSourceNames: Boolean,
     val forceMuteAudio: Boolean,
-    val forceMuteVideo: Boolean
+    val forceMuteVideo: Boolean,
+    val useSctp: Boolean
 )

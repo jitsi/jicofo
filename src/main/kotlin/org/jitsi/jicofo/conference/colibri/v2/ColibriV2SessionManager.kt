@@ -253,7 +253,6 @@ class ColibriV2SessionManager(
         val session: Colibri2Session
         val created: Boolean
         val participantInfo: ParticipantInfo
-        val useSctp = contents.any { it.name == "data" }
         synchronized(syncRoot) {
             if (participants.containsKey(participant.id)) {
                 throw IllegalStateException("participant already exists")
@@ -293,7 +292,7 @@ class ColibriV2SessionManager(
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
             participantInfo = ParticipantInfo(participant, session)
-            stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
+            stanzaCollector = session.sendAllocationRequest(participantInfo, contents)
             add(participantInfo)
             if (created) {
                 sessions.values.filter { it != session }.forEach {
@@ -325,7 +324,7 @@ class ColibriV2SessionManager(
 
         synchronized(syncRoot) {
             try {
-                return handleResponse(response, session, created, participantInfo, useSctp)
+                return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
                 logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
@@ -345,8 +344,7 @@ class ColibriV2SessionManager(
         response: IQ?,
         session: Colibri2Session,
         created: Boolean,
-        participantInfo: ParticipantInfo,
-        useSctp: Boolean
+        participantInfo: ParticipantInfo
     ): ColibriAllocation {
 
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
@@ -431,7 +429,7 @@ class ColibriV2SessionManager(
         val transport = response.parseTransport(participantInfo.id)
             ?: throw ColibriAllocationFailedException("failed to parse transport", false)
         val sctpPort = transport.sctp?.port
-        if (useSctp && sctpPort == null) {
+        if (participantInfo.useSctp && sctpPort == null) {
             logger.error("Requested SCTP, but the response had no SCTP.")
             throw ColibriAllocationFailedException("Requested SCTP, but the response had no SCTP", false)
         }

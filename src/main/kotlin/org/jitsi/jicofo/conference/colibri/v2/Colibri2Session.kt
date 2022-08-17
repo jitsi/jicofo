@@ -81,8 +81,7 @@ internal class Colibri2Session(
          * A list of Jingle [ContentPacketExtension]s, which describe the media types and RTP header extensions, i.e.
          * the information contained in colibri2 [Media] elements.
          */
-        contents: List<ContentPacketExtension>,
-        useSctp: Boolean
+        contents: List<ContentPacketExtension>
     ): StanzaCollector {
 
         val request = createRequest(!created)
@@ -105,7 +104,7 @@ internal class Colibri2Session(
                     //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
                     //  failures with firefox but not chrome).
                     setIceControlling(true)
-                    if (useSctp) {
+                    if (participant.useSctp) {
                         setSctp(Sctp.Builder().build())
                     }
                 }.build()
