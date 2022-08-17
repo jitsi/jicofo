@@ -253,6 +253,10 @@ public class JitsiMeetConferenceImpl
                 jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                 jicofoServices.getBridgeSelector(),
                 this,
+                getRoomName().toString(),
+                () -> chatRoom == null ? null : chatRoom.getMeetingId(),
+                config.getCallStatsEnabled(),
+                config.getRtcStatsEnabled(),
                 logger);
         colibriSessionManager.addListener(colibriSessionManagerListener);
 

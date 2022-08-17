@@ -58,6 +58,14 @@ class ColibriV2SessionManager(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
     private val conference: JitsiMeetConferenceImpl,
+    internal val conferenceName: String,
+    /**
+     * A function which returns the meeting ID associated with the conference. Needed because it is not always known
+     * at the time this constructor is called.
+     */
+    private val getMeetingId: () -> String?,
+    internal val callstatsEnabled: Boolean,
+    internal val rtcStatsEnabled: Boolean,
     parentLogger: Logger
 ) : ColibriSessionManager {
     private val logger = createChildLogger(parentLogger)
@@ -92,16 +100,11 @@ class ColibriV2SessionManager(
      * We want to delay initialization until the chat room is joined in order to use its meetingId.
      */
     internal val meetingId: String by lazy {
-        val chatRoomMeetingId = conference.chatRoom?.meetingId
-        if (chatRoomMeetingId == null) {
+        getMeetingId() ?: run {
             logger.warn("No meetingId set for the MUC. Generating one locally.")
             UUID.randomUUID().toString()
-        } else chatRoomMeetingId
+        }
     }
-
-    internal val conferenceName = conference.roomName.toString()
-    internal val callstatsEnabled = conference.config.callStatsEnabled
-    internal val rtcStatsEnabled = conference.config.rtcStatsEnabled
 
     /**
      * Expire everything.
