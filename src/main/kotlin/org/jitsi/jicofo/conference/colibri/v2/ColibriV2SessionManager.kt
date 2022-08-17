@@ -140,10 +140,10 @@ class ColibriV2SessionManager(
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.expire()
+        removeNode(session, ::repairMesh)
         sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
-        removeNode(session, ::repairMesh)
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
@@ -242,7 +242,6 @@ class ColibriV2SessionManager(
         }
 
         session = Colibri2Session(this, bridge, logger)
-        sessions[bridge.relayId] = session
         return Pair(session, true)
     }
 
@@ -330,17 +329,8 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)
             if (created) {
-                if (true) { // TODO
-                    sessions.values.filter { it != session }.forEach {
-                        logger.debug { "Creating relays between $session and $it." }
-                        // We already made sure that relayId is not null when there are multiple sessions.
-                        it.createRelay(session.relayId!!, getSessionParticipants(session), initiator = true)
-                        session.createRelay(it.relayId!!, getSessionParticipants(it), initiator = false)
-                    }
-                } else {
-                    val meshId = "0" // TODO - get from bridge selection somehow
-                    addNodeToMesh(session, meshId)
-                }
+                val meshId = "0" // TODO - get from bridge selection somehow
+                addNodeToMesh(session, meshId)
             } else {
                 // TODO: add the new participant to each session as the relay it's seen as coming from
                 sessions.values.filter { it != session }.forEach {
