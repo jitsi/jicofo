@@ -58,7 +58,10 @@ class SsrcValidationPerfTest : ShouldSpec() {
                 removed shouldBe ConferenceSourceMap(newEndpointJid to newEndpointSourceSet)
             }
             context("Sequential add/remove") {
-                val conferenceSources = ValidatingConferenceSourceMap()
+                val conferenceSources = ValidatingConferenceSourceMap(
+                    ConferenceConfig.config.maxSsrcsPerUser,
+                    ConferenceConfig.config.maxSsrcGroupsPerUser
+                )
                 measureAndLog("Adding all endpoints") {
                     for (i in 0 until numEndpoints) {
                         val endpointId = "endpoint-$i"
@@ -107,7 +110,10 @@ class SsrcValidationPerfTest : ShouldSpec() {
         )
     )
 
-    private fun createConferenceSourceMap(numEndpoints: Int) = ValidatingConferenceSourceMap().apply {
+    private fun createConferenceSourceMap(numEndpoints: Int) = ValidatingConferenceSourceMap(
+        ConferenceConfig.config.maxSsrcsPerUser,
+        ConferenceConfig.config.maxSsrcGroupsPerUser
+    ).apply {
         for (i in 0 until numEndpoints) {
             val endpointSourceSet = createEndpointSourceSet(i.toString(), ssrcCount)
             ssrcCount += endpointSourceSet.sources.size

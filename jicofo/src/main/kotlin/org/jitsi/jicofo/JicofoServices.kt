@@ -90,7 +90,7 @@ open class JicofoServices {
 
     val bridgeSelector = BridgeSelector()
     private val jvbDoctor = if (BridgeConfig.config.healthChecksEnabled) {
-        JvbDoctor(bridgeSelector).apply {
+        JvbDoctor(bridgeSelector, xmppServices.serviceConnection).apply {
             bridgeSelector.addHandler(this)
         }
     } else {

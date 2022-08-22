@@ -20,9 +20,8 @@ package org.jitsi.jicofo.jigasi;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.*;
-import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
@@ -33,7 +32,6 @@ import org.jxmpp.jid.*;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.*;
 
 /**
  * The {@link TranscriberManager} class is responsible for listening to presence updates to see whether a

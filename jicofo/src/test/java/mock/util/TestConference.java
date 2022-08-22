@@ -24,6 +24,7 @@ import mock.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.*;
+import org.jitsi.xmpp.extensions.colibri.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.stringprep.*;
@@ -74,8 +75,14 @@ public class TestConference
         mockBridge.start();
 
         Bridge bridge = harness.jicofoServices.getBridgeSelector().addJvbAddress(bridgeJid);
-        BridgeTestKt.setStats(
-                bridge, 0.0, "region", "relay-id", "version", true /* colibri2 */, false, false /* drain */);
+        ColibriStatsExtension stats = new ColibriStatsExtension();
+        stats.addStat("stress_level", 0.0);
+        stats.addStat("region", "region");
+        stats.addStat("relay_id", "relay-id");
+        stats.addStat("version", "version");
+        stats.addStat("colibri2", "true");
+        stats.addStat("drain", "false");
+        bridge.setStats(stats);
 
         createConferenceRoom(roomName);
     }

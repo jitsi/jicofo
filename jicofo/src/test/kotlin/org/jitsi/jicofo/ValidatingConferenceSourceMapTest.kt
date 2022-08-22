@@ -52,7 +52,10 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
         val sourceSet = EndpointSourceSet(sources, groups)
 
-        val conferenceSources = ValidatingConferenceSourceMap()
+        val conferenceSources = ValidatingConferenceSourceMap(
+            ConferenceConfig.config.maxSsrcsPerUser,
+            ConferenceConfig.config.maxSsrcGroupsPerUser
+        )
 
         context("Adding sources.") {
             context("Standard VP8 signaling with simulcast and RTX") {
@@ -96,7 +99,10 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("Max SSRC count limit") {
-                val conferenceSources = ValidatingConferenceSourceMap(maxSsrcsPerUser = 4)
+                val conferenceSources = ValidatingConferenceSourceMap(
+                    maxSsrcsPerUser = 4,
+                    ConferenceConfig.config.maxSsrcGroupsPerUser
+                )
                 context("At once") {
                     shouldThrow<SsrcLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet)
@@ -119,7 +125,10 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
             context("Max ssrc-group count limit") {
-                val conferenceSources = ValidatingConferenceSourceMap(maxSsrcGroupsPerUser = 2)
+                val conferenceSources = ValidatingConferenceSourceMap(
+                    ConferenceConfig.config.maxSsrcsPerUser,
+                    maxSsrcGroupsPerUser = 2
+                )
                 context("At once") {
                     shouldThrow<SsrcGroupLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet)

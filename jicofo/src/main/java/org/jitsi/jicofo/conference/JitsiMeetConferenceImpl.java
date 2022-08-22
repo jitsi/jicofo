@@ -29,6 +29,7 @@ import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
@@ -202,7 +203,10 @@ public class JitsiMeetConferenceImpl
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
-    private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap();
+    private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap(
+            ConferenceConfig.config.getMaxSsrcsPerUser(),
+            ConferenceConfig.config.getMaxSsrcGroupsPerUser()
+    );
 
     /**
      * Whether the limit on the number of audio senders is currently hit.

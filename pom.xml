@@ -71,6 +71,8 @@
     </plugins>
   </build>
   <modules>
+    <module>jicofo-common</module>
+    <module>jicofo-selector</module>
     <module>jicofo</module>
   </modules>
   <dependencyManagement>

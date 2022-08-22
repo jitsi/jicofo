@@ -120,5 +120,3 @@ class XmppServices(
         }
     }
 }
-
-enum class XmppConnectionEnum { Client, Service }
