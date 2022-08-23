@@ -96,6 +96,21 @@ class CascadeTest : ShouldSpec() {
                     cascade.getNodesBehind("A", node).shouldContainExactlyInAnyOrder(node)
                 }
             }
+            should("have paths directly from each node") {
+                nodes.forEach { node ->
+                    var pathsVisited = 0
+                    cascade.getPathsFrom(node) { c, n, from ->
+                        c shouldBe cascade
+                        if (n == node) {
+                            from shouldBe null
+                        } else {
+                            from shouldBe node
+                        }
+                        pathsVisited++
+                    }
+                    pathsVisited shouldBe numNodes
+                }
+            }
             should("not call a callback when removing any node") {
                 nodes.forEach {
                     var called = false
@@ -159,6 +174,39 @@ class CascadeTest : ShouldSpec() {
 
                 cascade.getNodesBehind("A", nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[3], nodes[4])
                 cascade.getNodesBehind("B", nodes[0]).shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2])
+            }
+            should("have paths directly from the core node") {
+                var pathsVisited = 0
+                cascade.getPathsFrom(nodes[0]) { c, n, from ->
+                    c shouldBe cascade
+                    if (n == nodes[0]) {
+                        from shouldBe null
+                    } else {
+                        from shouldBe nodes[0]
+                    }
+                    pathsVisited++
+                }
+                pathsVisited shouldBe numNodes
+            }
+            should("have non-local paths from other nodes through the core node") {
+                for (i in 1 until numNodes) {
+                    val locals = when (i) {
+                        1, 2 -> setOf(nodes[0], nodes[1], nodes[2])
+                        3, 4 -> setOf(nodes[0], nodes[3], nodes[4])
+                        else -> setOf()
+                    }
+                    var pathsVisited = 0
+                    cascade.getPathsFrom(nodes[i]) { c, n, from ->
+                        c shouldBe cascade
+                        when {
+                            n == nodes[i] -> from shouldBe null
+                            locals.contains(n) -> from shouldBe nodes[i]
+                            else -> from shouldBe nodes[0]
+                        }
+                        pathsVisited++
+                    }
+                    pathsVisited shouldBe numNodes
+                }
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
@@ -258,6 +306,34 @@ class CascadeTest : ShouldSpec() {
                     .shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[4])
                 cascade.getNodesBehind(nodes[4], nodes[0])
                     .shouldContainExactlyInAnyOrder(nodes[0], nodes[1], nodes[2], nodes[3])
+            }
+            should("have paths directly from the core node") {
+                var pathsVisited = 0
+                cascade.getPathsFrom(nodes[0]) { c, n, from ->
+                    c shouldBe cascade
+                    if (n == nodes[0]) {
+                        from shouldBe null
+                    } else {
+                        from shouldBe nodes[0]
+                    }
+                    pathsVisited++
+                }
+                pathsVisited shouldBe numNodes
+            }
+            should("have paths from other nodes through the core node") {
+                for (i in 1 until numNodes) {
+                    var pathsVisited = 0
+                    cascade.getPathsFrom(nodes[i]) { c, n, from ->
+                        c shouldBe cascade
+                        when (n) {
+                            nodes[i] -> from shouldBe null
+                            nodes[0] -> from shouldBe nodes[i]
+                            else -> from shouldBe nodes[0]
+                        }
+                        pathsVisited++
+                    }
+                    pathsVisited shouldBe numNodes
+                }
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {

@@ -176,6 +176,32 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehin
     }
 }
 
+/* Traverse the graph from a node; for each other node, indicate the node from which it was reached. */
+fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.getPathsFrom(
+    node: N,
+    pathFn: (C, N, N?) -> Unit
+) {
+    pathFn(this, node, null)
+    node.relays.values.forEach {
+        getPathsFrom(it, node, pathFn)
+    }
+}
+
+private fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.getPathsFrom(
+    link: L,
+    from: N,
+    pathFn: (C, N, N?) -> Unit
+) {
+    val node = checkNotNull(sessions[link.relayId])
+    pathFn(this, node, from)
+    node.relays.values.forEach {
+        if (it.meshId == link.meshId) {
+            return@forEach
+        }
+        getPathsFrom(it, node, pathFn)
+    }
+}
+
 /** Validate a node, or throw IllegalStateException. */
 private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validateNode(node: N) {
     node.relays.entries.forEach { (key, link) ->
