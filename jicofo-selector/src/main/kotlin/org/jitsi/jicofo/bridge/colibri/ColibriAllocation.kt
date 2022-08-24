@@ -1,4 +1,4 @@
-package org.jitsi.jicofo.conference.colibri
+package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension

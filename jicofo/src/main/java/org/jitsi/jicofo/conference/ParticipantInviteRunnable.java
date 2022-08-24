@@ -20,8 +20,8 @@ package org.jitsi.jicofo.conference;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;
-import org.jitsi.jicofo.conference.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.utils.*;
@@ -47,25 +47,6 @@ import java.util.*;
  */
 public class ParticipantInviteRunnable implements Runnable, Cancelable
 {
-    /**
-     * The constant value used as owner attribute value of
-     * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
-     */
-    public static final Jid SSRC_OWNER_JVB;
-
-    static
-    {
-        try
-        {
-            SSRC_OWNER_JVB = JidCreate.from("jvb");
-        }
-        catch (XmppStringprepException e)
-        {
-            // cannot happen
-            throw new RuntimeException(e);
-        }
-    }
-
     private final Logger logger;
 
     /**
@@ -292,8 +273,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         JitsiMeetConfig config = meetConference.getConfig();
 
         OfferOptions offerOptions = new OfferOptions();
-        OfferOptionsKt.applyConstraints(offerOptions, config);
-        OfferOptionsKt.applyConstraints(offerOptions, participant);
+        OfferOptionsUtilKt.applyConstraints(offerOptions, config);
+        OfferOptionsUtilKt.applyConstraints(offerOptions, participant);
         // Enable REMB only when TCC is not enabled.
         if (!offerOptions.getTcc() && participant.hasRembSupport())
         {

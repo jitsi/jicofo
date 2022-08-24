@@ -17,10 +17,6 @@
  */
 package org.jitsi.jicofo.codec
 
-import org.jitsi.jicofo.JitsiMeetConfig
-import org.jitsi.jicofo.conference.Participant
-import java.lang.Integer.min
-
 /**
  * Options for an offer that jicofo generates for a specific participant (or for an Octo link).
  */
@@ -37,26 +33,3 @@ data class OfferOptions(
     var startBitrate: Int? = null,
     var opusMaxAverageBitrate: Int? = null
 )
-
-fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
-    stereo = stereo && jitsiMeetConfig.stereoEnabled()
-    if (jitsiMeetConfig.minBitrate > 0) {
-        minBitrate = min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
-    }
-    if (jitsiMeetConfig.startBitrate > 0) {
-        startBitrate = min(jitsiMeetConfig.startBitrate, startBitrate ?: Int.MAX_VALUE)
-    }
-    if (jitsiMeetConfig.opusMaxAverageBitrate > 0) {
-        opusMaxAverageBitrate = min(jitsiMeetConfig.opusMaxAverageBitrate, opusMaxAverageBitrate ?: Int.MAX_VALUE)
-    }
-}
-
-fun OfferOptions.applyConstraints(participant: Participant) {
-    audio = audio && participant.hasAudioSupport()
-    video = video && participant.hasVideoSupport()
-    sctp = sctp && participant.hasSctpSupport()
-    rtx = rtx && participant.hasRtxSupport()
-    remb = remb && participant.hasRembSupport()
-    tcc = tcc && participant.hasTccSupport()
-    opusRed = opusRed && participant.hasOpusRedSupport()
-}

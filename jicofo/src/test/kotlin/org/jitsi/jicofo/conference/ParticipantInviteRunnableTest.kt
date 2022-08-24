@@ -24,8 +24,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import org.jitsi.jicofo.JitsiMeetConfig
-import org.jitsi.jicofo.conference.colibri.ColibriAllocation
-import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
+import org.jitsi.jicofo.bridge.colibri.ColibriAllocation
+import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
+import org.jitsi.jicofo.bridge.colibri.SSRC_OWNER_JVB
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
@@ -44,7 +45,7 @@ import org.jxmpp.jid.impl.JidCreate
 class ParticipantInviteRunnableTest : ShouldSpec({
     context("Creating and sending an offer") {
         val feedbackSources = ConferenceSourceMap(
-            ParticipantInviteRunnable.SSRC_OWNER_JVB to EndpointSourceSet(
+            SSRC_OWNER_JVB to EndpointSourceSet(
                 setOf(
                     Source(1234L, MediaType.AUDIO, "audio-feedback"),
                     Source(5678L, MediaType.VIDEO, "video-feedback")

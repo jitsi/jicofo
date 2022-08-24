@@ -7,7 +7,7 @@
 /target/
 jicofo-common/target/
 jicofo-selector/target/
-/target/
+jicofo/target/
 .classpath
 .project
 .settings/

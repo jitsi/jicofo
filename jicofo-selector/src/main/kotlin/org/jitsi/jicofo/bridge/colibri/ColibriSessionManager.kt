@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri
+package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap

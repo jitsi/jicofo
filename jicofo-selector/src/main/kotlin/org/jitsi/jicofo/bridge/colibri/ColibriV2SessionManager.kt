@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package org.jitsi.jicofo.conference.colibri.v2
+package org.jitsi.jicofo.bridge.colibri
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
-import org.jitsi.jicofo.conference.colibri.BridgeSelectionFailedException
-import org.jitsi.jicofo.conference.colibri.ColibriAllocation
-import org.jitsi.jicofo.conference.colibri.ColibriAllocationFailedException
-import org.jitsi.jicofo.conference.colibri.ColibriSessionManager
-import org.jitsi.jicofo.conference.colibri.ParticipantAllocationOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject

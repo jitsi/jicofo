@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference.colibri.v2
+package org.jitsi.jicofo.bridge.colibri
 
-import org.jitsi.jicofo.conference.colibri.ParticipantAllocationOptions
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri2.Media
