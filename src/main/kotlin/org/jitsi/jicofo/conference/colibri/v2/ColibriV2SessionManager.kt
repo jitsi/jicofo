@@ -26,6 +26,7 @@ import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.cascade.Cascade
 import org.jitsi.jicofo.cascade.addNodeToMesh
 import org.jitsi.jicofo.cascade.getNodesBehind
+import org.jitsi.jicofo.cascade.getPathsFrom
 import org.jitsi.jicofo.cascade.removeNode
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
@@ -171,8 +172,8 @@ class ColibriV2SessionManager(
 
                 // If the session was removed the relays themselves are expired, so there's no need to expire individual
                 // endpoints within a relay.
-                sessions.values.filter { it != session }.forEach { otherSession ->
-                    session.relayId?.let {
+                getPathsFrom(session) { _, otherSession, from ->
+                    from?.relayId?.let {
                         otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
                     }
                 }
@@ -332,11 +333,14 @@ class ColibriV2SessionManager(
                 val meshId = "0" // TODO - get from bridge selection somehow
                 addNodeToMesh(session, meshId)
             } else {
-                // TODO: add the new participant to each session as the relay it's seen as coming from
-                sessions.values.filter { it != session }.forEach {
-                    logger.debug { "Adding a relayed endpoint to $it for ${participantInfo.id}." }
-                    // We already made sure that relayId is not null when there are multiple sessions.
-                    it.updateRemoteParticipant(participantInfo, session.relayId!!, create = true)
+                getPathsFrom(session) { _, otherSession, from ->
+                    if (from != null) {
+                        logger.debug {
+                            "Adding a relayed endpoint to $otherSession for ${participantInfo.id} from ${from.relayId}."
+                        }
+                        // We already made sure that relayId is not null when there are multiple sessions.
+                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
+                    }
                 }
             }
         }
@@ -506,9 +510,11 @@ class ColibriV2SessionManager(
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
-            sessions.values.filter { it != participantInfo.session }.forEach {
-                // We make sure that relayId is not null when there are multiple sessions.
-                it.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+            getPathsFrom(participantInfo.session) { _, otherSession, from ->
+                if (from != null) {
+                    // We make sure that relayId is not null when there are multiple sessions.
+                    otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+                }
             }
         }
     }
