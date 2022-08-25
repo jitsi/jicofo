@@ -12,17 +12,16 @@
   <name>jicofo</name>
   <description>JItsi COnference FOcus is a server side focus component used in Jitsi Meet conferences.</description>
   <dependencies>
-  <dependency>
-  <groupId>${project.groupId}</groupId>
-  <artifactId>jicofo-common</artifactId>
-  <version>${project.version}</version>
-</dependency>
-  <dependency>
-  <groupId>${project.groupId}</groupId>
-  <artifactId>jicofo-selector</artifactId>
-  <version>${project.version}</version>
-</dependency>
-
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicofo-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicofo-selector</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.googlecode.json-simple</groupId>
       <artifactId>json-simple</artifactId>
