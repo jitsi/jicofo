@@ -42,7 +42,6 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
 import java.util.Collections.singletonList
-import java.util.UUID
 
 /**
  * Implements [ColibriSessionManager] using colibri2.
@@ -56,7 +55,7 @@ class ColibriV2SessionManager(
      * A function which returns the meeting ID associated with the conference. Needed because it is not always known
      * at the time this constructor is called.
      */
-    private val getMeetingId: () -> String?,
+    internal val meetingId: String,
     internal val callstatsEnabled: Boolean,
     internal val rtcStatsEnabled: Boolean,
     private val bridgeVersion: String?,
@@ -89,16 +88,6 @@ class ColibriV2SessionManager(
      * Protects access to [sessions], [participants] and [participantsBySession].
      */
     private val syncRoot = Any()
-
-    /**
-     * We want to delay initialization until the chat room is joined in order to use its meetingId.
-     */
-    internal val meetingId: String by lazy {
-        getMeetingId() ?: run {
-            logger.warn("No meetingId set for the MUC. Generating one locally.")
-            UUID.randomUUID().toString()
-        }
-    }
 
     /**
      * Expire everything.

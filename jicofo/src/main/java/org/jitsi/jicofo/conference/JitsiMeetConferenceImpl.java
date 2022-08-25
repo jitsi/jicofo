@@ -178,7 +178,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Maintains all colibri sessions for this conference.
      */
-    private final ColibriSessionManager colibriSessionManager;
+    private ColibriSessionManager colibriSessionManager;
 
     /**
      * Listener for events from {@link #colibriSessionManager}.
@@ -252,16 +252,6 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
         this.jvbVersion = jvbVersion;
-        colibriSessionManager = new ColibriV2SessionManager(
-                jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
-                jicofoServices.getBridgeSelector(),
-                getRoomName().toString(),
-                () -> chatRoom == null ? null : chatRoom.getMeetingId(),
-                config.getCallStatsEnabled(),
-                config.getRtcStatsEnabled(),
-                jvbVersion,
-                logger);
-        colibriSessionManager.addListener(colibriSessionManagerListener);
 
         logger.info("Created new conference.");
     }
@@ -274,6 +264,34 @@ public class JitsiMeetConferenceImpl
             String jvbVersion)
     {
        this(roomName, listener, config, logLevel, jvbVersion, false);
+    }
+
+    /**
+     * @return the colibri session manager, late init.
+     */
+    private ColibriSessionManager getColibriSessionManager()
+    {
+        if (colibriSessionManager == null)
+        {
+            String meetingId = chatRoom == null ? null : chatRoom.getMeetingId();
+            if (meetingId == null)
+            {
+                logger.warn("No meetingId set for the MUC. Generating one locally.");
+                meetingId = UUID.randomUUID().toString();
+            }
+
+            colibriSessionManager = new ColibriV2SessionManager(
+                    jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
+                    jicofoServices.getBridgeSelector(),
+                    getRoomName().toString(),
+                    meetingId,
+                    config.getCallStatsEnabled(),
+                    config.getRtcStatsEnabled(),
+                    jvbVersion,
+                    logger);
+            colibriSessionManager.addListener(colibriSessionManagerListener);
+        }
+        return colibriSessionManager;
     }
 
     /**
@@ -392,7 +410,10 @@ public class JitsiMeetConferenceImpl
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
 
-        colibriSessionManager.removeListener(colibriSessionManagerListener);
+        if (colibriSessionManager != null)
+        {
+            colibriSessionManager.removeListener(colibriSessionManagerListener);
+        }
 
         try
         {
@@ -684,7 +705,7 @@ public class JitsiMeetConferenceImpl
         // Colibri channel allocation and jingle invitation take time, so schedule them on a separate thread.
         ParticipantInviteRunnable channelAllocator = new ParticipantInviteRunnable(
                 this,
-                colibriSessionManager,
+                getColibriSessionManager(),
                 participant,
                 hasToStartAudioMuted(participant, justJoined),
                 hasToStartVideoMuted(participant, justJoined),
@@ -783,7 +804,10 @@ public class JitsiMeetConferenceImpl
         // anymore
         cancelSingleParticipantTimeout();
 
-        colibriSessionManager.expire();
+        if (colibriSessionManager != null)
+        {
+            colibriSessionManager.expire();
+        }
     }
 
     private void onMemberKicked(ChatRoomMember chatRoomMember)
@@ -869,7 +893,7 @@ public class JitsiMeetConferenceImpl
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
         }
 
-        colibriSessionManager.removeParticipant(participant.getEndpointId());
+        getColibriSessionManager().removeParticipant(participant.getEndpointId());
     }
 
     @Override
@@ -979,7 +1003,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant.getEndpointId());
+        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
@@ -1025,7 +1049,7 @@ public class JitsiMeetConferenceImpl
 
         BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
         String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
-        String existingBridgeSessionId = colibriSessionManager.getBridgeSessionId(participant.getEndpointId());
+        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
         boolean restartRequested = bsPE != null && bsPE.isRestart();
 
         if (restartRequested)
@@ -1115,7 +1139,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.updateParticipant(participant.getEndpointId(), getTransport(contentList), null);
+        getColibriSessionManager().updateParticipant(participant.getEndpointId(), getTransport(contentList), null);
     }
 
     /**
@@ -1218,7 +1242,7 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up
         // after conference has been relocated to the new bridge
-        colibriSessionManager.updateParticipant(participant.getEndpointId(), null, participant.getSources());
+        getColibriSessionManager().updateParticipant(participant.getEndpointId(), null, participant.getSources());
 
         propagateNewSources(participant, sourcesAccepted);
 
@@ -1295,7 +1319,7 @@ public class JitsiMeetConferenceImpl
         }
         logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
-        colibriSessionManager.updateParticipant(
+        getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 getTransport(contents),
                 getSourcesForParticipant(participant));
@@ -1378,7 +1402,7 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        colibriSessionManager.updateParticipant(
+        getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 null,
                 participant.getSources(),
@@ -1528,7 +1552,7 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        colibriSessionManager.mute(participant.getEndpointId(), doMute, mediaType);
+        getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
         return MuteResult.SUCCESS;
     }
 
@@ -1557,7 +1581,10 @@ public class JitsiMeetConferenceImpl
         o.put("has_had_at_least_one_participant", hasHadAtLeastOneParticipant);
         o.put("start_audio_muted", startAudioMuted);
         o.put("start_video_muted", startVideoMuted);
-        o.put("colibri_session_manager", colibriSessionManager.getDebugState());
+        if (colibriSessionManager != null)
+        {
+            o.put("colibri_session_manager", colibriSessionManager.getDebugState());
+        }
         OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
         for (ConferenceProperties.ConferenceProperty conferenceProperty : conferenceProperties.getProperties())
         {
@@ -1595,7 +1622,7 @@ public class JitsiMeetConferenceImpl
 
         // Force mute at the backend. We assume this was successful. If for some reason it wasn't the colibri layer
         // should handle it (e.g. remove a broken bridge).
-        colibriSessionManager.mute(
+        getColibriSessionManager().mute(
                 participantsToMute.stream().map(p -> p.getEndpointId()).collect(Collectors.toSet()),
                 true,
                 mediaType);
@@ -1655,7 +1682,7 @@ public class JitsiMeetConferenceImpl
         // participants to another one. Here we should re-invite everyone if
         // the conference is not running (e.g. there was a single bridge and
         // it failed, then in was brought up).
-        if (chatRoom != null && checkMinParticipants() && colibriSessionManager.getBridgeCount() == 0)
+        if (chatRoom != null && checkMinParticipants() && getColibriSessionManager().getBridgeCount() == 0)
         {
             logger.info("New bridge available, will try to restart: " + bridgeJid);
 
@@ -1832,7 +1859,7 @@ public class JitsiMeetConferenceImpl
     @NotNull
     public Set<String> getBridgeRegions()
     {
-        return colibriSessionManager.getBridgeRegions();
+        return colibriSessionManager != null ? colibriSessionManager.getBridgeRegions() : Collections.emptySet();
     }
 
     @Override
@@ -1960,7 +1987,9 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeIsShuttingDown(@NotNull Bridge bridge)
         {
-            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            List<String> participantIdsToReinvite
+                    = colibriSessionManager != null
+                        ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
             if (!participantIdsToReinvite.isEmpty())
             {
                 logger.info("Bridge " + bridge.getJid() + " is shutting down, re-inviting " + participantIdsToReinvite);
@@ -1971,7 +2000,9 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(@NotNull Bridge bridge)
         {
-            List<String> participantIdsToReinvite = colibriSessionManager.removeBridge(bridge);
+            List<String> participantIdsToReinvite
+                    = colibriSessionManager != null
+                        ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
             if (!participantIdsToReinvite.isEmpty())
             {
                 logger.info("Removed " + bridge.getJid() + ", re-inviting " + participantIdsToReinvite);
