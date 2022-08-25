@@ -279,6 +279,10 @@ public class ChatRoomImpl
                     MUCInitialPresence.NAMESPACE);
             }
         };
+        if (muc.isJoined())
+        {
+            muc.leave();
+        }
         muc.addPresenceInterceptor(presenceInterceptor);
         muc.createOrJoin(nickname);
 
