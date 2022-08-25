@@ -65,8 +65,14 @@ public class Main
         // Register shutdown hook to perform cleanup before exit
         Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
 
-        JicofoServices jicofoServices = new JicofoServices();
-        JicofoServices.jicofoServicesSingleton = jicofoServices;
+        // JicofoServices starts various services in different threads, some of which depend on the singleton being set.
+        // Make sure they are blocked until the initialization has completed and the singleton has been set.
+        JicofoServices jicofoServices;
+        synchronized (JicofoServices.getJicofoServicesSingletonSyncRoot())
+        {
+            jicofoServices = new JicofoServices();
+            JicofoServices.setJicofoServicesSingleton(jicofoServices);
+        }
 
         try
         {
@@ -80,7 +86,7 @@ public class Main
         logger.info("Stopping services.");
         jicofoServices.shutdown();
         TaskPools.shutdown();
-        JicofoServices.jicofoServicesSingleton = null;
+        JicofoServices.setJicofoServicesSingleton(null);
     }
 
     /**

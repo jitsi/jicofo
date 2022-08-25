@@ -37,7 +37,7 @@ public class Statistics
     public String getStats()
     {
         JicofoServices jicofoServices
-                = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
+                = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton(), "jicofoServices");
         return jicofoServices.getStats().toJSONString();
     }
 }
