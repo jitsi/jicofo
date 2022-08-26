@@ -150,10 +150,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(from: 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(fromMesh: String, toward: N): Set<N> {
     val nodes = HashSet<N>()
     nodes.add(toward)
-    toward.relays.values.forEach {
-        if (it.meshId == fromMesh) {
-            return@forEach
-        }
+    toward.relays.values.filter { it.meshId != fromMesh }.forEach {
         val next = checkNotNull(sessions[it.relayId])
         getNodesBehind(it, next, nodes)
     }
@@ -167,10 +164,7 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehin
     nodes: MutableSet<N>
 ) {
     nodes.add(toward)
-    toward.relays.values.forEach {
-        if (it.meshId == link.meshId) {
-            return@forEach
-        }
+    toward.relays.values.filter { it.meshId != link.meshId }.forEach {
         val next = checkNotNull(sessions[it.relayId])
         getNodesBehind(it, next, nodes)
     }
@@ -194,10 +188,7 @@ private fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.getPat
 ) {
     val node = checkNotNull(sessions[link.relayId])
     pathFn(this, node, from)
-    node.relays.values.forEach {
-        if (it.meshId == link.meshId) {
-            return@forEach
-        }
+    node.relays.values.filter { it.meshId != link.meshId }.forEach {
         getPathsFrom(it, node, pathFn)
     }
 }
