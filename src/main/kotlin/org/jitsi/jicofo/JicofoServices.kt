@@ -38,6 +38,7 @@ import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.RestConfig
+import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
@@ -228,7 +229,9 @@ open class JicofoServices {
     }
 
     companion object {
-        @JvmField
-        var jicofoServicesSingleton: JicofoServices? = null
+        @JvmStatic
+        val jicofoServicesSingletonSyncRoot = Any()
+        @JvmStatic
+        var jicofoServicesSingleton: JicofoServices? by SynchronizedDelegate(null, jicofoServicesSingletonSyncRoot)
     }
 }

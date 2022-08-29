@@ -74,7 +74,7 @@ public class JvbDoctor
 
     private AbstractXMPPConnection getConnection()
     {
-        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton());
         XmppProvider xmppProvider = jicofoServices.getXmppServices().getServiceConnection();
 
         return xmppProvider.getXmppConnection();

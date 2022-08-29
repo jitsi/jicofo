@@ -37,7 +37,7 @@ public class Pin
 {
     @NotNull
     private final JicofoServices jicofoServices
-        = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
+        = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton(), "jicofoServices");
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)

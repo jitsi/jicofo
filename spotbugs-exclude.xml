@@ -41,6 +41,8 @@
     <!-- Exposure of internal representation is not a concern. -->
     <Bug pattern="EI_EXPOSE_REP"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
+    <!-- False positives in java code for an unknown reason. -->
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
   </Or>
 </Match>
 
@@ -49,7 +51,6 @@
   <And>
     <Or>
       <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-      <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
     </Or>
     <Or>
       <Source name="~.*\.*Test.kt" />
