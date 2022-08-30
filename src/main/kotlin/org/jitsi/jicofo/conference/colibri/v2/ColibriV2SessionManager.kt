@@ -313,8 +313,8 @@ class ColibriV2SessionManager(
                 sessions.values.filter { it != session }.forEach {
                     logger.debug { "Creating relays between $session and $it." }
                     // We already made sure that relayId is not null when there are multiple sessions.
-                    it.createRelay(session.relayId!!, getSessionParticipants(session), initiator = true)
-                    session.createRelay(it.relayId!!, getSessionParticipants(it), initiator = false)
+                    it.createRelay(session.relayId!!, getVisibleSessionParticipants(session), initiator = true)
+                    session.createRelay(it.relayId!!, getVisibleSessionParticipants(it), initiator = false)
                 }
             } else {
                 sessions.values.filter { it != session }.forEach {
@@ -564,6 +564,12 @@ class ColibriV2SessionManager(
 
     private fun getSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
         participantsBySession[session]?.toList() ?: emptyList()
+
+    /* In cases where we only want visitors, don't create a data structure with all participants only to
+     * discard them later.
+     */
+    private fun getVisibleSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
+        participantsBySession[session]?.filter { !it.visitor }?.toList() ?: emptyList()
 
     private fun remove(participantInfo: ParticipantInfo) {
         participants.remove(participantInfo.id)
