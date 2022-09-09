@@ -420,6 +420,9 @@ class ColibriV2SessionManager(
                 service_unavailable -> {
                     // This only happens if the bridge is in graceful-shutdown and we request a new conference.
                     // Since it's a new conference, remove the bridge and re-invite.
+                    // The fact that this bridge was selected means that we haven't received its updated presence yet,
+                    // so set the graceful-shutdown flag explicitly to prevent future selection.
+                    session.bridge.isInGracefulShutdown = true
                     throw ColibriAllocationFailedException("Bridge in graceful shutdown", true)
                 }
                 else -> {
