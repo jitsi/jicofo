@@ -18,6 +18,8 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import javax.xml.namespace.*;
+
+import edu.umd.cs.findbugs.annotations.*;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
@@ -40,6 +42,7 @@ import org.jxmpp.jid.parts.*;
 import org.jxmpp.stringprep.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.*;
 
 /**
@@ -47,6 +50,10 @@ import java.util.function.*;
  *
  * @author Pawel Domas
  */
+@SuppressFBWarnings(
+        value = "JLM_JSR166_UTILCONCURRENT_MONITORENTER",
+        justification = "We intentionally synchronize on [members] (a ConcurrentHashMap)."
+)
 public class ChatRoomImpl
     implements ChatRoom, PresenceListener
 {
@@ -96,7 +103,7 @@ public class ChatRoomImpl
      */
     private final Consumer<ChatRoomImpl> leaveCallback;
 
-    private final Map<EntityFullJid, ChatMemberImpl> members = new HashMap<>();
+    private final Map<EntityFullJid, ChatMemberImpl> members = new ConcurrentHashMap<>();
 
     /**
      * Local user role.
@@ -212,6 +219,7 @@ public class ChatRoomImpl
         throws SmackException, XMPPException, InterruptedException
     {
         // TODO: clean-up the way we figure out what nickname to use.
+        resetState();
         joinAs(xmppProvider.getConfig().getUsername());
     }
 
@@ -225,6 +233,34 @@ public class ChatRoomImpl
         return mainRoom;
     }
 
+    /**
+     * Prepare this {@link ChatRoomImpl} for a call to {@link #joinAs(Resourcepart)}, which send initial presence to
+     * the MUC. Resets any state that might have been set the previous time the MUC was joined.
+     */
+    private void resetState()
+    {
+        synchronized (members)
+        {
+            if (!members.isEmpty())
+            {
+                logger.warn("Removing " + members.size() + " stale members.");
+                members.clear();
+            }
+        }
+
+        synchronized (this)
+        {
+            role = null;
+            lastPresenceSent = null;
+            meetingId = null;
+            logger.addContext("meeting_id", "");
+            isBreakoutRoom = false;
+            mainRoom = null;
+            avModerationEnabled.clear();
+            whitelists.clear();
+        }
+    }
+
     private void joinAs(Resourcepart nickname) throws SmackException, XMPPException, InterruptedException
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
@@ -236,13 +272,17 @@ public class ChatRoomImpl
             // it indicates that the client lost its synchronization and causes
             // the MUC service to re-send the presence of each occupant in the
             // room.
-            synchronized (this)
+            synchronized (ChatRoomImpl.this)
             {
                 lastPresenceSent = packet.asBuilder((String) null).removeExtension(
                     MUCInitialPresence.ELEMENT,
                     MUCInitialPresence.NAMESPACE);
             }
         };
+        if (muc.isJoined())
+        {
+            muc.leave();
+        }
         muc.addPresenceInterceptor(presenceInterceptor);
         muc.createOrJoin(nickname);
 
@@ -387,8 +427,7 @@ public class ChatRoomImpl
             }
             else
             {
-                logger.error(
-                    "Role reset for: " + occupantJid + " who does not exist");
+                logger.error("Role reset for: " + occupantJid + " who does not exist");
             }
         }
     }
@@ -426,10 +465,7 @@ public class ChatRoomImpl
             return null;
         }
 
-        synchronized (members)
-        {
-            return members.get(occupantJid);
-        }
+        return members.get(occupantJid);
     }
 
     @Override

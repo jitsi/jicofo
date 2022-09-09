@@ -16,58 +16,51 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.json.simple.JSONObject
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Counts total stats (failures by session type).
  */
 class JibriStats {
-    /**
-     * How many times a Jibri SIP call has failed to start.
-     */
-    private val totalSipCallFailures = AtomicInteger()
-
-    /**
-     * How many times Jibri live streaming has failed to start.
-     */
-    private val totalLiveStreamingFailures = AtomicInteger()
-
-    /**
-     * How many times Jibri recording has failed to start.
-     */
-    private val totalRecordingFailures = AtomicInteger()
-
-    fun sipCallFailed() {
-        totalSipCallFailures.incrementAndGet()
-    }
-
-    fun liveStreamingFailed() {
-        totalLiveStreamingFailures.incrementAndGet()
-    }
-
-    fun recordingFailed() {
-        totalRecordingFailures.incrementAndGet()
-    }
-
-    fun sessionFailed(type: JibriSession.Type) = when (type) {
-        JibriSession.Type.SIP_CALL -> sipCallFailed()
-        JibriSession.Type.LIVE_STREAMING -> liveStreamingFailed()
-        JibriSession.Type.RECORDING -> recordingFailed()
-    }
-
-    fun toJson() = JSONObject().apply {
-        put("total_live_streaming_failures", totalLiveStreamingFailures.get())
-        put("total_recording_failures", totalRecordingFailures.get())
-        put("total_sip_call_failures", totalSipCallFailures.get())
-    }
-
     companion object {
-        @JvmStatic
-        val globalStats = JibriStats()
+        @JvmField
+        val sipFailures = JicofoMetricsContainer.instance.registerCounter(
+            "jibri_sip_failures",
+            "Number of failures for a SIP jibri"
+        )
+
+        @JvmField
+        val recordingFailures = JicofoMetricsContainer.instance.registerCounter(
+            "jibri_recording_failures",
+            "Number of failures for a recording jibri"
+        )
+
+        @JvmField
+        val liveStreamingFailures = JicofoMetricsContainer.instance.registerCounter(
+            "jibri_live_streaming_failures",
+            "Number of failures for a live-streaming jibri"
+        )
 
         @JvmStatic
-        fun getStats(recorders: Collection<BaseJibri?>) = globalStats.toJson().apply {
+        fun sessionFailed(type: JibriSession.Type) = when (type) {
+            JibriSession.Type.SIP_CALL -> sipFailures.inc()
+            JibriSession.Type.LIVE_STREAMING -> liveStreamingFailures.inc()
+            JibriSession.Type.RECORDING -> recordingFailures.inc()
+        }
+
+        private fun globalStatsJson() = JSONObject().apply {
+            put("total_sip_call_failures", sipFailures.get())
+            put("total_live_streaming_failures", liveStreamingFailures.get())
+            put("total_recording_failures", recordingFailures.get())
+        }
+
+        /**
+         * Generate all jibri stats in JSON format -- the global metrics kept in this companion object, plus stats
+         * from the given set of [recorders].
+         */
+        @JvmStatic
+        fun getStats(recorders: Collection<BaseJibri?>) = globalStatsJson().apply {
             val sessions = recorders.filterNotNull().flatMap { it.jibriSessions }
 
             this["live_streaming_active"] = sessions.count {

@@ -134,18 +134,14 @@ public class JicofoHealthChecker implements HealthCheckService
     private static void check(FocusManager focusManager)
     {
         // Get the MUC service to perform the check on.
-        JicofoServices jicofoServices = JicofoServices.jicofoServicesSingleton;
-        if (jicofoServices == null)
-        {
-            throw new RuntimeException("No JicofoServices available");
-        }
+        JicofoServices jicofoServices = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton());
 
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         if (bridgeSelector.getOperationalBridgeCount() <= 0)
         {
             throw new RuntimeException(
                     "No operational bridges available (total bridge count: "
-                            + bridgeSelector.getBridgeCount() + ")");
+                            + BridgeSelector.bridgeCount.get() + ")");
         }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing
@@ -194,7 +190,7 @@ public class JicofoHealthChecker implements HealthCheckService
         CountDownLatch pingResponseWait = new CountDownLatch(1);
         Ping p = new Ping(JidCreate.bareFrom(XmppConfig.client.getXmppDomain()));
 
-        XmppProvider provider = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton).getXmppServices()
+        XmppProvider provider = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton()).getXmppServices()
             .getClientConnection();
         XMPPConnection connection = provider.getXmppConnection();
         StanzaListener listener = packet -> pingResponseWait.countDown();
