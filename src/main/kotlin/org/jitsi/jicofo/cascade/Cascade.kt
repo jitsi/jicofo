@@ -55,7 +55,11 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: Strin
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
     sessions.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode: N, meshId: String) {
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
+    newNode: N,
+    meshId: String,
+    existingNode: N? = null
+) {
     require(!containsNode(newNode)) {
         "Cascade $this already contains node $newNode"
     }
@@ -65,35 +69,32 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(newNode
         return
     } else if (sessions.size == 1) {
         val onlyNode = sessions.values.first()
+        if (existingNode != null) {
+            require(existingNode == onlyNode) {
+                "Cascade $this does not contain node $existingNode"
+            }
+        }
         addLinkBetween(onlyNode, newNode, meshId)
         sessions[newNode.relayId] = newNode
         return
     }
 
     val meshNodes = getMeshNodes(meshId)
-    require(meshNodes.isNotEmpty()) {
-        "meshId $meshId must correspond to an existing mesh ID when size ${sessions.size} > 1"
+
+    if (meshNodes.isEmpty()) {
+        require(existingNode != null) {
+            "An existing node must be specified (non-null) when adding a new mesh $meshId to cascade $this"
+        }
+        require(containsNode(existingNode)) {
+            "Cascade $this does not contain node $existingNode"
+        }
+        addLinkBetween(existingNode, newNode, meshId)
+        sessions[newNode.relayId] = newNode
+    } else {
+        // ?? Should we check if existingNode, if not null, is a member of meshNodes?
+        meshNodes.forEach { node -> addLinkBetween(node, newNode, meshId) }
+        sessions[newNode.relayId] = newNode
     }
-
-    meshNodes.forEach { node -> addLinkBetween(node, newNode, meshId) }
-    sessions[newNode.relayId] = newNode
-}
-
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addMesh(existingNode: N, newNode: N, meshId: String) {
-    require(containsNode(existingNode)) {
-        "Cascade $this does not contain node $existingNode"
-    }
-
-    require(!containsNode(newNode)) {
-        "Cascade $this already contains node $newNode"
-    }
-
-    require(!hasMesh(meshId)) {
-        "Cascade $this already contains mesh $meshId"
-    }
-
-    addLinkBetween(existingNode, newNode, meshId)
-    sessions[newNode.relayId] = newNode
 }
 
 fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(

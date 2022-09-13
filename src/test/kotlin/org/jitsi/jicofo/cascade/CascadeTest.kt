@@ -131,7 +131,7 @@ class CascadeTest : ShouldSpec() {
             cascade.addNodeToMesh(nodes[1], "A")
             cascade.addNodeToMesh(nodes[2], "A")
 
-            cascade.addMesh(nodes[0], nodes[3], "B")
+            cascade.addNodeToMesh(nodes[3], "B", nodes[0])
             cascade.addNodeToMesh(nodes[4], "B")
 
             should("create the correct links for each node") {
@@ -276,7 +276,7 @@ class CascadeTest : ShouldSpec() {
 
             cascade.addNodeToMesh(nodes[0], "A")
             for (i in 1 until numNodes) {
-                cascade.addMesh(nodes[0], nodes[i], ('A'.code + i).toChar().toString())
+                cascade.addNodeToMesh(nodes[i], ('A'.code + i).toChar().toString(), nodes[0])
             }
 
             should("create the correct links for each node") {
