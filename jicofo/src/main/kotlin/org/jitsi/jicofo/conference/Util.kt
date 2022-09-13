@@ -22,25 +22,20 @@ import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 
-class Util {
-    companion object {
-        @JvmStatic
-        fun ContentPacketExtension.toMedia(): Media? {
-            val media = when (name.lowercase()) {
-                "audio" -> Media.getBuilder().setType(MediaType.AUDIO)
-                "video" -> Media.getBuilder().setType(MediaType.VIDEO)
-                else -> return null
-            }
+internal fun ContentPacketExtension.toMedia(): Media? {
+    val media = when (name.lowercase()) {
+        "audio" -> Media.getBuilder().setType(MediaType.AUDIO)
+        "video" -> Media.getBuilder().setType(MediaType.VIDEO)
+        else -> return null
+    }
 
-            getFirstChildOfType(RtpDescriptionPacketExtension::class.java)?.let {
-                it.payloadTypes.forEach { payloadTypePacketExtension ->
-                    media.addPayloadType(payloadTypePacketExtension)
-                }
-                it.extmapList.forEach { rtpHdrExtPacketExtension ->
-                    media.addRtpHdrExt(rtpHdrExtPacketExtension)
-                }
-            }
-            return media.build()
+    getFirstChildOfType(RtpDescriptionPacketExtension::class.java)?.let {
+        it.payloadTypes.forEach { payloadTypePacketExtension ->
+            media.addPayloadType(payloadTypePacketExtension)
+        }
+        it.extmapList.forEach { rtpHdrExtPacketExtension ->
+            media.addRtpHdrExt(rtpHdrExtPacketExtension)
         }
     }
+    return media.build()
 }
