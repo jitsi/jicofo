@@ -17,38 +17,24 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
-import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.OrderedJsonObject
-import org.jitsi.xmpp.extensions.colibri2.Media
 
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
  */
 internal class ParticipantInfo(
-    val id: String,
-    val statsId: String?,
-    var sources: ConferenceSourceMap = ConferenceSourceMap(),
+    parameters: ParticipantAllocationParameters,
     var session: Colibri2Session,
-    val useSctp: Boolean,
-    val medias: Set<Media>,
-    /** Whether the participant is force audio muted. */
-    var audioMuted: Boolean = false,
-    /** Whether the participant is force video muted. */
-    var videoMuted: Boolean = false,
-    /** Whether the participant supports source name signaling */
-    var supportsSourceNames: Boolean = false
 ) {
-    constructor(options: ParticipantAllocationParameters, session: Colibri2Session) : this(
-        id = options.id,
-        statsId = options.statsId,
-        sources = options.sources,
-        useSctp = options.useSctp,
-        medias = options.medias,
-        audioMuted = options.forceMuteAudio,
-        videoMuted = options.forceMuteVideo,
-        supportsSourceNames = options.supportsSourceNames,
-        session = session,
-    )
+    val id = parameters.id
+    val statsId = parameters.statsId
+    val useSctp = parameters.useSctp
+    val medias = parameters.medias
+    val supportsSourceNames = parameters.supportsSourceNames
+
+    var audioMuted = parameters.forceMuteAudio
+    var videoMuted = parameters.forceMuteVideo
+    var sources = parameters.sources
 
     fun toJson() = OrderedJsonObject().apply {
         put("id", id)
