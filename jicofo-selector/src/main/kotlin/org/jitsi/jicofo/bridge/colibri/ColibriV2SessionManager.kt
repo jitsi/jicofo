@@ -229,7 +229,7 @@ class ColibriV2SessionManager(
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
-    override fun allocate(participant: ParticipantAllocationOptions): ColibriAllocation {
+    override fun allocate(participant: ParticipantAllocationParameters): ColibriAllocation {
         logger.info("Allocating for ${participant.id}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session

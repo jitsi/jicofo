@@ -40,7 +40,7 @@ interface ColibriSessionManager {
     val bridgeCount: Int
     val bridgeRegions: Set<String>
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
-    fun allocate(participant: ParticipantAllocationOptions): ColibriAllocation
+    fun allocate(participant: ParticipantAllocationParameters): ColibriAllocation
 
     /** For use in java because @JvmOverloads is not available for interfaces. */
     fun updateParticipant(
@@ -85,7 +85,7 @@ interface ColibriSessionManager {
     }
 }
 
-data class ParticipantAllocationOptions(
+data class ParticipantAllocationParameters(
     val id: String,
     val statsId: String?,
     val region: String?,

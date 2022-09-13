@@ -34,8 +34,6 @@ import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 
@@ -195,7 +193,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     logger.warn("Failed to convert ContentPacketExtension to Media: " + content.toXML());
                 }
             });
-            ParticipantAllocationOptions participantOptions = new ParticipantAllocationOptions(
+            ParticipantAllocationParameters participantOptions = new ParticipantAllocationParameters(
                     participant.getEndpointId(),
                     participant.getStatId(),
                     participant.getChatMember().getRegion(),

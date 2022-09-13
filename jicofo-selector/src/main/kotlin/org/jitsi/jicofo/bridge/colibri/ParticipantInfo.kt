@@ -38,7 +38,7 @@ internal class ParticipantInfo(
     /** Whether the participant supports source name signaling */
     var supportsSourceNames: Boolean = false
 ) {
-    constructor(options: ParticipantAllocationOptions, session: Colibri2Session) : this(
+    constructor(options: ParticipantAllocationParameters, session: Colibri2Session) : this(
         id = options.id,
         statsId = options.statsId,
         sources = options.sources,
