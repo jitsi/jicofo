@@ -18,7 +18,7 @@ package org.jitsi.jicofo.conference.source
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
-import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
+import org.jitsi.xmpp.extensions.jingle.SourceParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.Jid
 
@@ -41,7 +41,7 @@ data class Source(
         sourcePacketExtension.ssrc,
         mediaType,
         sourcePacketExtension.name,
-        sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
+        sourcePacketExtension.getChildExtensionsOfType(SourceParameterPacketExtension::class.java)
             .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
         if (sourcePacketExtension.videoType == null) null else VideoType.parseString(sourcePacketExtension.videoType)
     )
@@ -60,7 +60,7 @@ data class Source(
         }
 
         if (encodeMsid && msid != null) {
-            addChildExtension(ParameterPacketExtension("msid", msid))
+            addChildExtension(SourceParameterPacketExtension("msid", msid))
         }
 
         this@Source.videoType?.let {

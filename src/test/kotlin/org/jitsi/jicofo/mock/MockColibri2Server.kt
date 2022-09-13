@@ -30,7 +30,7 @@ import org.jitsi.xmpp.extensions.colibri2.Sources
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
+import org.jitsi.xmpp.extensions.jingle.SourceParameterPacketExtension
 import org.jitsi.xmpp.util.createError
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
@@ -195,7 +195,7 @@ private fun buildFeedbackSources(localAudioSsrc: Long, localVideoSsrc: Long): So
                     ssrc = localAudioSsrc
                     name = "jvb-a0"
                     addParameter(
-                        ParameterPacketExtension().apply {
+                        SourceParameterPacketExtension().apply {
                             name = "msid"
                             value = "mixedmslabel mixedlabelaudio0"
                         }
@@ -213,7 +213,7 @@ private fun buildFeedbackSources(localAudioSsrc: Long, localVideoSsrc: Long): So
                     ssrc = localVideoSsrc
                     name = "jvb-v0"
                     addParameter(
-                        ParameterPacketExtension().apply {
+                        SourceParameterPacketExtension().apply {
                             name = "msid"
                             value = "mixedmslabel mixedlabelvideo0"
                         }

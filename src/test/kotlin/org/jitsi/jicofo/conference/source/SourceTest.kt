@@ -22,7 +22,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
-import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
+import org.jitsi.xmpp.extensions.jingle.SourceParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.jxmpp.jid.impl.JidCreate
 
@@ -33,7 +33,7 @@ class SourceTest : ShouldSpec() {
                 ssrc = 1
                 name = "name-1"
                 videoType = "camera"
-                addChildExtension(ParameterPacketExtension("msid", "msid"))
+                addChildExtension(SourceParameterPacketExtension("msid", "msid"))
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
@@ -50,7 +50,7 @@ class SourceTest : ShouldSpec() {
             extension.ssrc shouldBe 1
             extension.name shouldBe nameValue
             extension.videoType shouldBe videoType.toString()
-            val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
+            val parameters = extension.getChildExtensionsOfType(SourceParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
 
             val ssrcInfo = extension.getFirstChildOfType(SSRCInfoPacketExtension::class.java)
