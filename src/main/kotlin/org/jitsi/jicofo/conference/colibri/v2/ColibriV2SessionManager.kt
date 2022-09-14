@@ -368,7 +368,9 @@ class ColibriV2SessionManager(
         // * Re-invite the participants on this bridge to a different bridge
         if (!sessions.containsKey(session.bridge)) {
             logger.warn("The session was removed, ignoring allocation response.")
-            throw ColibriAllocationFailedException("Session already removed", false)
+            // This is a response for a session that has been removed. We want to make sure the participant is
+            // re-invited, but it has already been re-invited.
+            throw ColibriAllocationFailedException("Session already removed", participants[participantInfo.id] == null)
         }
 
         if (response == null) {
