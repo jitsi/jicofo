@@ -96,6 +96,9 @@ internal class Colibri2Session(
             if (participant.supportsSourceNames) {
                 addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
             }
+            if (participant.useSsrcRewriting) {
+                addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
+            }
             if (participant.audioMuted || participant.videoMuted) {
                 setForceMute(participant.audioMuted, participant.videoMuted)
             }

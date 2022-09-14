@@ -69,6 +69,10 @@ class ConferenceConfig private constructor() {
     }
     fun enableLipSync(): Boolean = enableLipSync
 
+    val useSsrcRewriting: Boolean by config {
+        "jicofo.conference.use-ssrc-rewriting".from(newConfig)
+    }
+
     val useJsonEncodedSources: Boolean by config {
         "jicofo.conference.use-json-encoded-sources".from(newConfig)
     }

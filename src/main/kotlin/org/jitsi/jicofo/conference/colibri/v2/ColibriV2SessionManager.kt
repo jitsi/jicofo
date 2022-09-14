@@ -303,7 +303,8 @@ class ColibriV2SessionManager(
                 audioMuted = forceMuteAudio,
                 videoMuted = forceMuteVideo,
                 session = session,
-                supportsSourceNames = participant.hasSourceNameSupport()
+                supportsSourceNames = participant.hasSourceNameSupport(),
+                useSsrcRewriting = participant.useSsrcRewriting()
             )
             stanzaCollector = session.sendAllocationRequest(participantInfo, contents, useSctp)
             add(participantInfo)

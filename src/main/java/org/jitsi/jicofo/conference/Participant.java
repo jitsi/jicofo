@@ -298,6 +298,22 @@ public class Participant
     }
 
     /**
+     * @return {@code true} if this participant supports SSRC rewriting functionality.
+     */
+    public boolean hasSsrcRewritingSupport()
+    {
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SSRC_REWRITING);
+    }
+
+    /**
+     * @return {@code true} if SSRC rewriting should be used for this participant.
+     */
+    public boolean useSsrcRewriting()
+    {
+        return ConferenceConfig.config.getUseSsrcRewriting() && hasSsrcRewritingSupport();
+    }
+
+    /**
      * @return {@code true} if this participant supports receiving Jingle sources encoded as JSON instead of the
      * standard Jingle encoding.
      */
@@ -470,6 +486,12 @@ public class Participant
      */
     public void addRemoteSources(ConferenceSourceMap sources)
     {
+        if (useSsrcRewriting())
+        {
+            // Bridge will signal sources in this case.
+            return;
+        }
+
         synchronized (sourceSignaling)
         {
             sourceSignaling.addSources(sources);
@@ -537,6 +559,12 @@ public class Participant
      */
     public void removeRemoteSources(ConferenceSourceMap sources)
     {
+        if (useSsrcRewriting())
+        {
+            // Bridge will signal sources in this case.
+            return;
+        }
+
         synchronized (sourceSignaling)
         {
             sourceSignaling.removeSources(sources);
