@@ -181,12 +181,13 @@ public class AdvertiseSSRCsTest
         long u1VideoSSRC2 = MockParticipant.nextSSRC();
         user1.addLocalVideoSSRC(u1VideoSSRC2);
 
-        assertNotNull(user1.acceptInvite(4000));
+        // TODO: this should be refactored to not depend on a timeout
+        assertNotNull(user1.acceptInvite(5000));
 
-        assertNotNull(user2.acceptInvite(4000));
+        assertNotNull(user2.acceptInvite(5000));
 
-        assertNotNull(user1.waitForAddSource(1000));
-        assertNotNull(user2.waitForAddSource(1000));
+        assertNotNull(user1.waitForAddSource(5000));
+        assertNotNull(user2.waitForAddSource(5000));
 
         // There is 1 + 2 extra we've created here in the test
         assertEquals(1 /* jvb */ + 3, user2.numRemoteSourcesOfType(MediaType.VIDEO));
