@@ -67,8 +67,11 @@ public class JicofoHarness
                         ConfigFactory.parseString(disableRestConfig).withFallback(ConfigFactory.load())));
 
         SmackKt.initializeSmack();
-        jicofoServices = new JicofoTestServices();
-        JicofoServices.jicofoServicesSingleton = jicofoServices;
+        synchronized (JicofoServices.getJicofoServicesSingletonSyncRoot())
+        {
+            jicofoServices = new JicofoTestServices();
+            JicofoServices.setJicofoServicesSingleton(jicofoServices);
+        }
     }
 
     public MockXmppProvider getXmppProvider()
@@ -78,7 +81,7 @@ public class JicofoHarness
 
     public void shutdown()
     {
-        JicofoServices.jicofoServicesSingleton = null;
+        JicofoServices.setJicofoServicesSingleton(null);
         jicofoServices.shutdown();
 
         System.clearProperty("org.jitsi.jicofo.PING_INTERVAL");

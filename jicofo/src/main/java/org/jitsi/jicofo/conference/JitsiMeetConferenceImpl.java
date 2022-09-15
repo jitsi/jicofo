@@ -250,7 +250,7 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
 
-        this.jicofoServices = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton);
+        this.jicofoServices = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton());
         this.jvbVersion = jvbVersion;
 
         logger.info("Created new conference.");

@@ -33,7 +33,7 @@ public class Debug
 {
     @NotNull
     private final JicofoServices jicofoServices
-            = Objects.requireNonNull(JicofoServices.jicofoServicesSingleton, "jicofoServices");
+            = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton(), "jicofoServices");
 
     /**
      * Returns json string with statistics.
