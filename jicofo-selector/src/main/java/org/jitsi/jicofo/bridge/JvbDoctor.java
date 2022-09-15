@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.jitsi.jicofo.bridge.BridgeConfig.config;
+import static org.jitsi.jicofo.xmpp.UtilKt.sendIqAndGetResponse;
 
 /**
  * The class is responsible for doing health checks of currently known
@@ -174,7 +175,7 @@ public class JvbDoctor
 
             logger.debug("Sending health-check request to: " + bridge);
 
-            IQ response = org.jitsi.jicofo.xmpp.UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
+            IQ response = sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
 
             // On timeout we'll give it one more try
             if (response == null && secondChanceDelay > 0)
@@ -193,7 +194,7 @@ public class JvbDoctor
                     if (taskInvalid())
                         return;
 
-                    response = org.jitsi.jicofo.xmpp.UtilKt.sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
+                    response = sendIqAndGetResponse(connection, newHealthCheckIQ(bridge));
                 }
                 catch (InterruptedException e)
                 {
