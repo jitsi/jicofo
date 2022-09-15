@@ -114,7 +114,6 @@ class Bridge @JvmOverloads internal constructor(
      * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
      */
     var isInGracefulShutdown = false /* we assume it is not shutting down */
-        private set
 
     /**
      * Whether the bridge is in SHUTTING_DOWN mode.
