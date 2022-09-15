@@ -77,6 +77,11 @@ public class DiscoveryUtil
     public final static String FEATURE_SOURCE_NAMES = "http://jitsi.org/source-name";
 
     /**
+     * Rewrite SSRCs to limit the number of transceivers required.
+     */
+    public final static String FEATURE_SSRC_REWRITING = "http://jitsi.org/ssrc-rewriting";
+
+    /**
      * Supports receiving multiple video streams.
      */
     public final static String FEATURE_RECEIVE_MULTIPLE_STREAMS = "http://jitsi.org/receive-multiple-video-streams";

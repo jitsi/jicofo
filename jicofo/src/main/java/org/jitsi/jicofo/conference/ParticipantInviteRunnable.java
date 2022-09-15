@@ -199,6 +199,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     participant.getChatMember().getRegion(),
                     participant.getSources(),
                     participant.hasSourceNameSupport(),
+                    participant.useSsrcRewriting(),
                     forceMuteAudio,
                     forceMuteVideo,
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
@@ -410,8 +411,19 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
     private @NotNull Offer updateOffer(Offer offer, ColibriAllocation colibriAllocation)
     {
-        // Take all sources from participants in the conference.
-        ConferenceSourceMap conferenceSources = meetConference.getSources().copy();
+        ConferenceSourceMap conferenceSources;
+
+        if (!participant.useSsrcRewriting())
+        {
+            // Take all sources from participants in the conference.
+            conferenceSources = meetConference.getSources().copy();
+        }
+        else
+        {
+            // Bridge will signal sources in this case.
+            conferenceSources = new ConferenceSourceMap();
+        }
+
         // Add the bridge's feedback sources.
         conferenceSources.add(colibriAllocation.getSources());
         // Remove the participant's own sources (if they're present)

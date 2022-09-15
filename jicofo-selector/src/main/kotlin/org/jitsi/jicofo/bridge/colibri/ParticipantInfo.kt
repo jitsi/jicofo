@@ -31,6 +31,7 @@ internal class ParticipantInfo(
     val useSctp = parameters.useSctp
     val medias = parameters.medias
     val supportsSourceNames = parameters.supportsSourceNames
+    val useSsrcRewriting = parameters.useSsrcRewriting
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
@@ -44,5 +45,6 @@ internal class ParticipantInfo(
         put("audio_muted", audioMuted)
         put("video_muted", videoMuted)
         put("source_names", supportsSourceNames)
+        put("ssrc_rewriting", useSsrcRewriting)
     }
 }

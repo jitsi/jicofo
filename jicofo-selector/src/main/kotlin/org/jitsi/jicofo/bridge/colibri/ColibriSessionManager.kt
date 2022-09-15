@@ -91,6 +91,7 @@ data class ParticipantAllocationParameters(
     val region: String?,
     val sources: ConferenceSourceMap,
     val supportsSourceNames: Boolean,
+    val useSsrcRewriting: Boolean,
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,
     val useSctp: Boolean,
