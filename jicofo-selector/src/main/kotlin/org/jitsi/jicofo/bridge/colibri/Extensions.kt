@@ -41,14 +41,16 @@ fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? {
 
 /**
  * Reads the feedback sources (at the "conference" level) and parses them into a [ConferenceSourceMap].
- * Uses the special [ParticipantInviteRunnable.SSRC_OWNER_JVB] JID as the "owner", since this is how jitsi-meet
- * clients expect the bridge's sources to be signaled.
+ * Uses the special [SSRC_OWNER_JVB] JID as the "owner" and appends the msid, since this is how jitsi-meet clients
+ * expect the bridge's sources to be signaled.
  */
 fun ConferenceModifiedIQ.parseSources(): ConferenceSourceMap {
     val parsedSources = ConferenceSourceMap()
     sources?.mediaSources?.forEach { mediaSource ->
         mediaSource.sources.forEach { sourcePacketExtension ->
-            parsedSources.add(SSRC_OWNER_JVB, EndpointSourceSet(Source(mediaSource.type, sourcePacketExtension)))
+            val msid = "mixedmslabel mixedlabel${mediaSource.type}0"
+            val source = Source(sourcePacketExtension.ssrc, mediaSource.type, sourcePacketExtension.name, msid)
+            parsedSources.add(SSRC_OWNER_JVB, EndpointSourceSet(source))
         }
         mediaSource.ssrcGroups.forEach {
             parsedSources.add(SSRC_OWNER_JVB, EndpointSourceSet(SsrcGroup.fromPacketExtension(it, mediaSource.type)))
