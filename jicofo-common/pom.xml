@@ -284,7 +284,7 @@
         <version>2.22.2</version>
         <configuration>
           <systemPropertyVariables>
-            <java.util.logging.config.file>${project.basedir}/lib/logging.properties</java.util.logging.config.file>
+            <java.util.logging.config.file>${project.parent.basedir}/lib/logging.properties</java.util.logging.config.file>
           </systemPropertyVariables>
         </configuration>
       </plugin>
