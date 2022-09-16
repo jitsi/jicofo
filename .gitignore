@@ -5,6 +5,9 @@
 /junit-reports/
 *.swp
 /target/
+jicofo-common/target/
+jicofo-selector/target/
+jicofo/target/
 .classpath
 .project
 .settings/
