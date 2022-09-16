@@ -43,7 +43,7 @@
       </excludes>
     </fileSet>
     <fileSet>
-      <directory>${project.basedir}/resources/</directory>
+      <directory>${project.parent.basedir}/resources/</directory>
       <outputDirectory>${file.separator}</outputDirectory>
       <fileMode>755</fileMode>
       <includes>
