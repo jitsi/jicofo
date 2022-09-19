@@ -40,6 +40,7 @@ import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smackx.muc.MUCRole
 import java.util.Collections.singletonList
 import java.util.UUID
 
@@ -94,6 +95,9 @@ class Colibri2Session(
             }
             if (participant.audioMuted || participant.videoMuted) {
                 setForceMute(participant.audioMuted, participant.videoMuted)
+            }
+            if (participant.visitor) {
+                setMucRole(MUCRole.visitor)
             }
             setTransport(
                 Transport.getBuilder().apply {
@@ -232,6 +236,10 @@ class Colibri2Session(
         /** Whether a new relay endpoint should be created, or an existing one updated. */
         create: Boolean
     ) {
+        if (participantInfo.visitor) {
+            // Remote relays don't need to know about visitors.
+            return
+        }
         logger.debug { "Updating remote participant ${participantInfo.id} on $relayId" }
         relays[relayId]?.updateParticipant(participantInfo, create)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")
@@ -464,7 +472,9 @@ class Colibri2Session(
             )
 
             val endpoints = Endpoints.getBuilder()
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false)) }
+            participants.filter { !it.visitor }.forEach {
+                endpoints.addEndpoint(it.toEndpoint(create = true, expire = false))
+            }
             relay.setEndpoints(endpoints.build())
 
             relay.setTransport(

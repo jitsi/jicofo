@@ -158,7 +158,7 @@ public class ChatMemberImpl
 
             if (o == null)
             {
-                return MemberRole.GUEST;
+                return MemberRole.VISITOR; // ??
             }
             else
             {

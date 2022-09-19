@@ -101,7 +101,7 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
             return
         }
 
-        val newOwner = chatRoom.members.find { !it.isRobot }
+        val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
         if (newOwner != null) {
             logger.info("Electing new owner: $newOwner")
             grantOwner(newOwner)

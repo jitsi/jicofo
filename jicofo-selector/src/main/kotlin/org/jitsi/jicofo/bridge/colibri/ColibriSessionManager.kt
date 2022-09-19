@@ -95,5 +95,6 @@ data class ParticipantAllocationParameters(
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,
     val useSctp: Boolean,
+    val visitor: Boolean,
     val medias: Set<Media>
 )

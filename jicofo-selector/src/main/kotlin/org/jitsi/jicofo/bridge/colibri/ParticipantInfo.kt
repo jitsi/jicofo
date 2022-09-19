@@ -32,6 +32,7 @@ class ParticipantInfo(
     val medias = parameters.medias
     val supportsSourceNames = parameters.supportsSourceNames
     val useSsrcRewriting = parameters.useSsrcRewriting
+    val visitor = parameters.visitor
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
@@ -46,5 +47,6 @@ class ParticipantInfo(
         put("video_muted", videoMuted)
         put("source_names", supportsSourceNames)
         put("ssrc_rewriting", useSsrcRewriting)
+        put("visitor", visitor)
     }
 }

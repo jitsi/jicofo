@@ -241,8 +241,8 @@ class ColibriV2SessionManager(
     }
 
     override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
-        val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getSessionParticipants(it) }
-        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap { getSessionParticipants(it) }
+        val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getVisibleSessionParticipants(it) }
+        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap { getVisibleSessionParticipants(it) }
 
         session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true)
         otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false)
@@ -269,6 +269,8 @@ class ColibriV2SessionManager(
             if (bridgeVersion != null) {
                 logger.info("Selecting bridge. Conference is pinned to version \"$bridgeVersion\"")
             }
+
+            val visitor = participant.visitor
 
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
@@ -574,6 +576,12 @@ class ColibriV2SessionManager(
 
     private fun getSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
         participantsBySession[session]?.toList() ?: emptyList()
+
+    /* In cases where we only want visitors, don't create a data structure with all participants only to
+     * discard them later.
+     */
+    private fun getVisibleSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
+        participantsBySession[session]?.filter { !it.visitor }?.toList() ?: emptyList()
 
     private fun remove(participantInfo: ParticipantInfo) {
         participants.remove(participantInfo.id)
