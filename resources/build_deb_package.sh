@@ -43,12 +43,16 @@ REV=$(git log --pretty=format:'%h' -n 1)
 dch -v "$VERSION-1" "Build from git. $REV"
 dch -D unstable -r ""
 
+# sets the version in the pom file so it will propagte to resulting jar
+mvn versions:set -DnewVersion="${VERSION}"
+
+# Install jicofo-common and jicofo-selector to the local maven repo because they
+# are currently not published anywhere else.
+mvn install
+
 # We need to make sure all dependencies are downloaded before start building
 # the debian package
 mvn dependency:resolve
-
-# sets the version in the pom file so it will propagte to resulting jar
-mvn versions:set -DnewVersion="${VERSION}"
 
 # now build the deb
 dpkg-buildpackage -tc -us -uc -A
