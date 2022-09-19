@@ -23,7 +23,7 @@ override_dh_auto_build:
 override_dh_install:
 	mkdir debian/tmp
 	cp resources/config/jicofo-logrotate.d debian/tmp/jicofo
-	cp target/jicofo*.jar debian/tmp/jicofo.jar
+	cp jicofo/target/jicofo*.jar debian/tmp/jicofo.jar
 	dh_install
 
 override_dh_auto_install:
