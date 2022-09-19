@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+
+<Match>
+  <And>
+    <Source name="~.*\.*.kt" />
+    <Or>
+      <Bug pattern="REC_CATCH_EXCEPTION"/>
+      <!-- This seems to get triggered by certain kotlin constructs though they look safe -->
+      <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
+      <!-- False positive -->
+      <Bug pattern="BC_VACUOUS_INSTANCEOF"/>
+      <!-- Serialization -->
+      <Bug pattern="SE_BAD_FIELD"/>
+      <!-- Serialization -->
+      <Bug pattern="SE_BAD_FIELD_STORE"/>
+      <!-- False positives with lazy vals -->
+      <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+      <!-- False positives with kotlin 1.5 -->
+      <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+      <!-- False positive -->
+      <Bug pattern="NP_NONNULL_RETURN_VIOLATION"/>
+      <!-- False positive with kotlin's "when" -->
+      <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+      <!-- False positives with ?. chains. -->
+      <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+      <And>
+        <!-- Spotbugs doesn't recognize that a value can't be null, and using @SuppressFBWarnings doesn't work. -->
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <Source name="MuteIqHandler.kt"/>
+      </And>
+      <!-- False positives with kotlin 1.6. -->
+      <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
+      <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
+    </Or>
+  </And>
+</Match>
+
+<Match>
+  <Or>
+    <!-- Exposure of internal representation is not a concern. -->
+    <Bug pattern="EI_EXPOSE_REP"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+    <!-- False positives in java code for an unknown reason. -->
+    <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+  </Or>
+</Match>
+
+<Match>
+  <!-- Tests have a valid reason to ignore return values (expecting exceptions, etc). -->
+  <And>
+    <Or>
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+    </Or>
+    <Or>
+      <Source name="~.*\.*Test.kt" />
+      <Source name="~.*\.*Test.java" />
+    </Or>
+  </And>  
+</Match>
+
+
+</FindBugsFilter>
