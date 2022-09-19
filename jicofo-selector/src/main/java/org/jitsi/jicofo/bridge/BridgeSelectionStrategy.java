@@ -111,7 +111,7 @@ public abstract class BridgeSelectionStrategy
             Bridge bridge = doSelect(bridges, conferenceBridges, participantRegion);
             if (bridge != null)
             {
-                logger.debug("Selected initial bridge " + bridge
+                logger.info("Selected initial bridge " + bridge
                         + " with reported stress=" + bridge.getLastReportedStressLevel()
                         + " for participantRegion=" + participantRegion
                         + " using strategy " + this.getClass().getSimpleName());
@@ -126,16 +126,9 @@ public abstract class BridgeSelectionStrategy
         else
         {
             Bridge existingBridge = conferenceBridges.keySet().stream().findFirst().get();
-            if (!allowMultiBridge
-                || existingBridge.getRelayId() == null)
+            if (!allowMultiBridge || existingBridge.getRelayId() == null)
             {
-                if (logger.isDebugEnabled())
-                {
-                    logger.debug(
-                        "Existing bridge does not have a relay, will not " +
-                            "consider other bridges.");
-                }
-
+                logger.info("Existing bridge does not have a relay, will not consider other bridges.");
                 return existingBridge;
             }
 

@@ -224,6 +224,7 @@ class BridgeSelector @JvmOverloads constructor(
             this["operational_bridge_count"] = bridges.values.count { it.isOperational }
             this["in_shutdown_bridge_count"] = bridges.values.count { it.isInGracefulShutdown }
             this["lost_bridges"] = lostBridges.get()
+            this["bridge_version_count"] = bridges.values.map { it.fullVersion }.toSet().size
         }
 
     val debugState: OrderedJsonObject
