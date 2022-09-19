@@ -1,4 +1,4 @@
-target/dependency/*             usr/share/jicofo/lib
+jicofo/target/dependency/*      usr/share/jicofo/lib
 lib/logging.properties          etc/jitsi/jicofo
 jicofo.jar                      usr/share/jicofo
 resources/jicofo.sh             usr/share/jicofo
