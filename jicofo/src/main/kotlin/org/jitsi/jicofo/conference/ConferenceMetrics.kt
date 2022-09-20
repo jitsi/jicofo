@@ -53,13 +53,13 @@ class ConferenceMetrics {
 
         @JvmField
         val participantsIceFailed = metricsContainer.registerCounter(
-            "participants_ice_failures",
+            "participants_ice_failed",
             "Number of participants that reported an ICE failure"
         )
 
         @JvmField
         val participantsRequestedRestart = metricsContainer.registerCounter(
-            "participants_restart_requests",
+            "participants_restart_requested",
             "Number of times a participant requested a restart via session-terminate"
         )
     }
