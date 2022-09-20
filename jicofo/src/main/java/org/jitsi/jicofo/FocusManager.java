@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.metrics.*;
-import org.jitsi.jicofo.stats.*;
 import org.jitsi.metrics.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
@@ -264,7 +263,7 @@ public class FocusManager
         if (includeInStatistics)
         {
             conferenceCount.inc();
-            ConferenceMetrics.totalConferencesCreated.inc();
+            ConferenceMetrics.conferencesCreated.inc();
         }
 
         return conference;
@@ -373,19 +372,19 @@ public class FocusManager
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge stats from different "child" objects here.
         JSONObject stats = new JSONObject();
-        stats.put("total_participants", ConferenceMetrics.totalParticipants.get());
-        stats.put("total_participants_no_multi_stream", ConferenceMetrics.totalParticipantsNoMultiStream.get());
-        stats.put("total_participants_no_source_name", ConferenceMetrics.totalParticipantsNoSourceName.get());
-        stats.put("total_conferences_created", ConferenceMetrics.totalConferencesCreated.get());
+        stats.put("total_participants", ConferenceMetrics.participants.get());
+        stats.put("total_participants_no_multi_stream", ConferenceMetrics.participantsNoMultiStream.get());
+        stats.put("total_participants_no_source_name", ConferenceMetrics.participantsNoSourceName.get());
+        stats.put("total_conferences_created", ConferenceMetrics.conferencesCreated.get());
         stats.put("conferences", conferenceCount.get());
 
         JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("participants_moved", ConferenceMetrics.totalParticipantsMoved.get());
+        bridgeFailures.put("participants_moved", ConferenceMetrics.participantsMoved.get());
         stats.put("bridge_failures", bridgeFailures);
 
         JSONObject participantNotifications = new JSONObject();
-        participantNotifications.put("ice_failed", ConferenceMetrics.totalParticipantsIceFailed.get());
-        participantNotifications.put("request_restart", ConferenceMetrics.totalParticipantsRequestedRestart.get());
+        participantNotifications.put("ice_failed", ConferenceMetrics.participantsIceFailed.get());
+        participantNotifications.put("request_restart", ConferenceMetrics.participantsRequestedRestart.get());
         stats.put("participant_notifications", participantNotifications);
 
         // Calculate the number of participants and conference size distribution

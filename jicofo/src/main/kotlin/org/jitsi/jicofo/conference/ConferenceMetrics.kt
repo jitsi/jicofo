@@ -22,43 +22,43 @@ import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as met
 class ConferenceMetrics {
     companion object {
         @JvmField
-        val totalConferencesCreated = metricsContainer.registerCounter(
+        val conferencesCreated = metricsContainer.registerCounter(
             "conferences_created",
             "The number of conferences created on this Jicofo since it was started"
         )
 
         @JvmField
-        val totalParticipants = metricsContainer.registerCounter(
+        val participants = metricsContainer.registerCounter(
             "participants",
             "The total number of participants that have connected to this Jicofo since it was started."
         )
 
         @JvmField
-        val totalParticipantsNoMultiStream = metricsContainer.registerCounter(
+        val participantsNoMultiStream = metricsContainer.registerCounter(
             "participants_no_multi_stream",
             "Number of participants with no support for receiving multiple streams."
         )
 
         @JvmField
-        val totalParticipantsNoSourceName = metricsContainer.registerCounter(
+        val participantsNoSourceName = metricsContainer.registerCounter(
             "participants_no_source_name",
             "Number of participants with no support for source names."
         )
 
         @JvmField
-        val totalParticipantsMoved = metricsContainer.registerCounter(
+        val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"
         )
 
         @JvmField
-        val totalParticipantsIceFailed = metricsContainer.registerCounter(
+        val participantsIceFailed = metricsContainer.registerCounter(
             "participants_ice_failures",
             "Number of participants that reported an ICE failure"
         )
 
         @JvmField
-        val totalParticipantsRequestedRestart = metricsContainer.registerCounter(
+        val participantsRequestedRestart = metricsContainer.registerCounter(
             "participants_restart_requests",
             "Number of times a participant requested a restart via session-terminate"
         )

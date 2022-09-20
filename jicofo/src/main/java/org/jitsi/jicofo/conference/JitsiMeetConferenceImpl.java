@@ -25,7 +25,6 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
-import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
@@ -678,14 +677,14 @@ public class JitsiMeetConferenceImpl
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
-            ConferenceMetrics.totalParticipants.inc();
+            ConferenceMetrics.participants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
             {
-                ConferenceMetrics.totalParticipantsNoMultiStream.inc();
+                ConferenceMetrics.participantsNoMultiStream.inc();
             }
             if (!participant.hasSourceNameSupport())
             {
-                ConferenceMetrics.totalParticipantsNoSourceName.inc();
+                ConferenceMetrics.participantsNoSourceName.inc();
             }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
@@ -1002,7 +1001,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
-        ConferenceMetrics.totalParticipantsIceFailed.inc();
+        ConferenceMetrics.participantsIceFailed.inc();
 
         return null;
     }
@@ -1037,7 +1036,7 @@ public class JitsiMeetConferenceImpl
 
         if (restartRequested)
         {
-            ConferenceMetrics.totalParticipantsRequestedRestart.inc();
+            ConferenceMetrics.participantsRequestedRestart.inc();
         }
 
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
@@ -1680,7 +1679,7 @@ public class JitsiMeetConferenceImpl
     {
         if (!participantIdsToReinvite.isEmpty())
         {
-            ConferenceMetrics.totalParticipantsMoved.addAndGet(participantIdsToReinvite.size());
+            ConferenceMetrics.participantsMoved.addAndGet(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
                 List<Participant> participantsToReinvite = new ArrayList<>();
