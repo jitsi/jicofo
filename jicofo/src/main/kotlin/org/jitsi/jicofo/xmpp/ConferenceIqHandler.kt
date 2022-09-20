@@ -126,7 +126,7 @@ class ConferenceIqHandler(
             if (!roomExists) {
                 // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                val breakoutRoomExists = focusManager.conferences.any { conference ->
+                val breakoutRoomExists = focusManager.getConferences().any { conference ->
                     conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
                 }
                 if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
