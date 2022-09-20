@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.utils.stats.ConferenceSizeBuckets
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
 
@@ -80,7 +81,8 @@ class ConferenceMetrics {
          * TODO: convert to a [Metric]
          */
         @JvmField
-        var conferenceSizes = ConferenceSizeBuckets();
+        @SuppressFBWarnings("MS_CANNOT_BE_FINAL")
+        var conferenceSizes = ConferenceSizeBuckets()
 
         @JvmField
         val participantPairs = metricsContainer.registerLongGauge(
