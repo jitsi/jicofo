@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import org.jitsi.utils.stats.ConferenceSizeBuckets
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
 
 class ConferenceMetrics {
@@ -61,6 +62,30 @@ class ConferenceMetrics {
         val participantsRequestedRestart = metricsContainer.registerCounter(
             "participants_restart_requested",
             "Number of times a participant requested a restart via session-terminate"
+        )
+
+        @JvmField
+        val largestConference = metricsContainer.registerLongGauge(
+            "largest_conference",
+            "The current largest conference."
+        )
+
+        @JvmField
+        val currentParticipants = metricsContainer.registerLongGauge(
+            "participants_current",
+            "The current number of participants."
+        )
+
+        /**
+         * TODO: convert to a [Metric]
+         */
+        @JvmField
+        var conferenceSizes = ConferenceSizeBuckets();
+
+        @JvmField
+        val participantPairs = metricsContainer.registerLongGauge(
+            "participants_pairs",
+            "The number of pairs of participants (the sum of n*(n-1) for each conference)"
         )
     }
 }

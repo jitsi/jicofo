@@ -423,10 +423,14 @@ public class FocusManager
             jibriRecordersAndGateways.add(conference.getJibriSipGateway());
         }
 
-        stats.put("largest_conference", largestConferenceSize);
-        stats.put("participants", numParticipants);
-        stats.put("conference_sizes", conferenceSizes.toJson());
-        stats.put("endpoint_pairs", endpointPairs);
+        ConferenceMetrics.largestConference.set(largestConferenceSize);
+        stats.put("largest_conference", ConferenceMetrics.largestConference.get());
+        ConferenceMetrics.currentParticipants.set(numParticipants);
+        stats.put("participants", ConferenceMetrics.currentParticipants.get());
+        ConferenceMetrics.conferenceSizes = conferenceSizes;
+        stats.put("conference_sizes", ConferenceMetrics.conferenceSizes.toJson());
+        ConferenceMetrics.participantPairs.set(endpointPairs);
+        stats.put("endpoint_pairs", ConferenceMetrics.participantPairs.get());
 
         stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
 
