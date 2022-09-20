@@ -264,7 +264,7 @@ public class FocusManager
         if (includeInStatistics)
         {
             conferenceCount.inc();
-            Statistics.totalConferencesCreated.inc();
+            ConferenceMetrics.totalConferencesCreated.inc();
         }
 
         return conference;
@@ -373,19 +373,19 @@ public class FocusManager
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we'll merge stats from different "child" objects here.
         JSONObject stats = new JSONObject();
-        stats.put("total_participants", Statistics.totalParticipants.get());
-        stats.put("total_participants_no_multi_stream", Statistics.totalParticipantsNoMultiStream.get());
-        stats.put("total_participants_no_source_name", Statistics.totalParticipantsNoSourceName.get());
-        stats.put("total_conferences_created", Statistics.totalConferencesCreated.get());
+        stats.put("total_participants", ConferenceMetrics.totalParticipants.get());
+        stats.put("total_participants_no_multi_stream", ConferenceMetrics.totalParticipantsNoMultiStream.get());
+        stats.put("total_participants_no_source_name", ConferenceMetrics.totalParticipantsNoSourceName.get());
+        stats.put("total_conferences_created", ConferenceMetrics.totalConferencesCreated.get());
         stats.put("conferences", conferenceCount.get());
 
         JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("participants_moved", Statistics.totalParticipantsMoved.get());
+        bridgeFailures.put("participants_moved", ConferenceMetrics.totalParticipantsMoved.get());
         stats.put("bridge_failures", bridgeFailures);
 
         JSONObject participantNotifications = new JSONObject();
-        participantNotifications.put("ice_failed", Statistics.totalParticipantsIceFailed.get());
-        participantNotifications.put("request_restart", Statistics.totalParticipantsRequestedRestart.get());
+        participantNotifications.put("ice_failed", ConferenceMetrics.totalParticipantsIceFailed.get());
+        participantNotifications.put("request_restart", ConferenceMetrics.totalParticipantsRequestedRestart.get());
         stats.put("participant_notifications", participantNotifications);
 
         // Calculate the number of participants and conference size distribution

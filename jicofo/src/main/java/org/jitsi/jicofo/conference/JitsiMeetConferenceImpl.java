@@ -678,14 +678,14 @@ public class JitsiMeetConferenceImpl
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
-            Statistics.totalParticipants.inc();
+            ConferenceMetrics.totalParticipants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
             {
-                Statistics.totalParticipantsNoMultiStream.inc();
+                ConferenceMetrics.totalParticipantsNoMultiStream.inc();
             }
             if (!participant.hasSourceNameSupport())
             {
-                Statistics.totalParticipantsNoSourceName.inc();
+                ConferenceMetrics.totalParticipantsNoSourceName.inc();
             }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
@@ -1019,7 +1019,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
-        Statistics.totalParticipantsIceFailed.inc();
+        ConferenceMetrics.totalParticipantsIceFailed.inc();
 
         return null;
     }
@@ -1054,7 +1054,7 @@ public class JitsiMeetConferenceImpl
 
         if (restartRequested)
         {
-            Statistics.totalParticipantsRequestedRestart.inc();
+            ConferenceMetrics.totalParticipantsRequestedRestart.inc();
         }
 
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
@@ -1697,7 +1697,7 @@ public class JitsiMeetConferenceImpl
     {
         if (!participantIdsToReinvite.isEmpty())
         {
-            Statistics.totalParticipantsMoved.addAndGet(participantIdsToReinvite.size());
+            ConferenceMetrics.totalParticipantsMoved.addAndGet(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
                 List<Participant> participantsToReinvite = new ArrayList<>();
