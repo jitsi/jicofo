@@ -231,7 +231,6 @@ class FocusManager @JvmOverloads constructor(
             jibriSessions.addAll(conference.jibriSipGateway.jibriSessions)
         }
 
-
         JibriStats.liveStreamingActive.set(
             jibriSessions.count { it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive }.toLong()
         )
@@ -415,7 +414,8 @@ class FocusManager @JvmOverloads constructor(
     /** Holds pinning information for one conference. */
     private inner class PinnedConference(
         /** The version of the bridge that this conference must use. */
-        val jvbVersion: String, duration: Duration
+        val jvbVersion: String,
+        duration: Duration
     ) {
         /** When this pinning expires. */
         val expiresAt: Instant = clock.instant().plus(duration).truncatedTo(ChronoUnit.SECONDS)
