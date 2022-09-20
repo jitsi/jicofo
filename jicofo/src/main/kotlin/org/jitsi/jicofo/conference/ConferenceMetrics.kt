@@ -21,6 +21,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.utils.stats.ConferenceSizeBuckets
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
 
+@SuppressFBWarnings("MS_CANNOT_BE_FINAL")
 class ConferenceMetrics {
     companion object {
         @JvmField
@@ -81,7 +82,6 @@ class ConferenceMetrics {
          * TODO: convert to a [Metric]
          */
         @JvmField
-        @SuppressFBWarnings("MS_CANNOT_BE_FINAL")
         var conferenceSizes = ConferenceSizeBuckets()
 
         @JvmField
