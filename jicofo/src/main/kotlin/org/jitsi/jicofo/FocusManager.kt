@@ -21,8 +21,8 @@ import org.jitsi.jicofo.conference.ConferenceMetrics
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
-import org.jitsi.jicofo.jibri.BaseJibri
-import org.jitsi.jicofo.jibri.JibriStats.Companion.getStats
+import org.jitsi.jicofo.jibri.JibriSession
+import org.jitsi.jicofo.jibri.JibriStats
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -71,6 +71,7 @@ class FocusManager @JvmOverloads constructor(
         "conferences",
         "Running count of conferences (excluding internal conferences created for health checks)."
     )
+
     /** TODO: move to companion object */
     private val conferencesCache: MutableList<JitsiMeetConference> = CopyOnWriteArrayList()
 
@@ -84,7 +85,7 @@ class FocusManager @JvmOverloads constructor(
     fun start() = expireThread.start()
     fun stop() = expireThread.stop()
 
-     /**
+    /**
      * @return <tt>true</tt> if conference focus is in the room and ready to handle session participants.
      * @throws Exception if for any reason we have failed to create the conference.
      */
@@ -195,14 +196,14 @@ class FocusManager @JvmOverloads constructor(
         }
     }
 
-    private fun updateMetrics(): Set<BaseJibri> {
+    private fun updateMetrics() {
         // Calculate the number of participants and conference size distribution
         var numParticipants = 0
         var largestConferenceSize = 0
         val conferenceSizes = ConferenceSizeBuckets()
         // The sum of squares of conference sizes.
         var endpointPairs = 0
-        val jibriRecordersAndGateways: MutableSet<BaseJibri> = HashSet()
+        val jibriSessions: MutableSet<JibriSession> = HashSet()
         for (conference in getConferences()) {
             if (!conference.includeInStatistics()) {
                 continue
@@ -226,17 +227,27 @@ class FocusManager @JvmOverloads constructor(
             ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
             ConferenceMetrics.conferenceSizes = conferenceSizes
             ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
-            jibriRecordersAndGateways.add(conference.jibriRecorder)
-            jibriRecordersAndGateways.add(conference.jibriSipGateway)
+            jibriSessions.addAll(conference.jibriRecorder.jibriSessions)
+            jibriSessions.addAll(conference.jibriSipGateway.jibriSessions)
         }
-        return jibriRecordersAndGateways
+
+
+        JibriStats.liveStreamingActive.set(
+            jibriSessions.count { it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive }.toLong()
+        )
+        JibriStats.recordingActive.set(
+            jibriSessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isActive }.toLong()
+        )
+        JibriStats.sipActive.set(
+            jibriSessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isActive }.toLong()
+        )
     }
 
     // We want to avoid exposing unnecessary hierarchy levels in the stats,
     // so we'll merge stats from different "child" objects here.
     val stats: JSONObject
         get() {
-            val jibriRecordersAndGateways = updateMetrics()
+            updateMetrics()
 
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
@@ -257,7 +268,14 @@ class FocusManager @JvmOverloads constructor(
             stats["participants"] = ConferenceMetrics.currentParticipants.get()
             stats["conference_sizes"] = ConferenceMetrics.conferenceSizes.toJson()
             stats["endpoint_pairs"] = ConferenceMetrics.participantPairs.get()
-            stats["jibri"] = getStats(jibriRecordersAndGateways)
+            stats["jibri"] = JSONObject().apply {
+                put("total_sip_call_failures", JibriStats.sipFailures.get())
+                put("total_live_streaming_failures", JibriStats.liveStreamingFailures.get())
+                put("total_recording_failures", JibriStats.recordingFailures.get())
+                put("live_streaming_active", JibriStats.liveStreamingActive.get())
+                put("recording_active", JibriStats.recordingActive.get())
+                put("sip_call_active", JibriStats.sipActive.get())
+            }
             stats["queues"] = getStatistics()
             return stats
         }
