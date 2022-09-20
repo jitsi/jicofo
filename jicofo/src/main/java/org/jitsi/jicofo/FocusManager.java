@@ -366,27 +366,8 @@ public class FocusManager
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public JSONObject getStats()
+    private Set<BaseJibri> updateMetrics()
     {
-        // We want to avoid exposing unnecessary hierarchy levels in the stats,
-        // so we'll merge stats from different "child" objects here.
-        JSONObject stats = new JSONObject();
-        stats.put("total_participants", ConferenceMetrics.participants.get());
-        stats.put("total_participants_no_multi_stream", ConferenceMetrics.participantsNoMultiStream.get());
-        stats.put("total_participants_no_source_name", ConferenceMetrics.participantsNoSourceName.get());
-        stats.put("total_conferences_created", ConferenceMetrics.conferencesCreated.get());
-        stats.put("conferences", conferenceCount.get());
-
-        JSONObject bridgeFailures = new JSONObject();
-        bridgeFailures.put("participants_moved", ConferenceMetrics.participantsMoved.get());
-        stats.put("bridge_failures", bridgeFailures);
-
-        JSONObject participantNotifications = new JSONObject();
-        participantNotifications.put("ice_failed", ConferenceMetrics.participantsIceFailed.get());
-        participantNotifications.put("request_restart", ConferenceMetrics.participantsRequestedRestart.get());
-        stats.put("participant_notifications", participantNotifications);
-
         // Calculate the number of participants and conference size distribution
         int numParticipants = 0;
         int largestConferenceSize = 0;
@@ -419,17 +400,44 @@ public class FocusManager
 
             conferenceSizes.addValue(confSize);
 
+            ConferenceMetrics.largestConference.set(largestConferenceSize);
+            ConferenceMetrics.currentParticipants.set(numParticipants);
+            ConferenceMetrics.conferenceSizes = conferenceSizes;
+            ConferenceMetrics.participantPairs.set(endpointPairs);
+
             jibriRecordersAndGateways.add(conference.getJibriRecorder());
             jibriRecordersAndGateways.add(conference.getJibriSipGateway());
         }
 
-        ConferenceMetrics.largestConference.set(largestConferenceSize);
+        return jibriRecordersAndGateways;
+    }
+
+    @SuppressWarnings("unchecked")
+    public JSONObject getStats()
+    {
+        Set<BaseJibri> jibriRecordersAndGateways = updateMetrics();
+
+        // We want to avoid exposing unnecessary hierarchy levels in the stats,
+        // so we'll merge stats from different "child" objects here.
+        JSONObject stats = new JSONObject();
+        stats.put("total_participants", ConferenceMetrics.participants.get());
+        stats.put("total_participants_no_multi_stream", ConferenceMetrics.participantsNoMultiStream.get());
+        stats.put("total_participants_no_source_name", ConferenceMetrics.participantsNoSourceName.get());
+        stats.put("total_conferences_created", ConferenceMetrics.conferencesCreated.get());
+        stats.put("conferences", conferenceCount.get());
+
+        JSONObject bridgeFailures = new JSONObject();
+        bridgeFailures.put("participants_moved", ConferenceMetrics.participantsMoved.get());
+        stats.put("bridge_failures", bridgeFailures);
+
+        JSONObject participantNotifications = new JSONObject();
+        participantNotifications.put("ice_failed", ConferenceMetrics.participantsIceFailed.get());
+        participantNotifications.put("request_restart", ConferenceMetrics.participantsRequestedRestart.get());
+        stats.put("participant_notifications", participantNotifications);
+
         stats.put("largest_conference", ConferenceMetrics.largestConference.get());
-        ConferenceMetrics.currentParticipants.set(numParticipants);
         stats.put("participants", ConferenceMetrics.currentParticipants.get());
-        ConferenceMetrics.conferenceSizes = conferenceSizes;
         stats.put("conference_sizes", ConferenceMetrics.conferenceSizes.toJson());
-        ConferenceMetrics.participantPairs.set(endpointPairs);
         stats.put("endpoint_pairs", ConferenceMetrics.participantPairs.get());
 
         stats.put("jibri", JibriStats.getStats(jibriRecordersAndGateways));
