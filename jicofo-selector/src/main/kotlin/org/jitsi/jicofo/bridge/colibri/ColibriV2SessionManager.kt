@@ -242,7 +242,9 @@ class ColibriV2SessionManager(
 
     override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
         val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getVisibleSessionParticipants(it) }
-        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap { getVisibleSessionParticipants(it) }
+        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap {
+            getVisibleSessionParticipants(it)
+        }
 
         session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true)
         otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false)
