@@ -30,18 +30,18 @@ class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
 
     var linksRemoved = 0
 
-    override fun addLinkBetween(node: TestCascadeNode, otherNode: TestCascadeNode, meshId: String) {
-        require(!node.relays.contains(otherNode.relayId)) {
-            "$this already has a link to $otherNode"
+    override fun addLinkBetween(session: TestCascadeNode, otherSession: TestCascadeNode, meshId: String) {
+        require(!session.relays.contains(otherSession.relayId)) {
+            "$this already has a link to $otherSession"
         }
-        require(!otherNode.relays.contains(node.relayId)) {
-            "$otherNode already has a link to $this"
+        require(!otherSession.relays.contains(session.relayId)) {
+            "$otherSession already has a link to $this"
         }
-        node.addLink(otherNode, meshId)
-        otherNode.addLink(node, meshId)
+        session.addLink(otherSession, meshId)
+        otherSession.addLink(session, meshId)
     }
 
-    override fun removeLinkTo(node: TestCascadeNode, otherNode: TestCascadeNode) {
+    override fun removeLinkTo(session: TestCascadeNode, otherSession: TestCascadeNode) {
         linksRemoved++
     }
 }

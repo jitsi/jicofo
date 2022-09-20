@@ -26,8 +26,8 @@ import kotlin.streams.toList
  */
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
     val sessions: MutableMap<String?, N>
-    fun addLinkBetween(node: N, otherNode: N, meshId: String)
-    fun removeLinkTo(node: N, otherNode: N)
+    fun addLinkBetween(session: N, otherSession: N, meshId: String)
+    fun removeLinkTo(session: N, otherSession: N)
 }
 
 /**
