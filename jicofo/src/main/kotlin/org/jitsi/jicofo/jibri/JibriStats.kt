@@ -68,11 +68,6 @@ class JibriStats {
             }
             this["recording_active"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isActive }
             this["sip_call_active"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isActive }
-            this["live_streaming_pending"] = sessions.count {
-                it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isPending
-            }
-            this["recording_pending"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isPending }
-            this["sip_call_pending"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isPending }
         }
     }
 }
