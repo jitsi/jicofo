@@ -25,7 +25,6 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
-import org.jitsi.jicofo.stats.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
@@ -678,14 +677,14 @@ public class JitsiMeetConferenceImpl
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
             final Participant participant = new Participant(chatRoomMember, features, logger, this);
 
-            Statistics.totalParticipants.inc();
+            ConferenceMetrics.participants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
             {
-                Statistics.totalParticipantsNoMultiStream.inc();
+                ConferenceMetrics.participantsNoMultiStream.inc();
             }
             if (!participant.hasSourceNameSupport())
             {
-                Statistics.totalParticipantsNoSourceName.inc();
+                ConferenceMetrics.participantsNoSourceName.inc();
             }
 
             participants.put(chatRoomMember.getOccupantJid(), participant);
@@ -776,23 +775,6 @@ public class JitsiMeetConferenceImpl
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         ChatRoom chatRoom = getChatRoom();
         return chatRoom != null && chatRoom.getMembersCount() >= minParticipants;
-    }
-
-    /**
-     * Destroys the MUC room and deletes the conference which results in all
-     * participant being removed from the XMPP chat room.
-     * @param reason the reason text that will be advertised to all
-     *               participants upon exit.
-     */
-    public void destroy(String reason)
-    {
-        if (chatRoom == null)
-        {
-            logger.error("Unable to destroy conference MUC room, not joined");
-            return;
-        }
-
-        chatRoom.destroy(reason, null);
     }
 
     /**
@@ -1019,7 +1001,7 @@ public class JitsiMeetConferenceImpl
                     address,
                     bridgeSessionId));
         }
-        Statistics.totalParticipantsIceFailed.inc();
+        ConferenceMetrics.participantsIceFailed.inc();
 
         return null;
     }
@@ -1054,7 +1036,7 @@ public class JitsiMeetConferenceImpl
 
         if (restartRequested)
         {
-            Statistics.totalParticipantsRequestedRestart.inc();
+            ConferenceMetrics.participantsRequestedRestart.inc();
         }
 
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
@@ -1697,7 +1679,7 @@ public class JitsiMeetConferenceImpl
     {
         if (!participantIdsToReinvite.isEmpty())
         {
-            Statistics.totalParticipantsMoved.addAndGet(participantIdsToReinvite.size());
+            ConferenceMetrics.participantsMoved.addAndGet(participantIdsToReinvite.size());
             synchronized (participantLock)
             {
                 List<Participant> participantsToReinvite = new ArrayList<>();
