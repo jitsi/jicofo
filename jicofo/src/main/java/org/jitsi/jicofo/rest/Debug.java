@@ -61,7 +61,8 @@ public class Debug
     @Path("/conferences")
     @Produces(MediaType.APPLICATION_JSON)
     @NotNull
-    public String conferences(@PathParam("confId") String confId)
+    @SuppressWarnings("unchecked")
+    public String conferences()
     {
         JSONArray conferencesJson = new JSONArray();
         for (JitsiMeetConference c : jicofoServices.getFocusManager().getAllConferences())
