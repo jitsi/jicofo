@@ -120,7 +120,7 @@ class ColibriV2SessionManager(
         Unit
     }
 
-    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<String?>):
+    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>):
         Set<Triple<Colibri2Session, Colibri2Session, String>> {
         TODO("not implemented yet")
     }

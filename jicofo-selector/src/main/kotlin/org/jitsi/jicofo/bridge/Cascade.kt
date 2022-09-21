@@ -99,7 +99,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
 
 fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     node: N,
-    repairFn: (C, Set<String?>) -> Set<Triple<N, N, String>>
+    repairFn: (C, Set<Set<N>>) -> Set<Triple<N, N, String>>
 ) {
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */
@@ -129,7 +129,8 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
 
     if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
-        val newLinks = repairFn(this, meshes)
+        val disconnected = node.relays.values.map { getNodesBehind(node, it.relayId!!) }.toSet()
+        val newLinks = repairFn(this, disconnected)
         newLinks.forEach { (node, other, mesh) ->
             addLinkBetween(node, other, mesh)
         }
@@ -148,11 +149,18 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(from: 
     return nodes
 }
 
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(from: N, towardId: String): Set<N> {
+    val toward = requireNotNull(sessions[towardId]) {
+        "$towardId not found in sessions"
+    }
+    return getNodesBehind(from, toward)
+}
+
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehind(fromMesh: String, toward: N): Set<N> {
     val nodes = HashSet<N>()
     nodes.add(toward)
     toward.relays.values.filter { it.meshId != fromMesh }.forEach {
-        val next = checkNotNull(sessions[it.relayId])
+        val next = requireNotNull(sessions[it.relayId])
         getNodesBehind(it, next, nodes)
     }
 
