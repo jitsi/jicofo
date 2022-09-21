@@ -21,6 +21,7 @@ import mock.jvb.*;
 
 import mock.muc.*;
 import mock.xmpp.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.conference.*;
@@ -92,7 +93,7 @@ public class TestConference
         mockBridge.stop();
     }
 
-    private void createConferenceRoom(EntityBareJid roomName)
+    private void createConferenceRoom(@NotNull EntityBareJid roomName)
     {
         HashMap<String,String> properties = new HashMap<>();
 

@@ -17,7 +17,6 @@
 package org.jitsi.jicofo.jibri
 
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.json.simple.JSONObject
 
 /**
  * Counts total stats (failures by session type).
@@ -42,37 +41,29 @@ class JibriStats {
             "Number of failures for a live-streaming jibri"
         )
 
+        @JvmField
+        val liveStreamingActive = JicofoMetricsContainer.instance.registerLongGauge(
+            "jibri_live_streaming_active",
+            "Current number of active jibris in live-streaming mode"
+        )
+
+        @JvmField
+        val recordingActive = JicofoMetricsContainer.instance.registerLongGauge(
+            "jibri_recording_active",
+            "Current number of active jibris in recording mode"
+        )
+
+        @JvmField
+        val sipActive = JicofoMetricsContainer.instance.registerLongGauge(
+            "jibri_sip_active",
+            "Current number of active jibris in SIP mode"
+        )
+
         @JvmStatic
         fun sessionFailed(type: JibriSession.Type) = when (type) {
             JibriSession.Type.SIP_CALL -> sipFailures.inc()
             JibriSession.Type.LIVE_STREAMING -> liveStreamingFailures.inc()
             JibriSession.Type.RECORDING -> recordingFailures.inc()
-        }
-
-        private fun globalStatsJson() = JSONObject().apply {
-            put("total_sip_call_failures", sipFailures.get())
-            put("total_live_streaming_failures", liveStreamingFailures.get())
-            put("total_recording_failures", recordingFailures.get())
-        }
-
-        /**
-         * Generate all jibri stats in JSON format -- the global metrics kept in this companion object, plus stats
-         * from the given set of [recorders].
-         */
-        @JvmStatic
-        fun getStats(recorders: Collection<BaseJibri?>) = globalStatsJson().apply {
-            val sessions = recorders.filterNotNull().flatMap { it.jibriSessions }
-
-            this["live_streaming_active"] = sessions.count {
-                it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive
-            }
-            this["recording_active"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isActive }
-            this["sip_call_active"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isActive }
-            this["live_streaming_pending"] = sessions.count {
-                it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isPending
-            }
-            this["recording_pending"] = sessions.count { it.jibriType == JibriSession.Type.RECORDING && it.isPending }
-            this["sip_call_pending"] = sessions.count { it.jibriType == JibriSession.Type.SIP_CALL && it.isPending }
         }
     }
 }

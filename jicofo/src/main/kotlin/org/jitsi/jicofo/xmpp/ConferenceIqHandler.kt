@@ -30,6 +30,7 @@ import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.DomainBareJid
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 
 /**
@@ -59,12 +60,16 @@ class ConferenceIqHandler(
 
     private fun handleConferenceIq(query: ConferenceIq): IQ {
         val response = ConferenceIq()
-        val room = query.room
+        val room = query.room ?: return IQ.createErrorResponse(
+            query,
+            StanzaError.from(StanzaError.Condition.bad_request, "No 'room' specified.").build()
+        )
+
         logger.info("Focus request for room: $room")
         val roomExists = focusManager.getConference(room) != null
 
         // Authentication logic
-        val error: IQ? = processExtensions(query, response, roomExists)
+        val error: IQ? = processExtensions(query, room, response, roomExists)
         if (error != null) {
             return error
         }
@@ -108,8 +113,12 @@ class ConferenceIqHandler(
      * @return <tt>null</tt> if everything went ok or an error/response IQ
      * which should be returned to the user
      */
-    private fun processExtensions(query: ConferenceIq, response: ConferenceIq?, roomExists: Boolean): IQ? {
-        val room = query.room
+    private fun processExtensions(
+        query: ConferenceIq,
+        room: EntityBareJid,
+        response: ConferenceIq?,
+        roomExists: Boolean
+    ): IQ? {
         val isBreakoutRoom = breakoutAddress != null && room.domain == breakoutAddress
 
         // Authentication. We do not perform authentication for breakout rooms, expecting the breakout room prosody
@@ -126,7 +135,7 @@ class ConferenceIqHandler(
             if (!roomExists) {
                 // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                val breakoutRoomExists = focusManager.conferences.any { conference ->
+                val breakoutRoomExists = focusManager.getConferences().any { conference ->
                     conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
                 }
                 if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
