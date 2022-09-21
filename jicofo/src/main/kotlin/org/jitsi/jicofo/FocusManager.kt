@@ -93,7 +93,7 @@ class FocusManager @JvmOverloads constructor(
     @Throws(Exception::class)
     fun conferenceRequest(
         /** The name of MUC room for which new conference has to be allocated. */
-        room: EntityBareJid?,
+        room: EntityBareJid,
         /** Configuration properties map included in the request. */
         properties: Map<String, String>,
         /** The logging level which should be used by the new conference. */
@@ -101,8 +101,6 @@ class FocusManager @JvmOverloads constructor(
         /** Whether this conference should be included in statistics. */
         includeInStatistics: Boolean = true
     ): Boolean {
-        if (room == null) return false
-
         var conference: JitsiMeetConferenceImpl
         var isConferenceCreator: Boolean
         synchronized(conferencesSyncRoot) {
