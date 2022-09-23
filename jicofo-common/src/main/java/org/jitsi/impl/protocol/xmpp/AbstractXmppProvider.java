@@ -20,6 +20,7 @@ package org.jitsi.impl.protocol.xmpp;
 import java.util.*;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.utils.logging2.*;
 
 /**
@@ -83,20 +84,19 @@ public abstract class AbstractXmppProvider
         }
 
         for (RegistrationListener listener : listeners)
-            try
+            TaskPools.getIoPool().submit(() ->
             {
-                listener.registrationChanged(registered);
-            }
-            catch (Throwable throwable)
-            {
-                logger.error(
-                    "An error occurred while executing "
-                        + "RegistrationStateChangeListener"
-                        + "#registrationStateChanged"
-                        + "(RegistrationStateChangeEvent) of "
-                        + listener,
-                    throwable);
-            }
+                try
+                {
+                    listener.registrationChanged(registered);
+                }
+                catch (Throwable throwable)
+                {
+                    logger.error(
+                            "An error occurred while executing registrationStateChanged() on " + listener,
+                            throwable);
+                }
+            });
     }
 
     /**
