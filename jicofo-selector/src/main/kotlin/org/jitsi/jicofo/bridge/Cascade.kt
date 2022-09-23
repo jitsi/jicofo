@@ -129,7 +129,9 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
 
     if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
-        val disconnected = node.relays.values.map { getNodesBehind(node, it.relayId!!) }.toSet()
+        val disconnected = node.relays.values.groupBy { it.meshId }.values.map {
+            it.flatMap { getNodesBehind(node, it.relayId!!) }.toSet()
+        }.toSet()
         val newLinks = repairFn(this, disconnected)
         newLinks.forEach { (node, other, mesh) ->
             addLinkBetween(node, other, mesh)

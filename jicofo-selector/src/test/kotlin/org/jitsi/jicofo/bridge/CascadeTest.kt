@@ -222,8 +222,13 @@ class CascadeTest : ShouldSpec() {
             }
             should("call the callback when removing the core node") {
                 var called = true
-                cascade.removeNode(nodes[0]) { _, _ ->
+                cascade.removeNode(nodes[0]) { _, disconnectedMeshes ->
                     called = true
+                    disconnectedMeshes.size shouldBe 2
+                    disconnectedMeshes.shouldContainExactlyInAnyOrder(
+                        setOf(nodes[1], nodes[2]),
+                        setOf(nodes[3], nodes[4])
+                    )
                     setOf()
                 }
                 called shouldBe true
@@ -347,8 +352,15 @@ class CascadeTest : ShouldSpec() {
             }
             should("call the callback when removing the core node") {
                 var called = false
-                cascade.removeNode(nodes[0]) { _, _ ->
+                cascade.removeNode(nodes[0]) { _, disconnectedMeshes ->
                     called = true
+                    disconnectedMeshes.size shouldBe 4
+                    disconnectedMeshes.shouldContainExactlyInAnyOrder(
+                        setOf(nodes[1]),
+                        setOf(nodes[2]),
+                        setOf(nodes[3]),
+                        setOf(nodes[4])
+                    )
                     setOf()
                 }
                 called shouldBe true
