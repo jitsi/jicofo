@@ -18,7 +18,7 @@ package org.jitsi.jicofo.bridge
 import org.jitsi.jicofo.bridge.colibri.Colibri2Session
 
 /** Put all bridge nodes into a single mesh, named "0". */
-class SingleMeshTopologyStrategy: TopologySelectionStrategy() {
+class SingleMeshTopologyStrategy : TopologySelectionStrategy() {
     override fun connectNode(node: Colibri2Session, existingNodes: Set<Colibri2Session>): TopologySelectionResult =
         TopologySelectionResult(existingNodes.firstOrNull(), "0")
 }
