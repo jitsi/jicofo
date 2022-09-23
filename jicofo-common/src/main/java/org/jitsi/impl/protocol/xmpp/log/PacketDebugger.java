@@ -64,12 +64,14 @@ public class PacketDebugger
     }
 
     @Override
-    public void onIncomingStreamElement(TopLevelStreamElement streamElement) {
+    public void onIncomingStreamElement(TopLevelStreamElement streamElement)
+    {
         logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
     }
 
     @Override
-    public void onOutgoingStreamElement(TopLevelStreamElement streamElement) {
+    public void onOutgoingStreamElement(TopLevelStreamElement streamElement)
+    {
         logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
     }
 
