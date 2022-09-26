@@ -71,11 +71,13 @@ public interface JitsiMeetConference
      */
     @Nullable ChatRoom getChatRoom();
 
+    @Nullable
     default JibriRecorder getJibriRecorder()
     {
         return null;
     }
 
+    @Nullable
     default JibriSipGateway getJibriSipGateway()
     {
         return null;
