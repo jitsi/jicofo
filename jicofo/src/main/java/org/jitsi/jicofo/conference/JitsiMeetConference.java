@@ -38,7 +38,7 @@ import java.util.*;
  *
  * @author Pawel Domas
  */
-public interface JitsiMeetConference
+public interface JitsiMeetConference extends RegistrationListener
 {
     /**
      * Checks how many {@link Participant}s are in the conference.

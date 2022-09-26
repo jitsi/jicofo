@@ -330,8 +330,6 @@ public class JitsiMeetConferenceImpl
                 joinTheRoom();
             }
 
-            clientXmppProvider.addRegistrationListener(this);
-
             JibriDetector jibriDetector = jicofoServices.getJibriDetector();
             if (jibriDetector != null)
             {
@@ -403,8 +401,6 @@ public class JitsiMeetConferenceImpl
             }
             jibriRecorder = null;
         }
-
-        getClientXmppProvider().removeRegistrationListener(this);
 
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
