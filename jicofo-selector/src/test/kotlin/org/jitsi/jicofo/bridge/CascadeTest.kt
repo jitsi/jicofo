@@ -241,22 +241,22 @@ class CascadeTest : ShouldSpec() {
             }
             should("validate if repaired correctly (1) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3], "C"))
+                    setOf(CascadeRepair(nodes[1], nodes[3], "C"))
                 }
                 cascade.validate()
             }
             should("validate if repaired correctly (2) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
                     setOf(
-                        Triple(nodes[1], nodes[3], "A"),
-                        Triple(nodes[2], nodes[3], "A")
+                        CascadeRepair(nodes[1], nodes[3], "A"),
+                        CascadeRepair(nodes[2], nodes[3], "A")
                     )
                 }
                 cascade.validate()
             }
             should("not validate if repaired incorrectly (1) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
-                    setOf(Triple(nodes[1], nodes[3], "A"))
+                    setOf(CascadeRepair(nodes[1], nodes[3], "A"))
                 }
                 shouldThrow<IllegalStateException> {
                     cascade.validate()
@@ -265,8 +265,8 @@ class CascadeTest : ShouldSpec() {
             should("not validate if repaired incorrectly (2) after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
                     setOf(
-                        Triple(nodes[1], nodes[3], "C"),
-                        Triple(nodes[2], nodes[4], "D")
+                        CascadeRepair(nodes[1], nodes[3], "C"),
+                        CascadeRepair(nodes[2], nodes[4], "D")
                     )
                 }
                 shouldThrow<IllegalStateException> {
@@ -374,9 +374,9 @@ class CascadeTest : ShouldSpec() {
             should("validate when repaired correctly after removing the core node") {
                 cascade.removeNode(nodes[0]) { _, _ ->
                     setOf(
-                        Triple(nodes[1], nodes[2], "B"),
-                        Triple(nodes[1], nodes[3], "C"),
-                        Triple(nodes[1], nodes[4], "D")
+                        CascadeRepair(nodes[1], nodes[2], "B"),
+                        CascadeRepair(nodes[1], nodes[3], "C"),
+                        CascadeRepair(nodes[1], nodes[4], "D")
                     )
                 }
                 cascade.validate()

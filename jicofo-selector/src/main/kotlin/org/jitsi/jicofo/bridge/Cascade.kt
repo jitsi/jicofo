@@ -46,6 +46,12 @@ interface CascadeLink {
     val meshId: String?
 }
 
+data class CascadeRepair<N : CascadeNode<N, L>, L : CascadeLink>(
+    val node: N,
+    val other: N,
+    val meshId: String
+)
+
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
     sessions[node.relayId] === node
 
@@ -99,7 +105,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
 
 fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     node: N,
-    repairFn: (C, Set<Set<N>>) -> Set<Triple<N, N, String>>
+    repairFn: (C, Set<Set<N>>) -> Set<CascadeRepair<N, L>>
 ) {
     if (!containsNode(node)) {
         return; /* Or should this be an exception. i.e. `require`? */

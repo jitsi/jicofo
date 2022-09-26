@@ -25,7 +25,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.Cascade
-import org.jitsi.jicofo.bridge.TopologySelectionStrategy
+import org.jitsi.jicofo.bridge.CascadeRepair
 import org.jitsi.jicofo.bridge.addNodeToMesh
 import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
@@ -127,7 +127,7 @@ class ColibriV2SessionManager(
     }
 
     private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>):
-        Set<Triple<Colibri2Session, Colibri2Session, String>> {
+        Set<CascadeRepair<Colibri2Session, Colibri2Session.Relay>> {
         TODO("not implemented yet")
     }
 
