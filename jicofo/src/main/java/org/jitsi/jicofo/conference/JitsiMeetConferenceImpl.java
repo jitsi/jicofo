@@ -1875,16 +1875,13 @@ public class JitsiMeetConferenceImpl
         return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
     }
 
-    private FocusManager getFocusManager()
-    {
-        return jicofoServices.getFocusManager();
-    }
-
+    @Override
     public JibriRecorder getJibriRecorder()
     {
         return jibriRecorder;
     }
 
+    @Override
     public JibriSipGateway getJibriSipGateway()
     {
         return jibriSipGateway;

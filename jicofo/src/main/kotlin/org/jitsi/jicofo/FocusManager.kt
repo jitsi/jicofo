@@ -225,8 +225,8 @@ class FocusManager @JvmOverloads constructor(
             ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
             ConferenceMetrics.conferenceSizes = conferenceSizes
             ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
-            jibriSessions.addAll(conference.jibriRecorder.jibriSessions)
-            jibriSessions.addAll(conference.jibriSipGateway.jibriSessions)
+            conference.jibriRecorder?.let { jibriSessions.addAll(it.jibriSessions) }
+            conference.jibriSipGateway?.let { jibriSessions.addAll(it.jibriSessions) }
         }
 
         JibriStats.liveStreamingActive.set(
