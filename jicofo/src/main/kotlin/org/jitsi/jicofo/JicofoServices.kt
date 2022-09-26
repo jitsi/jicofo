@@ -170,6 +170,8 @@ open class JicofoServices {
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()
+        xmppServices.clientConnection.removeRegistrationListener(focusManager)
+        focusManager.stop()
         xmppServices.shutdown()
     }
 
