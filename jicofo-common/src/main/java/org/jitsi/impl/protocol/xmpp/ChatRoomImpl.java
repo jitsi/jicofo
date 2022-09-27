@@ -268,7 +268,7 @@ public class ChatRoomImpl
     {
         this.myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname);
 
-        this.presenceInterceptor = packet ->
+        this.presenceInterceptor = presenceBuilder ->
         {
             // The initial presence sent by smack contains an empty "x"
             // extension. If this extension is included in a subsequent stanza,
@@ -277,9 +277,12 @@ public class ChatRoomImpl
             // room.
             synchronized (ChatRoomImpl.this)
             {
-                lastPresenceSent = packet.removeExtension(
+                Presence p = presenceBuilder.build();
+                p.removeExtension(
                     MUCInitialPresence.ELEMENT,
-                    MUCInitialPresence.NAMESPACE);
+                    MUCInitialPresence.NAMESPACE
+                );
+                lastPresenceSent = p.asBuilder();
             }
         };
         if (muc.isJoined())
