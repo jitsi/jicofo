@@ -86,7 +86,7 @@ public class ChatRoomImpl
     /**
      * Listener for presence that smack sends on our behalf.
      */
-    private PresenceListener presenceInterceptor;
+    private org.jivesoftware.smack.util.Consumer<PresenceBuilder> presenceInterceptor;
 
     /**
      * Smack multi user chat backend instance.
@@ -277,7 +277,7 @@ public class ChatRoomImpl
             // room.
             synchronized (ChatRoomImpl.this)
             {
-                lastPresenceSent = packet.asBuilder((String) null).removeExtension(
+                lastPresenceSent = packet.removeExtension(
                     MUCInitialPresence.ELEMENT,
                     MUCInitialPresence.NAMESPACE);
             }
