@@ -81,9 +81,7 @@ class AvModerationHandler(
                         chatRoom.setAvModerationEnabled(mediaType, enabled)
                         if (oldEnabledValue != enabled && enabled) {
                             logger.info(
-                                "Moderation had been enabled for conferenceJid=$conferenceJid, by=${
-                                incomingJson["actor"] as String
-                                }, for mediaType=$mediaType"
+                                "Moderation for $mediaType in $conferenceJid was enabled by ${incomingJson["actor"]}"
                             )
                             // let's mute everyone
                             conference.muteAllParticipants(mediaType)
