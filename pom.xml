@@ -36,7 +36,7 @@
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>11.0.10</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <smack.version>4.4.4</smack.version>
+    <smack.version>4.4.6</smack.version>
     <kotlin.version>1.6.21</kotlin.version>
     <kotest.version>5.3.0</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
@@ -109,6 +109,26 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.igniterealtime.smack</groupId>
+        <artifactId>smack-core</artifactId>
+        <version>${smack.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.igniterealtime.smack</groupId>
+        <artifactId>smack-extensions</artifactId>
+        <version>${smack.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.igniterealtime.smack</groupId>
+        <artifactId>smack-java8</artifactId>
+        <version>${smack.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.igniterealtime.smack</groupId>
+        <artifactId>smack-xmlparser-stax</artifactId>
+        <version>${smack.version}</version>
       </dependency>
       <dependency>
         <groupId>org.igniterealtime.smack</groupId>
