@@ -15,10 +15,18 @@
  */
 package org.jitsi.jicofo.bridge
 
+import org.jitsi.jicofo.bridge.colibri.Colibri2CascadeRepair
 import org.jitsi.jicofo.bridge.colibri.Colibri2Session
 
 /** Put all bridge nodes into a single mesh, named "0". */
 class SingleMeshTopologyStrategy : TopologySelectionStrategy() {
     override fun connectNode(node: Colibri2Session, existingNodes: Set<Colibri2Session>): TopologySelectionResult =
         TopologySelectionResult(existingNodes.firstOrNull(), "0")
+
+    override fun repairMesh(disconnected: Set<Set<Colibri2Session>>): Set<Colibri2CascadeRepair> {
+        assert(false) {
+            "Single Mesh policy should never result in disconnected meshes"
+        }
+        return setOf()
+    }
 }

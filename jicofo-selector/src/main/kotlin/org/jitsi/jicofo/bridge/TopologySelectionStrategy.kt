@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.bridge
 
+import org.jitsi.jicofo.bridge.colibri.Colibri2CascadeRepair
 import org.jitsi.jicofo.bridge.colibri.Colibri2Session
 
 /**
@@ -22,6 +23,7 @@ import org.jitsi.jicofo.bridge.colibri.Colibri2Session
  */
 abstract class TopologySelectionStrategy {
     abstract fun connectNode(node: Colibri2Session, existingNodes: Set<Colibri2Session>): TopologySelectionResult
+    abstract fun repairMesh(disconnected: Set<Set<Colibri2Session>>): Set<Colibri2CascadeRepair>
 }
 
 data class TopologySelectionResult(

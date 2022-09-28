@@ -126,10 +126,8 @@ class ColibriV2SessionManager(
         Unit
     }
 
-    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>):
-        Set<CascadeRepair<Colibri2Session, Colibri2Session.Relay>> {
-        TODO("not implemented yet")
-    }
+    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>) =
+        topologySelectionStrategy.repairMesh(disconnectedMeshes)
 
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
@@ -591,3 +589,5 @@ class ColibriV2SessionManager(
         participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(participantInfo)
     }
 }
+
+typealias Colibri2CascadeRepair = CascadeRepair<Colibri2Session, Colibri2Session.Relay>
