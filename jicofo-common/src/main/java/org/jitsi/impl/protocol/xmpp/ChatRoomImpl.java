@@ -142,7 +142,8 @@ public class ChatRoomImpl
      */
     private final EventEmitter<ChatRoomListener> eventEmitter = new SyncEventEmitter<>();
 
-    private static class MucConfigFields {
+    private static class MucConfigFields
+    {
         static final String IS_BREAKOUT_ROOM =  "muc#roominfo_isbreakout";
         static final String MAIN_ROOM = "muc#roominfo_breakout_main_room";
         static final String MEETING_ID = "muc#roominfo_meetingId";
@@ -224,12 +225,14 @@ public class ChatRoomImpl
     }
 
     @Override
-    public boolean isBreakoutRoom() {
+    public boolean isBreakoutRoom()
+    {
         return isBreakoutRoom;
     }
 
     @Override
-    public String getMainRoom() {
+    public String getMainRoom()
+    {
         return mainRoom;
     }
 
@@ -657,10 +660,16 @@ public class ChatRoomImpl
     }
 
     @Override
-    public int getAudioSendersCount() { return numAudioSenders; }
+    public int getAudioSendersCount()
+    {
+        return numAudioSenders;
+    }
 
     @Override
-    public int getVideoSendersCount() { return numVideoSenders; }
+    public int getVideoSendersCount()
+    {
+        return numVideoSenders;
+    }
 
     public void addAudioSender()
     {

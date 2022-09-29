@@ -95,7 +95,7 @@ data class Source(
         put("media_type", mediaType.toString())
         put("name", name ?: "null")
         put("msid", msid ?: "null")
-        put("videoType", videoType ?: "null")
+        put("videoType", videoType.toString() ?: "null")
     }
 
     companion object {

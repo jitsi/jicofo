@@ -22,8 +22,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.Cascade
+import org.jitsi.jicofo.bridge.CascadeRepair
 import org.jitsi.jicofo.bridge.addNodeToMesh
 import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
@@ -74,6 +76,10 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
+    private val topologySelectionStrategy = BridgeConfig.config.topologyStrategy.also {
+        logger.info("Using ${it.javaClass.name}")
+    }
+
     /**
      * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
      */
@@ -120,10 +126,8 @@ class ColibriV2SessionManager(
         Unit
     }
 
-    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<String?>):
-        Set<Triple<Colibri2Session, Colibri2Session, String>> {
-        TODO("not implemented yet")
-    }
+    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>) =
+        topologySelectionStrategy.repairMesh(disconnectedMeshes)
 
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
@@ -306,8 +310,8 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
-                val meshId = "0" // TODO - get from bridge selection somehow
-                addNodeToMesh(session, meshId)
+                val topologySelectionResult = topologySelectionStrategy.connectNode(session, sessions.values.toSet())
+                addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
             } else {
                 getPathsFrom(session) { _, otherSession, from ->
                     if (from != null) {
@@ -595,3 +599,5 @@ class ColibriV2SessionManager(
         participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(participantInfo)
     }
 }
+
+typealias Colibri2CascadeRepair = CascadeRepair<Colibri2Session, Colibri2Session.Relay>

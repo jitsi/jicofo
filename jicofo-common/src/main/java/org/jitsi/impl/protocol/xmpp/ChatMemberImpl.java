@@ -222,10 +222,16 @@ public class ChatMemberImpl
     }
 
     @Override
-    public boolean isAudioMuted() { return isAudioMuted; }
+    public boolean isAudioMuted()
+    {
+        return isAudioMuted;
+    }
 
     @Override
-    public boolean isVideoMuted() { return isVideoMuted; }
+    public boolean isVideoMuted()
+    {
+        return isVideoMuted;
+    }
 
     private void setSourceInfo(String sourceInfoString)
     {

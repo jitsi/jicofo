@@ -43,7 +43,7 @@ public class Pin
     @Produces(MediaType.APPLICATION_JSON)
     public String getPins()
     {
-        return jicofoServices.getFocusManager().getPinnedConferences().toJSONString();
+        return jicofoServices.getFocusManager().getPinnedConferencesJson().toJSONString();
     }
 
     @POST

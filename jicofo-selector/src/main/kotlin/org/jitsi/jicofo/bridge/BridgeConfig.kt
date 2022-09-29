@@ -78,15 +78,26 @@ class BridgeConfig private constructor() {
             .convertFrom<String> { createSelectionStrategy(it) }
     }
 
-    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy {
+    val topologyStrategy: TopologySelectionStrategy by config {
+        "$BASE.topology-strategy".from(JitsiConfig.newConfig)
+            .convertFrom<String> { createTopologyStrategy(it) }
+    }
+
+    private fun <T> createClassInstance(className: String): T {
         return try {
             val clazz = Class.forName("${javaClass.getPackage().name}.$className")
-            clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+            clazz.getConstructor().newInstance() as T
         } catch (e: Exception) {
             val clazz = Class.forName(className)
-            clazz.getConstructor().newInstance() as BridgeSelectionStrategy
+            clazz.getConstructor().newInstance() as T
         }
     }
+
+    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy =
+        createClassInstance(className)
+
+    private fun createTopologyStrategy(className: String): TopologySelectionStrategy =
+        createClassInstance(className)
 
     val healthChecksEnabled: Boolean by config {
         "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
