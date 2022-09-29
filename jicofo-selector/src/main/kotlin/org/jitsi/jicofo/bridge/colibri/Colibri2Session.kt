@@ -25,7 +25,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
-import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
