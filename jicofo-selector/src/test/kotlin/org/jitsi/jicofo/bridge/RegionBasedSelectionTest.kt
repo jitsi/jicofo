@@ -48,7 +48,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
 
                 with(RegionBasedBridgeSelectionStrategy()) {
                     context("In a single region") {
-                        select().stress shouldBe Low.stress
+                        select()!!.stress shouldBe Low.stress
                         select(participantRegion = ApSouth) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = ApSouth,
