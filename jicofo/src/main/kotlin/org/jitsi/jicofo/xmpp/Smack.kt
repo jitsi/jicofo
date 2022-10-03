@@ -57,6 +57,12 @@ import org.jivesoftware.smack.provider.ProviderManager
 import org.jivesoftware.smackx.bytestreams.socks5.Socks5Proxy
 
 fun initializeSmack() {
+    System.setProperty("jdk.xml.entityExpansionLimit", "0")
+    System.setProperty("jdk.xml.maxOccurLimit", "0")
+    System.setProperty("jdk.xml.elementAttributeLimit", "524288")
+    System.setProperty("jdk.xml.totalEntitySizeLimit", "0")
+    System.setProperty("jdk.xml.maxXMLNameLimit", "524288")
+    System.setProperty("jdk.xml.entityReplacementLimit", "0")
     SmackConfiguration.setDefaultReplyTimeout(15000)
     // if there is a parsing error, do not break the connection to the server(the default behaviour) as we need it for
     // the other conferences.

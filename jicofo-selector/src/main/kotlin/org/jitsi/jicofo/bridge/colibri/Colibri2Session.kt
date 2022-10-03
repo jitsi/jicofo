@@ -25,7 +25,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
-import org.jitsi.xmpp.extensions.colibri2.Capability
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
@@ -77,19 +76,7 @@ internal class Colibri2Session(
     internal fun sendAllocationRequest(participant: ParticipantInfo): StanzaCollector {
 
         val request = createRequest(!created)
-        val endpoint = Colibri2Endpoint.getBuilder().apply {
-            setId(participant.id)
-            setCreate(true)
-            if (participant.sources.isNotEmpty()) {
-                setSources(participant.sources.toColibriMediaSources())
-            }
-            setStatsId(participant.statsId)
-            if (participant.supportsSourceNames) {
-                addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
-            }
-            if (participant.useSsrcRewriting) {
-                addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
-            }
+        val endpoint = participant.toEndpoint(create = true, expire = false).apply {
             if (participant.audioMuted || participant.videoMuted) {
                 setForceMute(participant.audioMuted, participant.videoMuted)
             }
@@ -417,7 +404,7 @@ internal class Colibri2Session(
                 setId(id)
             }
             val endpoints = Endpoints.getBuilder()
-            endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false))
+            endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false).build())
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
             sendRequest(request.build(), "Relay.updateParticipant")
@@ -429,7 +416,7 @@ internal class Colibri2Session(
             val relay = Colibri2Relay.getBuilder().apply { setId(id) }
             val endpoints = Endpoints.getBuilder()
 
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = false, expire = true)) }
+            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = false, expire = true).build()) }
 
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
@@ -461,7 +448,7 @@ internal class Colibri2Session(
             )
 
             val endpoints = Endpoints.getBuilder()
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false)) }
+            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false).build()) }
             relay.setEndpoints(endpoints.build())
 
             relay.setTransport(
