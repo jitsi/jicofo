@@ -88,7 +88,7 @@ public class RegionBasedBridgeSelectionStrategy
     @Override
     public Bridge doSelect(
             List<Bridge> bridges,
-            Map<Bridge, Integer> conferenceBridges,
+            Map<Bridge, ConferenceBridgeProperties> conferenceBridges,
             String participantRegion)
     {
         if (bridges.isEmpty())
@@ -146,7 +146,7 @@ public class RegionBasedBridgeSelectionStrategy
     @Override
     public Bridge select(
             List<Bridge> bridges,
-            Map<Bridge, Integer> conferenceBridges,
+            Map<Bridge, ConferenceBridgeProperties> conferenceBridges,
             String participantRegion,
             boolean allowMultiBridge)
     {

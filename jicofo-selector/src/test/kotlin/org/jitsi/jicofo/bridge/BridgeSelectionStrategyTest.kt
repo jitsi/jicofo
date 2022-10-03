@@ -39,7 +39,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             val localBridge = bridge2
 
             val allBridges = listOf(bridge1, bridge2, bridge3)
-            val conferenceBridges: MutableMap<Bridge, Int> = HashMap()
+            val conferenceBridges: MutableMap<Bridge, ConferenceBridgeProperties> = HashMap()
 
             // Initial selection should select a bridge in the participant's region/ if possible
             strategy.select(allBridges, conferenceBridges, region1, true) shouldBe bridge1
@@ -49,13 +49,13 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe localBridge
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
 
-            conferenceBridges[bridge3] = 1
+            conferenceBridges[bridge3] = ConferenceBridgeProperties(1)
             strategy.select(allBridges, conferenceBridges, region3, true) shouldBe bridge3
             strategy.select(allBridges, conferenceBridges, region2, true) shouldBe bridge2
             // A participant in an unknown region should be allocated on a local bridge.
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe localBridge
 
-            conferenceBridges[bridge2] = 1
+            conferenceBridges[bridge2] = ConferenceBridgeProperties(1)
             // A participant in an unknown region should be allocated on the least loaded (according to the order of
             // 'allBridges') existing conference bridge.
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe bridge2
@@ -74,7 +74,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             val highStressBridge = createBridge(highStressRegion, 0.8)
             val allBridges = listOf(lowStressBridge, mediumStressBridge, highStressBridge)
 
-            val conferenceBridges = mutableMapOf<Bridge, Int>()
+            val conferenceBridges = mutableMapOf<Bridge, ConferenceBridgeProperties>()
             // Initial selection should select a bridge in the participant's region.
             strategy.select(allBridges, conferenceBridges, highStressRegion, true) shouldBe highStressBridge
             strategy.select(allBridges, conferenceBridges, mediumStressRegion, true) shouldBe mediumStressBridge
@@ -83,7 +83,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe lowStressBridge
 
             // Now assume that the low-stressed bridge is in the conference.
-            conferenceBridges[lowStressBridge] = 1
+            conferenceBridges[lowStressBridge] = ConferenceBridgeProperties(1)
             strategy.select(allBridges, conferenceBridges, lowStressRegion, true) shouldBe lowStressBridge
             strategy.select(allBridges, conferenceBridges, mediumStressRegion, true) shouldBe mediumStressBridge
             // A participant in an unknown region should be allocated on the
@@ -91,7 +91,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe lowStressBridge
 
             // Now assume that a medium-stressed bridge is also in the conference.
-            conferenceBridges[mediumStressBridge] = 1
+            conferenceBridges[mediumStressBridge] = ConferenceBridgeProperties(1)
             // A participant in an unknown region should be allocated on the least
             // loaded (according to the order of 'allBridges') existing conference
             // bridge.
@@ -112,7 +112,7 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             val highStressBridge = createBridge(highStressRegion, 0.8)
             val allBridges = listOf(mediumStressBridge1, mediumStressBridge2, highStressBridge)
 
-            val conferenceBridges = mutableMapOf<Bridge, Int>()
+            val conferenceBridges = mutableMapOf<Bridge, ConferenceBridgeProperties>()
 
             // Initial selection should select a bridge in the participant's region.
             strategy.select(allBridges, conferenceBridges, highStressRegion, true) shouldBe highStressBridge
@@ -120,14 +120,14 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             strategy.select(allBridges, conferenceBridges, "invalid region", true) shouldBe mediumStressBridge1
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge1
 
-            conferenceBridges[mediumStressBridge2] = 1
+            conferenceBridges[mediumStressBridge2] = ConferenceBridgeProperties(1)
             strategy.select(allBridges, conferenceBridges, mediumStressRegion1, true) shouldBe mediumStressBridge1
             strategy.select(allBridges, conferenceBridges, mediumStressRegion2, true) shouldBe mediumStressBridge2
             // A participant in an unknown region should be allocated on the existing conference bridge.
             strategy.select(allBridges, conferenceBridges, null, true) shouldBe mediumStressBridge2
 
             // Now assume that a high-stressed bridge is in the conference.
-            conferenceBridges[highStressBridge] = 1
+            conferenceBridges[highStressBridge] = ConferenceBridgeProperties(1)
             // A participant in an unknown region should be allocated on the least
             // loaded (according to the order of 'allBridges') existing conference
             // bridge.

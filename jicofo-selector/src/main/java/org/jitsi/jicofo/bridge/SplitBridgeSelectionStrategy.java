@@ -42,7 +42,7 @@ class SplitBridgeSelectionStrategy
     @Override
     public Bridge doSelect(
         List<Bridge> bridges,
-        Map<Bridge, Integer> conferenceBridges,
+        Map<Bridge, ConferenceBridgeProperties> conferenceBridges,
         String participantRegion)
     {
         // If there's any bridge not yet in this conference, use that; otherwise
@@ -51,7 +51,9 @@ class SplitBridgeSelectionStrategy
             .filter(b -> !conferenceBridges.containsKey(b)).findFirst();
         return bridgeNotYetInConf.orElseGet(() -> conferenceBridges.entrySet().stream()
             .filter(b -> bridges.contains(b.getKey()))
-            .min(Map.Entry.comparingByValue())
+            .min(Map.Entry.comparingByValue(
+                Comparator.comparingInt(ConferenceBridgeProperties::getParticipantCount)
+            ))
             .map(Map.Entry::getKey)
             .orElse(null));
     }
@@ -59,7 +61,7 @@ class SplitBridgeSelectionStrategy
     @Override
     public Bridge select(
             List<Bridge> bridges,
-            Map<Bridge, Integer> conferenceBridges,
+            Map<Bridge, ConferenceBridgeProperties> conferenceBridges,
             String participantRegion,
             boolean allowMultiBridge)
     {

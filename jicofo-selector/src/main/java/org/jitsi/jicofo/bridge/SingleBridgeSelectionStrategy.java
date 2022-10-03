@@ -45,7 +45,7 @@ public class SingleBridgeSelectionStrategy
     @Override
     public Bridge doSelect(
             List<Bridge> bridges,
-            Map<Bridge, Integer> conferenceBridges,
+            Map<Bridge, ConferenceBridgeProperties> conferenceBridges,
             String participantRegion)
     {
         if (conferenceBridges.size() == 0)

@@ -119,7 +119,7 @@ abstract class BridgeSelectionStrategy {
      */
     open fun select(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?,
         allowMultiBridge: Boolean
     ): Bridge? {
@@ -169,7 +169,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun notLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -186,7 +186,7 @@ abstract class BridgeSelectionStrategy {
 
     fun notLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -203,7 +203,7 @@ abstract class BridgeSelectionStrategy {
 
     private fun logSelection(
         bridge: Bridge,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?,
         participantRegionGroup: Set<String>? = null
     ) {
@@ -227,7 +227,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun notLoadedInRegion(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -244,7 +244,7 @@ abstract class BridgeSelectionStrategy {
 
     fun notLoadedInRegionGroup(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -260,7 +260,7 @@ abstract class BridgeSelectionStrategy {
     }
 
     private fun updateSplitStats(
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         selectedBridge: Bridge,
         participantRegion: String?,
         participantRegionGroup: Set<String>? = null
@@ -294,7 +294,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun leastLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -310,7 +310,7 @@ abstract class BridgeSelectionStrategy {
 
     fun leastLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -335,7 +335,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun leastLoadedInRegion(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -351,7 +351,7 @@ abstract class BridgeSelectionStrategy {
 
     fun leastLoadedInRegionGroup(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -377,7 +377,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun nonLoadedAlreadyInConference(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge> {
         val result = bridges.stream()
@@ -400,7 +400,7 @@ abstract class BridgeSelectionStrategy {
      */
     fun leastLoaded(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Optional<Bridge?> {
         val result = bridges.stream().findFirst()
@@ -425,7 +425,7 @@ abstract class BridgeSelectionStrategy {
      */
     abstract fun doSelect(
         bridges: List<Bridge>,
-        conferenceBridges: Map<Bridge, Int>,
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
     ): Bridge?
 
@@ -438,12 +438,12 @@ abstract class BridgeSelectionStrategy {
      */
     private fun isOverloaded(
         bridge: Bridge,
-        conferenceBridges: Map<Bridge, Int>
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>
     ): Boolean {
         return bridge.isOverloaded || (
             maxParticipantsPerBridge > 0 &&
                 conferenceBridges.containsKey(bridge) &&
-                conferenceBridges[bridge]!! >= maxParticipantsPerBridge
+                conferenceBridges[bridge]!!.participantCount >= maxParticipantsPerBridge
             )
     }
 
