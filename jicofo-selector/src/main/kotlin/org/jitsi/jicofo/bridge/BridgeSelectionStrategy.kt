@@ -160,9 +160,9 @@ abstract class BridgeSelectionStrategy {
      * @param conferenceBridges the set of bridges that are already used in the conference.
      * @param participantRegion the participant region.
      *
-     * @return an optional that contains a bridge that is not loaded and that
-     * is already in the conference and that is in the participant region, if it
-     * exists.
+     * @return a bridge that is not loaded and that
+     * is already in the conference and that is in the participant region, if one
+     * exists, or null
      */
     fun notLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
@@ -217,8 +217,7 @@ abstract class BridgeSelectionStrategy {
      * @param bridges the list of operational bridges, ordered by load.
      * @param participantRegion the participant region.
      *
-     * @return an optional that contains a bridge that is not loaded and that is
-     * in the participant region.
+     * @return a bridge that is not loaded and that is in the participant region, if one exists, or null
      */
     fun notLoadedInRegion(
         bridges: List<Bridge>,
@@ -282,8 +281,8 @@ abstract class BridgeSelectionStrategy {
      * @param conferenceBridges the set of bridges that are already used in the conference.
      * @param participantRegion the participant region.
      *
-     * @return an optional that contains the least loaded bridge that is already
-     * in the conference and that is in the participant region if it exists.
+     * @return the least loaded bridge that is already
+     * in the conference and that is in the participant region, if it exists, or null
      */
     fun leastLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
