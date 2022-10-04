@@ -84,10 +84,18 @@ jicofo {
 
         # Set the client XMPP config in jicofo.conf. The values were either read from an existing
         # /etc/jitsi/jicofo/config or generated above.
-        hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.xmpp-domain" "$JICOFO_HOSTNAME"
-        hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.domain" "$JICOFO_AUTH_DOMAIN"
-        hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.username" "$JICOFO_AUTH_USER"
-        hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.password" "$JICOFO_AUTH_PASSWORD"
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.xmpp-domain" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.xmpp-domain" "$JICOFO_HOSTNAME"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.domain" ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.domain" "$JICOFO_AUTH_DOMAIN"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.username" ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.username" "$JICOFO_AUTH_USER"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.password" ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.password" "$JICOFO_AUTH_PASSWORD"
+        fi
 
         # Add the JvbBrewery config if missing
         if ! grep -sq "org.jitsi.jicofo.BRIDGE_MUC" "$OLD_JITSI_CONFIG" ;then
