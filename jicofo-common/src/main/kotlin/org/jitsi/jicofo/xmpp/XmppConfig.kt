@@ -183,6 +183,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
         legacyXmppDomainPropertyName.from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
+        "jicofo.xmpp.client.xmpp-domain".from(newConfig)
     }
 
     val conferenceMucJid: DomainBareJid by config {
