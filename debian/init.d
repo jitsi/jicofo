@@ -28,20 +28,6 @@ USER=jicofo
 PIDFILE=/var/run/jicofo.pid
 LOGFILE=/var/log/jitsi/jicofo.log
 DESC=jicofo
-DAEMON_OPTS=""
-if [ -n "$JICOFO_HOST" ] ;then
-  DAEMON_OPTS="$DAEMON_OPTS --host=$JICOFO_HOST"
-fi
-if [ -n "$JICOFO_HOSTNAME" ] ;then
-  DAEMON_OPTS="$DAEMON_OPTS --domain=$JICOFO_HOSTNAME"
-fi
-if [ -n "$JICOFO_AUTH_USER" ] ;then
-  DAEMON_OPTS="$DAEMON_OPTS --user_name=$JICOFO_AUTH_USER"
-fi
-if [ -n "$JICOFO_AUTH_DOMAIN" ] ;then
-  DAEMON_OPTS="$DAEMON_OPTS --user_domain=$JICOFO_AUTH_DOMAIN"
-fi
-DAEMON_OPTS="$DAEMON_OPTS $JICOFO_OPTS"
 
 
 if [ ! -x $DAEMON ] ;then
@@ -73,7 +59,7 @@ start() {
     echo -n "Starting $NAME: "
     export JICOFO_AUTH_PASSWORD JICOFO_MAX_MEMORY
     start-stop-daemon --start --quiet --background --chuid $USER --make-pidfile --pidfile $PIDFILE \
-        --exec /bin/bash -- -c "cd $DAEMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $DAEMON_OPTS < /dev/null >> $LOGFILE 2>&1"
+        --exec /bin/bash -- -c "cd $DAEMON_DIR; JAVA_SYS_PROPS=\"$JAVA_SYS_PROPS\" exec $DAEMON $JICOFO_OPTS < /dev/null >> $LOGFILE 2>&1"
     echo "$NAME started."
 }
 
