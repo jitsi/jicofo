@@ -61,11 +61,6 @@ public class JitsiMeetConfig
     public static final String PNAME_RTCSTATS_ENABLED = "rtcstatsEnabled";
 
     /**
-     * The name of the callstats enabled property.
-     */
-    public static final String PNAME_CALLSTATS_ENABLED = "callstatsEnabled";
-
-    /**
      * The name of the "startBitrate" property.
      */
     public static final String PNAME_START_BITRATE = "startBitrate";
@@ -161,14 +156,6 @@ public class JitsiMeetConfig
         return enabled == null || enabled;
     }
 
-    public boolean getCallStatsEnabled()
-    {
-        Boolean enabled = getBoolean(PNAME_CALLSTATS_ENABLED);
-        // we default to true to match the default in config.js
-        return enabled == null || enabled;
-    }
-
-
     /**
      * @return the "min bitrate" which should be included in offers.
      */
@@ -212,7 +199,6 @@ public class JitsiMeetConfig
         o.put("start_audio_muted", String.valueOf(getStartAudioMuted()));
         o.put("start_video_muted", String.valueOf(getStartVideoMuted()));
         o.put("rtcstats_enabled", getRtcStatsEnabled());
-        o.put("callstats_enabled", getCallStatsEnabled());
         o.put("min_bitrate", getMinBitrate());
         o.put("start_bitrate", getStartBitrate());
         o.put("stereo_enabled", stereoEnabled());
