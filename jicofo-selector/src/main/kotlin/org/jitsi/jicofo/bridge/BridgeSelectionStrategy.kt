@@ -134,7 +134,7 @@ abstract class BridgeSelectionStrategy {
             }
             bridge
         } else {
-            val existingBridge = conferenceBridges.keys.stream().findFirst().get()
+            val existingBridge = conferenceBridges.keys.first()
             if (!allowMultiBridge || existingBridge.relayId == null) {
                 logger.info("Existing bridge does not have a relay, will not consider other bridges.")
                 return existingBridge
