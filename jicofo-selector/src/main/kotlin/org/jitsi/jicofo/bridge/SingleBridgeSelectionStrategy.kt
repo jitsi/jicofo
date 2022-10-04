@@ -34,9 +34,8 @@ class SingleBridgeSelectionStrategy : BridgeSelectionStrategy() {
         participantRegion: String?
     ): Bridge? {
         if (conferenceBridges.isEmpty()) {
-            return leastLoadedInRegion(bridges, emptyMap(), participantRegion).orElseGet {
-                leastLoaded(bridges, emptyMap(), participantRegion).orElse(null)
-            }
+            return leastLoadedInRegion(bridges, emptyMap(), participantRegion)
+                ?: leastLoaded(bridges, emptyMap(), participantRegion)
         } else if (conferenceBridges.size != 1) {
             logger.error("Unexpected number of bridges with SingleBridgeSelectionStrategy: ${conferenceBridges.size}")
             return null

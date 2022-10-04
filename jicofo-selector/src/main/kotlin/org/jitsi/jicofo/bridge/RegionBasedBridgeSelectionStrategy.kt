@@ -87,10 +87,10 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
         if (bridges.isEmpty()) {
             return null
         }
-        var r = participantRegion ?: localRegion
+        var region = participantRegion ?: localRegion
         if (localRegion != null) {
-            val regionGroup = getRegionGroup(r)
-            if (conferenceBridges.isEmpty() && r != JicofoConfig.config.localRegion()) {
+            val regionGroup = getRegionGroup(region)
+            if (conferenceBridges.isEmpty() && region != JicofoConfig.config.localRegion()) {
                 // Selecting an initial bridge for a participant not in the local region. This is most likely because
                 // exactly one of the first two participants in the conference is not in the local region, and we're
                 // selecting for it first. I.e. there is another participant in the local region which will be
@@ -98,37 +98,25 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
                 if (regionGroup.contains(localRegion)) {
                     // With the above assumption, there are two participants in the local region group. Therefore,
                     // they will use the same bridge. Prefer to use a bridge in the local region.
-                    r = localRegion
+                    region = localRegion
                 }
             }
 
             // If there are no bridges in the participant region or region group, select from the local region instead.
             if (bridges.none { regionGroup.contains(it.region) }) {
-                r = localRegion
+                region = localRegion
             }
         }
-        val region = r
-        /* ktlint-disable max-line-length */ /* Will be fixed when we switch to Bridge? from Optional<Bridge> */
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet {
-            notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet {
-                notLoadedInRegion(bridges, conferenceBridges, region).orElseGet {
-                    notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet {
-                        leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region).orElseGet {
-                            leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet {
-                                leastLoadedInRegion(bridges, conferenceBridges, region).orElseGet {
-                                    leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region)).orElseGet {
-                                        nonLoadedAlreadyInConference(bridges, conferenceBridges, region).orElseGet {
-                                            leastLoaded(bridges, conferenceBridges, region).orElse(null)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        /* ktlint-enable max-line-length */
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
+            ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: notLoadedInRegion(bridges, conferenceBridges, region)
+            ?: notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
+            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: leastLoadedInRegion(bridges, conferenceBridges, region)
+            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: nonLoadedAlreadyInConference(bridges, conferenceBridges, region)
+            ?: leastLoaded(bridges, conferenceBridges, region)
     }
 
     override fun toString(): String {

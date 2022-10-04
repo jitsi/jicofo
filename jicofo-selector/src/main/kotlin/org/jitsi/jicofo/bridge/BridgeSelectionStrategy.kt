@@ -15,12 +15,9 @@
  */
 package org.jitsi.jicofo.bridge
 
-import org.glassfish.jersey.internal.guava.Predicates.not
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.json.simple.JSONObject
-import java.util.*
-import java.util.function.Predicate
 
 /**
  * Represents an algorithm for bridge selection.
@@ -171,15 +168,14 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(not { b -> isOverloaded(b, conferenceBridges) })
-            .filter(selectFrom(conferenceBridges.keys))
-            .filter(inRegion(participantRegion))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .filterNot { isOverloaded(it, conferenceBridges) }
+            .intersect(conferenceBridges.keys)
+            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+        if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegion++
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -188,15 +184,14 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(not { b -> isOverloaded(b, conferenceBridges) })
-            .filter(selectFrom(conferenceBridges.keys))
-            .filter(inRegionGroup(participantRegionGroup))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .filterNot { isOverloaded(it, conferenceBridges) }
+            .intersect(conferenceBridges.keys)
+            .firstOrNull { participantRegionGroup.contains(it.region) }
+        if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result.get(), conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
     }
@@ -229,15 +224,14 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(not { b: Bridge -> isOverloaded(b, conferenceBridges) })
-            .filter(inRegion(participantRegion))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .filterNot { isOverloaded(it, conferenceBridges) }
+            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+        if (result != null) {
             totalNotLoadedInRegion++
-            updateSplitStats(conferenceBridges, result.get(), participantRegion)
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            updateSplitStats(conferenceBridges, result, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -246,15 +240,14 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(not { b: Bridge -> isOverloaded(b, conferenceBridges) })
-            .filter(inRegionGroup(participantRegionGroup))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .filterNot { isOverloaded(it, conferenceBridges) }
+            .firstOrNull { participantRegionGroup.contains(it.region) }
+        if (result != null) {
             totalNotLoadedInRegionGroup++
-            updateSplitStats(conferenceBridges, result.get(), null, participantRegionGroup)
-            logSelection(result.get(), conferenceBridges, null, participantRegionGroup)
+            updateSplitStats(conferenceBridges, result, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
     }
@@ -269,9 +262,9 @@ abstract class BridgeSelectionStrategy {
             // We added a new bridge to the conference. Was it because the
             // conference had no bridges in that region, or because it had
             // some, but they were over loaded?
-            if (participantRegion != null && conferenceBridges.keys.stream().anyMatch(inRegion(participantRegion)) || (
+            if (participantRegion != null && conferenceBridges.keys.any { it.region.equals(participantRegion) } || (
                 participantRegionGroup != null &&
-                    conferenceBridges.keys.stream().anyMatch(inRegionGroup(participantRegionGroup))
+                    conferenceBridges.keys.any { participantRegionGroup.contains(it.region) }
                 )
             ) {
                 totalSplitDueToLoad++
@@ -296,14 +289,13 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(selectFrom(conferenceBridges.keys))
-            .filter(inRegion(participantRegion))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .intersect(conferenceBridges.keys)
+            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+        if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegion++
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -312,14 +304,13 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(selectFrom(conferenceBridges.keys))
-            .filter(inRegionGroup(participantRegionGroup))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .intersect(conferenceBridges.keys)
+            .firstOrNull { participantRegionGroup.contains(it.region) }
+        if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result.get(), conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
     }
@@ -330,21 +321,19 @@ abstract class BridgeSelectionStrategy {
      * @param bridges the list of operational bridges, ordered by load.
      * @param participantRegion the participant region.
      *
-     * @return an optional that contains the least loaded bridge in the
-     * participant's region if it exists.
+     * @return the least loaded bridge in the participant's region, if it exists, or null.
      */
     fun leastLoadedInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(inRegion(participantRegion))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+        if (result != null) {
             totalLeastLoadedInRegion++
-            updateSplitStats(conferenceBridges, result.get(), participantRegion)
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            updateSplitStats(conferenceBridges, result, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -353,14 +342,13 @@ abstract class BridgeSelectionStrategy {
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegionGroup: Set<String>
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(inRegionGroup(participantRegionGroup))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .firstOrNull { participantRegionGroup.contains(it.region) }
+        if (result != null) {
             totalLeastLoadedInRegionGroup++
-            updateSplitStats(conferenceBridges, result.get(), null, participantRegionGroup)
-            logSelection(result.get(), conferenceBridges, null, participantRegionGroup)
+            updateSplitStats(conferenceBridges, result, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
     }
@@ -372,21 +360,20 @@ abstract class BridgeSelectionStrategy {
      * @param conferenceBridges the set of bridges that are already used in the
      * conference.
      *
-     * @return an optional that contains the least loaded bridge that is already
-     * in the  conference, if it exists.
+     * @return the least loaded bridge that is already in the conference, if it exists, or null
      */
     fun nonLoadedAlreadyInConference(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge> {
-        val result = bridges.stream()
-            .filter(not { b -> isOverloaded(b, conferenceBridges) })
-            .filter(selectFrom(conferenceBridges.keys))
-            .findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges
+            .filterNot { b -> isOverloaded(b, conferenceBridges) }
+            .intersect(conferenceBridges.keys)
+            .firstOrNull()
+        if (result != null) {
             totalLeastLoadedAlreadyInConference++
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -396,18 +383,18 @@ abstract class BridgeSelectionStrategy {
      *
      * @param bridges the list of operational bridges, ordered by load.
      *
-     * @return an optional that contains the least loaded bridge if it exists.
+     * @return the least loaded bridge, if it exists, or null.
      */
     fun leastLoaded(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantRegion: String?
-    ): Optional<Bridge?> {
-        val result = bridges.stream().findFirst()
-        if (result.isPresent) {
+    ): Bridge? {
+        val result = bridges.firstOrNull()
+        if (result != null) {
             totalLeastLoaded++
-            updateSplitStats(conferenceBridges, result.get(), participantRegion)
-            logSelection(result.get(), conferenceBridges, participantRegion)
+            updateSplitStats(conferenceBridges, result, participantRegion)
+            logSelection(result, conferenceBridges, participantRegion)
         }
         return result
     }
@@ -472,17 +459,5 @@ abstract class BridgeSelectionStrategy {
         private val logger: Logger = LoggerImpl(
             BridgeSelectionStrategy::class.java.name
         )
-
-        private fun selectFrom(conferenceBridges: Collection<Bridge>?): Predicate<Bridge> {
-            return Predicate { b -> conferenceBridges != null && conferenceBridges.contains(b) }
-        }
-
-        private fun inRegion(region: String?): Predicate<Bridge> {
-            return Predicate { b -> region != null && region.equals(b.region, ignoreCase = true) }
-        }
-
-        private fun inRegionGroup(regionGroup: Set<String>): Predicate<Bridge> {
-            return Predicate { b -> regionGroup.contains(b.region) }
-        }
     }
 }

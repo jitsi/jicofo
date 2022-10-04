@@ -30,15 +30,12 @@ class IntraRegionBridgeSelectionStrategy : BridgeSelectionStrategy() {
         }
         if (conferenceBridges.isEmpty()) {
             // Try to match the participant region for the initial selection
-            return notLoadedInRegion(bridges, conferenceBridges, participantRegion).orElseGet {
-                leastLoaded(bridges, conferenceBridges, participantRegion).orElse(null)
-            }
+            return notLoadedInRegion(bridges, conferenceBridges, participantRegion)
+                ?: leastLoaded(bridges, conferenceBridges, participantRegion)
         }
-        val conferenceRegion = conferenceBridges.keys.stream().findFirst().get().region
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion).orElseGet {
-            notLoadedInRegion(bridges, conferenceBridges, conferenceRegion).orElseGet {
-                leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion).orElse(null)
-            }
-        }
+        val conferenceRegion = conferenceBridges.keys.first().region
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion)
+            ?: notLoadedInRegion(bridges, conferenceBridges, conferenceRegion)
+            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion)
     }
 }
