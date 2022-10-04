@@ -21,13 +21,11 @@ import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
 import org.jitsi.config.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.metaconfig.*;
 import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 
-import static org.apache.commons.lang3.StringUtils.*;
 
 /**
  * Provides the <tt>main</tt> entry point of Jitsi Meet conference focus.
@@ -52,7 +50,6 @@ public class Main
                 logger.error("An uncaught exception occurred in thread=" + t, e));
 
         setupMetaconfigLogger();
-        setSystemProperties(args);
         JitsiConfig.Companion.reloadNewConfig();
 
         // Make sure that passwords are not printed by ConfigurationService
@@ -97,66 +94,6 @@ public class Main
         jicofoServices.shutdown();
         TaskPools.shutdown();
         JicofoServices.setJicofoServicesSingleton(null);
-    }
-
-    /**
-     * Read the command line arguments and env variables, and set the corresponding system properties used for
-     * configuration of the XMPP component and client connections.
-     */
-    private static void setSystemProperties(String[] args)
-            throws ParseException
-    {
-        CmdLine cmdLine = new CmdLine();
-
-        // We may end execution here if one of required arguments is missing
-        cmdLine.parse(args);
-
-        // XMPP host/domain
-        String host;
-        String componentDomain;
-        // Try to get domain, can be null after this call(we'll fix that later)
-        componentDomain = cmdLine.getOptionValue("domain");
-        // Host name
-        host = cmdLine.getOptionValue("--host", componentDomain == null ? "localhost" : componentDomain);
-        // Try to fix component domain
-        if (isBlank(componentDomain))
-        {
-            componentDomain = host;
-        }
-        if (componentDomain != null)
-        {
-            // For backward compat, the "--domain" command line argument controls the domain for the XMPP component
-            // as well as XMPP client connection.
-            System.setProperty(XmppClientConnectionConfig.legacyXmppDomainPropertyName, componentDomain);
-        }
-        if (host != null)
-        {
-            // For backward compat, the "--host" command line argument controls the hostname for the XMPP component
-            // as well as XMPP client connection.
-            System.setProperty(XmppClientConnectionConfig.legacyHostnamePropertyName, host);
-        }
-
-        // XMPP client connection
-        String focusDomain = cmdLine.getOptionValue("--user_domain");
-        String focusUserName = cmdLine.getOptionValue("--user_name");
-        String focusPassword = cmdLine.getOptionValue("--user_password");
-        if (isBlank(focusPassword))
-        {
-            focusPassword = System.getenv("JICOFO_AUTH_PASSWORD");
-        }
-
-        if (focusDomain != null)
-        {
-            System.setProperty(XmppClientConnectionConfig.legacyDomainPropertyName, focusDomain);
-        }
-        if (focusUserName != null)
-        {
-            System.setProperty(XmppClientConnectionConfig.legacyUsernamePropertyName, focusUserName);
-        }
-        if (isNotBlank(focusPassword))
-        {
-            System.setProperty(XmppClientConnectionConfig.legacyPasswordPropertyName, focusPassword);
-        }
     }
 
     private static void setupMetaconfigLogger()
