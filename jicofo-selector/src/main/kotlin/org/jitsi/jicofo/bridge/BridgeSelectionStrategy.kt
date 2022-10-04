@@ -367,7 +367,7 @@ abstract class BridgeSelectionStrategy {
         participantRegion: String?
     ): Bridge? {
         val result = bridges
-            .filterNot { b -> isOverloaded(b, conferenceBridges) }
+            .filterNot { isOverloaded(it, conferenceBridges) }
             .intersect(conferenceBridges.keys)
             .firstOrNull()
         if (result != null) {
