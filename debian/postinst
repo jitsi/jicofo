@@ -87,13 +87,13 @@ jicofo {
         if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.xmpp-domain" > /dev/null 2>&1 ;then
             hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.xmpp-domain" "$JICOFO_HOSTNAME"
         fi
-        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.domain" ;then
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.domain" > /dev/null 2>&1 ;then
             hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.domain" "$JICOFO_AUTH_DOMAIN"
         fi
-        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.username" ;then
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.username" > /dev/null 2>&1 ;then
             hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.username" "$JICOFO_AUTH_USER"
         fi
-        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.password" ;then
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.password" > /dev/null 2>&1 ;then
             hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.password" "$JICOFO_AUTH_PASSWORD"
         fi
 
