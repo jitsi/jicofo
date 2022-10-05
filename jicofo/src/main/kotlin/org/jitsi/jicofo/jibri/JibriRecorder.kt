@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
@@ -57,7 +58,9 @@ class JibriRecorder(
     private var jibriSession: JibriSession? = null
 
     fun shutdown() {
-        jibriSession?.stop(null)
+        jibriSession?.let {
+            TaskPools.ioPool.submit { it.stop(null) }
+        }
         jibriSession = null
     }
 
