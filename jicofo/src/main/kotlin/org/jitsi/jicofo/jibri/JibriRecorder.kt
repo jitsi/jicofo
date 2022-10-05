@@ -99,7 +99,7 @@ class JibriRecorder(
         } else {
             val sessionId = generateSessionId()
             try {
-                jibriSession = JibriSession(
+                val jibriSession = JibriSession(
                     this,
                     conference.roomName,
                     iq.from,
@@ -108,10 +108,10 @@ class JibriRecorder(
                     jibriDetector,
                     false, null, iq.displayName, iq.streamId, iq.youtubeBroadcastId, sessionId, iq.appData,
                     logger
-                ).apply {
-                    start()
-                    logger.info("Started Jibri session")
-                }
+                )
+                this.jibriSession = jibriSession
+                jibriSession.start()
+                logger.info("Started Jibri session")
                 JibriIq.createResult(iq, sessionId)
             } catch (exc: StartException) {
                 jibriSession = null
