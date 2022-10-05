@@ -137,6 +137,12 @@ jicofo {
             chmod 750 "$CONFIG_DIR"
         fi
 
+        if [ -d /etc/logrotate.d/jicofo ] ;then
+            # An earlier version of the package incorrectly installed a directory in logrotate.d. If that's the case
+            # remove it, so the file can be properly installed.
+            rm -rf /etc/logrotate.d/jicofo
+        fi
+
         # die logz
         if [ ! -d /var/log/jitsi ]; then
             mkdir -p /var/log/jitsi
