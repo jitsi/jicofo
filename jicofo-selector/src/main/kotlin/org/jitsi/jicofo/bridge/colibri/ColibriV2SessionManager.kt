@@ -23,6 +23,7 @@ import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -223,11 +224,11 @@ class ColibriV2SessionManager(
         return Pair(session, true)
     }
 
-    /** Get the bridge-to-participant-count needed for bridge selection. */
-    private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
+    /** Get the bridge-to-bridge-properties map needed for bridge selection. */
+    private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
-            .associate { Pair(it.key.bridge, it.value.size) }
+            .associate { Pair(it.key.bridge, ConferenceBridgeProperties(it.value.size)) }
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)

@@ -153,7 +153,7 @@ class BridgeSelector @JvmOverloads constructor(
     @Synchronized
     @JvmOverloads
     fun selectBridge(
-        conferenceBridges: Map<Bridge, Int> = emptyMap(),
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),
         participantRegion: String? = null,
         /**
          * A specific jitsi-videobridge version to use, or null to use any version. If conferenceBridges is non-empty
@@ -253,3 +253,7 @@ class BridgeSelector @JvmOverloads constructor(
         fun bridgeIsShuttingDown(bridge: Bridge) {}
     }
 }
+
+data class ConferenceBridgeProperties(
+    val participantCount: Int
+)

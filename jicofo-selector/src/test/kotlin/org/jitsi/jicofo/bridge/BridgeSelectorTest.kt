@@ -122,11 +122,17 @@ class BridgeSelectorTest : ShouldSpec() {
                 bridgeSelector.selectBridge(version = "v-nonexistent") shouldBe null
             }
             context("From an existing conference bridge") {
-                bridgeSelector.selectBridge(conferenceBridges = mapOf(jvb1 to 1)) shouldBe jvb1
+                bridgeSelector.selectBridge(
+                    conferenceBridges = mapOf(jvb1 to ConferenceBridgeProperties(1))
+                ) shouldBe jvb1
                 val jvb3 = bridgeSelector.addJvbAddress(jid3).apply {
                     setStats(version = "v1", stress = 0.1, region = "r")
                 }
-                bridgeSelector.selectBridge(conferenceBridges = mapOf(jvb1 to 1)) shouldBe jvb3
+                bridgeSelector.selectBridge(
+                    conferenceBridges = mapOf(
+                        jvb1 to ConferenceBridgeProperties(1)
+                    )
+                ) shouldBe jvb3
             }
         }
         context(config = regionBasedConfig, name = "Selection with a conference bridge removed from the selector") {
@@ -137,8 +143,22 @@ class BridgeSelectorTest : ShouldSpec() {
 
             regionBasedSelector.removeJvbAddress(jid3)
 
-            regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), null) shouldBe jvb1
-            regionBasedSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1, jvb3 to 1), "r2") shouldBe jvb2
+            regionBasedSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1),
+                    jvb2 to ConferenceBridgeProperties(1),
+                    jvb3 to ConferenceBridgeProperties(1)
+                ),
+                null
+            ) shouldBe jvb1
+            regionBasedSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1),
+                    jvb2 to ConferenceBridgeProperties(1),
+                    jvb3 to ConferenceBridgeProperties(1)
+                ),
+                "r2"
+            ) shouldBe jvb2
         }
         context(config = splitConfig, name = "SplitBridgeSelectionStrategy") {
             val splitSelector = BridgeSelector(clock)
@@ -147,13 +167,38 @@ class BridgeSelectorTest : ShouldSpec() {
             val jvb3 = splitSelector.addJvbAddress(jid3).apply { setStats(stress = 0.1, region = "r3") }
 
             splitSelector.selectBridge() shouldBeIn setOf(jvb1, jvb2, jvb3)
-            splitSelector.selectBridge(mapOf(jvb1 to 1), null) shouldBeIn setOf(jvb2, jvb3)
-            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 1), null) shouldBe jvb3
-            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb1
+            splitSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1)
+                ),
+                null
+            ) shouldBeIn setOf(jvb2, jvb3)
+            splitSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1),
+                    jvb2 to ConferenceBridgeProperties(1)
+                ),
+                null
+            ) shouldBe jvb3
+            splitSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1),
+                    jvb2 to ConferenceBridgeProperties(2),
+                    jvb3 to ConferenceBridgeProperties(3)
+                ),
+                null
+            ) shouldBe jvb1
 
             splitSelector.removeJvbAddress(jid1)
 
-            splitSelector.selectBridge(mapOf(jvb1 to 1, jvb2 to 2, jvb3 to 3), null) shouldBe jvb2
+            splitSelector.selectBridge(
+                mapOf(
+                    jvb1 to ConferenceBridgeProperties(1),
+                    jvb2 to ConferenceBridgeProperties(2),
+                    jvb3 to ConferenceBridgeProperties(3)
+                ),
+                null
+            ) shouldBe jvb2
         }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
