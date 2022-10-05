@@ -1,0 +1,14 @@
+#!/bin/bash
+# preinst script for jicofo
+
+set -e
+echo "Running preinst $@"
+
+if [ "$1" == "upgrade" ] ;then
+    if [ -d /etc/logrotate.d/jicofo ] ;then
+        # An earlier version of the package incorrectly installed a directory in logrotate.d. If that's the case
+        # remove it, so the file can be properly installed.
+        echo "/etc/logrotate.d/jicofo is a directory, removing."
+        rm -rf /etc/logrotate.d/jicofo
+    fi
+fi
