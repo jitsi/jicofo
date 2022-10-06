@@ -44,27 +44,8 @@ case "$1" in
             fi
             JICOFO_AUTH_PASSWORD="$RET"
 
-            # storing default. TODO: move this to jicofo.conf
-            echo '# Jitsi Conference Focus settings' > $CONFIG
-            echo '# sets the host name of the XMPP server' >> $CONFIG
-            echo "JICOFO_HOST=localhost" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the XMPP domain (default: none)' >> $CONFIG
-            echo "JICOFO_HOSTNAME=$JICOFO_HOSTNAME" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the XMPP domain name to use for XMPP user logins' >> $CONFIG
-            echo "JICOFO_AUTH_DOMAIN=$JICOFO_AUTH_DOMAIN" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the username to use for XMPP user logins' >> $CONFIG
-            echo "JICOFO_AUTH_USER=$JICOFO_AUTH_USER" >> $CONFIG
-            echo >> $CONFIG
-            echo '# sets the password to use for XMPP user logins' >> $CONFIG
-            echo "JICOFO_AUTH_PASSWORD=$JICOFO_AUTH_PASSWORD" >> $CONFIG
-            echo >> $CONFIG
-            echo '# extra options to pass to the jicofo daemon' >> $CONFIG
-            echo "JICOFO_OPTS=\"\"" >> $CONFIG
-            echo >> $CONFIG
-            echo '# adds java system props that are passed to jicofo (default are for home and logging config file)' >> $CONFIG
+            # This re-creates $CONFIG. If previous values existed, they will be set in jicofo.conf below.
+            echo '# adds java system props that are passed to jicofo (default are for home and logging config file)' > $CONFIG
             echo "JAVA_SYS_PROPS=\"-Dnet.java.sip.communicator.SC_HOME_DIR_LOCATION=/etc/jitsi\
  -Dnet.java.sip.communicator.SC_HOME_DIR_NAME=jicofo\
  -Dnet.java.sip.communicator.SC_LOG_DIR_LOCATION=/var/log/jitsi\
@@ -100,6 +81,21 @@ jicofo {
 
         # Make sure the client-proxy is set correctly.
         hocon -f $HOCON_CONFIG set jicofo.xmpp.client.client-proxy "focus.$JVB_HOSTNAME"
+
+        # Set the client XMPP config in jicofo.conf. The values were either read from an existing
+        # /etc/jitsi/jicofo/config or generated above.
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.xmpp-domain" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.xmpp-domain" "$JICOFO_HOSTNAME"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.domain" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.domain" "$JICOFO_AUTH_DOMAIN"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.username" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.username" "$JICOFO_AUTH_USER"
+        fi
+        if ! hocon -f $HOCON_CONFIG get "jicofo.xmpp.client.password" > /dev/null 2>&1 ;then
+            hocon -f $HOCON_CONFIG set "jicofo.xmpp.client.password" "$JICOFO_AUTH_PASSWORD"
+        fi
 
         # Add the JvbBrewery config if missing
         if ! grep -sq "org.jitsi.jicofo.BRIDGE_MUC" "$OLD_JITSI_CONFIG" ;then
