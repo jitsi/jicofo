@@ -86,18 +86,6 @@ abstract class BridgeSelectionStrategy {
     private var totalLeastLoaded = 0
 
     /**
-     * Total number of times a new bridge was added to a conference to satisfy
-     * the desired region.
-     */
-    private var totalSplitDueToRegion = 0
-
-    /**
-     * Total number of times a new bridge was added to a conference due to
-     * load.
-     */
-    private var totalSplitDueToLoad = 0
-
-    /**
      * Maximum participants per bridge in one conference, or `-1` for no maximum.
      */
     private val maxParticipantsPerBridge =
@@ -229,7 +217,6 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
         if (result != null) {
             totalNotLoadedInRegion++
-            updateSplitStats(conferenceBridges, result, participantRegion)
             logSelection(result, conferenceBridges, participantRegion)
         }
         return result
@@ -245,32 +232,9 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { participantRegionGroup.contains(it.region) }
         if (result != null) {
             totalNotLoadedInRegionGroup++
-            updateSplitStats(conferenceBridges, result, null, participantRegionGroup)
             logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
-    }
-
-    private fun updateSplitStats(
-        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        selectedBridge: Bridge,
-        participantRegion: String?,
-        participantRegionGroup: Set<String>? = null
-    ) {
-        if (conferenceBridges.isNotEmpty() && !conferenceBridges.containsKey(selectedBridge)) {
-            // We added a new bridge to the conference. Was it because the
-            // conference had no bridges in that region, or because it had
-            // some, but they were over loaded?
-            if (participantRegion != null && conferenceBridges.keys.any { it.region.equals(participantRegion) } || (
-                participantRegionGroup != null &&
-                    conferenceBridges.keys.any { participantRegionGroup.contains(it.region) }
-                )
-            ) {
-                totalSplitDueToLoad++
-            } else {
-                totalSplitDueToRegion++
-            }
-        }
     }
 
     /**
@@ -331,7 +295,6 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
         if (result != null) {
             totalLeastLoadedInRegion++
-            updateSplitStats(conferenceBridges, result, participantRegion)
             logSelection(result, conferenceBridges, participantRegion)
         }
         return result
@@ -346,7 +309,6 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { participantRegionGroup.contains(it.region) }
         if (result != null) {
             totalLeastLoadedInRegionGroup++
-            updateSplitStats(conferenceBridges, result, null, participantRegionGroup)
             logSelection(result, conferenceBridges, null, participantRegionGroup)
         }
         return result
@@ -392,7 +354,6 @@ abstract class BridgeSelectionStrategy {
         val result = bridges.firstOrNull()
         if (result != null) {
             totalLeastLoaded++
-            updateSplitStats(conferenceBridges, result, participantRegion)
             logSelection(result, conferenceBridges, participantRegion)
         }
         return result
@@ -446,8 +407,6 @@ abstract class BridgeSelectionStrategy {
             json["total_least_loaded_in_region_group"] = totalLeastLoadedInRegionGroup
             json["total_least_loaded_in_conference"] = totalLeastLoadedAlreadyInConference
             json["total_least_loaded"] = totalLeastLoaded
-            json["total_split_due_to_region"] = totalSplitDueToRegion
-            json["total_split_due_to_load"] = totalSplitDueToLoad
             return json
         }
 
