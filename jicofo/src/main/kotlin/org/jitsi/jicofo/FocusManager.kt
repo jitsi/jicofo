@@ -400,7 +400,9 @@ class FocusManager @JvmOverloads constructor(
                     // Loop over conferences
                     conferenceCopy.filterNot { it.hasHadAtLeastOneParticipant() }.forEach { it ->
                         if (Duration.between(it.creationTime, Instant.now()) > timeout) {
-                            logger.info("Expiring $it")
+                            if (it.includeInStatistics()) {
+                                logger.info("Expiring $it")
+                            }
                             it.stop()
                         }
                     }
