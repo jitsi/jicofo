@@ -257,3 +257,27 @@ class BridgeSelector @JvmOverloads constructor(
 data class ConferenceBridgeProperties(
     val participantCount: Int
 )
+
+data class ParticipantProperties(
+    val region: String?
+) {
+    val regionGroup: Set<String> by lazy { getRegionGroup(region) }
+
+    companion object {
+        private val regionGroups: MutableMap<String, Set<String>> = HashMap()
+
+        init {
+            BridgeConfig.config.regionGroups.forEach { regionGroup ->
+                regionGroup.forEach { region ->
+                    regionGroups[region] = regionGroup
+                }
+            }
+        }
+
+        fun getRegionGroup(region: String?): Set<String> {
+            if (region == null) return setOf()
+            val regionGroup = regionGroups[region]
+            return regionGroup ?: setOf(region)
+        }
+    }
+}

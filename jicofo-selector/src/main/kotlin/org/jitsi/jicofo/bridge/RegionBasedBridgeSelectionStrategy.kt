@@ -62,9 +62,6 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
     private val regionGroups: MutableMap<String, Set<String>> = HashMap()
     val localRegion = JicofoConfig.config.localRegion()
 
-    /**
-     * Default constructor.
-     */
     init {
         BridgeConfig.config.regionGroups.forEach { regionGroup ->
             regionGroup.forEach { region ->
