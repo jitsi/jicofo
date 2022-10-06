@@ -59,7 +59,6 @@ class ColibriV2SessionManager(
      * at the time this constructor is called.
      */
     internal val meetingId: String,
-    internal val callstatsEnabled: Boolean,
     internal val rtcStatsEnabled: Boolean,
     private val bridgeVersion: String?,
     parentLogger: Logger

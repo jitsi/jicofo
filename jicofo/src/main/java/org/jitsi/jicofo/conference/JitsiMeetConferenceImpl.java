@@ -284,7 +284,6 @@ public class JitsiMeetConferenceImpl
                     jicofoServices.getBridgeSelector(),
                     getRoomName().toString(),
                     meetingId,
-                    config.getCallStatsEnabled(),
                     config.getRtcStatsEnabled(),
                     jvbVersion,
                     logger);
