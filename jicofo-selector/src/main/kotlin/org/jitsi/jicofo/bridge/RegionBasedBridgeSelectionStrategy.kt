@@ -59,22 +59,7 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
     /**
      * Map a region to the set of all regions in its group (including itself).
      */
-    private val regionGroups: MutableMap<String, Set<String>> = HashMap()
     val localRegion = JicofoConfig.config.localRegion()
-
-    init {
-        BridgeConfig.config.regionGroups.forEach { regionGroup ->
-            regionGroup.forEach { region ->
-                regionGroups[region] = regionGroup
-            }
-        }
-    }
-
-    private fun getRegionGroup(region: String?): Set<String> {
-        if (region == null) return setOf()
-        val regionGroup = regionGroups[region]
-        return regionGroup ?: setOf(region)
-    }
 
     override fun doSelect(
         bridges: List<Bridge>,
@@ -86,8 +71,8 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
         }
         var region = participantRegion ?: localRegion
         if (localRegion != null) {
-            val regionGroup = getRegionGroup(region)
-            if (conferenceBridges.isEmpty() && region != JicofoConfig.config.localRegion()) {
+            val regionGroup = ParticipantProperties.getRegionGroup(region)
+            if (conferenceBridges.isEmpty() && region != localRegion) {
                 // Selecting an initial bridge for a participant not in the local region. This is most likely because
                 // exactly one of the first two participants in the conference is not in the local region, and we're
                 // selecting for it first. I.e. there is another participant in the local region which will be
@@ -105,13 +90,13 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
             }
         }
         return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
-            ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, region)
             ?: notLoadedInRegion(bridges, conferenceBridges, region)
-            ?: notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: notLoadedInRegionGroup(bridges, conferenceBridges, region)
             ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
-            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, region)
             ?: leastLoadedInRegion(bridges, conferenceBridges, region)
-            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
+            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, region)
             ?: nonLoadedAlreadyInConference(bridges, conferenceBridges, region)
             ?: leastLoaded(bridges, conferenceBridges, region)
     }

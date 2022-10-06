@@ -146,7 +146,8 @@ abstract class BridgeSelectionStrategy {
      *
      * @param bridges the list of operational bridges, ordered by load.
      * @param conferenceBridges the set of bridges that are already used in the conference.
-     * @param participantRegion the participant region.
+     * @param desiredRegion the selection strategy's desired region.  Depending on the policy this
+     *  may or may not be the same as the participant's region.
      *
      * @return a bridge that is not loaded and that
      * is already in the conference and that is in the participant region, if one
@@ -155,15 +156,15 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        desiredRegion: String?
     ): Bridge? {
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .intersect(conferenceBridges.keys)
-            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+            .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegion++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, desiredRegion)
         }
         return result
     }
@@ -171,15 +172,16 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegionGroup: Set<String>
+        desiredRegion: String?
     ): Bridge? {
+        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .intersect(conferenceBridges.keys)
-            .firstOrNull { participantRegionGroup.contains(it.region) }
+            .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result, conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, regionGroup)
         }
         return result
     }
@@ -187,37 +189,38 @@ abstract class BridgeSelectionStrategy {
     private fun logSelection(
         bridge: Bridge,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?,
+        desiredRegion: String?,
         participantRegionGroup: Set<String>? = null
     ) {
         val method = Thread.currentThread().stackTrace[2].methodName
         logger.debug {
-            "Bridge selected: method=$method, participantRegion=$participantRegion, " +
+            "Bridge selected: method=$method, participantRegion=$desiredRegion, " +
                 "participantRegionGroup=$participantRegionGroup, bridge=$bridge, " +
                 "conference_bridges=${conferenceBridges.keys.joinToString()}"
         }
     }
 
     /**
-     * Finds the least loaded bridge in the participant's region that is not
+     * Finds the least loaded bridge in the desired region that is not
      * overloaded.
      *
      * @param bridges the list of operational bridges, ordered by load.
-     * @param participantRegion the participant region.
+     * @param desiredRegion the selection strategy's desired region.  Depending on the policy this
+     *  may or may not be the same as the participant's region.
      *
      * @return a bridge that is not loaded and that is in the participant region, if one exists, or null
      */
     fun notLoadedInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        desiredRegion: String?
     ): Bridge? {
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
-            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+            .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalNotLoadedInRegion++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, desiredRegion)
         }
         return result
     }
@@ -225,25 +228,27 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegionGroup: Set<String>
+        desiredRegion: String?
     ): Bridge? {
+        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
-            .firstOrNull { participantRegionGroup.contains(it.region) }
+            .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalNotLoadedInRegionGroup++
-            logSelection(result, conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, regionGroup)
         }
         return result
     }
 
     /**
-     * Finds the least loaded conference bridge in the participant's region that
+     * Finds the least loaded conference bridge in the desired region that
      * is already handling the conference.
      *
      * @param bridges the list of operational bridges, ordered by load.
      * @param conferenceBridges the set of bridges that are already used in the conference.
-     * @param participantRegion the participant region.
+     * @param desiredRegion the selection strategy's desired region.  Depending on the policy this
+     *  may or may not be the same as the participant's region.
      *
      * @return the least loaded bridge that is already
      * in the conference and that is in the participant region, if it exists, or null
@@ -251,14 +256,14 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        desiredRegion: String?
     ): Bridge? {
         val result = bridges
             .intersect(conferenceBridges.keys)
-            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+            .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegion++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, desiredRegion)
         }
         return result
     }
@@ -266,36 +271,38 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegionGroup: Set<String>
+        desiredRegion: String?
     ): Bridge? {
+        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
         val result = bridges
             .intersect(conferenceBridges.keys)
-            .firstOrNull { participantRegionGroup.contains(it.region) }
+            .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result, conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, regionGroup)
         }
         return result
     }
 
     /**
-     * Finds the least loaded bridge in the participant's region.
+     * Finds the least loaded bridge in a desired region.
      *
      * @param bridges the list of operational bridges, ordered by load.
-     * @param participantRegion the participant region.
+     * @param desiredRegion the selection strategy's desired region.  Depending on the policy this
+     *  may or may not be the same as the participant's region.
      *
      * @return the least loaded bridge in the participant's region, if it exists, or null.
      */
     fun leastLoadedInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        desiredRegion: String?
     ): Bridge? {
         val result = bridges
-            .firstOrNull { participantRegion != null && it.region.equals(participantRegion) }
+            .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalLeastLoadedInRegion++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, desiredRegion)
         }
         return result
     }
@@ -303,13 +310,14 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegionGroup: Set<String>
+        desiredRegion: String?
     ): Bridge? {
+        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
         val result = bridges
-            .firstOrNull { participantRegionGroup.contains(it.region) }
+            .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalLeastLoadedInRegionGroup++
-            logSelection(result, conferenceBridges, null, participantRegionGroup)
+            logSelection(result, conferenceBridges, null, regionGroup)
         }
         return result
     }
