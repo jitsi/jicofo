@@ -40,7 +40,7 @@ case "$1" in
             JICOFO_AUTH_USER="focus"
             db_get jicofo/jicofo-authpassword
             if [ -z "$RET" ] ; then
-                RET=`head -c 8 /dev/urandom | tr '\0-\377' 'a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9a-zA-Z0-9@@@@####'`
+                RET=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 16`
             fi
             JICOFO_AUTH_PASSWORD="$RET"
 
