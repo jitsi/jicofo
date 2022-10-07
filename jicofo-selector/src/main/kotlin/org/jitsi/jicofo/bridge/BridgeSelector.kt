@@ -154,7 +154,7 @@ class BridgeSelector @JvmOverloads constructor(
     @JvmOverloads
     fun selectBridge(
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),
-        participantRegion: String? = null,
+        participantProperties: ParticipantProperties = ParticipantProperties(),
         /**
          * A specific jitsi-videobridge version to use, or null to use any version. If conferenceBridges is non-empty
          * the version needs to match the version of the existing bridges.
@@ -207,7 +207,7 @@ class BridgeSelector @JvmOverloads constructor(
         return bridgeSelectionStrategy.select(
             candidateBridges,
             conferenceBridges,
-            participantRegion,
+            participantProperties,
             OctoConfig.config.enabled
         ).also {
             // The bridge was selected for an endpoint, increment its counter.
@@ -259,25 +259,5 @@ data class ConferenceBridgeProperties(
 )
 
 data class ParticipantProperties(
-    val region: String?
-) {
-    val regionGroup: Set<String> by lazy { getRegionGroup(region) }
-
-    companion object {
-        private val regionGroups: MutableMap<String, Set<String>> = HashMap()
-
-        init {
-            BridgeConfig.config.regionGroups.forEach { regionGroup ->
-                regionGroup.forEach { region ->
-                    regionGroups[region] = regionGroup
-                }
-            }
-        }
-
-        fun getRegionGroup(region: String?): Set<String> {
-            if (region == null) return setOf()
-            val regionGroup = regionGroups[region]
-            return regionGroup ?: setOf(region)
-        }
-    }
-}
+    val region: String? = null
+)

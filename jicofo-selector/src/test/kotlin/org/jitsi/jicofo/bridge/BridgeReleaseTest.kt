@@ -215,4 +215,4 @@ private const val newVersion = "new"
 private fun BridgeSelector.testSelect(
     conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),
     version: String? = null
-) = selectBridge(conferenceBridges, participantRegion = "region", version = version)
+) = selectBridge(conferenceBridges, ParticipantProperties(region = "region"), version = version)

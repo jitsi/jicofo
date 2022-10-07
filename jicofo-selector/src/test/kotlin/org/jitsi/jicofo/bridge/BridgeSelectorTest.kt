@@ -149,7 +149,7 @@ class BridgeSelectorTest : ShouldSpec() {
                     jvb2 to ConferenceBridgeProperties(1),
                     jvb3 to ConferenceBridgeProperties(1)
                 ),
-                null
+                ParticipantProperties()
             ) shouldBe jvb1
             regionBasedSelector.selectBridge(
                 mapOf(
@@ -157,7 +157,7 @@ class BridgeSelectorTest : ShouldSpec() {
                     jvb2 to ConferenceBridgeProperties(1),
                     jvb3 to ConferenceBridgeProperties(1)
                 ),
-                "r2"
+                ParticipantProperties("r2")
             ) shouldBe jvb2
         }
         context(config = splitConfig, name = "SplitBridgeSelectionStrategy") {
@@ -171,14 +171,14 @@ class BridgeSelectorTest : ShouldSpec() {
                 mapOf(
                     jvb1 to ConferenceBridgeProperties(1)
                 ),
-                null
+                ParticipantProperties()
             ) shouldBeIn setOf(jvb2, jvb3)
             splitSelector.selectBridge(
                 mapOf(
                     jvb1 to ConferenceBridgeProperties(1),
                     jvb2 to ConferenceBridgeProperties(1)
                 ),
-                null
+                ParticipantProperties()
             ) shouldBe jvb3
             splitSelector.selectBridge(
                 mapOf(
@@ -186,7 +186,7 @@ class BridgeSelectorTest : ShouldSpec() {
                     jvb2 to ConferenceBridgeProperties(2),
                     jvb3 to ConferenceBridgeProperties(3)
                 ),
-                null
+                ParticipantProperties()
             ) shouldBe jvb1
 
             splitSelector.removeJvbAddress(jid1)
@@ -197,7 +197,7 @@ class BridgeSelectorTest : ShouldSpec() {
                     jvb2 to ConferenceBridgeProperties(2),
                     jvb3 to ConferenceBridgeProperties(3)
                 ),
-                null
+                ParticipantProperties()
             ) shouldBe jvb2
         }
         context("Lost bridges stats") {
@@ -238,7 +238,9 @@ class BridgeSelectorTest : ShouldSpec() {
                 repeat(10) {
                     val start = System.currentTimeMillis()
                     for (i in 0..times) {
-                        selector.selectBridge(participantRegion = "participant-region-no-match")
+                        selector.selectBridge(
+                            participantProperties = ParticipantProperties("participant-region-no-match")
+                        )
                     }
                     val end = System.currentTimeMillis()
                     val avgNs = (end - start) * 1_000_000.toDouble() / times

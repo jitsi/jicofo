@@ -105,19 +105,19 @@ abstract class BridgeSelectionStrategy {
     open fun select(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?,
+        participantProperties: ParticipantProperties,
         allowMultiBridge: Boolean
     ): Bridge? {
         return if (conferenceBridges.isEmpty()) {
-            val bridge = doSelect(bridges, conferenceBridges, participantRegion)
+            val bridge = doSelect(bridges, conferenceBridges, participantProperties)
             if (bridge != null) {
                 logger.info(
                     "Selected initial bridge $bridge with reported stress=${bridge.lastReportedStressLevel} " +
-                        "for participantRegion=$participantRegion using strategy ${this.javaClass.simpleName}"
+                        "for participantProperties=$participantProperties using strategy ${this.javaClass.simpleName}"
                 )
             } else {
                 logger.warn(
-                    "Failed to select initial bridge for participantRegion=$participantRegion"
+                    "Failed to select initial bridge for participantProperties=$participantProperties"
                 )
             }
             bridge
@@ -127,14 +127,14 @@ abstract class BridgeSelectionStrategy {
                 logger.info("Existing bridge does not have a relay, will not consider other bridges.")
                 return existingBridge
             }
-            val bridge = doSelect(bridges, conferenceBridges, participantRegion)
+            val bridge = doSelect(bridges, conferenceBridges, participantProperties)
             if (bridge != null) {
                 logger.info(
                     "Selected bridge $bridge with stress=${bridge.lastReportedStressLevel} " +
-                        "for participantRegion=$participantRegion"
+                        "for participantProperties=$participantProperties"
                 )
             } else {
-                logger.warn("Failed to select bridge for participantRegion=$participantRegion")
+                logger.warn("Failed to select bridge for participantProperties=$participantProperties")
             }
             bridge
         }
@@ -156,6 +156,7 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
         val result = bridges
@@ -164,7 +165,7 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegion++
-            logSelection(result, conferenceBridges, desiredRegion)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -172,16 +173,17 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
+        val regionGroup = getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .intersect(conferenceBridges.keys)
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalNotLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result, conferenceBridges, null, regionGroup)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -189,13 +191,13 @@ abstract class BridgeSelectionStrategy {
     private fun logSelection(
         bridge: Bridge,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        desiredRegion: String?,
-        participantRegionGroup: Set<String>? = null
+        participantProperties: ParticipantProperties,
+        desiredRegion: String? = null
     ) {
         val method = Thread.currentThread().stackTrace[2].methodName
         logger.debug {
-            "Bridge selected: method=$method, participantRegion=$desiredRegion, " +
-                "participantRegionGroup=$participantRegionGroup, bridge=$bridge, " +
+            "Bridge selected: method=$method, desiredRegion=$desiredRegion, " +
+                "participantProperties=$participantProperties, bridge=$bridge, " +
                 "conference_bridges=${conferenceBridges.keys.joinToString()}"
         }
     }
@@ -213,6 +215,7 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
         val result = bridges
@@ -220,7 +223,7 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalNotLoadedInRegion++
-            logSelection(result, conferenceBridges, desiredRegion)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -228,15 +231,16 @@ abstract class BridgeSelectionStrategy {
     fun notLoadedInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
+        val regionGroup = getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalNotLoadedInRegionGroup++
-            logSelection(result, conferenceBridges, null, regionGroup)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -256,6 +260,7 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedAlreadyInConferenceInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
         val result = bridges
@@ -263,7 +268,7 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegion++
-            logSelection(result, conferenceBridges, desiredRegion)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -271,15 +276,16 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedAlreadyInConferenceInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
+        val regionGroup = getRegionGroup(desiredRegion)
         val result = bridges
             .intersect(conferenceBridges.keys)
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalLeastLoadedAlreadyInConferenceInRegionGroup++
-            logSelection(result, conferenceBridges, null, regionGroup)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -296,13 +302,14 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedInRegion(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
         val result = bridges
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
             totalLeastLoadedInRegion++
-            logSelection(result, conferenceBridges, desiredRegion)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -310,14 +317,15 @@ abstract class BridgeSelectionStrategy {
     fun leastLoadedInRegionGroup(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
+        participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = ParticipantProperties.getRegionGroup(desiredRegion)
+        val regionGroup = getRegionGroup(desiredRegion)
         val result = bridges
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
             totalLeastLoadedInRegionGroup++
-            logSelection(result, conferenceBridges, null, regionGroup)
+            logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
     }
@@ -334,7 +342,7 @@ abstract class BridgeSelectionStrategy {
     fun nonLoadedAlreadyInConference(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge? {
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
@@ -342,7 +350,7 @@ abstract class BridgeSelectionStrategy {
             .firstOrNull()
         if (result != null) {
             totalLeastLoadedAlreadyInConference++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, participantProperties)
         }
         return result
     }
@@ -357,12 +365,12 @@ abstract class BridgeSelectionStrategy {
     fun leastLoaded(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge? {
         val result = bridges.firstOrNull()
         if (result != null) {
             totalLeastLoaded++
-            logSelection(result, conferenceBridges, participantRegion)
+            logSelection(result, conferenceBridges, participantProperties)
         }
         return result
     }
@@ -381,7 +389,7 @@ abstract class BridgeSelectionStrategy {
     abstract fun doSelect(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge?
 
     /**
@@ -400,6 +408,22 @@ abstract class BridgeSelectionStrategy {
                 conferenceBridges.containsKey(bridge) &&
                 conferenceBridges[bridge]!!.participantCount >= maxParticipantsPerBridge
             )
+    }
+
+    private val regionGroups: MutableMap<String, Set<String>> = HashMap()
+
+    init {
+        BridgeConfig.config.regionGroups.forEach { regionGroup ->
+            regionGroup.forEach { region ->
+                regionGroups[region] = regionGroup
+            }
+        }
+    }
+
+    protected fun getRegionGroup(region: String?): Set<String> {
+        if (region == null) return setOf()
+        val regionGroup = regionGroups[region]
+        return regionGroup ?: setOf(region)
     }
 
     val stats: JSONObject

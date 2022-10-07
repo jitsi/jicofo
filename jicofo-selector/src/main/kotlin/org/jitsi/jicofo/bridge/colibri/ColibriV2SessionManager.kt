@@ -24,6 +24,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
+import org.jitsi.jicofo.bridge.ParticipantProperties
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -250,11 +251,14 @@ class ColibriV2SessionManager(
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = bridgeSelector.selectBridge(getBridges(), participant.region, bridgeVersion)
-                ?: run {
-                    eventEmitter.fireEvent { bridgeSelectionFailed() }
-                    throw BridgeSelectionFailedException()
-                }
+            val bridge = bridgeSelector.selectBridge(
+                getBridges(),
+                ParticipantProperties(participant.region),
+                bridgeVersion
+            ) ?: run {
+                eventEmitter.fireEvent { bridgeSelectionFailed() }
+                throw BridgeSelectionFailedException()
+            }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
             if (sessions.isNotEmpty() && sessions.none { it.key == bridge }) {
                 // There is an existing session, and this is a new bridge.

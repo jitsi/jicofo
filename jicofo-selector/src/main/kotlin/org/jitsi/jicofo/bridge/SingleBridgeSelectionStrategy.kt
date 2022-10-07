@@ -31,11 +31,11 @@ class SingleBridgeSelectionStrategy : BridgeSelectionStrategy() {
     override fun doSelect(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge? {
         if (conferenceBridges.isEmpty()) {
-            return leastLoadedInRegion(bridges, emptyMap(), participantRegion)
-                ?: leastLoaded(bridges, emptyMap(), participantRegion)
+            return leastLoadedInRegion(bridges, emptyMap(), participantProperties, participantProperties.region)
+                ?: leastLoaded(bridges, emptyMap(), participantProperties)
         } else if (conferenceBridges.size != 1) {
             logger.error("Unexpected number of bridges with SingleBridgeSelectionStrategy: ${conferenceBridges.size}")
             return null
