@@ -59,38 +59,21 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
     /**
      * Map a region to the set of all regions in its group (including itself).
      */
-    private val regionGroups: MutableMap<String, Set<String>> = HashMap()
     val localRegion = JicofoConfig.config.localRegion()
-
-    /**
-     * Default constructor.
-     */
-    init {
-        BridgeConfig.config.regionGroups.forEach { regionGroup ->
-            regionGroup.forEach { region ->
-                regionGroups[region] = regionGroup
-            }
-        }
-    }
-
-    private fun getRegionGroup(region: String?): Set<String> {
-        if (region == null) return setOf()
-        val regionGroup = regionGroups[region]
-        return regionGroup ?: setOf(region)
-    }
 
     override fun doSelect(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge? {
         if (bridges.isEmpty()) {
             return null
         }
+        val participantRegion = participantProperties.region
         var region = participantRegion ?: localRegion
         if (localRegion != null) {
             val regionGroup = getRegionGroup(region)
-            if (conferenceBridges.isEmpty() && region != JicofoConfig.config.localRegion()) {
+            if (conferenceBridges.isEmpty() && region != localRegion) {
                 // Selecting an initial bridge for a participant not in the local region. This is most likely because
                 // exactly one of the first two participants in the conference is not in the local region, and we're
                 // selecting for it first. I.e. there is another participant in the local region which will be
@@ -107,16 +90,16 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
                 region = localRegion
             }
         }
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
-            ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
-            ?: notLoadedInRegion(bridges, conferenceBridges, region)
-            ?: notLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
-            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, region)
-            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
-            ?: leastLoadedInRegion(bridges, conferenceBridges, region)
-            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, getRegionGroup(region))
-            ?: nonLoadedAlreadyInConference(bridges, conferenceBridges, region)
-            ?: leastLoaded(bridges, conferenceBridges, region)
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantProperties, region)
+            ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, participantProperties, region)
+            ?: notLoadedInRegion(bridges, conferenceBridges, participantProperties, region)
+            ?: notLoadedInRegionGroup(bridges, conferenceBridges, participantProperties, region)
+            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantProperties, region)
+            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, participantProperties, region)
+            ?: leastLoadedInRegion(bridges, conferenceBridges, participantProperties, region)
+            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, participantProperties, region)
+            ?: nonLoadedAlreadyInConference(bridges, conferenceBridges, participantProperties)
+            ?: leastLoaded(bridges, conferenceBridges, participantProperties)
     }
 
     override fun toString(): String {
@@ -126,7 +109,7 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
     override fun select(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?,
+        participantProperties: ParticipantProperties,
         allowMultiBridge: Boolean
     ): Bridge? {
         if (!allowMultiBridge) {
@@ -135,7 +118,7 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
                     "allow use of multiple bridges in a conference."
             )
         }
-        return super.select(bridges, conferenceBridges, participantRegion, allowMultiBridge)
+        return super.select(bridges, conferenceBridges, participantProperties, allowMultiBridge)
     }
 
     companion object {

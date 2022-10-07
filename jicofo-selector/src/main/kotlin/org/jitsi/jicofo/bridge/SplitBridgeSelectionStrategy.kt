@@ -31,7 +31,7 @@ class SplitBridgeSelectionStrategy : BridgeSelectionStrategy() {
     override fun doSelect(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties
     ): Bridge? {
         // If there's any bridge not yet in this conference, use that; otherwise
         // find the bridge with the fewest participants
@@ -45,7 +45,7 @@ class SplitBridgeSelectionStrategy : BridgeSelectionStrategy() {
     override fun select(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?,
+        participantProperties: ParticipantProperties,
         allowMultiBridge: Boolean
     ): Bridge? {
         if (!allowMultiBridge) {
@@ -54,7 +54,7 @@ class SplitBridgeSelectionStrategy : BridgeSelectionStrategy() {
                     " in jicofo.conf."
             )
         }
-        return super.select(bridges, conferenceBridges, participantRegion, true)
+        return super.select(bridges, conferenceBridges, participantProperties, true)
     }
 
     companion object {

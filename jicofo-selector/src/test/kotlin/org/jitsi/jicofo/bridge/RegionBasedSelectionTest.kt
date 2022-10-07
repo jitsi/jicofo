@@ -39,7 +39,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
         bridges: List<Bridge> = bridgesList,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),
         participantRegion: Regions? = null
-    ) = select(bridges, conferenceBridges, participantRegion?.region, true)
+    ) = select(bridges, conferenceBridges, ParticipantProperties(participantRegion?.region), true)
 
     init {
         context("Without region groups") {

@@ -23,19 +23,25 @@ class IntraRegionBridgeSelectionStrategy : BridgeSelectionStrategy() {
     override fun doSelect(
         bridges: List<Bridge>,
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
-        participantRegion: String?
+        participantProperties: ParticipantProperties,
     ): Bridge? {
+        val participantRegion = participantProperties.region
         if (bridges.isEmpty()) {
             return null
         }
         if (conferenceBridges.isEmpty()) {
             // Try to match the participant region for the initial selection
-            return notLoadedInRegion(bridges, conferenceBridges, participantRegion)
-                ?: leastLoaded(bridges, conferenceBridges, participantRegion)
+            return notLoadedInRegion(bridges, conferenceBridges, participantProperties, participantRegion)
+                ?: leastLoaded(bridges, conferenceBridges, participantProperties)
         }
         val conferenceRegion = conferenceBridges.keys.first().region
-        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion)
-            ?: notLoadedInRegion(bridges, conferenceBridges, conferenceRegion)
-            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, conferenceRegion)
+        return notLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantProperties, conferenceRegion)
+            ?: notLoadedInRegion(bridges, conferenceBridges, participantProperties, conferenceRegion)
+            ?: leastLoadedAlreadyInConferenceInRegion(
+                bridges,
+                conferenceBridges,
+                participantProperties,
+                conferenceRegion
+            )
     }
 }
