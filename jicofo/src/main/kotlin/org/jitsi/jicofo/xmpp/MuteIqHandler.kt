@@ -88,7 +88,7 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
     val jidToMute = request.jidToMute
     val doMute = request.doMute
     val mediaType = request.mediaType
-    if (doMute == null || jidToMute == null || mediaType == null) {
+    if (doMute == null || jidToMute == null) {
         logger.warn("Mute request missing required fields: ${request.iq.toXML()}")
         return RejectedWithError(request.iq, StanzaError.Condition.bad_request)
     }

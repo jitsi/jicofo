@@ -87,7 +87,9 @@ open class JicofoServices {
         conferenceStore = focusManager,
         focusManager = focusManager, // TODO do not use FocusManager directly
         authenticationAuthority = authenticationAuthority
-    )
+    ).also {
+        it.clientConnection.addRegistrationListener(focusManager)
+    }
 
     val bridgeSelector = BridgeSelector()
     private val jvbDoctor = if (BridgeConfig.config.healthChecksEnabled) {
@@ -168,6 +170,8 @@ open class JicofoServices {
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()
+        xmppServices.clientConnection.removeRegistrationListener(focusManager)
+        focusManager.stop()
         xmppServices.shutdown()
     }
 

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
@@ -57,7 +58,9 @@ class JibriRecorder(
     private var jibriSession: JibriSession? = null
 
     fun shutdown() {
-        jibriSession?.stop(null)
+        jibriSession?.let {
+            TaskPools.ioPool.submit { it.stop(null) }
+        }
         jibriSession = null
     }
 
@@ -99,7 +102,7 @@ class JibriRecorder(
         } else {
             val sessionId = generateSessionId()
             try {
-                jibriSession = JibriSession(
+                val jibriSession = JibriSession(
                     this,
                     conference.roomName,
                     iq.from,
@@ -108,10 +111,10 @@ class JibriRecorder(
                     jibriDetector,
                     false, null, iq.displayName, iq.streamId, iq.youtubeBroadcastId, sessionId, iq.appData,
                     logger
-                ).apply {
-                    start()
-                    logger.info("Started Jibri session")
-                }
+                )
+                this.jibriSession = jibriSession
+                jibriSession.start()
+                logger.info("Started Jibri session")
                 JibriIq.createResult(iq, sessionId)
             } catch (exc: StartException) {
                 jibriSession = null

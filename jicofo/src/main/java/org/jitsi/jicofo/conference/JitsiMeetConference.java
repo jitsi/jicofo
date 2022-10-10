@@ -38,7 +38,7 @@ import java.util.*;
  *
  * @author Pawel Domas
  */
-public interface JitsiMeetConference
+public interface JitsiMeetConference extends RegistrationListener
 {
     /**
      * Checks how many {@link Participant}s are in the conference.
@@ -71,11 +71,13 @@ public interface JitsiMeetConference
      */
     @Nullable ChatRoom getChatRoom();
 
+    @Nullable
     default JibriRecorder getJibriRecorder()
     {
         return null;
     }
 
+    @Nullable
     default JibriSipGateway getJibriSipGateway()
     {
         return null;

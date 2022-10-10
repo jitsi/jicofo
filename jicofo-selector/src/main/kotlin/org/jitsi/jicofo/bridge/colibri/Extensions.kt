@@ -105,7 +105,7 @@ internal fun ParticipantInfo.toEndpoint(
     create: Boolean,
     /** Whether the request should have the "expire" flag set. */
     expire: Boolean
-): Colibri2Endpoint = Colibri2Endpoint.getBuilder().apply {
+): Colibri2Endpoint.Builder = Colibri2Endpoint.getBuilder().apply {
     setId(id)
     if (create) {
         setCreate(true)
@@ -124,7 +124,7 @@ internal fun ParticipantInfo.toEndpoint(
     if (expire) {
         setExpire(true)
     }
-}.build()
+}
 
 internal fun AbstractXMPPConnection.sendIqAndHandleResponseAsync(iq: IQ, block: (IQ?) -> Unit) {
     val stanzaCollector = createStanzaCollectorAndSend(iq)

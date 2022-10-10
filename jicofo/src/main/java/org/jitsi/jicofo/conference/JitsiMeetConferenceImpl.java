@@ -187,7 +187,7 @@ public class JitsiMeetConferenceImpl
     /**
      * The conference properties that we advertise in presence in the XMPP MUC.
      */
-    private final ConferenceProperties conferenceProperties = new ConferenceProperties();
+    private final ConcurrentHashMap<String, String> conferenceProperties = new ConcurrentHashMap<>();
 
     /**
      * See {@link JitsiMeetConference#includeInStatistics()}
@@ -284,7 +284,6 @@ public class JitsiMeetConferenceImpl
                     jicofoServices.getBridgeSelector(),
                     getRoomName().toString(),
                     meetingId,
-                    config.getCallStatsEnabled(),
                     config.getRtcStatsEnabled(),
                     jvbVersion,
                     logger);
@@ -329,8 +328,6 @@ public class JitsiMeetConferenceImpl
             {
                 joinTheRoom();
             }
-
-            clientXmppProvider.addRegistrationListener(this);
 
             JibriDetector jibriDetector = jicofoServices.getJibriDetector();
             if (jibriDetector != null)
@@ -403,8 +400,6 @@ public class JitsiMeetConferenceImpl
             }
             jibriRecorder = null;
         }
-
-        getClientXmppProvider().removeRegistrationListener(this);
 
         BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
@@ -516,7 +511,7 @@ public class JitsiMeetConferenceImpl
             Boolean.TRUE.toString(),
             false);
 
-        presenceExtensions.add(ConferenceProperties.clone(conferenceProperties));
+        presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
         chatRoom.modifyPresence(null, presenceExtensions);
@@ -528,7 +523,7 @@ public class JitsiMeetConferenceImpl
      * @param key the key of the property.
      * @param value the value of the property.
      */
-    private void setConferenceProperty(String key, String value)
+    private void setConferenceProperty(@NotNull String key, @NotNull String value)
     {
         setConferenceProperty(key, value, true);
     }
@@ -543,13 +538,20 @@ public class JitsiMeetConferenceImpl
      * and {@code false} to only add the property locally. This is useful to
      * allow updating multiple properties but sending a single presence update.
      */
-    private void setConferenceProperty(String key, String value, boolean updatePresence)
+    private void setConferenceProperty(@NotNull String key, @NotNull String value, boolean updatePresence)
     {
-        conferenceProperties.put(key, value);
-        if (updatePresence && chatRoom != null)
+        String oldValue = conferenceProperties.put(key, value);
+        if (updatePresence && chatRoom != null && !value.equals(oldValue))
         {
-            chatRoom.setPresenceExtension(ConferenceProperties.clone(conferenceProperties), false);
+            chatRoom.setPresenceExtension(createConferenceProperties(), false);
         }
+    }
+
+    private ConferenceProperties createConferenceProperties()
+    {
+        ConferenceProperties conferenceProperties = new ConferenceProperties();
+        this.conferenceProperties.forEach(conferenceProperties::put);
+        return conferenceProperties;
     }
 
     /**
@@ -1573,10 +1575,7 @@ public class JitsiMeetConferenceImpl
             o.put("colibri_session_manager", colibriSessionManager.getDebugState());
         }
         OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
-        for (ConferenceProperties.ConferenceProperty conferenceProperty : conferenceProperties.getProperties())
-        {
-            conferencePropertiesJson.put(conferenceProperty.getKey(), conferenceProperty.getValue());
-        }
+        conferenceProperties.forEach(conferencePropertiesJson::put);
         o.put("conference_properties", conferencePropertiesJson);
         o.put("include_in_statistics", includeInStatistics);
         o.put("conference_sources", conferenceSources.toJson());
@@ -1880,16 +1879,13 @@ public class JitsiMeetConferenceImpl
         return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
     }
 
-    private FocusManager getFocusManager()
-    {
-        return jicofoServices.getFocusManager();
-    }
-
+    @Override
     public JibriRecorder getJibriRecorder()
     {
         return jibriRecorder;
     }
 
+    @Override
     public JibriSipGateway getJibriSipGateway()
     {
         return jibriSipGateway;

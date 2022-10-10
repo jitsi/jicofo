@@ -26,6 +26,8 @@ import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.Cascade
 import org.jitsi.jicofo.bridge.CascadeRepair
+import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
+import org.jitsi.jicofo.bridge.ParticipantProperties
 import org.jitsi.jicofo.bridge.addNodeToMesh
 import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
@@ -65,7 +67,6 @@ class ColibriV2SessionManager(
      * at the time this constructor is called.
      */
     internal val meetingId: String,
-    internal val callstatsEnabled: Boolean,
     internal val rtcStatsEnabled: Boolean,
     private val bridgeVersion: String?,
     parentLogger: Logger
@@ -237,11 +238,11 @@ class ColibriV2SessionManager(
         return Pair(session, true)
     }
 
-    /** Get the bridge-to-participant-count needed for bridge selection. */
-    private fun getBridges(): Map<Bridge, Int> = synchronized(syncRoot) {
+    /** Get the bridge-to-bridge-properties map needed for bridge selection. */
+    private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
-            .associate { Pair(it.key.bridge, it.value.size) }
+            .associate { Pair(it.key.bridge, ConferenceBridgeProperties(it.value.size)) }
     }
 
     override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
@@ -281,11 +282,14 @@ class ColibriV2SessionManager(
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
-            val bridge = bridgeSelector.selectBridge(getBridges(), participant.region, bridgeVersion)
-                ?: run {
-                    eventEmitter.fireEvent { bridgeSelectionFailed() }
-                    throw BridgeSelectionFailedException()
-                }
+            val bridge = bridgeSelector.selectBridge(
+                getBridges(),
+                ParticipantProperties(participant.region),
+                bridgeVersion
+            ) ?: run {
+                eventEmitter.fireEvent { bridgeSelectionFailed() }
+                throw BridgeSelectionFailedException()
+            }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
             if (sessions.isNotEmpty() && sessions.none { it.value.bridge == bridge }) {
                 // There is an existing session, and this is a new bridge.

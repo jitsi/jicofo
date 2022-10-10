@@ -37,9 +37,9 @@ class RegionBasedSelectionTest : ShouldSpec() {
     private val bridgesList = bridges.values.flatMap { it.values }
     private fun BridgeSelectionStrategy.select(
         bridges: List<Bridge> = bridgesList,
-        conferenceBridges: Map<Bridge, Int> = emptyMap(),
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),
         participantRegion: Regions? = null
-    ) = select(bridges, conferenceBridges, participantRegion?.region, true)
+    ) = select(bridges, conferenceBridges, ParticipantProperties(participantRegion?.region), true)
 
     init {
         context("Without region groups") {
@@ -48,65 +48,65 @@ class RegionBasedSelectionTest : ShouldSpec() {
 
                 with(RegionBasedBridgeSelectionStrategy()) {
                     context("In a single region") {
-                        select().stress shouldBe Low.stress
+                        select()!!.stress shouldBe Low.stress
                         select(participantRegion = ApSouth) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = ApSouth,
-                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to 1)
+                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to ConferenceBridgeProperties(1))
                         ) shouldBe bridges[ApSouth][Medium]
                         select(
                             participantRegion = ApSouth,
-                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to maxBp)
+                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to ConferenceBridgeProperties(maxBp))
                         ) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = ApSouth,
-                            conferenceBridges = mapOf(bridges[ApSouth][Low] to maxBp)
+                            conferenceBridges = mapOf(bridges[ApSouth][Low] to ConferenceBridgeProperties(maxBp))
                         ) shouldBe bridges[ApSouth][Medium]
                         select(
                             participantRegion = ApSouth,
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[ApSouth][Medium] to 1
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[ApSouth][Medium] to ConferenceBridgeProperties(1)
                             )
                         ) shouldBe bridges[ApSouth][Low]
                         select(
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[ApSouth][Medium] to 1
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[ApSouth][Medium] to ConferenceBridgeProperties(1)
                             )
                         ) shouldBe bridges[ApSouth][Low]
                     }
                     context("In multiple regions") {
                         select(
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[EuWest][Medium] to 1,
-                                bridges[EuWest][High] to 1
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                                bridges[EuWest][High] to ConferenceBridgeProperties(1)
                             )
                         ) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = EuWest,
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[EuWest][Medium] to 1,
-                                bridges[EuWest][High] to 1
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                                bridges[EuWest][High] to ConferenceBridgeProperties(1)
                             )
                         ) shouldBe bridges[EuWest][Medium]
                         select(
                             participantRegion = EuCentral,
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[EuWest][Medium] to 1,
-                                bridges[EuWest][High] to 1
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                                bridges[EuWest][High] to ConferenceBridgeProperties(1)
                             )
                         ) shouldBe bridges[EuCentral][Low]
                         select(
                             participantRegion = EuCentral,
                             conferenceBridges = mapOf(
-                                bridges[ApSouth][Low] to 2,
-                                bridges[EuWest][Medium] to 1,
-                                bridges[EuWest][High] to 1,
-                                bridges[EuCentral][Low] to maxBp
+                                bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                                bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                                bridges[EuWest][High] to ConferenceBridgeProperties(1),
+                                bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
                             )
                         ) shouldBe bridges[EuCentral][Medium]
                     }
@@ -130,26 +130,26 @@ class RegionBasedSelectionTest : ShouldSpec() {
                         participantRegion = EuWest,
                         bridges = bridgesList.filterNot { it.region == EuWest.region },
                         conferenceBridges = mapOf(
-                            bridges[UsEast][Low] to 1
+                            bridges[UsEast][Low] to ConferenceBridgeProperties(1)
                         )
                     ) shouldBe bridges[EuCentral][Low]
 
                     select(
                         participantRegion = EuCentral,
                         conferenceBridges = mapOf(
-                            bridges[ApSouth][Low] to 2,
-                            bridges[EuWest][Medium] to 1,
-                            bridges[EuWest][High] to 1,
-                            bridges[EuCentral][Low] to maxBp
+                            bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                            bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                            bridges[EuWest][High] to ConferenceBridgeProperties(1),
+                            bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
                         )
                     ) shouldBe bridges[EuWest][Medium]
                     select(
                         participantRegion = UsEast,
                         conferenceBridges = mapOf(
-                            bridges[ApSouth][Low] to 2,
-                            bridges[EuWest][Medium] to 1,
-                            bridges[EuWest][High] to 1,
-                            bridges[EuCentral][Low] to maxBp
+                            bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
+                            bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
+                            bridges[EuWest][High] to ConferenceBridgeProperties(1),
+                            bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
                         )
                     ) shouldBe bridges[UsEast][Low]
                     context("Initial selection in the local region group, but not in the local region") {

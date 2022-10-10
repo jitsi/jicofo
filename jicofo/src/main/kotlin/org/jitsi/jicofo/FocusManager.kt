@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.jicofo.conference.ConferenceMetrics
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -49,7 +50,7 @@ import java.util.logging.Level
 class FocusManager @JvmOverloads constructor(
     /** Clock to use for pin timeouts. */
     private val clock: Clock = Clock.systemUTC()
-) : ConferenceListener, ConferenceStore {
+) : ConferenceListener, ConferenceStore, RegistrationListener {
 
     val logger = createLogger()
 
@@ -225,8 +226,8 @@ class FocusManager @JvmOverloads constructor(
             ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
             ConferenceMetrics.conferenceSizes = conferenceSizes
             ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
-            jibriSessions.addAll(conference.jibriRecorder.jibriSessions)
-            jibriSessions.addAll(conference.jibriSipGateway.jibriSessions)
+            conference.jibriRecorder?.let { jibriSessions.addAll(it.jibriSessions) }
+            conference.jibriSipGateway?.let { jibriSessions.addAll(it.jibriSessions) }
         }
 
         JibriStats.liveStreamingActive.set(
@@ -399,6 +400,9 @@ class FocusManager @JvmOverloads constructor(
                     // Loop over conferences
                     conferenceCopy.filterNot { it.hasHadAtLeastOneParticipant() }.forEach { it ->
                         if (Duration.between(it.creationTime, Instant.now()) > timeout) {
+                            if (it.includeInStatistics()) {
+                                logger.info("Expiring $it")
+                            }
                             it.stop()
                         }
                     }
@@ -417,5 +421,9 @@ class FocusManager @JvmOverloads constructor(
     ) {
         /** When this pinning expires. */
         val expiresAt: Instant = clock.instant().plus(duration).truncatedTo(ChronoUnit.SECONDS)
+    }
+
+    override fun registrationChanged(registered: Boolean) {
+        conferencesCache.forEach { it.registrationChanged(registered) }
     }
 }
