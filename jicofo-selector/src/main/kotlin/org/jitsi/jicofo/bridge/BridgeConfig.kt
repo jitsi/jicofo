@@ -78,6 +78,16 @@ class BridgeConfig private constructor() {
             .convertFrom<String> { createSelectionStrategy(it) }
     }
 
+    val participantSelectionStrategy: BridgeSelectionStrategy? by config {
+        "$BASE.participant-selection-strategy".from(JitsiConfig.newConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+    }
+
+    val visitorSelectionStrategy: BridgeSelectionStrategy? by config {
+        "$BASE.visitor-selection-strategy".from(JitsiConfig.newConfig)
+            .convertFrom<String> { createSelectionStrategy(it) }
+    }
+
     val topologyStrategy: TopologySelectionStrategy by config {
         "$BASE.topology-strategy".from(JitsiConfig.newConfig)
             .convertFrom<String> { createTopologyStrategy(it) }
