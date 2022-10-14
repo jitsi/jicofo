@@ -242,7 +242,15 @@ class ColibriV2SessionManager(
     private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
-            .associate { Pair(it.key.bridge, ConferenceBridgeProperties(it.value.size)) }
+            .associate {
+                Pair(
+                    it.key.bridge,
+                    ConferenceBridgeProperties(
+                        it.value.size,
+                        it.value.firstOrNull()?.visitor == true
+                    )
+                )
+            }
     }
 
     override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
@@ -284,7 +292,7 @@ class ColibriV2SessionManager(
             // the requests were sent.
             val bridge = bridgeSelector.selectBridge(
                 getBridges(),
-                ParticipantProperties(participant.region),
+                ParticipantProperties(participant.region, visitor),
                 bridgeVersion
             ) ?: run {
                 eventEmitter.fireEvent { bridgeSelectionFailed() }
