@@ -16,7 +16,7 @@
 
 package org.jitsi.jicofo.bridge
 
-class VisitorSelectionStrategy: BridgeSelectionStrategy() {
+class VisitorSelectionStrategy : BridgeSelectionStrategy() {
     private val participantSelectionStrategy = checkNotNull(BridgeConfig.config.visitorSelectionStrategy) {
         "participant-selection-strategy must be set when VisitorSelectionStrategy is used"
     }
@@ -30,17 +30,18 @@ class VisitorSelectionStrategy: BridgeSelectionStrategy() {
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantProperties: ParticipantProperties
     ): Bridge? {
-        val eligibleBridges = bridges.filter {
+        val eligibleBridges = bridges.filterNot {
             /* Note this is not the same thing as != -- bridges not in conferenceBridges should always be
              * included.
              */
             conferenceBridges[it]?.visitor == !participantProperties.visitor
         }
+        val conferenceBridgesOfType = conferenceBridges.filter { it.value.visitor == participantProperties.visitor }
 
         return if (participantProperties.visitor) {
             visitorSelectionStrategy
         } else {
             participantSelectionStrategy
-        }.doSelect(eligibleBridges, conferenceBridges, participantProperties)
+        }.doSelect(eligibleBridges, conferenceBridgesOfType, participantProperties)
     }
 }
