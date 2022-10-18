@@ -16,6 +16,10 @@
 
 package org.jitsi.jicofo.bridge
 
+/**
+ * A bridge selection strategy that selects distinct sets of bridges for visitors and participants, when possible.
+ * The selection strategy for each category of participant is specified independently and invoked recursively.
+ */
 class VisitorSelectionStrategy : BridgeSelectionStrategy() {
     private val participantSelectionStrategy = checkNotNull(BridgeConfig.config.visitorSelectionStrategy) {
         "participant-selection-strategy must be set when VisitorSelectionStrategy is used"
@@ -38,10 +42,14 @@ class VisitorSelectionStrategy : BridgeSelectionStrategy() {
         }
         val conferenceBridgesOfType = conferenceBridges.filter { it.value.visitor == participantProperties.visitor }
 
-        return if (participantProperties.visitor) {
+        val strategy = if (participantProperties.visitor) {
             visitorSelectionStrategy
         } else {
             participantSelectionStrategy
-        }.doSelect(eligibleBridges, conferenceBridgesOfType, participantProperties)
+        }
+
+        return strategy.doSelect(eligibleBridges, conferenceBridgesOfType, participantProperties)
+            /* If there are no available bridges filtered by participant type, allow mixing. */
+            ?: strategy.doSelect(bridges, conferenceBridges, participantProperties)
     }
 }
