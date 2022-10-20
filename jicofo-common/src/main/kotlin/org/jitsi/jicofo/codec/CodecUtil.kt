@@ -30,6 +30,13 @@ class CodecUtil {
         fun createVideoPayloadTypeExtensions(
             options: OfferOptions = OfferOptions()
         ): Collection<PayloadTypePacketExtension> = buildList {
+            if (config.av1.enabled()) {
+                // a:rtpmap:XXX AV1/90000
+                val av1 = createPayloadTypeExtension(config.av1.pt(), "AV1", 90000)
+                av1.addVideoExtensions(options, config.av1)
+                add(av1)
+            }
+
             if (config.vp8.enabled()) {
                 // a=rtpmap:XXX VP8/90000
                 val vp8 = createPayloadTypeExtension(config.vp8.pt(), "VP8", 90000)
@@ -56,6 +63,24 @@ class CodecUtil {
             }
 
             if (options.rtx) {
+                if (config.av1.rtxEnabled()) {
+                    // a=rtpmap:XXX rtx/90000
+                    val rtx = createPayloadTypeExtension(config.av1.rtxPt(), "rtx", 90000)
+
+                    // a=fmtp:XXX apt=YYY (XXX = av1.rtxPt(), YYY = config.av1.pt())
+                    rtx.addParameterExtension("apt", config.av1.pt().toString())
+
+                    // a=rtcp-fb:XXX ccm fir
+                    rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("ccm", "fir"))
+
+                    // a=rtcp-fb:XXX nack
+                    rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", null))
+
+                    // a=rtcp-fb:XXX nack pli
+                    rtx.addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"))
+
+                    add(rtx)
+                }
                 if (config.vp8.rtxEnabled()) {
                     // a=rtpmap:96 rtx/90000
                     val rtx = createPayloadTypeExtension(config.vp8.rtxPt(), "rtx", 90000)
@@ -189,6 +214,16 @@ class CodecUtil {
         fun createVideoRtpHdrExtExtensions(
             options: OfferOptions = OfferOptions()
         ): Collection<RTPHdrExtPacketExtension> = buildList {
+            if (config.av1.enabled() && config.av1DependencyDescriptor.enabled()) {
+                // https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension
+                val dependencyDescriptorExt = RTPHdrExtPacketExtension()
+                dependencyDescriptorExt.id = config.av1DependencyDescriptor.id().toString()
+                dependencyDescriptorExt.uri = URI.create(
+                    "https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension"
+                )
+                add(dependencyDescriptorExt)
+            }
+
             if (config.tof.enabled()) {
                 // a=extmap:2 urn:ietf:params:rtp-hdrext:toffset
                 val toOffset = RTPHdrExtPacketExtension()

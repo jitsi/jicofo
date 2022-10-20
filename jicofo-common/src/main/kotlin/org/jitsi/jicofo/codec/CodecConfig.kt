@@ -115,6 +115,8 @@ private class RtpExtensionConfigWithLegacy(
 
 class Config {
     @JvmField
+    val av1: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.av1", "AV1")
+    @JvmField
     val vp8: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.vp8", "VP8")
     @JvmField
     val vp9: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.vp9", "VP9")
@@ -132,6 +134,9 @@ class Config {
 
     @JvmField
     val audioLevel = RtpExtensionConfig("jicofo.codec.rtp-extensions.audio-level")
+    @JvmField
+    val av1DependencyDescriptor: RtpExtensionConfig =
+        RtpExtensionConfig("jicofo.codec.rtp-extensions.av1-dependency-descriptor")
     @JvmField
     val tof: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "jicofo.codec.rtp-extensions.tof")

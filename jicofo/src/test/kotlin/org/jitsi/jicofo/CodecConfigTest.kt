@@ -25,6 +25,11 @@ import org.jitsi.jicofo.codec.Config.Companion.config
 class CodecConfigTest : ShouldSpec() {
     init {
         context("Default configuration") {
+            config.av1.enabled() shouldBe false
+            config.av1.pt() shouldBe 41
+            config.av1.rtxEnabled() shouldBe true
+            config.av1.rtxPt() shouldBe 42
+
             config.vp8.enabled() shouldBe true
             config.vp8.pt() shouldBe 100
             config.vp8.rtxEnabled() shouldBe true
@@ -76,6 +81,9 @@ class CodecConfigTest : ShouldSpec() {
 
             config.mid.enabled shouldBe false
             config.mid.id shouldBe 10
+
+            config.av1DependencyDescriptor.enabled shouldBe true
+            config.av1DependencyDescriptor.id shouldBe 11
         }
         context("Legacy config") {
             context("Disabling a codec") {
@@ -237,6 +245,12 @@ class CodecConfigTest : ShouldSpec() {
                 }
                 withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=true") {
                     config.mid.enabled shouldBe true
+                }
+                withNewConfig("jicofo.codec.rtp-extensions.av1-dependency-descriptor.enabled=true") {
+                    config.av1DependencyDescriptor.enabled shouldBe true
+                }
+                withNewConfig("jicofo.codec.rtp-extensions.av1-dependency-descriptor.enabled=false") {
+                    config.av1DependencyDescriptor.enabled shouldBe false
                 }
             }
             context("Changing extension IDs") {
