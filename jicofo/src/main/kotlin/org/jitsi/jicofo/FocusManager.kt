@@ -220,15 +220,16 @@ class FocusManager @JvmOverloads constructor(
             }
             numParticipants += confSize
             endpointPairs += confSize * confSize
-            largestConferenceSize = Math.max(largestConferenceSize, confSize)
+            largestConferenceSize = largestConferenceSize.coerceAtLeast(confSize)
             conferenceSizes.addValue(confSize.toLong())
-            ConferenceMetrics.largestConference.set(largestConferenceSize.toLong())
-            ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
-            ConferenceMetrics.conferenceSizes = conferenceSizes
-            ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
             conference.jibriRecorder?.let { jibriSessions.addAll(it.jibriSessions) }
             conference.jibriSipGateway?.let { jibriSessions.addAll(it.jibriSessions) }
         }
+
+        ConferenceMetrics.largestConference.set(largestConferenceSize.toLong())
+        ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
+        ConferenceMetrics.conferenceSizes = conferenceSizes
+        ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
 
         JibriStats.liveStreamingActive.set(
             jibriSessions.count { it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive }.toLong()
