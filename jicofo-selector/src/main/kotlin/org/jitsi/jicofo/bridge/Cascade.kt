@@ -19,7 +19,6 @@
 package org.jitsi.jicofo.bridge
 
 import kotlin.collections.HashSet
-import kotlin.streams.toList
 
 /**
  * A representation of a cascade of bridges.
@@ -55,11 +54,14 @@ data class CascadeRepair<N : CascadeNode<N, L>, L : CascadeLink>(
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
     sessions[node.relayId] === node
 
+fun <N : CascadeNode<N, L>, L : CascadeLink> N.hasMesh(meshId: String): Boolean =
+    relays.values.any { it.meshId == meshId }
+
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String): Boolean =
-    sessions.values.stream().anyMatch { node -> node.relays.values.any { it.meshId == meshId } }
+    sessions.values.any { it.hasMesh(meshId) }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
-    sessions.values.stream().filter { node -> node.relays.values.any { it.meshId == meshId } }.toList()
+    sessions.values.filter { node -> node.relays.values.any { it.meshId == meshId } }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
     newNode: N,
@@ -297,4 +299,32 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
         val unvisitedNodes = sessions.keys.subtract(visitedNodes)
         "Nodes ${unvisitedNodes.joinToString()} not reachable from initial node $firstNode"
     }
+}
+
+/* Get the distance, in hops in the cascade, from one node to a node satisfying a property;
+ * return -1 if no path found.
+ */
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node: N, pred: (N) -> Boolean): Int {
+    if (pred(node)) return 0
+
+    node.relays.values.forEach {
+        val distance = getDistanceFrom(it, pred)
+        if (distance != -1) return distance + 1
+    }
+    return -1
+}
+
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(
+    link: L,
+    pred: (N) -> Boolean
+): Int {
+    val node = checkNotNull(sessions[link.relayId])
+
+    if (pred(node)) return 0
+
+    node.relays.values.filter { it.meshId != link.meshId }.forEach {
+        val distance = getDistanceFrom(it, pred)
+        if (distance != -1) return distance + 1
+    }
+    return -1
 }
