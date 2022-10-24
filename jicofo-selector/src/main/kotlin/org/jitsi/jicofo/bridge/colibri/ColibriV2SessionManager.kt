@@ -228,13 +228,14 @@ class ColibriV2SessionManager(
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
      * a boolean indicating whether the session was just created (true) or existed (false).
      */
-    private fun getOrCreateSession(bridge: Bridge): Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
+    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean):
+        Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
         var session = sessions[bridge.relayId]
         if (session != null) {
             return Pair(session, false)
         }
 
-        session = Colibri2Session(this, bridge, logger)
+        session = Colibri2Session(this, bridge, visitor, logger)
         return Pair(session, true)
     }
 
@@ -313,11 +314,17 @@ class ColibriV2SessionManager(
                     throw BridgeSelectionFailedException()
                 }
             }
-            getOrCreateSession(bridge).let {
+            getOrCreateSession(bridge, visitor).let {
                 session = it.first
                 created = it.second
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
+            if (visitor != session.visitor) {
+                // Can happen if we're out of bridges for the specific class
+                logger.warn(
+                    "Session $session with visitor=${session.visitor} chosen for participant with visitor=$visitor"
+                )
+            }
             participantInfo = ParticipantInfo(participant, session)
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)

@@ -47,6 +47,8 @@ import java.util.UUID
 class Colibri2Session(
     val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
+    // Whether the session was constructed for the purpose of visitor nodes
+    val visitor: Boolean,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
