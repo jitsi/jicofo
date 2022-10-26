@@ -302,7 +302,7 @@ public class Participant
      */
     public boolean hasSsrcRewritingSupport()
     {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SSRC_REWRITING);
+        return supportedFeatures.contains(DiscoveryUtil.FEATURE_SSRC_REWRITING) && hasSourceNameSupport();
     }
 
     /**
