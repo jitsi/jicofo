@@ -170,21 +170,6 @@ public class DiscoveryUtil
         }
         logger.info("Discovered features for " + address + " in " + tookMillis + " ms.");
 
-        if (logger.isDebugEnabled())
-        {
-            StringBuilder sb
-                = new StringBuilder(address)
-                    .append(", features: ")
-                    .append(String.join(", ", participantFeatures))
-                    .append(", in: ")
-                    .append(tookMillis);
-            logger.debug(sb);
-        }
-        else
-        {
-            logger.info(String.format("Successfully discovered features for %s in %d", address, tookMillis));
-        }
-
         return participantFeatures;
     }
 }
