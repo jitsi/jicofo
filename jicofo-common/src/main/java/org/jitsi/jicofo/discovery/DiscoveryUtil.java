@@ -169,6 +169,16 @@ public class DiscoveryUtil
             return getDefaultParticipantFeatureSet();
         }
         logger.info("Discovered features for " + address + " in " + tookMillis + " ms.");
+        if (logger.isDebugEnabled())
+        {
+            StringBuilder sb
+                    = new StringBuilder(address)
+                    .append(", features: ")
+                    .append(String.join(", ", participantFeatures))
+                    .append(", in: ")
+                    .append(tookMillis);
+            logger.debug(sb);
+        }
 
         return participantFeatures;
     }
