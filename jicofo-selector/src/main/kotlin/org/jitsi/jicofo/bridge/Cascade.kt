@@ -309,7 +309,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node:
 
     node.relays.values.forEach {
         val distance = getDistanceFrom(it, pred)
-        if (distance != -1) return distance + 1
+        if (distance != Int.MAX_VALUE) return distance + 1
     }
     return Int.MAX_VALUE
 }
@@ -324,7 +324,7 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFr
 
     node.relays.values.filter { it.meshId != link.meshId }.forEach {
         val distance = getDistanceFrom(it, pred)
-        if (distance != -1) return distance + 1
+        if (distance != Int.MAX_VALUE) return distance + 1
     }
     return Int.MAX_VALUE
 }
