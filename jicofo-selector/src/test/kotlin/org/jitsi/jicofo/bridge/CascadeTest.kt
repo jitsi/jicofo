@@ -117,7 +117,7 @@ class CascadeTest : ShouldSpec() {
                         cascade.getDistanceFrom(first) { it == other } shouldBe if (first == other) 0 else 1
                     }
                 }
-                cascade.getDistanceFrom(nodes[1]) { false } shouldBe -1
+                cascade.getDistanceFrom(nodes[1]) { false } shouldBe Int.MAX_VALUE
             }
             should("not call a callback when removing any node") {
                 nodes.forEach {
@@ -224,7 +224,7 @@ class CascadeTest : ShouldSpec() {
                 // Just spot-check these rather than enumerating all of them
                 cascade.getDistanceFrom(nodes[1]) { it == nodes[2] } shouldBe 1
                 cascade.getDistanceFrom(nodes[1]) { it == nodes[3] } shouldBe 2
-                cascade.getDistanceFrom(nodes[1]) { false } shouldBe -1
+                cascade.getDistanceFrom(nodes[1]) { false } shouldBe Int.MAX_VALUE
             }
             should("not call a callback when removing a leaf node") {
                 for (i in 1 until numNodes) {
@@ -365,7 +365,7 @@ class CascadeTest : ShouldSpec() {
                     for (j in 1 until numNodes) {
                         cascade.getDistanceFrom(nodes[i]) { it == nodes[j] } shouldBe if (i == j) 0 else 2
                     }
-                    cascade.getDistanceFrom(nodes[i]) { false } shouldBe -1
+                    cascade.getDistanceFrom(nodes[i]) { false } shouldBe Int.MAX_VALUE
                 }
             }
             should("not call a callback when removing a leaf node") {

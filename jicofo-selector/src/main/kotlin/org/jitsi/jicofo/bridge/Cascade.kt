@@ -302,7 +302,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
 }
 
 /* Get the distance, in hops in the cascade, from one node to a node satisfying a property;
- * return -1 if no path found.
+ * return [Int.MAX_VALUE] if no path found.
  */
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node: N, pred: (N) -> Boolean): Int {
     if (pred(node)) return 0
@@ -311,7 +311,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node:
         val distance = getDistanceFrom(it, pred)
         if (distance != -1) return distance + 1
     }
-    return -1
+    return Int.MAX_VALUE
 }
 
 private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(
@@ -326,5 +326,5 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFr
         val distance = getDistanceFrom(it, pred)
         if (distance != -1) return distance + 1
     }
-    return -1
+    return Int.MAX_VALUE
 }
