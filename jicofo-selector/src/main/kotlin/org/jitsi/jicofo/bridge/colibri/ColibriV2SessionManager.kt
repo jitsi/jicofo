@@ -31,8 +31,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
-import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ.GracefulShutdown
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
@@ -398,13 +396,7 @@ class ColibriV2SessionManager(
                     }
                 }
                 service_unavailable -> {
-                    val gracefulShutdown = reason == Colibri2Error.Reason.GRACEFUL_SHUTDOWN ||
-                        response.error?.getExtension<GracefulShutdown>(
-                        GracefulShutdown.ELEMENT,
-                        ColibriConferenceIQ.NAMESPACE
-                    ) != null
-
-                    if (gracefulShutdown) {
+                    if (reason == Colibri2Error.Reason.GRACEFUL_SHUTDOWN) {
                         // The fact that this bridge was selected means that we haven't received its updated presence yet,
                         // so set the graceful-shutdown flag explicitly to prevent future selection.
                         session.bridge.isInGracefulShutdown = true
