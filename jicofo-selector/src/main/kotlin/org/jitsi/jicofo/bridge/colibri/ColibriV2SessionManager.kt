@@ -128,7 +128,7 @@ class ColibriV2SessionManager(
     }
 
     private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>) =
-        topologySelectionStrategy.repairMesh(disconnectedMeshes)
+        topologySelectionStrategy.repairMesh(cascade, disconnectedMeshes)
 
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
@@ -329,7 +329,11 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
-                val topologySelectionResult = topologySelectionStrategy.connectNode(session, sessions.values.toSet())
+                val topologySelectionResult = topologySelectionStrategy.connectNode(
+                    this,
+                    session,
+                    sessions.values.toSet()
+                )
                 addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
             } else {
                 getPathsFrom(session) { _, otherSession, from ->
