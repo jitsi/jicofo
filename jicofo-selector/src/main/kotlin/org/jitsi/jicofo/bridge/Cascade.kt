@@ -60,8 +60,8 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> N.hasMesh(meshId: String): Boolean 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String): Boolean =
     sessions.values.any { it.hasMesh(meshId) }
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
-    sessions.values.filter { node -> node.relays.values.any { it.meshId == meshId } }
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String): List<N> =
+    sessions.values.filter { it.hasMesh(meshId) }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
     newNode: N,
