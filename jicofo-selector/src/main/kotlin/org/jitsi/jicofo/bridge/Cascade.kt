@@ -54,13 +54,13 @@ data class CascadeRepair<N : CascadeNode<N, L>, L : CascadeLink>(
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
     sessions[node.relayId] === node
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> N.hasMesh(meshId: String): Boolean =
+fun <N : CascadeNode<N, L>, L : CascadeLink> N.hasMesh(meshId: String?): Boolean =
     relays.values.any { it.meshId == meshId }
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String): Boolean =
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.hasMesh(meshId: String?): Boolean =
     sessions.values.any { it.hasMesh(meshId) }
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String): List<N> =
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getMeshNodes(meshId: String?): List<N> =
     sessions.values.filter { it.hasMesh(meshId) }
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
