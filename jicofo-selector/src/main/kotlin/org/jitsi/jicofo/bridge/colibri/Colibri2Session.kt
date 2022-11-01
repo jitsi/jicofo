@@ -199,7 +199,9 @@ class Colibri2Session(
          * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay
          * connection should have different values for [initiator].
          */
-        initiator: Boolean
+        initiator: Boolean,
+        /** The mesh ID of this relay connection */
+        meshId: String?
     ) {
         logger.info(
             "Creating relay $relayId (initiator=$initiator), initial participants: ${initialParticipants.map { it.id }}"
@@ -208,7 +210,7 @@ class Colibri2Session(
             throw IllegalStateException("Relay $relayId already exists")
         }
 
-        val relay = Relay(relayId, initiator)
+        val relay = Relay(relayId, initiator, meshId)
         relays[relayId] = relay
         relay.start(initialParticipants)
     }

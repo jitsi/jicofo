@@ -260,8 +260,8 @@ class ColibriV2SessionManager(
             getVisibleSessionParticipants(it)
         }
 
-        session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true)
-        otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false)
+        session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true, meshId)
+        otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false, meshId)
     }
 
     override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {
