@@ -203,8 +203,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     participant.useSsrcRewriting(),
                     forceMuteAudio,
                     forceMuteVideo,
-                    (participant.getChatMember().getRole() == MemberRole.VISITOR),
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
+                    (participant.getChatMember().getRole() == MemberRole.VISITOR),
                     medias);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }
