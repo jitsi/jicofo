@@ -34,11 +34,10 @@ class VisitorSelectionStrategy : BridgeSelectionStrategy() {
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>,
         participantProperties: ParticipantProperties
     ): Bridge? {
-        val eligibleBridges = bridges.filterNot {
-            /* Note this is not the same thing as != -- bridges not in conferenceBridges should always be
-             * included.
-             */
-            conferenceBridges[it]?.visitor == !participantProperties.visitor
+        val eligibleBridges = bridges.filter {
+            val conferenceBridge = conferenceBridges[it]
+            // The bridge is not in the conference, or it's used for the same type of endpoint
+            conferenceBridge == null || conferenceBridge.visitor == participantProperties.visitor
         }
         val conferenceBridgesOfType = conferenceBridges.filter { it.value.visitor == participantProperties.visitor }
 
