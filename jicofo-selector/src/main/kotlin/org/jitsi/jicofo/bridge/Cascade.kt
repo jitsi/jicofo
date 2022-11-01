@@ -131,6 +131,7 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
         }
         other.relays.remove(node.relayId)
         removeLinkTo(other, node)
+        // The reverse-path links do not need to be removed, because the whole node is removed.
     }
 
     val meshes = node.relays.values.map { it.meshId }.toSet()
@@ -301,8 +302,10 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.validate() {
     }
 }
 
-/* Get the distance, in hops in the cascade, from one node to a node satisfying a property;
+/* Get the distance, in hops in the cascade, from one node to some node satisfying a property;
  * return [Int.MAX_VALUE] if no path found.
+ * Note this may not necessarily be the shortest such path, if more than one path is possible to a node satisfying
+ * the predicate.
  */
 fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node: N, pred: (N) -> Boolean): Int {
     if (pred(node)) return 0
