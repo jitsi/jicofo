@@ -1291,6 +1291,11 @@ public class JitsiMeetConferenceImpl
 
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
+        if (!sourcesAdvertised.isEmpty() && participant.getChatMember().getRole() == MemberRole.VISITOR)
+        {
+            return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build();
+        }
+
         if (logger.isDebugEnabled())
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
