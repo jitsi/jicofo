@@ -21,7 +21,7 @@ package org.jitsi.jicofo.bridge
  * The selection strategy for each category of participant is specified independently and invoked recursively.
  */
 class VisitorSelectionStrategy : BridgeSelectionStrategy() {
-    private val participantSelectionStrategy = checkNotNull(BridgeConfig.config.visitorSelectionStrategy) {
+    private val participantSelectionStrategy = checkNotNull(BridgeConfig.config.participantSelectionStrategy) {
         "participant-selection-strategy must be set when VisitorSelectionStrategy is used"
     }
 
