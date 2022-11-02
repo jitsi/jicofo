@@ -622,6 +622,7 @@ public class JitsiMeetConferenceImpl
                             + " region=" + chatRoomMember.getRegion()
                             + " audioMuted=" + chatRoomMember.isAudioMuted()
                             + " videoMuted=" + chatRoomMember.isVideoMuted()
+                            + " role=" + chatRoomMember.getRole()
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi());
             hasHadAtLeastOneParticipant = true;
