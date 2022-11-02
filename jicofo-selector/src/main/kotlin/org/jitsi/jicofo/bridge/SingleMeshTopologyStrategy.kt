@@ -23,8 +23,7 @@ import org.jitsi.jicofo.bridge.colibri.ColibriV2SessionManager
 class SingleMeshTopologyStrategy : TopologySelectionStrategy() {
     override fun connectNode(
         cascade: ColibriV2SessionManager,
-        node: Colibri2Session,
-        existingNodes: Set<Colibri2Session>
+        node: Colibri2Session
     ): TopologySelectionResult =
         TopologySelectionResult(existingNodes.firstOrNull(), "0")
 

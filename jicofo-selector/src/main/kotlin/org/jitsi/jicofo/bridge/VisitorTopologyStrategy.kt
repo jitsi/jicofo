@@ -29,7 +29,7 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
     private fun pickConnectionNode(
         cascade: ColibriV2SessionManager,
         node: Colibri2Session,
-        existingNodes: Set<Colibri2Session>
+        existingNodes: Collection<Colibri2Session>
     ): Colibri2Session {
         val nodesWithDistance = existingNodes.associateWith {
             cascade.getDistanceFrom(it) { node -> !node.visitor }
@@ -55,9 +55,9 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
 
     override fun connectNode(
         cascade: ColibriV2SessionManager,
-        node: Colibri2Session,
-        existingNodes: Set<Colibri2Session>
+        node: Colibri2Session
     ): TopologySelectionResult {
+        val existingNodes = cascade.sessions.values
         if (!node.visitor)
             return TopologySelectionResult(existingNodes.firstOrNull(), coreMesh)
 

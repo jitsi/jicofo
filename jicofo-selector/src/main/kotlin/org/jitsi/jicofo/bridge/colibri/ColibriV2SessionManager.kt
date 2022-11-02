@@ -329,8 +329,7 @@ class ColibriV2SessionManager(
             if (created) {
                 val topologySelectionResult = topologySelectionStrategy.connectNode(
                     this,
-                    session,
-                    sessions.values.toSet()
+                    session
                 )
                 addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
             } else {
