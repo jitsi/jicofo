@@ -226,10 +226,6 @@ class Colibri2Session(
         /** Whether a new relay endpoint should be created, or an existing one updated. */
         create: Boolean
     ) {
-        if (participantInfo.visitor) {
-            // Remote relays don't need to know about visitors.
-            return
-        }
         logger.debug { "Updating remote participant ${participantInfo.id} on $relayId" }
         relays[relayId]?.updateParticipant(participantInfo, create)
             ?: throw IllegalStateException("Relay $relayId doesn't exist.")

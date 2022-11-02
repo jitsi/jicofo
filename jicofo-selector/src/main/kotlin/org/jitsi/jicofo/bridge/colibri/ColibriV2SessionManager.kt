@@ -334,13 +334,16 @@ class ColibriV2SessionManager(
                 )
                 addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
             } else {
-                getPathsFrom(session) { _, otherSession, from ->
-                    if (from != null) {
-                        logger.debug {
-                            "Adding a relayed endpoint to $otherSession for ${participantInfo.id} from ${from.relayId}."
+                if (!participantInfo.visitor) {
+                    getPathsFrom(session) { _, otherSession, from ->
+                        if (from != null) {
+                            logger.debug {
+                                "Adding a relayed endpoint to $otherSession for ${participantInfo.id} " +
+                                    "from ${from.relayId}."
+                            }
+                            // We already made sure that relayId is not null when there are multiple sessions.
+                            otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
                         }
-                        // We already made sure that relayId is not null when there are multiple sessions.
-                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
                     }
                 }
             }
@@ -521,10 +524,12 @@ class ColibriV2SessionManager(
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
-            getPathsFrom(participantInfo.session) { _, otherSession, from ->
-                if (from != null) {
-                    // We make sure that relayId is not null when there are multiple sessions.
-                    otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+            if (!participantInfo.visitor) {
+                getPathsFrom(participantInfo.session) { _, otherSession, from ->
+                    if (from != null) {
+                        // We make sure that relayId is not null when there are multiple sessions.
+                        otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+                    }
                 }
             }
         }
