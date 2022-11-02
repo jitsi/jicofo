@@ -426,7 +426,11 @@ class Colibri2Session(
             val relay = Colibri2Relay.getBuilder().apply { setId(relayId) }
             val endpoints = Endpoints.getBuilder()
 
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = false, expire = true).build()) }
+            participants.forEach {
+                if (!it.visitor) {
+                    endpoints.addEndpoint(it.toEndpoint(create = false, expire = true).build())
+                }
+            }
 
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
