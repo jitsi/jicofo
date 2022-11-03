@@ -1301,15 +1301,24 @@ public class JitsiMeetConferenceImpl
 
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
-        logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
 
-        getColibriSessionManager().updateParticipant(
+        if (!sourcesAccepted.isEmpty())
+        {
+            logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
+
+            getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 getTransport(contents),
                 getSourcesForParticipant(participant));
 
-        // Propagate [participant]'s sources to the other participants.
-        propagateNewSources(participant, sourcesAccepted);
+            // Propagate [participant]'s sources to the other participants.
+            propagateNewSources(participant, sourcesAccepted);
+        }
+        else
+        {
+            logger.debug("Session accepted with no sources.");
+        }
+
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
 
