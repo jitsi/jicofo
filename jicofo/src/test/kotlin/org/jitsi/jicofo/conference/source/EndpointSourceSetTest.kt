@@ -72,7 +72,7 @@ class EndpointSourceSetTest : ShouldSpec() {
                 EndpointSourceSet(
                     setOf(s1, s2, s3, s7, s8),
                     setOf(sim)
-                ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s7, s8))
+                ).stripSimulcast shouldBe EndpointSourceSet(setOf(s1, s7, s8))
             }
             context("With multiple SIM groups") {
                 EndpointSourceSet(
@@ -81,13 +81,13 @@ class EndpointSourceSetTest : ShouldSpec() {
                         sim,
                         SsrcGroup(SsrcGroupSemantics.Sim, listOf(4, 5, 6))
                     )
-                ).stripSimulcast() shouldBe EndpointSourceSet(setOf(s1, s4, s7, s8))
+                ).stripSimulcast shouldBe EndpointSourceSet(setOf(s1, s4, s7, s8))
             }
             context("With RTX") {
                 EndpointSourceSet(
                     sourceSet.sources + s8,
                     sourceSet.ssrcGroups
-                ).stripSimulcast() shouldBe EndpointSourceSet(
+                ).stripSimulcast shouldBe EndpointSourceSet(
                     setOf(s1, s4, s7, s8),
                     setOf(fid1)
                 )

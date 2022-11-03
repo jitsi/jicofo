@@ -159,7 +159,7 @@ open class ConferenceSourceMap(
     /**
      * Strip simulcast SSRCs from each entry in the map. Modifies the map in place.
      */
-    fun stripSimulcast() = map { it.stripSimulcast() }
+    fun stripSimulcast() = map { it.stripSimulcast }
 
     open fun map(transform: (EndpointSourceSet) -> EndpointSourceSet) = synchronized(syncRoot) {
         endpointSourceSets.forEach { (owner, sources) ->
