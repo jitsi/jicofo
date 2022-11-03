@@ -68,19 +68,14 @@ data class EndpointSourceSet(
      */
     override fun toString() = "[audio=$audioSsrcs, video=$videoSsrcs, groups=$ssrcGroups]"
 
-    private var strippedSimulcast: EndpointSourceSet? = null
-
     /**
-     * Create a new [EndpointSourceSet] by stripping all simulcast-related SSRCs and groups except for the first SSRC in
+     * Get a new [EndpointSourceSet] by stripping all simulcast-related SSRCs and groups except for the first SSRC in
      * a simulcast group. This assumes that the first SSRC in the simulcast group and its associated RTX SSRC are the only
      * SSRCs that receivers of simulcast streams need to know about, i.e. that jitsi-videobridge uses that SSRC as the
      * target SSRC when rewriting streams.
      */
-    fun stripSimulcast(): EndpointSourceSet {
-        strippedSimulcast?.let { return it }
-        val newStripped = doStripSimulcast()
-        strippedSimulcast = newStripped
-        return newStripped
+    val stripSimulcast: EndpointSourceSet by lazy {
+        doStripSimulcast()
     }
 
     /**

@@ -230,8 +230,8 @@ class ConferenceSourceMapTest : ShouldSpec() {
             // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
             context("Simulcast") {
                 conferenceSourceMap.stripSimulcast()
-                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast()
-                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast()
+                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast
+                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast
             }
         }
         context("Compact JSON") {
