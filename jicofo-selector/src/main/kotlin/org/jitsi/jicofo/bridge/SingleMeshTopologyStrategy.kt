@@ -25,7 +25,7 @@ class SingleMeshTopologyStrategy : TopologySelectionStrategy() {
         cascade: ColibriV2SessionManager,
         node: Colibri2Session
     ): TopologySelectionResult =
-        TopologySelectionResult(existingNodes.firstOrNull(), "0")
+        TopologySelectionResult(cascade.sessions.values.firstOrNull(), "0")
 
     override fun repairMesh(
         cascade: ColibriV2SessionManager,
