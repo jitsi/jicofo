@@ -73,6 +73,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         )
 
         context("Adding sources.") {
+            context("Empty sources") {
+                conferenceSources.tryToAdd(jid1, EndpointSourceSet()) shouldBe ConferenceSourceMap()
+            }
             context("Standard VP8 signaling with simulcast and RTX") {
                 context("Signaled all together") {
                     conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
@@ -359,6 +362,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
             conferenceSources.tryToAdd(jid1, sourceSet)
 
+            context("Empty sources") {
+                conferenceSources.tryToRemove(jid1, EndpointSourceSet()) shouldBe ConferenceSourceMap()
+            }
             context("Successful removal") {
                 context("Of all sources and groups") {
                     conferenceSources.tryToRemove(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)

@@ -1190,6 +1190,11 @@ public class JitsiMeetConferenceImpl
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
+        if (sourcesAdvertised.isEmpty())
+        {
+            logger.warn("Received source-add with empty sources, ignoring");
+            return null;
+        }
 
         boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
                 chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
@@ -1290,16 +1295,20 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
-        ConferenceSourceMap sourcesAccepted;
-        try
-        {
-            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised).unmodifiable();
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error processing session-accept from: " + participantJid +": " + e.getMessage());
+        ConferenceSourceMap sourcesAccepted = new ConferenceSourceMap();
 
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
+        if (!sourcesAdvertised.isEmpty())
+        {
+            try
+            {
+                sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised).unmodifiable();
+            }
+            catch (ValidationFailedException e)
+            {
+                logger.error("Error processing session-accept from: " + participantJid + ": " + e.getMessage());
+
+                return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
+            }
         }
 
         if (!sourcesAccepted.isEmpty())

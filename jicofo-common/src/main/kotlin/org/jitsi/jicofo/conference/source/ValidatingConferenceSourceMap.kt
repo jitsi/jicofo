@@ -115,8 +115,9 @@ class ValidatingConferenceSourceMap(
         val resultingSourceSet = EndpointSourceSet(resultingSources, existingSourceSet.ssrcGroups + acceptedGroups)
         validateEndpointSourceSet(resultingSourceSet)
 
-        val acceptedSourceMap = ConferenceSourceMap(
-            owner to EndpointSourceSet(acceptedSources, acceptedGroups)
+        val acceptedSourceSet = EndpointSourceSet(acceptedSources, acceptedGroups)
+        val acceptedSourceMap = if (acceptedSources.isEmpty()) ConferenceSourceMap() else ConferenceSourceMap(
+            owner to acceptedSourceSet
         )
         add(acceptedSourceMap)
         return acceptedSourceMap
@@ -175,8 +176,9 @@ class ValidatingConferenceSourceMap(
         )
         validateEndpointSourceSet(resultingEndpointSourceSet)
 
-        val acceptedSourceMap = ConferenceSourceMap(
-            owner to EndpointSourceSet(sourcesAcceptedToBeRemoved, groupsAcceptedToBeRemoved)
+        val acceptedSourceSet = EndpointSourceSet(sourcesAcceptedToBeRemoved, groupsAcceptedToBeRemoved)
+        val acceptedSourceMap = if (acceptedSourceSet.isEmpty()) ConferenceSourceMap() else ConferenceSourceMap(
+            owner to acceptedSourceSet
         )
         remove(acceptedSourceMap)
         return acceptedSourceMap
