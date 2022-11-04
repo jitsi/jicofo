@@ -19,7 +19,6 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.GroupMsidMismatchException
 import org.jitsi.jicofo.conference.source.InvalidFidGroupException
@@ -74,23 +73,21 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
 
         context("Adding sources.") {
             context("Empty sources") {
-                conferenceSources.tryToAdd(jid1, EndpointSourceSet()) shouldBe ConferenceSourceMap()
+                conferenceSources.tryToAdd(jid1, EndpointSourceSet()) shouldBe EndpointSourceSet.EMPTY
             }
             context("Standard VP8 signaling with simulcast and RTX") {
                 context("Signaled all together") {
-                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
                 }
                 context("Signaled with video first") {
                     conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources, groups)) shouldBe
-                        ConferenceSourceMap(jid1 to EndpointSourceSet(videoSources, groups))
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe
-                        ConferenceSourceMap(jid1 to EndpointSourceSet(s7))
+                        EndpointSourceSet(videoSources, groups)
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe EndpointSourceSet(s7)
                 }
                 context("Signaled with audio first") {
-                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe
-                        ConferenceSourceMap(jid1 to EndpointSourceSet(s7))
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(s7)) shouldBe EndpointSourceSet(s7)
                     conferenceSources.tryToAdd(jid1, EndpointSourceSet(videoSources, groups)) shouldBe
-                        ConferenceSourceMap(jid1 to EndpointSourceSet(videoSources, groups))
+                        EndpointSourceSet(videoSources, groups)
                 }
                 context("Adding a second endpoint") {
                     val sourceSet2 = EndpointSourceSet(
@@ -102,8 +99,8 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102)))
                     )
 
-                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
-                    conferenceSources.tryToAdd(jid2, sourceSet2) shouldBe ConferenceSourceMap(jid2 to sourceSet2)
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
+                    conferenceSources.tryToAdd(jid2, sourceSet2) shouldBe sourceSet2
                 }
             }
             context("Invalid SSRCs") {
@@ -136,7 +133,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         setOf(fid1, fid2, fid3)
                     )
 
-                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe ConferenceSourceMap(jid1 to sourceSet1)
+                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe sourceSet1
                     shouldThrow<SsrcLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet2)
                     }
@@ -161,7 +158,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         setOf(s4, s5, s6),
                         setOf(fid1, fid2, fid3)
                     )
-                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe ConferenceSourceMap(jid1 to sourceSet1)
+                    conferenceSources.tryToAdd(jid1, sourceSet1) shouldBe sourceSet1
                     shouldThrow<SsrcGroupLimitExceededException> {
                         conferenceSources.tryToAdd(jid1, sourceSet2)
                     }
@@ -176,7 +173,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     setOf(Source(1, VIDEO, msid = "differentMsid"))
                 )
 
-                conferenceSources.tryToAdd(jid1, source) shouldBe ConferenceSourceMap(jid1 to source)
+                conferenceSources.tryToAdd(jid1, source) shouldBe source
                 context("Advertised by the same endpoint.") {
                     shouldThrow<SsrcAlreadyUsedException> {
                         conferenceSources.tryToAdd(jid1, duplicateSourceAudio)
@@ -274,7 +271,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                             Source(5, AUDIO)
                         )
                     )
-                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
                 }
                 context("Within the sources of the same endpoint.") {
                     context("Ungrouped") {
@@ -321,12 +318,12 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                                 Source(2, VIDEO)
                             )
                         )
-                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
                     }
                     context("With MSID and no groups") {
                         val sourceSet = EndpointSourceSet(setOf(s1, Source(111, AUDIO, msid = msid)))
 
-                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
                     }
                     context("With MSID and groups") {
                         val sourceSet = EndpointSourceSet(
@@ -334,7 +331,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                             groups
                         )
 
-                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                        conferenceSources.tryToAdd(jid1, sourceSet) shouldBe sourceSet
                     }
                 }
             }
@@ -352,10 +349,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 )
 
                 // The empty groups should be silently ignored.
-                accepted[jid1] shouldBe EndpointSourceSet(
-                    setOf(s1, s2, s3),
-                    setOf(sim)
-                )
+                accepted shouldBe EndpointSourceSet(setOf(s1, s2, s3), setOf(sim))
             }
         }
         context("Removing sources") {
@@ -363,20 +357,19 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             conferenceSources.tryToAdd(jid1, sourceSet)
 
             context("Empty sources") {
-                conferenceSources.tryToRemove(jid1, EndpointSourceSet()) shouldBe ConferenceSourceMap()
+                conferenceSources.tryToRemove(jid1, EndpointSourceSet()) shouldBe EndpointSourceSet.EMPTY
             }
             context("Successful removal") {
                 context("Of all sources and groups") {
-                    conferenceSources.tryToRemove(jid1, sourceSet) shouldBe ConferenceSourceMap(jid1 to sourceSet)
+                    conferenceSources.tryToRemove(jid1, sourceSet) shouldBe sourceSet
                 }
                 context("Of all sources, groups assumed") {
-                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources)) shouldBe
-                        ConferenceSourceMap(jid1 to sourceSet)
+                    conferenceSources.tryToRemove(jid1, EndpointSourceSet(sources)) shouldBe sourceSet
                 }
                 context("Of a subset of sources") {
                     // s1 remains, with no associated groups.
                     val toRemove = EndpointSourceSet(sources - s1, groups)
-                    conferenceSources.tryToRemove(jid1, toRemove) shouldBe ConferenceSourceMap(jid1 to toRemove)
+                    conferenceSources.tryToRemove(jid1, toRemove) shouldBe toRemove
                 }
             }
             context("Removing non-signaled sources") {

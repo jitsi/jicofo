@@ -71,7 +71,7 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been accepted and added.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): ConferenceSourceMap = synchronized(syncRoot) {
+    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
         val existingSourceSet = this[owner] ?: EndpointSourceSet.EMPTY
 
         // Check for validity of the new SSRCs, and conflicts with other endpoints.
@@ -116,11 +116,8 @@ class ValidatingConferenceSourceMap(
         validateEndpointSourceSet(resultingSourceSet)
 
         val acceptedSourceSet = EndpointSourceSet(acceptedSources, acceptedGroups)
-        val acceptedSourceMap = if (acceptedSources.isEmpty()) ConferenceSourceMap() else ConferenceSourceMap(
-            owner to acceptedSourceSet
-        )
-        add(acceptedSourceMap)
-        return acceptedSourceMap
+        add(ConferenceSourceMap(owner to acceptedSourceSet))
+        return acceptedSourceSet
     }
 
     /**
@@ -142,8 +139,8 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been removed.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): ConferenceSourceMap = synchronized(syncRoot) {
-        if (sourcesToRemove.isEmpty()) return ConferenceSourceMap()
+    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
+        if (sourcesToRemove.isEmpty()) return EndpointSourceSet.EMPTY
 
         val existingSources = this[owner]
         if (existingSources == null || existingSources.isEmpty()) {
@@ -177,11 +174,8 @@ class ValidatingConferenceSourceMap(
         validateEndpointSourceSet(resultingEndpointSourceSet)
 
         val acceptedSourceSet = EndpointSourceSet(sourcesAcceptedToBeRemoved, groupsAcceptedToBeRemoved)
-        val acceptedSourceMap = if (acceptedSourceSet.isEmpty()) ConferenceSourceMap() else ConferenceSourceMap(
-            owner to acceptedSourceSet
-        )
-        remove(acceptedSourceMap)
-        return acceptedSourceMap
+        remove(ConferenceSourceMap(owner to acceptedSourceSet))
+        return acceptedSourceSet
     }
 
     /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
