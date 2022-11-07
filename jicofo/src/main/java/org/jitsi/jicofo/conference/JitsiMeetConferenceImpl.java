@@ -1302,15 +1302,14 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
         }
 
+        getColibriSessionManager().updateParticipant(
+            participant.getEndpointId(),
+            getTransport(contents),
+            getSourcesForParticipant(participant));
+
         if (!sourcesAccepted.isEmpty())
         {
             logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
-
-            getColibriSessionManager().updateParticipant(
-                participant.getEndpointId(),
-                getTransport(contents),
-                getSourcesForParticipant(participant));
-
             // Propagate [participant]'s sources to the other participants.
             propagateNewSources(participant, sourcesAccepted);
         }
