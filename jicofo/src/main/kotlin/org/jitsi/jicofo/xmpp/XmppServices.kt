@@ -48,6 +48,13 @@ class XmppServices(
         clientConnection
     }
 
+    val visitorConnections: List<XmppProvider> = XmppConfig.visitors.map { config ->
+        logger.info("Using XMPP visitor connection ${config.name}")
+        xmppProviderFactory.createXmppProvider(config, logger).apply {
+            start()
+        }
+    }
+
     fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
         XmppConnectionEnum.Client -> clientConnection
         XmppConnectionEnum.Service -> serviceConnection
