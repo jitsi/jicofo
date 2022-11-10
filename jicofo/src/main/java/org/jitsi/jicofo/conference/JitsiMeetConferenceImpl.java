@@ -24,7 +24,6 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
@@ -313,13 +312,6 @@ public class JitsiMeetConferenceImpl
         {
             XmppProvider clientXmppProvider = getClientXmppProvider();
             jingle = clientXmppProvider.getJingleApi();
-
-            // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
-            // be used for clients that signal support (see Participant.hasLipSyncSupport).
-            if (ConferenceConfig.config.enableLipSync())
-            {
-                jingle = new LipSyncHack(this, jingle, logger);
-            }
 
             BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
