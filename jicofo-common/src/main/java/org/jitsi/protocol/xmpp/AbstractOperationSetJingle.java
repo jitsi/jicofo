@@ -72,14 +72,14 @@ public abstract class AbstractOperationSetJingle
     public IQ handleIQRequest(IQ iqRequest)
     {
         JingleIQ packet = (JingleIQ) iqRequest;
-        JingleSession session = getSession(packet.getSID());
+        JingleSession session = sessions.get(packet.getSID());
         if (session == null)
         {
             logger.warn("No session found for SID " + packet.getSID());
             return IQ.createErrorResponse(packet, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
         }
 
-        return processJingleIQ(packet);
+        return processJingleIQ(packet, session);
     }
 
     /**
@@ -94,18 +94,6 @@ public abstract class AbstractOperationSetJingle
     }
 
     protected abstract AbstractXMPPConnection getConnection();
-
-    /**
-     * Finds Jingle session for given session identifier.
-     *
-     * @param sid the identifier of the session which we're looking for.
-     * @return Jingle session for given session identifier or <tt>null</tt> if
-     * no such session exists.
-     */
-    public JingleSession getSession(String sid)
-    {
-        return sessions.get(sid);
-    }
 
     /**
      * {@inheritDoc}
@@ -318,9 +306,8 @@ public abstract class AbstractOperationSetJingle
      *
      * @param iq the <tt>JingleIQ</tt> to process.
      */
-    protected IQ processJingleIQ(JingleIQ iq)
+    private IQ processJingleIQ(JingleIQ iq, @NotNull JingleSession session)
     {
-        JingleSession session = getSession(iq.getSID());
         JingleAction action = iq.getAction();
 
         if (action == null)
@@ -329,12 +316,6 @@ public abstract class AbstractOperationSetJingle
             return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
         }
         stats.stanzaReceived(action);
-
-        if (session == null)
-        {
-            logger.warn("Action: " + action + ", no session found for SID " + iq.getSID());
-            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.item_not_found).build());
-        }
 
         JingleRequestHandler requestHandler = session.getRequestHandler();
         StanzaError error = null;

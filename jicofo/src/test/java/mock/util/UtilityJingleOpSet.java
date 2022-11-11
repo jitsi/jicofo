@@ -118,4 +118,9 @@ public class UtilityJingleOpSet
         sessions.put(sid, session);
         return invite;
     }
+
+    public JingleSession getSession(String sid)
+    {
+        return sessions.get(sid);
+    }
 }
