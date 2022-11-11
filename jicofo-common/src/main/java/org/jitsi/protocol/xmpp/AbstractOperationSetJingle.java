@@ -52,7 +52,7 @@ public abstract class AbstractOperationSetJingle
      */
     private static final Logger logger = new LoggerImpl(AbstractOperationSetJingle.class.getName());
 
-    private static final JingleStats stats = new JingleStats();
+    public static final JingleStats stats = new JingleStats();
 
     public static JSONObject getStats()
     {
@@ -70,17 +70,25 @@ public abstract class AbstractOperationSetJingle
     }
 
     @Override
-    public IQ handleIQRequest(IQ iqRequest)
+    public IQ handleIQRequest(IQ iq)
     {
-        JingleIQ packet = (JingleIQ) iqRequest;
-        JingleSession session = sessions.get(packet.getSID());
+        JingleIQ jingleIq = (JingleIQ) iq;
+        JingleSession session = sessions.get(jingleIq.getSID());
         if (session == null)
         {
-            logger.warn("No session found for SID " + packet.getSID());
-            return IQ.createErrorResponse(packet, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
+            logger.warn("No session found for SID " + jingleIq.getSID());
+            return IQ.createErrorResponse(jingleIq, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
         }
 
-        return processJingleIQ(packet, session);
+        StanzaError error = session.processIq(jingleIq);
+        if (error == null)
+        {
+            return IQ.createResultIQ(iq);
+        }
+        else
+        {
+            return IQ.createErrorResponse(iq, error);
+        }
     }
 
     /**
@@ -300,68 +308,6 @@ public abstract class AbstractOperationSetJingle
         }
 
         return ret;
-    }
-
-    /**
-     * The logic for processing received <tt>JingleIQ</tt>s.
-     *
-     * @param iq the <tt>JingleIQ</tt> to process.
-     */
-    private IQ processJingleIQ(JingleIQ iq, @NotNull JingleSession session)
-    {
-        JingleAction action = iq.getAction();
-
-        if (action == null)
-        {
-            // bad-request
-            return IQ.createErrorResponse(iq, StanzaError.getBuilder(StanzaError.Condition.bad_request).build());
-        }
-        stats.stanzaReceived(action);
-
-        JingleRequestHandler requestHandler = session.getRequestHandler();
-        StanzaError error = null;
-        switch (action)
-        {
-        case SESSION_ACCEPT:
-            error = requestHandler.onSessionAccept(session, iq.getContentList());
-            break;
-        case SESSION_INFO:
-            error = requestHandler.onSessionInfo(session, iq);
-            break;
-        case SESSION_TERMINATE:
-            error = requestHandler.onSessionTerminate(session, iq);
-            break;
-        case TRANSPORT_ACCEPT:
-            error = requestHandler.onTransportAccept(session, iq.getContentList());
-            break;
-        case TRANSPORT_INFO:
-            requestHandler.onTransportInfo(session, iq.getContentList());
-            break;
-        case TRANSPORT_REJECT:
-            requestHandler.onTransportReject(session, iq);
-            break;
-        case ADDSOURCE:
-        case SOURCEADD:
-            error = requestHandler.onAddSource(session, iq.getContentList());
-            break;
-        case REMOVESOURCE:
-        case SOURCEREMOVE:
-            error = requestHandler.onRemoveSource(session, iq.getContentList());
-            break;
-        default:
-            error = StanzaError.getBuilder(StanzaError.Condition.feature_not_implemented).build();
-            logger.warn("unsupported action " + action);
-        }
-
-        // FIXME IQ type is not taken into account
-        if (error == null)
-        {
-            return IQ.createResultIQ(iq);
-        }
-        else
-        {
-            return IQ.createErrorResponse(iq, error);
-        }
     }
 
     private JingleIQ createAddSourceIq(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)

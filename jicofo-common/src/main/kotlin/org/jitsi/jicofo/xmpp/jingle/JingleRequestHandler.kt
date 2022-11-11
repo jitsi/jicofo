@@ -49,7 +49,7 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onSessionAccept(jingleSession: JingleSession, answer: List<ContentPacketExtension>): StanzaError? = null
+    open fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'session-info' IQ was received.
@@ -79,11 +79,12 @@ abstract class JingleRequestHandler {
      * processing was successful.
      */
     open fun onTransportAccept(
-        jingleSession: JingleSession, contents: List<ContentPacketExtension>
+        jingleSession: JingleSession,
+        contents: List<ContentPacketExtension>
     ): StanzaError? = null
 
     /**
      * A 'transport-reject' IQ was received.
      */
-    open fun onTransportReject(jingleSession: JingleSession, rejectIq: JingleIQ) { }
+    open fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) { }
 }

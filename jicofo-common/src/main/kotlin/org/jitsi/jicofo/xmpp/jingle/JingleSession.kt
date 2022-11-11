@@ -17,6 +17,11 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
+import org.jitsi.utils.logging2.createLogger
+import org.jitsi.xmpp.extensions.jingle.JingleAction
+import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 
 /**
@@ -31,4 +36,29 @@ class JingleSession(
     /** Remote peer XMPP address. */
     val address: Jid,
     val requestHandler: JingleRequestHandler
-)
+) {
+    val logger = createLogger()
+
+    fun processIq(iq: JingleIQ): StanzaError? {
+        val action = iq.action
+            ?: return StanzaError.getBuilder(StanzaError.Condition.bad_request)
+                .setConditionText("Missing 'action'").build()
+        AbstractOperationSetJingle.stats.stanzaReceived(action)
+
+        return when (action) {
+            JingleAction.SESSION_ACCEPT -> requestHandler.onSessionAccept(this, iq.contentList)
+            JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
+            JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq)
+            JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
+            JingleAction.TRANSPORT_INFO -> { requestHandler.onTransportInfo(this, iq.contentList); null }
+            JingleAction.TRANSPORT_REJECT -> { requestHandler.onTransportReject(this, iq); null }
+            JingleAction.ADDSOURCE, JingleAction.SOURCEADD -> requestHandler.onAddSource(this, iq.contentList)
+            JingleAction.REMOVESOURCE, JingleAction.SOURCEREMOVE -> requestHandler.onRemoveSource(this, iq.contentList)
+            else -> {
+                logger.warn("unsupported action $action")
+                StanzaError.getBuilder(StanzaError.Condition.feature_not_implemented)
+                    .setConditionText("Unsupported 'action'").build()
+            }
+        }
+    }
+}
