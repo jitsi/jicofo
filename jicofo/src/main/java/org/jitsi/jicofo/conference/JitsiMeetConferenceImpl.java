@@ -67,9 +67,9 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
+    extends JingleRequestHandler //temporary
     implements JitsiMeetConference,
-               RegistrationListener,
-               JingleRequestHandler
+               RegistrationListener
 {
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -940,7 +940,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer)
+    public StanzaError onSessionAccept(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> answer)
     {
         logger.info("Receive session-accept from " + jingleSession.getAddress());
 
@@ -955,7 +957,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionInfo(@NotNull JingleSession session, JingleIQ iq)
+    public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
         Jid address = session.getAddress();
         Participant participant = getParticipant(session);
@@ -1012,7 +1014,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionTerminate(@NotNull JingleSession session, JingleIQ iq)
+    public StanzaError onSessionTerminate(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
         Participant participant = getParticipant(session);
 
@@ -1109,7 +1111,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportInfo(@NotNull JingleSession session, List<ContentPacketExtension> contentList)
+    public void onTransportInfo(
+            @NotNull JingleSession session,
+            @NotNull List<? extends ContentPacketExtension> contentList)
     {
         Participant participant = getParticipant(session);
         if (participant == null)
@@ -1129,7 +1133,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onTransportAccept(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         logger.info("Received transport-accept from " + jingleSession.getAddress());
 
@@ -1146,7 +1152,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportReject(@NotNull JingleSession jingleSession, JingleIQ reply)
+    public void onTransportReject(@NotNull JingleSession jingleSession, @NotNull JingleIQ reply)
     {
         Participant p = getParticipant(jingleSession);
         if (p == null)
@@ -1171,7 +1177,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onAddSource(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         Jid address = jingleSession.getAddress();
         Participant participant = getParticipant(jingleSession);
@@ -1242,7 +1250,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onRemoveSource(
+            @NotNull JingleSession sourceJingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
@@ -1264,7 +1274,8 @@ public class JitsiMeetConferenceImpl
      * Jingle IQs.
      */
     private StanzaError onSessionAcceptInternal(
-            @NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         Participant participant = getParticipant(jingleSession);
         Jid participantJid = jingleSession.getAddress();
@@ -1331,7 +1342,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Find the first {@link IceUdpTransportPacketExtension} in a list of Jingle contents.
      */
-    private IceUdpTransportPacketExtension getTransport(@NotNull List<ContentPacketExtension> contents)
+    private IceUdpTransportPacketExtension getTransport(@NotNull List<? extends ContentPacketExtension> contents)
     {
         IceUdpTransportPacketExtension transport = null;
         for (ContentPacketExtension content : contents)

@@ -32,7 +32,6 @@ import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.packet.id.*;
@@ -75,7 +74,7 @@ public class MockParticipant
 
     private JingleSession jingleSession;
 
-    private final JingleHandler jingleHandler = new JingleHandler();
+    private final JingleRequestHandler jingleHandler = new JingleRequestHandler() { };
 
     private Jid myJid;
 
@@ -498,81 +497,6 @@ public class MockParticipant
     private void removeSsrcs(ChatRoomMember member)
     {
         remoteSSRCs.remove(member.getJid());
-    }
-
-    static class JingleHandler
-        implements JingleRequestHandler
-    {
-        /**
-         * The logger used by this instance.
-         */
-        private final static Logger logger = new LoggerImpl(JingleHandler.class.getName());
-
-        @Override
-        public StanzaError onAddSource(JingleSession jingleSession,
-            List<ContentPacketExtension> contents)
-        {
-            logger.warn("Ignored Jingle 'source-add'");
-
-            return null;
-        }
-
-        @Override
-        public StanzaError onRemoveSource(JingleSession jingleSession,
-            List<ContentPacketExtension> contents)
-        {
-            logger.warn("Ignored Jingle 'source-remove'");
-
-            return null;
-        }
-
-        @Override
-        public StanzaError onSessionAccept(JingleSession jingleSession,
-            List<ContentPacketExtension> answer)
-        {
-            logger.warn("Ignored Jingle 'session-accept'");
-
-            return null;
-        }
-
-        @Override
-        public StanzaError onSessionTerminate(JingleSession jingleSession, JingleIQ iq)
-        {
-            logger.warn("Ignored Jingle 'session-terminate'");
-
-            return null;
-        }
-
-        @Override
-        public StanzaError onSessionInfo(JingleSession session, JingleIQ iq)
-        {
-            logger.warn("Ignored Jingle 'session-info'");
-
-            return null;
-        }
-
-        @Override
-        public StanzaError onTransportAccept(JingleSession jingleSession,
-            List<ContentPacketExtension> contents)
-        {
-            logger.warn("Ignored Jingle 'transport-accept'");
-
-            return null;
-        }
-
-        @Override
-        public void onTransportInfo(JingleSession jingleSession,
-            List<ContentPacketExtension> contents)
-        {
-            logger.warn("Ignored Jingle 'transport-info'");
-        }
-
-        @Override
-        public void onTransportReject(JingleSession jingleSession,
-            JingleIQ      rejectIQ)
-        {
-            logger.warn("Ignored Jingle 'transport-reject'");
-        }
     }
 
     private class ChatRoomListenerImpl extends DefaultChatRoomListener

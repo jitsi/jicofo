@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Operation set allows to establish and control Jingle sessions. Exposed
  * functionality is limited to the minimum required by Jitsi Meet conference.
- * {@link org.jitsi.protocol.xmpp.JingleRequestHandler}.
+ * {@link JingleRequestHandler}.
  *
  * @author Pawel Domas
  */

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
-import org.jitsi.protocol.xmpp.JingleRequestHandler
 import org.jxmpp.jid.Jid
 
 /**
