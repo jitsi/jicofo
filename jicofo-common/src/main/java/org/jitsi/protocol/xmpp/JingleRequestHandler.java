@@ -17,6 +17,7 @@
  */
 package org.jitsi.protocol.xmpp;
 
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.xmpp.extensions.colibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 

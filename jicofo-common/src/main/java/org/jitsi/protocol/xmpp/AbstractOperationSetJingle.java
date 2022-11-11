@@ -21,6 +21,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;

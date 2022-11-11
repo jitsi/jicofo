@@ -17,7 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.protocol.xmpp.JingleSession
+import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ

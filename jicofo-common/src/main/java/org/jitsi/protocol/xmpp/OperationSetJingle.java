@@ -18,6 +18,7 @@
 package org.jitsi.protocol.xmpp;
 
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
 import org.jivesoftware.smack.*;

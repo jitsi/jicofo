@@ -23,6 +23,7 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;

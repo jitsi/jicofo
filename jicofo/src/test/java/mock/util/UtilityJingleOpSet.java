@@ -19,6 +19,7 @@ package mock.util;
 
 import mock.*;
 import mock.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
