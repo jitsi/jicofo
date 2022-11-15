@@ -26,6 +26,7 @@ import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -616,6 +617,12 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
+            if (chatRoomMember.getRole() == MemberRole.VISITOR && !VisitorsConfig.config.getEnabled())
+            {
+                logger.warn("Ignoring a visitor because visitors are not configured:" + chatRoomMember.getName());
+                return;
+            }
+
             logger.info(
                     "Member joined:" + chatRoomMember.getName()
                             + " stats-id=" + chatRoomMember.getStatsId()
