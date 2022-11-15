@@ -160,11 +160,15 @@ class ColibriV2SessionManager(
                 sessionParticipantsToRemove.forEach { remove(it) }
                 participantsRemoved.addAll(sessionParticipantsToRemove)
 
-                // If the session was removed the relays themselves are expired, so there's no need to expire individual
-                // endpoints within a relay.
-                getPathsFrom(session) { _, otherSession, from ->
-                    from?.relayId?.let {
-                        otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
+                // Visitors don't have relay endpoints.
+                if (sessionParticipantsToRemove.any { !it.visitor }) {
+
+                    // If the session was removed the relays themselves are expired, so there's no need to expire
+                    // individual endpoints within a relay.
+                    getPathsFrom(session) { _, otherSession, from ->
+                        from?.relayId?.let {
+                            otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
+                        }
                     }
                 }
             }

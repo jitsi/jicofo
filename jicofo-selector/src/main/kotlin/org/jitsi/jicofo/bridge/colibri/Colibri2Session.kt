@@ -422,6 +422,9 @@ class Colibri2Session(
 
         /** Expire relay endpoints for a set of participants. */
         fun expireParticipants(participants: List<ParticipantInfo>) {
+            if (participants.all { it.visitor }) {
+                return
+            }
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply { setId(relayId) }
             val endpoints = Endpoints.getBuilder()
