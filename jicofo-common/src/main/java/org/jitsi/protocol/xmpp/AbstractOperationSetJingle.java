@@ -20,6 +20,7 @@ package org.jitsi.protocol.xmpp;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.*;
@@ -35,7 +36,6 @@ import org.json.simple.*;
 import org.jxmpp.jid.Jid;
 
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Class provides template implementation of {@link OperationSetJingle}.
@@ -62,7 +62,7 @@ public abstract class AbstractOperationSetJingle
     /**
      * The list of active Jingle sessions.
      */
-    protected final Map<String, JingleSession> sessions = new ConcurrentHashMap<>();
+    protected final WeakValueMap<String, JingleSession> sessions = new WeakValueMap<>();
 
     protected AbstractOperationSetJingle()
     {
@@ -404,7 +404,7 @@ public abstract class AbstractOperationSetJingle
     @Override
     public void terminateHandlersSessions(JingleRequestHandler requestHandler)
     {
-        List<JingleSession> sessions = new ArrayList<>(this.sessions.values());
+        List<JingleSession> sessions = this.sessions.values();
 
         for (JingleSession session : sessions)
         {
