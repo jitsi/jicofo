@@ -112,12 +112,4 @@ public interface OperationSetJingle
      * the session is being ended on the remote peer's request.
      */
     void terminateSession(JingleSession session, Reason reason, String message, boolean sendTerminate);
-
-    /**
-     * Terminates all active Jingle Sessions associated with given
-     * <tt>JingleRequestHandler</tt>.
-     * @param requestHandler <tt>JingleRequestHandler</tt> instance for which
-     *                       all active JingleSessions shall be terminated.
-     */
-    void terminateHandlersSessions(JingleRequestHandler requestHandler);
 }

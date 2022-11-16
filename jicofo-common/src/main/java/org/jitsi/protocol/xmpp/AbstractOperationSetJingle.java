@@ -399,23 +399,6 @@ public abstract class AbstractOperationSetJingle
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void terminateHandlersSessions(JingleRequestHandler requestHandler)
-    {
-        List<JingleSession> sessions = this.sessions.values();
-
-        for (JingleSession session : sessions)
-        {
-            if (session.getRequestHandler() == requestHandler)
-            {
-                terminateSession(session, Reason.GONE, null, true);
-            }
-        }
-    }
-
-    /**
      * Terminates given Jingle session. This method is to be called either to send 'session-terminate' or to inform
      * this operation set that the session has been terminated as a result of 'session-terminate' received from
      * the other peer in which case {@code sendTerminate} should be set to {@code false}.

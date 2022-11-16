@@ -420,18 +420,6 @@ public class JitsiMeetConferenceImpl
             logger.error("leaveTheRoom error", e);
         }
 
-        if (jingle != null)
-        {
-            try
-            {
-                jingle.terminateHandlersSessions(this);
-            }
-            catch (Exception e)
-            {
-                logger.error("terminateHandlersSessions error", e);
-            }
-        }
-
         logger.info("Stopped.");
         if (listener != null)
         {

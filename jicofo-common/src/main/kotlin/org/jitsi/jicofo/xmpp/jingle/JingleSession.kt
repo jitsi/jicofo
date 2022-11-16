@@ -35,7 +35,7 @@ class JingleSession(
     val sessionID: String,
     /** Remote peer XMPP address. */
     val address: Jid,
-    val requestHandler: JingleRequestHandler
+    private val requestHandler: JingleRequestHandler
 ) {
     val logger = createLogger()
 
