@@ -74,8 +74,6 @@ public class MockParticipant
 
     private JingleSession jingleSession;
 
-    private final JingleRequestHandler jingleHandler = new JingleRequestHandler() { };
-
     private Jid myJid;
 
     private final ConferenceSourceMap localSSRCs = new ConferenceSourceMap();
@@ -208,7 +206,7 @@ public class MockParticipant
     public JingleIQ[] acceptInvite(long timeout)
         throws InterruptedException
     {
-        JingleIQ invite = jingle.acceptSession(timeout, jingleHandler);
+        JingleIQ invite = jingle.acceptSession(timeout);
         if (invite == null)
         {
             throw new RuntimeException(nick + " - wait for invite timeout");

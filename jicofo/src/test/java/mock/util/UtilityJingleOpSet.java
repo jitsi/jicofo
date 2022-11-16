@@ -94,8 +94,7 @@ public class UtilityJingleOpSet
         return connection;
     }
 
-    public JingleIQ acceptSession(
-        long timeout, final JingleRequestHandler requestHandler)
+    public JingleIQ acceptSession(long timeout)
         throws InterruptedException
     {
         JingleIQ invite;
@@ -114,7 +113,7 @@ public class UtilityJingleOpSet
         }
 
         String sid = invite.getSID();
-        JingleSession session = new JingleSession(sid, invite.getFrom(), requestHandler);
+        JingleSession session = new JingleSession(sid, invite.getFrom(), new JingleRequestHandler() { });
 
         sessions.put(sid, session);
         return invite;
