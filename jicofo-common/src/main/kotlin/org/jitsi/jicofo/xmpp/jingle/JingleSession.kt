@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.xmpp.jingle
 
 import org.jitsi.jicofo.xmpp.tryToSendStanza
-import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
+import org.jitsi.protocol.xmpp.JingleApi
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
@@ -38,7 +38,7 @@ class JingleSession(
     val sessionID: String,
     /** Remote peer XMPP address. */
     val address: Jid,
-    private val jingleApi: AbstractOperationSetJingle,
+    private val jingleApi: JingleApi,
     private val requestHandler: JingleRequestHandler
 ) {
     val logger = createLogger()
@@ -47,7 +47,7 @@ class JingleSession(
         val action = iq.action
             ?: return StanzaError.getBuilder(StanzaError.Condition.bad_request)
                 .setConditionText("Missing 'action'").build()
-        AbstractOperationSetJingle.stats.stanzaReceived(action)
+        JingleApi.stats.stanzaReceived(action)
 
         return when (action) {
             JingleAction.SESSION_ACCEPT -> requestHandler.onSessionAccept(this, iq.contentList)
@@ -82,7 +82,7 @@ class JingleSession(
                 message
             )
             jingleApi.connection.tryToSendStanza(terminate)
-            AbstractOperationSetJingle.stats.stanzaSent(JingleAction.SESSION_TERMINATE)
+            JingleApi.stats.stanzaSent(JingleAction.SESSION_TERMINATE)
         }
 
         jingleApi.removeSession(this)

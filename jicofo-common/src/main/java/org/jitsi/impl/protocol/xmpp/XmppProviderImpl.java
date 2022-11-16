@@ -285,7 +285,7 @@ public class XmppProviderImpl
     }
 
     @Override
-    public @NotNull OperationSetJingle getJingleApi()
+    public @NotNull JingleApi getJingleApi()
     {
         return jingleOpSet;
     }

@@ -31,7 +31,7 @@ import org.jivesoftware.smack.packet.*;
 import java.util.concurrent.*;
 
 public class UtilityJingleOpSet
-    extends AbstractOperationSetJingle
+    extends JingleApi
 {
     /**
      * The logger instance used by this class.

@@ -31,7 +31,7 @@ import java.util.*;
  * @author Pawel Domas
  */
 public class MockOperationSetJingle
-    extends AbstractOperationSetJingle
+    extends JingleApi
 {
     private final MockXmppProvider xmppProvider;
 

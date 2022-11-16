@@ -27,7 +27,7 @@ import org.jivesoftware.smack.*;
  * @author Pawel Domas
  */
 public class OperationSetJingleImpl
-    extends AbstractOperationSetJingle
+    extends JingleApi
 {
     private final XmppProviderImpl xmppProvider;
 

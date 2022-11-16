@@ -102,7 +102,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Operation set used to handle Jingle sessions with conference participants.
      */
-    private OperationSetJingle jingle;
+    private JingleApi jingle;
 
     /**
      * Map of occupant JID to Participant.
@@ -1484,7 +1484,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this <tt>JitsiMeetConference</tt> instance.
      */
-    public OperationSetJingle getJingle()
+    public JingleApi getJingle()
     {
         return jingle;
     }

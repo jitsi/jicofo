@@ -44,7 +44,7 @@ import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
-import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
+import org.jitsi.protocol.xmpp.JingleApi
 import org.jitsi.rest.createServer
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
@@ -212,7 +212,7 @@ open class JicofoServices {
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
-        put("jingle", AbstractOperationSetJingle.getStats())
+        put("jingle", JingleApi.getStats())
         healthChecker?.let {
             put("slow_health_check", it.totalSlowHealthChecks)
             put("healthy", it.result == null)

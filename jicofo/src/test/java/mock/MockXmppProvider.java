@@ -48,7 +48,7 @@ public class MockXmppProvider
             = DiscoveryUtil.getDefaultParticipantFeatureSet().stream()
                 .filter(f -> !f.equals(DiscoveryUtil.FEATURE_SCTP)).collect(Collectors.toList());
 
-    private final AbstractOperationSetJingle jingleOpSet;
+    private final JingleApi jingleOpSet;
 
     private final MockMultiUserChatOpSet mucApi;
 
@@ -107,7 +107,7 @@ public class MockXmppProvider
 
     @Override
     @NotNull
-    public OperationSetJingle getJingleApi()
+    public JingleApi getJingleApi()
     {
         return jingleOpSet;
     }

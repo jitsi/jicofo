@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp
 
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
-import org.jitsi.protocol.xmpp.OperationSetJingle
+import org.jitsi.protocol.xmpp.JingleApi
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smackx.disco.packet.DiscoverInfo
 import org.jxmpp.jid.EntityBareJid
@@ -51,7 +51,7 @@ interface XmppProvider {
 
     val config: XmppConnectionConfig
     val xmppConnection: AbstractXMPPConnection
-    val jingleApi: OperationSetJingle
+    val jingleApi: JingleApi
 
     @Throws(RoomExistsException::class)
     fun createRoom(name: EntityBareJid): ChatRoom

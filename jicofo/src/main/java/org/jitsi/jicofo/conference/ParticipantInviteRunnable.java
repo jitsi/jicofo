@@ -352,7 +352,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private boolean doInviteOrReinvite(Jid address, Offer offer, ColibriAllocation colibriAllocation)
         throws SmackException.NotConnectedException
     {
-        OperationSetJingle jingle = meetConference.getJingle();
+        JingleApi jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();
         boolean initiateSession = !reInvite || jingleSession == null;
         boolean ack;

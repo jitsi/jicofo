@@ -38,19 +38,16 @@ import org.jxmpp.jid.Jid;
 import java.util.*;
 
 /**
- * Class provides template implementation of {@link OperationSetJingle}.
- *
  * @author Pawel Domas
  */
-public abstract class AbstractOperationSetJingle
+public abstract class JingleApi
     extends AbstractIqRequestHandler
-    implements OperationSetJingle
 {
     /**
      * The {@code Logger} used by the class {@code AbstractOperationSetJingle}
      * and its instances to print debug-related information.
      */
-    private static final Logger logger = new LoggerImpl(AbstractOperationSetJingle.class.getName());
+    private static final Logger logger = new LoggerImpl(JingleApi.class.getName());
 
     public static final JingleStats stats = new JingleStats();
 
@@ -64,7 +61,7 @@ public abstract class AbstractOperationSetJingle
      */
     protected final WeakValueMap<String, JingleSession> sessions = new WeakValueMap<>();
 
-    protected AbstractOperationSetJingle()
+    protected JingleApi()
     {
         super(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
     }
@@ -96,7 +93,6 @@ public abstract class AbstractOperationSetJingle
      *
      * @return our JID
      */
-    @Override
     public Jid getOurJID()
     {
         return getConnection().getUser();
@@ -107,7 +103,6 @@ public abstract class AbstractOperationSetJingle
     /**
      * {@inheritDoc}
      */
-    @Override
     public boolean initiateSession(
             Jid to,
             List<ContentPacketExtension> contents,
@@ -157,7 +152,6 @@ public abstract class AbstractOperationSetJingle
     /**
      * {@inheritDoc}
      */
-    @Override
     public boolean replaceTransport(
             @NotNull JingleSession session,
             List<ContentPacketExtension> contents,
@@ -333,7 +327,6 @@ public abstract class AbstractOperationSetJingle
     /**
      * {@inheritDoc}
      */
-    @Override
     public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
     {
         JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
@@ -369,7 +362,6 @@ public abstract class AbstractOperationSetJingle
     /**
      * {@inheritDoc}
      */
-    @Override
     public void sendRemoveSourceIQ(
             ConferenceSourceMap sourcesToRemove,
             JingleSession session,

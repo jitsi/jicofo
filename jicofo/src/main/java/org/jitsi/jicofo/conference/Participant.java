@@ -581,7 +581,7 @@ public class Participant
      */
     public void sendQueuedRemoteSources()
     {
-        OperationSetJingle jingle = conference.getJingle();
+        JingleApi jingle = conference.getJingle();
         if (jingle == null)
         {
             logger.error("Can not signal remote sources, no Jingle API available");
