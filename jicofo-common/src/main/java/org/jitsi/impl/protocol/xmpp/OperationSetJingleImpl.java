@@ -40,7 +40,7 @@ public class OperationSetJingleImpl
      * {@inheritDoc}
      */
     @Override
-    protected AbstractXMPPConnection getConnection()
+    public AbstractXMPPConnection getConnection()
     {
         return xmppProvider.getXmppConnection();
     }

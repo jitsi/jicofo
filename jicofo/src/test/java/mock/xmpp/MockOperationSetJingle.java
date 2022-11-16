@@ -45,7 +45,7 @@ public class MockOperationSetJingle
      * {@inheritDoc}
      */
     @Override
-    protected AbstractXMPPConnection getConnection()
+    public AbstractXMPPConnection getConnection()
     {
         return xmppProvider.getXmppConnection();
     }

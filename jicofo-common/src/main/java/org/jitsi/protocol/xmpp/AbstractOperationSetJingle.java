@@ -102,7 +102,7 @@ public abstract class AbstractOperationSetJingle
         return getConnection().getUser();
     }
 
-    protected abstract AbstractXMPPConnection getConnection();
+    public abstract AbstractXMPPConnection getConnection();
 
     /**
      * {@inheritDoc}
@@ -129,7 +129,7 @@ public abstract class AbstractOperationSetJingle
 
         JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
-        JingleSession session = new JingleSession(sid, to, requestHandler);
+        JingleSession session = new JingleSession(sid, to, this, requestHandler);
 
         inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
         additionalExtensions.forEach(inviteIQ::addExtension);
@@ -398,45 +398,8 @@ public abstract class AbstractOperationSetJingle
         stats.stanzaSent(JingleAction.SOURCEREMOVE);
     }
 
-    /**
-     * Terminates given Jingle session. This method is to be called either to send 'session-terminate' or to inform
-     * this operation set that the session has been terminated as a result of 'session-terminate' received from
-     * the other peer in which case {@code sendTerminate} should be set to {@code false}.
-     *
-     * @param session the <tt>JingleSession</tt> to terminate.
-     * @param reason one of {@link Reason} enum that indicates why the session
-     *               is being ended or <tt>null</tt> to omit.
-     * @param sendTerminate when {@code true} it means that a 'session-terminate' is to be sent, otherwise it means
-     * the session is being ended on the remote peer's request.
-     * {@inheritDoc}
-     */
-    @Override
-    public void terminateSession(
-            JingleSession session,
-            Reason reason,
-            String message,
-            boolean sendTerminate)
+    public void removeSession(@NotNull JingleSession session)
     {
-        logger.info(String.format(
-                "Terminate session: %s, reason: %s, send terminate: %s",
-                session.getAddress(),
-                reason,
-                sendTerminate));
-
-        if (sendTerminate)
-        {
-            JingleIQ terminate
-                    = JinglePacketFactory.createSessionTerminate(
-                    getOurJID(),
-                    session.getAddress(),
-                    session.getSessionID(),
-                    reason,
-                    message);
-
-            UtilKt.tryToSendStanza(getConnection(), terminate);
-            stats.stanzaSent(JingleAction.SESSION_TERMINATE);
-        }
-
         sessions.remove(session.getSessionID());
     }
 }

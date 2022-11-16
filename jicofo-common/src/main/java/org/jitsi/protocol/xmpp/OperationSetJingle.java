@@ -99,17 +99,4 @@ public interface OperationSetJingle
      * @param encodeSourcesAsJson whether to encode {@code sources} as JSON or standard Jingle.
      */
     void sendRemoveSourceIQ(ConferenceSourceMap sourcesToRemove, JingleSession session, boolean encodeSourcesAsJson);
-
-    /**
-     * Terminates given Jingle session. This method is to be called either to send 'session-terminate' or to inform
-     * this operation set that the session has been terminated as a result of 'session-terminate' received from
-     * the other peer in which case {@code sendTerminate} should be set to {@code false}.
-     *
-     * @param session the <tt>JingleSession</tt> to terminate.
-     * @param reason one of {@link Reason} enum that indicates why the session
-     *               is being ended or <tt>null</tt> to omit.
-     * @param sendTerminate when {@code true} it means that a 'session-terminate' is to be sent, otherwise it means
-     * the session is being ended on the remote peer's request.
-     */
-    void terminateSession(JingleSession session, Reason reason, String message, boolean sendTerminate);
 }

@@ -842,7 +842,7 @@ public class JitsiMeetConferenceImpl
             JingleSession jingleSession = participant.getJingleSession();
             if (jingleSession != null)
             {
-                jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
+                jingleSession.terminate(reason, message, sendSessionTerminate);
             }
 
             EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
@@ -1802,7 +1802,7 @@ public class JitsiMeetConferenceImpl
                     JingleSession jingleSession = participant.getJingleSession();
                     if (jingleSession != null)
                     {
-                        jingle.terminateSession(jingleSession, Reason.SUCCESS, "moving", true);
+                        jingleSession.terminate(Reason.SUCCESS, "moving", true);
                     }
                     participant.setJingleSession(null);
                 }

@@ -89,7 +89,7 @@ public class UtilityJingleOpSet
     }
 
     @Override
-    protected AbstractXMPPConnection getConnection()
+    public AbstractXMPPConnection getConnection()
     {
         return connection;
     }
@@ -113,7 +113,7 @@ public class UtilityJingleOpSet
         }
 
         String sid = invite.getSID();
-        JingleSession session = new JingleSession(sid, invite.getFrom(), new JingleRequestHandler() { });
+        JingleSession session = new JingleSession(sid, invite.getFrom(), this, new JingleRequestHandler() { });
 
         sessions.put(sid, session);
         return invite;

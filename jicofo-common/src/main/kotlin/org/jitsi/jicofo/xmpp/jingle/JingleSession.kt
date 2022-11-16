@@ -17,10 +17,13 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.protocol.xmpp.AbstractOperationSetJingle
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
+import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 
@@ -35,6 +38,7 @@ class JingleSession(
     val sessionID: String,
     /** Remote peer XMPP address. */
     val address: Jid,
+    private val jingleApi: AbstractOperationSetJingle,
     private val requestHandler: JingleRequestHandler
 ) {
     val logger = createLogger()
@@ -60,5 +64,27 @@ class JingleSession(
                     .setConditionText("Unsupported 'action'").build()
             }
         }
+    }
+
+    fun terminate(
+        reason: Reason,
+        message: String?,
+        sendTerminate: Boolean
+    ) {
+        logger.info("Terminating session with $address, reason=$reason, sendTerminate=$sendTerminate")
+
+        if (sendTerminate) {
+            val terminate = JinglePacketFactory.createSessionTerminate(
+                jingleApi.ourJID,
+                address,
+                sessionID,
+                reason,
+                message
+            )
+            jingleApi.connection.tryToSendStanza(terminate)
+            AbstractOperationSetJingle.stats.stanzaSent(JingleAction.SESSION_TERMINATE)
+        }
+
+        jingleApi.removeSession(this)
     }
 }
