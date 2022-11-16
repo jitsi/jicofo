@@ -30,7 +30,6 @@ import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;

@@ -17,7 +17,7 @@
  */
 package org.jitsi.impl.protocol.xmpp;
 
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jivesoftware.smack.*;
 
 /**

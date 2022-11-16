@@ -23,7 +23,7 @@ import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.retry.*;
 
 import org.jitsi.utils.logging2.*;
@@ -33,13 +33,10 @@ import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
 import org.jivesoftware.smackx.disco.packet.*;
-import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 
 import java.lang.*;
-import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 

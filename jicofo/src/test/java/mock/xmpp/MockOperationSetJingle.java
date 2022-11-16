@@ -19,7 +19,7 @@ package mock.xmpp;
 
 import mock.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jivesoftware.smack.*;
 
 import java.util.*;

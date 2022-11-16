@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp.jingle
 
 import org.jitsi.jicofo.xmpp.tryToSendStanza
-import org.jitsi.protocol.xmpp.JingleApi
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ

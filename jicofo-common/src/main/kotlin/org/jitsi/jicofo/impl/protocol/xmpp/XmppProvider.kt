@@ -18,7 +18,7 @@
 package org.jitsi.impl.protocol.xmpp
 
 import org.jitsi.jicofo.xmpp.XmppConnectionConfig
-import org.jitsi.protocol.xmpp.JingleApi
+import org.jitsi.jicofo.xmpp.jingle.JingleApi
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smackx.disco.packet.DiscoverInfo
 import org.jxmpp.jid.EntityBareJid

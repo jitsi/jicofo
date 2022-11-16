@@ -38,7 +38,6 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.jibri.*;
-import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;

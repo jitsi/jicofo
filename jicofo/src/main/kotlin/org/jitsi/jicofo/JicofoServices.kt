@@ -44,7 +44,7 @@ import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
-import org.jitsi.protocol.xmpp.JingleApi
+import org.jitsi.jicofo.xmpp.jingle.JingleApi
 import org.jitsi.rest.createServer
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject

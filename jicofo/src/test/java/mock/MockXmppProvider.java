@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jivesoftware.smackx.disco.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
