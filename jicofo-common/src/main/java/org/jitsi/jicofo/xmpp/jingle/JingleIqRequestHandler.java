@@ -29,10 +29,10 @@ import org.jivesoftware.smack.packet.*;
 /**
  * @author Pawel Domas
  */
-public class JingleApi
+public class JingleIqRequestHandler
     extends AbstractIqRequestHandler
 {
-    private static final Logger logger = new LoggerImpl(JingleApi.class.getName());
+    private static final Logger logger = new LoggerImpl(JingleIqRequestHandler.class.getName());
 
     /**
      * The list of active Jingle sessions.
@@ -42,7 +42,7 @@ public class JingleApi
     @NotNull
     private final AbstractXMPPConnection xmppConnection;
 
-    public JingleApi(@NotNull AbstractXMPPConnection xmppConnection)
+    public JingleIqRequestHandler(@NotNull AbstractXMPPConnection xmppConnection)
     {
         super(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
         this.xmppConnection = xmppConnection;

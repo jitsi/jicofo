@@ -48,7 +48,7 @@ public class MockXmppProvider
             = DiscoveryUtil.getDefaultParticipantFeatureSet().stream()
                 .filter(f -> !f.equals(DiscoveryUtil.FEATURE_SCTP)).collect(Collectors.toList());
 
-    private final JingleApi jingleOpSet;
+    private final JingleIqRequestHandler jingleIqRequestHandler;
 
     private final MockMultiUserChatOpSet mucApi;
 
@@ -59,7 +59,7 @@ public class MockXmppProvider
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
         mucApi = new MockMultiUserChatOpSet(this);
-        this.jingleOpSet = new JingleApi(connection);
+        this.jingleIqRequestHandler = new JingleIqRequestHandler(connection);
     }
 
     @Override
@@ -71,9 +71,9 @@ public class MockXmppProvider
     @Override
     public void start()
     {
-        if (jingleOpSet != null)
+        if (jingleIqRequestHandler != null)
         {
-            connection.registerIQRequestHandler(jingleOpSet);
+            connection.registerIQRequestHandler(jingleIqRequestHandler);
         }
 
         setRegistered(true);
@@ -82,9 +82,9 @@ public class MockXmppProvider
     @Override
     public void shutdown()
     {
-        if (jingleOpSet != null)
+        if (jingleIqRequestHandler != null)
         {
-            connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.unregisterIQRequestHandler(jingleIqRequestHandler);
         }
 
         setRegistered(false);
@@ -107,9 +107,9 @@ public class MockXmppProvider
 
     @Override
     @NotNull
-    public JingleApi getJingleApi()
+    public JingleIqRequestHandler getJingleIqRequestHandler()
     {
-        return jingleOpSet;
+        return jingleIqRequestHandler;
     }
 
     public EntityFullJid getOurJID()

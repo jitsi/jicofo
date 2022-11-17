@@ -648,7 +648,7 @@ public class Participant
         return new JingleSession(
                 JingleIQ.generateSID(),
                 getMucJid(),
-                roomMember.getChatRoom().getXmppProvider().getJingleApi(),
+                roomMember.getChatRoom().getXmppProvider().getJingleIqRequestHandler(),
                 conference,
                 ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
     }

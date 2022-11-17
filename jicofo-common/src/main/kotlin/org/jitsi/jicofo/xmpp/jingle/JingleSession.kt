@@ -49,7 +49,7 @@ class JingleSession(
     val sid: String,
     /** Remote peer XMPP address. */
     val remoteJid: Jid,
-    private val jingleApi: JingleApi,
+    private val jingleIqRequestHandler: JingleIqRequestHandler,
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
@@ -58,7 +58,7 @@ class JingleSession(
         addContext("sid", sid)
     }
 
-    private val connection = jingleApi.connection
+    private val connection = jingleIqRequestHandler.connection
     private val localJid: Jid = connection.user
 
     fun processIq(iq: JingleIQ): StanzaError? {
@@ -103,7 +103,7 @@ class JingleSession(
             JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
         }
 
-        jingleApi.removeSession(this)
+        jingleIqRequestHandler.removeSession(this)
     }
 
     /**
@@ -181,7 +181,7 @@ class JingleSession(
             }
         }
 
-        jingleApi.registerSession(this)
+        jingleIqRequestHandler.registerSession(this)
         JingleStats.stanzaSent(sessionInitiate.action)
         val response = connection.sendIqAndGetResponse(sessionInitiate)
         return if (response?.type == IQ.Type.result) {

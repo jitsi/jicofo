@@ -60,7 +60,7 @@ public class MockParticipant
 
     private MockXmppConnection mockConnection;
 
-    private UtilityJingleOpSet jingle;
+    private TestJingleIqRequestHandler jingle;
 
     private ArrayList<ContentPacketExtension> myContents;
 
@@ -140,7 +140,7 @@ public class MockParticipant
         }
 
         mockConnection = new MockXmppConnection(myJid);
-        jingle = new UtilityJingleOpSet(mockConnection);
+        jingle = new TestJingleIqRequestHandler(mockConnection);
         jingle.mockParticipant = this;
         mockConnection.registerIQRequestHandler(jingle);
 

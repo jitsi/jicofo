@@ -27,18 +27,18 @@ import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
 
-public class UtilityJingleOpSet
-    extends JingleApi
+public class TestJingleIqRequestHandler
+    extends JingleIqRequestHandler
 {
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger = new LoggerImpl(UtilityJingleOpSet.class.getName());
+    private final static Logger logger = new LoggerImpl(TestJingleIqRequestHandler.class.getName());
 
     private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
 
-    public UtilityJingleOpSet(MockXmppConnection connection)
+    public TestJingleIqRequestHandler(MockXmppConnection connection)
     {
         super(connection);
     }

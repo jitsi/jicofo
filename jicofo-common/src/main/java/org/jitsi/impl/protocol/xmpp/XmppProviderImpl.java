@@ -57,7 +57,7 @@ public class XmppProviderImpl
     /**
      * Jingle operation set.
      */
-    private final @NotNull JingleApi jingleApi;
+    private final @NotNull JingleIqRequestHandler jingleIqRequestHandler;
 
     private final Muc muc = new Muc();
 
@@ -101,7 +101,7 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
-        jingleApi = new JingleApi(connection);
+        jingleIqRequestHandler = new JingleIqRequestHandler(connection);
     }
 
 
@@ -216,7 +216,7 @@ public class XmppProviderImpl
                     connection.login(login, pass, resource);
                 }
 
-                connection.registerIQRequestHandler(jingleApi);
+                connection.registerIQRequestHandler(jingleIqRequestHandler);
                 return false;
             }
             catch (Exception e)
@@ -261,7 +261,7 @@ public class XmppProviderImpl
             connection.disconnect();
             logger.info("Disconnected.");
 
-            connection.unregisterIQRequestHandler(jingleApi);
+            connection.unregisterIQRequestHandler(jingleIqRequestHandler);
             connection.removeConnectionListener(connListener);
         }
 
@@ -281,9 +281,9 @@ public class XmppProviderImpl
     }
 
     @Override
-    public @NotNull JingleApi getJingleApi()
+    public @NotNull JingleIqRequestHandler getJingleIqRequestHandler()
     {
-        return jingleApi;
+        return jingleIqRequestHandler;
     }
 
     @Override
