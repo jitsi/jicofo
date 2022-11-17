@@ -57,7 +57,7 @@ public class XmppProviderImpl
     /**
      * Jingle operation set.
      */
-    private final @NotNull OperationSetJingleImpl jingleOpSet;
+    private final @NotNull JingleApi jingleApi;
 
     private final Muc muc = new Muc();
 
@@ -99,10 +99,9 @@ public class XmppProviderImpl
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
-        jingleOpSet = new OperationSetJingleImpl(this);
-
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
+        jingleApi = new JingleApi(connection);
     }
 
 
@@ -217,7 +216,7 @@ public class XmppProviderImpl
                     connection.login(login, pass, resource);
                 }
 
-                connection.registerIQRequestHandler(jingleOpSet);
+                connection.registerIQRequestHandler(jingleApi);
                 return false;
             }
             catch (Exception e)
@@ -262,7 +261,7 @@ public class XmppProviderImpl
             connection.disconnect();
             logger.info("Disconnected.");
 
-            connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.unregisterIQRequestHandler(jingleApi);
             connection.removeConnectionListener(connListener);
         }
 
@@ -284,7 +283,7 @@ public class XmppProviderImpl
     @Override
     public @NotNull JingleApi getJingleApi()
     {
-        return jingleOpSet;
+        return jingleApi;
     }
 
     @Override

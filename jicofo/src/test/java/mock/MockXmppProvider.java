@@ -59,7 +59,7 @@ public class MockXmppProvider
         this.config = config;
         connection = new MockXmppConnection(getOurJID());
         mucApi = new MockMultiUserChatOpSet(this);
-        this.jingleOpSet = new MockOperationSetJingle(this);
+        this.jingleOpSet = new JingleApi(connection);
     }
 
     @Override

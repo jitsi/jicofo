@@ -575,19 +575,19 @@ public class Participant
         }
     }
 
+    @NotNull JingleApi getJingleApi()
+    {
+        return roomMember.getChatRoom().getXmppProvider().getJingleApi();
+    }
+
     /**
      * Signal any queued remote source modifications (either addition or removal) to the remote side.
      */
     public void sendQueuedRemoteSources()
     {
-        JingleApi jingle = conference.getJingle();
-        if (jingle == null)
-        {
-            logger.error("Can not signal remote sources, no Jingle API available");
-            return;
-        }
-
+        JingleApi jingle = getJingleApi();
         JingleSession jingleSession = getJingleSession();
+
         if (jingleSession == null)
         {
             logger.warn("Can not signal remote sources, Jingle session not established.");

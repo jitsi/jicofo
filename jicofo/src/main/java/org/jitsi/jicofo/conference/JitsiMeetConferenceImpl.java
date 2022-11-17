@@ -99,11 +99,6 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
-     * Operation set used to handle Jingle sessions with conference participants.
-     */
-    private JingleApi jingle;
-
-    /**
      * Map of occupant JID to Participant.
      */
     private final Map<Jid, Participant> participants = new ConcurrentHashMap<>();
@@ -311,7 +306,6 @@ public class JitsiMeetConferenceImpl
         try
         {
             XmppProvider clientXmppProvider = getClientXmppProvider();
-            jingle = clientXmppProvider.getJingleApi();
 
             BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
@@ -1478,14 +1472,6 @@ public class JitsiMeetConferenceImpl
     public boolean hasHadAtLeastOneParticipant()
     {
         return hasHadAtLeastOneParticipant;
-    }
-
-    /**
-     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this <tt>JitsiMeetConference</tt> instance.
-     */
-    public JingleApi getJingle()
-    {
-        return jingle;
     }
 
     /**

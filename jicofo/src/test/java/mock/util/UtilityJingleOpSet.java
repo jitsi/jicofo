@@ -36,14 +36,12 @@ public class UtilityJingleOpSet
      */
     private final static Logger logger = new LoggerImpl(UtilityJingleOpSet.class.getName());
 
-    private final MockXmppConnection connection;
-
     private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
 
     public UtilityJingleOpSet(MockXmppConnection connection)
     {
-        this.connection = connection;
+        super(connection);
     }
 
     @Override
@@ -84,12 +82,6 @@ public class UtilityJingleOpSet
         }
 
         return null;
-    }
-
-    @Override
-    public AbstractXMPPConnection getConnection()
-    {
-        return connection;
     }
 
     public JingleIQ acceptSession(long timeout)

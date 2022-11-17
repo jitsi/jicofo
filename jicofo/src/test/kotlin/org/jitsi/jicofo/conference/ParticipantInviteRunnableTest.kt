@@ -99,18 +99,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 every { hasMember(any()) } returns true
             }
             every { getSourcesForParticipant(any()) } returns ConferenceSourceMap()
-            every { jingle } returns mockk {
-                every {
-                    initiateSession(
-                        any(),
-                        capture(jingleContentsSlot),
-                        any(),
-                        any(),
-                        capture(sourcesContentsSlot),
-                        any()
-                    )
-                } returns true
-            }
         }
         listOf(true, false).forEach { supportsVideo ->
             val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
@@ -126,6 +114,22 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { sourceInfos } returns emptySet()
                     every { statsId } returns "statsId"
                     every { region } returns "region"
+                    every { chatRoom } returns mockk {
+                        every { xmppProvider } returns mockk {
+                            every { jingleApi } returns mockk {
+                                every {
+                                    initiateSession(
+                                        any(),
+                                        capture(jingleContentsSlot),
+                                        any(),
+                                        any(),
+                                        capture(sourcesContentsSlot),
+                                        any()
+                                    )
+                                } returns true
+                            }
+                        }
+                    }
                 },
                 features,
                 LoggerImpl("test"),

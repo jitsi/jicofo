@@ -20,6 +20,8 @@ package org.jitsi.jicofo;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.*;
+
+import mock.*;
 import mock.muc.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.utils.logging2.*;

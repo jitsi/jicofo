@@ -19,7 +19,6 @@ package mock.muc;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -68,6 +67,12 @@ public class MockRoomMember
     public String getName()
     {
         return name.toString();
+    }
+
+    @Override
+    public @NotNull ChatRoom getChatRoom()
+    {
+        return room;
     }
 
     @Override

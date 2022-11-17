@@ -39,13 +39,9 @@ import java.util.*;
 /**
  * @author Pawel Domas
  */
-public abstract class JingleApi
+public class JingleApi
     extends AbstractIqRequestHandler
 {
-    /**
-     * The {@code Logger} used by the class {@code AbstractOperationSetJingle}
-     * and its instances to print debug-related information.
-     */
     private static final Logger logger = new LoggerImpl(JingleApi.class.getName());
 
     public static final JingleStats stats = new JingleStats();
@@ -60,9 +56,13 @@ public abstract class JingleApi
      */
     protected final WeakValueMap<String, JingleSession> sessions = new WeakValueMap<>();
 
-    protected JingleApi()
+    @NotNull
+    private final AbstractXMPPConnection xmppConnection;
+
+    public JingleApi(@NotNull AbstractXMPPConnection xmppConnection)
     {
         super(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, Mode.sync);
+        this.xmppConnection = xmppConnection;
     }
 
     @Override
@@ -97,7 +97,11 @@ public abstract class JingleApi
         return getConnection().getUser();
     }
 
-    public abstract AbstractXMPPConnection getConnection();
+    @NotNull
+    public AbstractXMPPConnection getConnection()
+    {
+        return xmppConnection;
+    }
 
     /**
      * {@inheritDoc}
