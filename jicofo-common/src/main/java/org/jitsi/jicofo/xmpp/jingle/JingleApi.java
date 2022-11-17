@@ -20,7 +20,6 @@ package org.jitsi.jicofo.xmpp.jingle;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri.*;
@@ -94,55 +93,16 @@ public class JingleApi
         return xmppConnection;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public boolean initiateSession(
-            Jid to,
-            List<ContentPacketExtension> contents,
-            List<ExtensionElement> additionalExtensions,
-            JingleRequestHandler requestHandler,
-            ConferenceSourceMap sources,
-            boolean encodeSourcesAsJson)
-        throws SmackException.NotConnectedException
+    public void registerSession(JingleSession session)
     {
-        JsonMessageExtension jsonSources = null;
-        if (encodeSourcesAsJson)
+        String sid = session.getSessionID();
+        JingleSession existingSession = sessions.get(sid);
+        if (existingSession != null)
         {
-            jsonSources = encodeSourcesAsJson(sources);
+            logger.warn("Replacing existing session with SID " + sid);
         }
-        else
-        {
-            contents = encodeSources(sources, contents);
-        }
-
-        JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
-        String sid = inviteIQ.getSID();
-        JingleSession session = new JingleSession(sid, to, this, requestHandler, encodeSourcesAsJson);
-
-        inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
-        additionalExtensions.forEach(inviteIQ::addExtension);
-        if (jsonSources != null)
-        {
-            inviteIQ.addExtension(jsonSources);
-        }
-
         sessions.put(sid, session);
-        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
-        JingleStats.stanzaSent(inviteIQ.getAction());
-
-        if (reply == null || IQ.Type.result.equals(reply.getType()))
-        {
-            return true;
-        }
-        else
-        {
-            logger.error(
-                    "Unexpected response to 'session-initiate' from " + session.getAddress() + ": " + reply.toXML());
-            return false;
-        }
     }
-
     /**
      * Encodes the sources described in {@code sources} as a {@link JsonMessageExtension} in the compact JSON format
      * (see {@link ConferenceSourceMap#compactJson()}).

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.jingle
 
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.xmpp.createSessionInitiate
 import org.jitsi.jicofo.xmpp.createTransportReplace
 import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSources
 import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSourcesAsJson
@@ -159,6 +160,33 @@ class JingleSession(
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
         jingleApi.connection.tryToSendStanza(createAddSourceIq(sources))
+    }
+
+    @Throws(SmackException.NotConnectedException::class)
+    fun initiateSession(
+        contents: List<ContentPacketExtension>,
+        additionalExtensions: List<ExtensionElement>,
+        sources: ConferenceSourceMap,
+    ): Boolean {
+        val contentsWithSources = if (encodeSourcesAsJson) contents else encodeSources(sources, contents)
+        val sessionInitiate = createSessionInitiate(jingleApi.ourJID, address, sessionID, contentsWithSources).apply {
+            addExtension(GroupPacketExtension.createBundleGroup(contentList))
+            additionalExtensions.forEach { addExtension(it) }
+            if (encodeSourcesAsJson) {
+                addExtension(encodeSourcesAsJson(sources))
+            }
+        }
+
+        jingleApi.registerSession(this)
+        JingleStats.stanzaSent(sessionInitiate.action)
+        val response = jingleApi.connection.sendIqAndGetResponse(sessionInitiate)
+        // XXX treat null as an error (timeout)
+        return if (response == null || response.type == IQ.Type.result) {
+            true
+        } else {
+            logger.error("Unexpected response to 'session-initiate': ${response.toXML()}")
+            false
+        }
     }
 
     /**

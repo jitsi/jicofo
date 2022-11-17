@@ -319,7 +319,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else if (!canceled)
         {
-            if (!doInviteOrReinvite(address, offer, colibriAllocation))
+            if (!doInviteOrReinvite(offer, colibriAllocation))
             {
                 expireChannels = true;
             }
@@ -342,16 +342,14 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      * the {@code participant}. Blocks until a response is received or a timeout
      * occurs.
      *
-     * @param address the destination JID.
      * @param offer The description of the offer to send (sources and a list of {@link ContentPacketExtension}s).
      * @return {@code false} on failure.
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(Jid address, Offer offer, ColibriAllocation colibriAllocation)
+    private boolean doInviteOrReinvite(Offer offer, ColibriAllocation colibriAllocation)
         throws SmackException.NotConnectedException
     {
-        JingleApi jingle = participant.getJingleApi();
         JingleSession jingleSession = participant.getJingleSession();
 
         boolean initiateSession = !reInvite || jingleSession == null;
@@ -376,14 +374,17 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap sources = participant.resetSignaledSources(offer.getSources());
         if (initiateSession)
         {
-            logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
-            ack = jingle.initiateSession(
-                    address,
+            if (jingleSession != null)
+            {
+                jingleSession.terminate(Reason.UNDEFINED, null, false);
+            }
+            jingleSession = participant.createNewJingleSession();
+            ack = jingleSession.initiateSession(
                     offer.getContents(),
                     additionalExtensions,
-                    meetConference,
-                    sources,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
+                    sources
+            );
+            logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + offer.getSources());
         }
         else
         {
@@ -394,7 +395,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             // Failed to invite
             logger.info(
-                "Expiring " + address + " channels - no RESULT for "
+                "Expiring " + participant.getMucJid() + " channels - no RESULT for "
                     + (initiateSession ? "session-initiate"
                     : "transport-replace"));
             return false;

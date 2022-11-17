@@ -103,7 +103,7 @@ public class UtilityJingleOpSet
         }
 
         String sid = invite.getSID();
-        JingleSession session = new JingleSession(sid, invite.getFrom(), this, new JingleRequestHandler() { });
+        JingleSession session = new JingleSession(sid, invite.getFrom(), this, new JingleRequestHandler() { }, false);
 
         sessions.put(sid, session);
         return invite;

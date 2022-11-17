@@ -24,8 +24,8 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 
-fun createSessionInitiate(from: Jid, to: Jid, contents: List<ContentPacketExtension>) =
-    JingleIQ(JingleAction.SESSION_INITIATE, JingleIQ.generateSID()).apply {
+fun createSessionInitiate(from: Jid, to: Jid, sid: String, contents: List<ContentPacketExtension>) =
+    JingleIQ(JingleAction.SESSION_INITIATE, sid).apply {
         this.from = from
         this.to = to
         initiator = from

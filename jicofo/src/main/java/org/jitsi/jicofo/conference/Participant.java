@@ -27,6 +27,7 @@ import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -575,11 +576,6 @@ public class Participant
         }
     }
 
-    @NotNull JingleApi getJingleApi()
-    {
-        return roomMember.getChatRoom().getXmppProvider().getJingleApi();
-    }
-
     /**
      * Signal any queued remote source modifications (either addition or removal) to the remote side.
      */
@@ -642,5 +638,18 @@ public class Participant
         //o.put("room_member", roomMember.getDebugState());
         o.put("jingle_session", jingleSession == null ? "null" : "not null");
         return o;
+    }
+
+    /**
+     * Create a new {@link JingleSession} instance for this participant. Defined here so it can be mocked for testing.
+     */
+    JingleSession createNewJingleSession()
+    {
+        return new JingleSession(
+                JingleIQ.generateSID(),
+                getMucJid(),
+                roomMember.getChatRoom().getXmppProvider().getJingleApi(),
+                conference,
+                ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
     }
 }
