@@ -21,7 +21,6 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.createSessionInitiate
 import org.jitsi.jicofo.xmpp.createTransportReplace
 import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSources
-import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSourcesAsJson
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.createLogger
@@ -31,6 +30,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
+import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.IQ
@@ -120,7 +120,7 @@ class JingleSession(
         jingleIq.addExtension(GroupPacketExtension.createBundleGroup(jingleIq.contentList))
         additionalExtensions.forEach { jingleIq.addExtension(it) }
         if (encodeSourcesAsJson) {
-            jingleIq.addExtension(encodeSourcesAsJson(sources))
+            jingleIq.addExtension(sources.toJsonMessageExtension())
         }
 
         JingleStats.stanzaSent(jingleIq.action)
@@ -144,7 +144,7 @@ class JingleSession(
         }
 
         if (encodeSourcesAsJson) {
-            removeSourceIq.addExtension(encodeSourcesAsJson(sourcesToRemove))
+            removeSourceIq.addExtension(sourcesToRemove.toJsonMessageExtension())
         } else {
             sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
         }
@@ -173,7 +173,7 @@ class JingleSession(
             addExtension(GroupPacketExtension.createBundleGroup(contentList))
             additionalExtensions.forEach { addExtension(it) }
             if (encodeSourcesAsJson) {
-                addExtension(encodeSourcesAsJson(sources))
+                addExtension(sources.toJsonMessageExtension())
             }
         }
 
@@ -207,9 +207,16 @@ class JingleSession(
         type = IQ.Type.set
         to = address
         if (encodeSourcesAsJson) {
-            addExtension(encodeSourcesAsJson(sources))
+            addExtension(sources.toJsonMessageExtension())
         } else {
             sources.toJingle().forEach { addContent(it) }
         }
     }
 }
+
+/**
+ * Encodes the sources described in `sources` as a [JsonMessageExtension] in the compact JSON format
+ * (see [ConferenceSourceMap.compactJson]).
+ * @return the [JsonMessageExtension] encoding `sources`.
+ */
+fun ConferenceSourceMap.toJsonMessageExtension() = JsonMessageExtension("{\"sources\":${compactJson()}}")

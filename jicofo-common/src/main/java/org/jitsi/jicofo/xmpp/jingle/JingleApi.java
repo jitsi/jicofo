@@ -103,15 +103,7 @@ public class JingleApi
         }
         sessions.put(sid, session);
     }
-    /**
-     * Encodes the sources described in {@code sources} as a {@link JsonMessageExtension} in the compact JSON format
-     * (see {@link ConferenceSourceMap#compactJson()}).
-     * @return the {@link JsonMessageExtension} encoding {@code sources}.
-     */
-    public static JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
-    {
-        return new JsonMessageExtension("{\"sources\":" + sources.compactJson() + "}");
-    }
+
     /**
      * Encodes the sources described in {@code sources} in the list of Jingle contents. If necessary, new
      * {@link ContentPacketExtension}s are created. Returns the resulting list of {@link ContentPacketExtension} which
