@@ -392,7 +392,7 @@ public class MockParticipant
         ConferenceSourceMap toRemove = new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(audioSource));
 
         localSSRCs.remove(toRemove);
-        jingleSession.removeSource(toRemove, false);
+        jingleSession.removeSource(toRemove);
     }
 
     private boolean sourceAdd(String media, long[] newSSRCs)
@@ -409,7 +409,7 @@ public class MockParticipant
 
         // Send source-add
         try {
-            return jingleSession.addSourceAndWaitForResponse(toAdd, false);
+            return jingleSession.addSourceAndWaitForResponse(toAdd);
         }
         catch (SmackException.NotConnectedException e)  {
             return false;

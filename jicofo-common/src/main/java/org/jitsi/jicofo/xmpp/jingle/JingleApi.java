@@ -118,7 +118,7 @@ public class JingleApi
 
         JingleIQ inviteIQ = JingleUtilsKt.createSessionInitiate(getOurJID(), to, contents);
         String sid = inviteIQ.getSID();
-        JingleSession session = new JingleSession(sid, to, this, requestHandler);
+        JingleSession session = new JingleSession(sid, to, this, requestHandler, encodeSourcesAsJson);
 
         inviteIQ.addExtension(GroupPacketExtension.createBundleGroup(inviteIQ.getContentList()));
         additionalExtensions.forEach(inviteIQ::addExtension);

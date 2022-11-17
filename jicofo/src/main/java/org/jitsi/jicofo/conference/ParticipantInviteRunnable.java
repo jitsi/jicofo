@@ -387,11 +387,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else
         {
-            ack = jingleSession.replaceTransport(
-                    offer.getContents(),
-                    additionalExtensions,
-                    sources,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
+            ack = jingleSession.replaceTransport(offer.getContents(), additionalExtensions, sources);
         }
 
         if (!ack)

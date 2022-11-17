@@ -593,9 +593,6 @@ public class Participant
             return;
         }
 
-        boolean encodeSourcesAsJson
-                = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
-
         for (SourcesToAddOrRemove sourcesToAddOrRemove : sourceSignaling.update())
         {
             AddOrRemove action = sourcesToAddOrRemove.getAction();
@@ -603,11 +600,11 @@ public class Participant
             logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingleSession.addSource(sources, encodeSourcesAsJson);
+                jingleSession.addSource(sources);
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingleSession.removeSource(sources, encodeSourcesAsJson);
+                jingleSession.removeSource(sources);
             }
         }
     }

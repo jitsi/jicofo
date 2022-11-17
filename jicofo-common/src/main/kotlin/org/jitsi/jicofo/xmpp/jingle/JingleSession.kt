@@ -48,7 +48,8 @@ class JingleSession(
     /** Remote peer XMPP address. */
     val address: Jid,
     private val jingleApi: JingleApi,
-    private val requestHandler: JingleRequestHandler
+    private val requestHandler: JingleRequestHandler,
+    private val encodeSourcesAsJson: Boolean
 ) {
     val logger = createLogger().apply {
         addContext("address", address.toString())
@@ -108,8 +109,7 @@ class JingleSession(
     fun replaceTransport(
         contents: List<ContentPacketExtension>,
         additionalExtensions: List<ExtensionElement>,
-        sources: ConferenceSourceMap,
-        encodeSourcesAsJson: Boolean
+        sources: ConferenceSourceMap
     ): Boolean {
         logger.info("Sending transport-replace, sources=$sources.")
 
@@ -135,10 +135,7 @@ class JingleSession(
     /**
      * Send a source-remove IQ with the specified sources. Returns immediately without waiting for a response.
      */
-    fun removeSource(
-        sourcesToRemove: ConferenceSourceMap,
-        encodeSourcesAsJson: Boolean
-    ) {
+    fun removeSource(sourcesToRemove: ConferenceSourceMap) {
         val removeSourceIq = JingleIQ(JingleAction.SOURCEREMOVE, sessionID).apply {
             from = jingleApi.ourJID
             type = IQ.Type.set
@@ -158,11 +155,10 @@ class JingleSession(
     /**
      * Send a source-add IQ with the specified sources. Returns immediately without waiting for a response.
      */
-    fun addSource(sources: ConferenceSourceMap, encodeSourcesAsJson: Boolean) {
-        val addSourceIq: JingleIQ = createAddSourceIq(sources, encodeSourcesAsJson)
+    fun addSource(sources: ConferenceSourceMap) {
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
-        jingleApi.connection.tryToSendStanza(addSourceIq)
+        jingleApi.connection.tryToSendStanza(createAddSourceIq(sources))
     }
 
     /**
@@ -172,25 +168,20 @@ class JingleSession(
      * tests should probably be changed.
      */
     @Throws(SmackException.NotConnectedException::class)
-    fun addSourceAndWaitForResponse(sources: ConferenceSourceMap, encodeSourcesAsJson: Boolean): Boolean {
-        val addSourceIq = createAddSourceIq(sources, encodeSourcesAsJson)
-        val response = jingleApi.connection.sendIqAndGetResponse(addSourceIq)
+    fun addSourceAndWaitForResponse(sources: ConferenceSourceMap): Boolean {
+        val response = jingleApi.connection.sendIqAndGetResponse(createAddSourceIq(sources))
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
         return response?.type == IQ.Type.result
     }
 
-    private fun createAddSourceIq(
-        sources: ConferenceSourceMap,
-        encodeSourcesAsJson: Boolean
-    ): JingleIQ = JingleIQ(JingleAction.SOURCEADD, sessionID).apply {
-            from = jingleApi.ourJID
-            type = IQ.Type.set
-            to = address
-            if (encodeSourcesAsJson) {
-                addExtension(encodeSourcesAsJson(sources))
-            } else {
-                sources.toJingle().forEach { addContent(it) }
-            }
+    private fun createAddSourceIq(sources: ConferenceSourceMap) = JingleIQ(JingleAction.SOURCEADD, sessionID).apply {
+        from = jingleApi.ourJID
+        type = IQ.Type.set
+        to = address
+        if (encodeSourcesAsJson) {
+            addExtension(encodeSourcesAsJson(sources))
+        } else {
+            sources.toJingle().forEach { addContent(it) }
+        }
     }
-
 }
