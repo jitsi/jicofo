@@ -887,7 +887,7 @@ public class JitsiMeetConferenceImpl
     @Nullable
     private Participant getParticipant(@NotNull JingleSession jingleSession)
     {
-        return participants.get(jingleSession.getAddress());
+        return participants.get(jingleSession.getRemoteJid());
     }
 
     @Nullable
@@ -925,7 +925,7 @@ public class JitsiMeetConferenceImpl
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> answer)
     {
-        logger.info("Receive session-accept from " + jingleSession.getAddress());
+        logger.info("Receive session-accept from " + jingleSession.getRemoteJid());
 
         return onSessionAcceptInternal(jingleSession, answer);
     }
@@ -940,7 +940,7 @@ public class JitsiMeetConferenceImpl
     @Override
     public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
-        Jid address = session.getAddress();
+        Jid address = session.getRemoteJid();
         Participant participant = getParticipant(session);
 
         // FIXME: (duplicate) there's very similar logic in onSessionAccept
@@ -1002,7 +1002,7 @@ public class JitsiMeetConferenceImpl
         // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
         if (participant == null)
         {
-            String errorMsg = "No participant for " + session.getAddress();
+            String errorMsg = "No participant for " + session.getRemoteJid();
             logger.warn(errorMsg);
             return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
@@ -1099,7 +1099,7 @@ public class JitsiMeetConferenceImpl
         Participant participant = getParticipant(session);
         if (participant == null)
         {
-            logger.warn("Failed to process transport-info, no session for: " + session.getAddress());
+            logger.warn("Failed to process transport-info, no session for: " + session.getRemoteJid());
             return;
         }
 
@@ -1118,7 +1118,7 @@ public class JitsiMeetConferenceImpl
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> contents)
     {
-        logger.info("Received transport-accept from " + jingleSession.getAddress());
+        logger.info("Received transport-accept from " + jingleSession.getRemoteJid());
 
         // We basically do the same processing as with session-accept by just
         // forwarding transport/rtp information to the bridge + propagate the
@@ -1162,7 +1162,7 @@ public class JitsiMeetConferenceImpl
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> contents)
     {
-        Jid address = jingleSession.getAddress();
+        Jid address = jingleSession.getRemoteJid();
         Participant participant = getParticipant(jingleSession);
         if (participant == null)
         {
@@ -1259,7 +1259,7 @@ public class JitsiMeetConferenceImpl
             @NotNull List<? extends ContentPacketExtension> contents)
     {
         Participant participant = getParticipant(jingleSession);
-        Jid participantJid = jingleSession.getAddress();
+        Jid participantJid = jingleSession.getRemoteJid();
 
         if (participant == null)
         {

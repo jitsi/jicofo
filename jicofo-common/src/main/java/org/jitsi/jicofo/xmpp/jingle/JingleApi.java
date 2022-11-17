@@ -25,7 +25,6 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
-import org.jxmpp.jid.Jid;
 
 /**
  * @author Pawel Domas
@@ -79,7 +78,7 @@ public class JingleApi
 
     public void registerSession(JingleSession session)
     {
-        String sid = session.getSessionID();
+        String sid = session.getSid();
         JingleSession existingSession = sessions.get(sid);
         if (existingSession != null)
         {
@@ -90,6 +89,6 @@ public class JingleApi
 
     public void removeSession(@NotNull JingleSession session)
     {
-        sessions.remove(session.getSessionID());
+        sessions.remove(session.getSid());
     }
 }

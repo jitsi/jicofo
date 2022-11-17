@@ -34,9 +34,9 @@ fun createSessionInitiate(from: Jid, to: Jid, sid: String, contents: List<Conten
     }
 
 fun createTransportReplace(from: Jid, session: JingleSession, contents: List<ContentPacketExtension>) =
-    JingleIQ(JingleAction.TRANSPORT_REPLACE, session.sessionID).apply {
+    JingleIQ(JingleAction.TRANSPORT_REPLACE, session.sid).apply {
         this.from = from
-        this.to = session.address
+        this.to = session.remoteJid
         initiator = from
         type = IQ.Type.set
         contents.forEach { addContent(it) }

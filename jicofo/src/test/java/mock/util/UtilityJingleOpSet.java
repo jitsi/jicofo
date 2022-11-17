@@ -23,7 +23,6 @@ import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;

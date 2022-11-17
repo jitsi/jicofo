@@ -46,19 +46,20 @@ import org.jxmpp.jid.Jid
  */
 class JingleSession(
     /** Jingle session identifier. */
-    val sessionID: String,
+    val sid: String,
     /** Remote peer XMPP address. */
-    val address: Jid,
+    val remoteJid: Jid,
     private val jingleApi: JingleApi,
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
     val logger = createLogger().apply {
-        addContext("address", address.toString())
-        addContext("sid", sessionID)
+        addContext("remoteJid", remoteJid.toString())
+        addContext("sid", sid)
     }
 
-    val localJid = jingleApi.connection.user
+    private val connection = jingleApi.connection
+    private val localJid: Jid = connection.user
 
     fun processIq(iq: JingleIQ): StanzaError? {
         val action = iq.action
@@ -88,17 +89,17 @@ class JingleSession(
         message: String?,
         sendTerminate: Boolean
     ) {
-        logger.info("Terminating session with $address, reason=$reason, sendTerminate=$sendTerminate")
+        logger.info("Terminating session with $remoteJid, reason=$reason, sendTerminate=$sendTerminate")
 
         if (sendTerminate) {
             val terminate = JinglePacketFactory.createSessionTerminate(
                 localJid,
-                address,
-                sessionID,
+                remoteJid,
+                sid,
                 reason,
                 message
             )
-            jingleApi.connection.tryToSendStanza(terminate)
+            connection.tryToSendStanza(terminate)
             JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
         }
 
@@ -127,7 +128,7 @@ class JingleSession(
         }
 
         JingleStats.stanzaSent(jingleIq.action)
-        val response = jingleApi.connection.sendIqAndGetResponse(jingleIq)
+        val response = connection.sendIqAndGetResponse(jingleIq)
         return if (response?.type == IQ.Type.result) {
             true
         } else {
@@ -140,10 +141,10 @@ class JingleSession(
      * Send a source-remove IQ with the specified sources. Returns immediately without waiting for a response.
      */
     fun removeSource(sourcesToRemove: ConferenceSourceMap) {
-        val removeSourceIq = JingleIQ(JingleAction.SOURCEREMOVE, sessionID).apply {
+        val removeSourceIq = JingleIQ(JingleAction.SOURCEREMOVE, sid).apply {
             from = localJid
             type = IQ.Type.set
-            to = address
+            to = remoteJid
         }
 
         if (encodeSourcesAsJson) {
@@ -152,7 +153,7 @@ class JingleSession(
             sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
         }
         logger.debug { "Sending source-remove, sources=$sourcesToRemove" }
-        jingleApi.connection.tryToSendStanza(removeSourceIq)
+        connection.tryToSendStanza(removeSourceIq)
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
     }
 
@@ -162,7 +163,7 @@ class JingleSession(
     fun addSource(sources: ConferenceSourceMap) {
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
-        jingleApi.connection.tryToSendStanza(createAddSourceIq(sources))
+        connection.tryToSendStanza(createAddSourceIq(sources))
     }
 
     @Throws(SmackException.NotConnectedException::class)
@@ -172,7 +173,7 @@ class JingleSession(
         sources: ConferenceSourceMap,
     ): Boolean {
         val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
-        val sessionInitiate = createSessionInitiate(localJid, address, sessionID, contentsWithSources).apply {
+        val sessionInitiate = createSessionInitiate(localJid, remoteJid, sid, contentsWithSources).apply {
             addExtension(GroupPacketExtension.createBundleGroup(contentList))
             additionalExtensions.forEach { addExtension(it) }
             if (encodeSourcesAsJson) {
@@ -182,7 +183,7 @@ class JingleSession(
 
         jingleApi.registerSession(this)
         JingleStats.stanzaSent(sessionInitiate.action)
-        val response = jingleApi.connection.sendIqAndGetResponse(sessionInitiate)
+        val response = connection.sendIqAndGetResponse(sessionInitiate)
         return if (response?.type == IQ.Type.result) {
             true
         } else {
@@ -199,15 +200,15 @@ class JingleSession(
      */
     @Throws(SmackException.NotConnectedException::class)
     fun addSourceAndWaitForResponse(sources: ConferenceSourceMap): Boolean {
-        val response = jingleApi.connection.sendIqAndGetResponse(createAddSourceIq(sources))
+        val response = connection.sendIqAndGetResponse(createAddSourceIq(sources))
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
         return response?.type == IQ.Type.result
     }
 
-    private fun createAddSourceIq(sources: ConferenceSourceMap) = JingleIQ(JingleAction.SOURCEADD, sessionID).apply {
+    private fun createAddSourceIq(sources: ConferenceSourceMap) = JingleIQ(JingleAction.SOURCEADD, sid).apply {
         from = localJid
         type = IQ.Type.set
-        to = address
+        to = remoteJid
         if (encodeSourcesAsJson) {
             addExtension(sources.toJsonMessageExtension())
         } else {
