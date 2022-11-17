@@ -60,7 +60,9 @@ public class TestJingleIqRequestHandler
                     if (sessions.containsKey(sid))
                     {
                         logger.error("Received session-initiate for existing session: " + sid);
-                        return null;
+                        return IQ.createErrorResponse(
+                                jingleIQ,
+                                StanzaError.getBuilder(StanzaError.Condition.conflict).build());
                     }
                     sessionInvites.put(jingleIQ);
                 }
@@ -83,7 +85,7 @@ public class TestJingleIqRequestHandler
                 break;
         }
 
-        return null;
+        return IQ.createResultIQ(jingleIQ);
     }
 
     public JingleIQ acceptSession(long timeout)
