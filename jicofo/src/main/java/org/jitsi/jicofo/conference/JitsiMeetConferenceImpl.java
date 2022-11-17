@@ -1093,7 +1093,7 @@ public class JitsiMeetConferenceImpl
      * @param sourceOwner the <tt>Participant</tt> who owns the sources.
      * @param sources the sources to propagate.
      */
-    private void propagateNewSources(Participant sourceOwner, ConferenceSourceMap sources)
+    private void propagateNewSources(Participant sourceOwner, EndpointSourceSet sources)
     {
         if (sources.isEmpty())
         {
@@ -1101,9 +1101,11 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
+        final ConferenceSourceMap conferenceSourceMap = new ConferenceSourceMap(sourceOwner.getMucJid(), sources);
+
         participants.values().stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
-            .forEach(participant -> participant.addRemoteSources(sources));
+            .forEach(participant -> participant.addRemoteSources(conferenceSourceMap));
     }
 
 
@@ -1190,6 +1192,11 @@ public class JitsiMeetConferenceImpl
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
+        if (sourcesAdvertised.isEmpty())
+        {
+            logger.warn("Received source-add with empty sources, ignoring");
+            return null;
+        }
 
         boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
                 chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
@@ -1204,7 +1211,7 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
         }
 
-        ConferenceSourceMap sourcesAccepted;
+        EndpointSourceSet sourcesAccepted;
         try
         {
             sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
@@ -1290,16 +1297,20 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
         }
-        ConferenceSourceMap sourcesAccepted;
-        try
-        {
-            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised).unmodifiable();
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error processing session-accept from: " + participantJid +": " + e.getMessage());
 
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
+        EndpointSourceSet sourcesAccepted = EndpointSourceSet.Companion.getEMPTY();
+        if (!sourcesAdvertised.isEmpty())
+        {
+            try
+            {
+                sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
+            }
+            catch (ValidationFailedException e)
+            {
+                logger.error("Error processing session-accept from: " + participantJid + ": " + e.getMessage());
+
+                return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
+            }
         }
 
         getColibriSessionManager().updateParticipant(
@@ -1370,7 +1381,7 @@ public class JitsiMeetConferenceImpl
             boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
-        ConferenceSourceMap sourcesAcceptedToBeRemoved;
+        EndpointSourceSet sourcesAcceptedToBeRemoved;
         try
         {
             sourcesAcceptedToBeRemoved = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
@@ -1402,7 +1413,7 @@ public class JitsiMeetConferenceImpl
 
         if (sendSourceRemove)
         {
-            sendSourceRemove(sourcesAcceptedToBeRemoved, participant);
+            sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
         }
 
         return null;

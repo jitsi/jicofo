@@ -19,7 +19,6 @@ package org.jitsi.jicofo
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
@@ -43,19 +42,19 @@ class SsrcValidationPerfTest : ShouldSpec() {
                 val newEndpointJid = JidCreate.fullFrom("$jidPrefix/new-endpoint")
                 ssrcCount += newEndpointSourceSet.sources.size
 
-                var added: ConferenceSourceMap? = null
+                var added: EndpointSourceSet? = null
                 measureAndLog("Single add") {
                     added = conferenceSources.tryToAdd(newEndpointJid, newEndpointSourceSet)
                 }
-                added shouldBe ConferenceSourceMap(newEndpointJid to newEndpointSourceSet)
+                added shouldBe newEndpointSourceSet
                 conferenceSources.size shouldBe numEndpoints + 1
 
-                var removed: ConferenceSourceMap? = null
+                var removed: EndpointSourceSet? = null
                 measureAndLog("Single remove") {
                     removed = conferenceSources.tryToRemove(newEndpointJid, newEndpointSourceSet)
                 }
                 conferenceSources.size shouldBe numEndpoints
-                removed shouldBe ConferenceSourceMap(newEndpointJid to newEndpointSourceSet)
+                removed shouldBe newEndpointSourceSet
             }
             context("Sequential add/remove") {
                 val conferenceSources = ValidatingConferenceSourceMap(

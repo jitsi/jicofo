@@ -71,7 +71,7 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been accepted and added.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): ConferenceSourceMap = synchronized(syncRoot) {
+    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
         val existingSourceSet = this[owner] ?: EndpointSourceSet.EMPTY
 
         // Check for validity of the new SSRCs, and conflicts with other endpoints.
@@ -115,11 +115,9 @@ class ValidatingConferenceSourceMap(
         val resultingSourceSet = EndpointSourceSet(resultingSources, existingSourceSet.ssrcGroups + acceptedGroups)
         validateEndpointSourceSet(resultingSourceSet)
 
-        val acceptedSourceMap = ConferenceSourceMap(
-            owner to EndpointSourceSet(acceptedSources, acceptedGroups)
-        )
-        add(acceptedSourceMap)
-        return acceptedSourceMap
+        val acceptedSourceSet = EndpointSourceSet(acceptedSources, acceptedGroups)
+        add(ConferenceSourceMap(owner to acceptedSourceSet))
+        return acceptedSourceSet
     }
 
     /**
@@ -141,8 +139,8 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been removed.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): ConferenceSourceMap = synchronized(syncRoot) {
-        if (sourcesToRemove.isEmpty()) return ConferenceSourceMap()
+    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
+        if (sourcesToRemove.isEmpty()) return EndpointSourceSet.EMPTY
 
         val existingSources = this[owner]
         if (existingSources == null || existingSources.isEmpty()) {
@@ -175,11 +173,9 @@ class ValidatingConferenceSourceMap(
         )
         validateEndpointSourceSet(resultingEndpointSourceSet)
 
-        val acceptedSourceMap = ConferenceSourceMap(
-            owner to EndpointSourceSet(sourcesAcceptedToBeRemoved, groupsAcceptedToBeRemoved)
-        )
-        remove(acceptedSourceMap)
-        return acceptedSourceMap
+        val acceptedSourceSet = EndpointSourceSet(sourcesAcceptedToBeRemoved, groupsAcceptedToBeRemoved)
+        remove(ConferenceSourceMap(owner to acceptedSourceSet))
+        return acceptedSourceSet
     }
 
     /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
