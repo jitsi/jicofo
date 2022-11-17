@@ -71,16 +71,6 @@ public class JingleApi
         }
     }
 
-    /**
-     * Implementing classes should return our JID here.
-     *
-     * @return our JID
-     */
-    public Jid getOurJID()
-    {
-        return getConnection().getUser();
-    }
-
     @NotNull
     public AbstractXMPPConnection getConnection()
     {

@@ -58,6 +58,8 @@ class JingleSession(
         addContext("sid", sessionID)
     }
 
+    val localJid = jingleApi.connection.user
+
     fun processIq(iq: JingleIQ): StanzaError? {
         val action = iq.action
             ?: return StanzaError.getBuilder(StanzaError.Condition.bad_request)
@@ -90,7 +92,7 @@ class JingleSession(
 
         if (sendTerminate) {
             val terminate = JinglePacketFactory.createSessionTerminate(
-                jingleApi.ourJID,
+                localJid,
                 address,
                 sessionID,
                 reason,
@@ -116,7 +118,7 @@ class JingleSession(
         logger.info("Sending transport-replace, sources=$sources.")
 
         val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
-        val jingleIq = createTransportReplace(jingleApi.ourJID, this, contentsWithSources)
+        val jingleIq = createTransportReplace(localJid, this, contentsWithSources)
 
         jingleIq.addExtension(GroupPacketExtension.createBundleGroup(jingleIq.contentList))
         additionalExtensions.forEach { jingleIq.addExtension(it) }
@@ -139,7 +141,7 @@ class JingleSession(
      */
     fun removeSource(sourcesToRemove: ConferenceSourceMap) {
         val removeSourceIq = JingleIQ(JingleAction.SOURCEREMOVE, sessionID).apply {
-            from = jingleApi.ourJID
+            from = localJid
             type = IQ.Type.set
             to = address
         }
@@ -170,7 +172,7 @@ class JingleSession(
         sources: ConferenceSourceMap,
     ): Boolean {
         val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
-        val sessionInitiate = createSessionInitiate(jingleApi.ourJID, address, sessionID, contentsWithSources).apply {
+        val sessionInitiate = createSessionInitiate(localJid, address, sessionID, contentsWithSources).apply {
             addExtension(GroupPacketExtension.createBundleGroup(contentList))
             additionalExtensions.forEach { addExtension(it) }
             if (encodeSourcesAsJson) {
@@ -203,7 +205,7 @@ class JingleSession(
     }
 
     private fun createAddSourceIq(sources: ConferenceSourceMap) = JingleIQ(JingleAction.SOURCEADD, sessionID).apply {
-        from = jingleApi.ourJID
+        from = localJid
         type = IQ.Type.set
         to = address
         if (encodeSourcesAsJson) {
