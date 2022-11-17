@@ -144,62 +144,11 @@ public class JingleApi
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public boolean replaceTransport(
-            @NotNull JingleSession session,
-            List<ContentPacketExtension> contents,
-            List<ExtensionElement> additionalExtensions,
-            ConferenceSourceMap sources,
-            boolean encodeSourcesAsJson)
-        throws SmackException.NotConnectedException
-    {
-        Jid address = session.getAddress();
-        if (!sessions.containsValue(session))
-        {
-            throw new IllegalStateException("Session does not exist for: " + address);
-        }
-        logger.info("RE-INVITE PEER: " + address);
-
-        JsonMessageExtension jsonSources = null;
-        if (encodeSourcesAsJson)
-        {
-            jsonSources = encodeSourcesAsJson(sources);
-        }
-        else
-        {
-            contents = encodeSources(sources, contents);
-        }
-
-        JingleIQ jingleIQ = JingleUtilsKt.createTransportReplace(getOurJID(), session, contents);
-        jingleIQ.addExtension(GroupPacketExtension.createBundleGroup(jingleIQ.getContentList()));
-        additionalExtensions.forEach(jingleIQ::addExtension);
-        if (jsonSources != null)
-        {
-            jingleIQ.addExtension(jsonSources);
-        }
-
-        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
-        JingleStats.stanzaSent(jingleIQ.getAction());
-
-        if (reply == null || IQ.Type.result.equals(reply.getType()))
-        {
-            return true;
-        }
-        else
-        {
-            logger.error(
-                    "Unexpected response to 'transport-replace' from " + session.getAddress() + ": " + reply.toXML());
-            return false;
-        }
-    }
-
-    /**
      * Encodes the sources described in {@code sources} as a {@link JsonMessageExtension} in the compact JSON format
      * (see {@link ConferenceSourceMap#compactJson()}).
      * @return the {@link JsonMessageExtension} encoding {@code sources}.
      */
-    private JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
+    public static JsonMessageExtension encodeSourcesAsJson(ConferenceSourceMap sources)
     {
         return new JsonMessageExtension("{\"sources\":" + sources.compactJson() + "}");
     }
@@ -213,7 +162,7 @@ public class JingleApi
      * @return the resulting list of {@link ContentPacketExtension}, which consisnts of {@code contents} plus any new
      * {@link ContentPacketExtension}s that were created.
      */
-    private List<ContentPacketExtension> encodeSources(
+    public static List<ContentPacketExtension> encodeSources(
             ConferenceSourceMap sources,
             List<ContentPacketExtension> contents)
     {

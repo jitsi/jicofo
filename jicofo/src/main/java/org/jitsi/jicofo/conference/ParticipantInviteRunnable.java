@@ -387,10 +387,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else
         {
-            logger.info("Sending transport-replace to: " + address + " sources=" + offer.getSources());
-            // will throw OperationFailedExc if XMPP connection is broken
-            ack = jingle.replaceTransport(
-                    jingleSession,
+            ack = jingleSession.replaceTransport(
                     offer.getContents(),
                     additionalExtensions,
                     sources,

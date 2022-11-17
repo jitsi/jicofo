@@ -17,12 +17,22 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.xmpp.createTransportReplace
+import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSources
+import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSourcesAsJson
+import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.GroupPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
+import org.jivesoftware.smack.SmackException
+import org.jivesoftware.smack.packet.ExtensionElement
+import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 
@@ -40,7 +50,10 @@ class JingleSession(
     private val jingleApi: JingleApi,
     private val requestHandler: JingleRequestHandler
 ) {
-    val logger = createLogger()
+    val logger = createLogger().apply {
+        addContext("address", address.toString())
+        addContext("sid", sessionID)
+    }
 
     fun processIq(iq: JingleIQ): StanzaError? {
         val action = iq.action
@@ -85,5 +98,38 @@ class JingleSession(
         }
 
         jingleApi.removeSession(this)
+    }
+
+    /**
+     * Send a transport-replace IQ and wait for a response. Return true if the response is successful, and false
+     * otherwise.
+     */
+    @Throws(SmackException.NotConnectedException::class)
+    fun replaceTransport(
+        contents: List<ContentPacketExtension>,
+        additionalExtensions: List<ExtensionElement>,
+        sources: ConferenceSourceMap,
+        encodeSourcesAsJson: Boolean
+    ): Boolean {
+        logger.info("Sending transport-replace, sources=$sources.")
+
+        val contentsWithSources = if (encodeSourcesAsJson) contents else encodeSources(sources, contents)
+        val jingleIq = createTransportReplace(jingleApi.ourJID, this, contentsWithSources)
+
+        jingleIq.addExtension(GroupPacketExtension.createBundleGroup(jingleIq.contentList))
+        additionalExtensions.forEach { jingleIq.addExtension(it) }
+        if (encodeSourcesAsJson) {
+            jingleIq.addExtension(encodeSourcesAsJson(sources))
+        }
+
+        JingleStats.stanzaSent(jingleIq.action)
+        val response = jingleApi.connection.sendIqAndGetResponse(jingleIq)
+        // XXX should we treat null as an error (timeout)?
+        return if (response == null || response.type == IQ.Type.result) {
+            true
+        } else {
+            logger.error("Unexpected response to transport-replace: " + response.toXML())
+            false
+        }
     }
 }
