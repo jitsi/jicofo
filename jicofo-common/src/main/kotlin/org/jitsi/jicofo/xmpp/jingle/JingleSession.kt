@@ -32,6 +32,7 @@ import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.IQ
@@ -50,6 +51,7 @@ class JingleSession(
     /** Remote peer XMPP address. */
     val remoteJid: Jid,
     private val jingleIqRequestHandler: JingleIqRequestHandler,
+    private val connection: AbstractXMPPConnection,
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
@@ -58,7 +60,6 @@ class JingleSession(
         addContext("sid", sid)
     }
 
-    private val connection = jingleIqRequestHandler.connection
     private val localJid: Jid = connection.user
 
     fun processIq(iq: JingleIQ): StanzaError? {

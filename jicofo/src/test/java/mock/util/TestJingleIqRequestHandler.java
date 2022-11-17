@@ -19,6 +19,7 @@ package mock.util;
 
 import mock.*;
 import mock.xmpp.*;
+import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -37,10 +38,12 @@ public class TestJingleIqRequestHandler
 
     private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
+    @NotNull private final MockXmppConnection connection;
 
     public TestJingleIqRequestHandler(MockXmppConnection connection)
     {
-        super(connection);
+        super();
+        this.connection = connection;
     }
 
     @Override
@@ -102,7 +105,8 @@ public class TestJingleIqRequestHandler
         }
 
         String sid = invite.getSID();
-        JingleSession session = new JingleSession(sid, invite.getFrom(), this, new JingleRequestHandler() { }, false);
+        JingleSession session = new JingleSession(
+                sid, invite.getFrom(), this, connection, new JingleRequestHandler() { }, false);
 
         sessions.put(sid, session);
         return invite;

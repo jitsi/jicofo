@@ -649,6 +649,7 @@ public class Participant
                 JingleIQ.generateSID(),
                 getMucJid(),
                 roomMember.getChatRoom().getXmppProvider().getJingleIqRequestHandler(),
+                roomMember.getChatRoom().getXmppProvider().getXmppConnection(),
                 conference,
                 ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
     }

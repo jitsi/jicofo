@@ -18,20 +18,18 @@
 package org.jitsi.jicofo.xmpp.jingle
 
 import org.jitsi.jicofo.util.WeakValueMap
-import org.jitsi.utils.logging2.Logger
-import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
-import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 
 /**
+ * Maintain a weak map of [JingleSession]s and route incoming Jingle IQs to the associated session.
  * @author Pawel Domas
  */
-open class JingleIqRequestHandler(val connection: AbstractXMPPConnection) :
+open class JingleIqRequestHandler :
     AbstractIqRequestHandler(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync) {
     private val logger = createLogger()
 

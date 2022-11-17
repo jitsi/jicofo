@@ -101,7 +101,7 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
-        jingleIqRequestHandler = new JingleIqRequestHandler(connection);
+        jingleIqRequestHandler = new JingleIqRequestHandler();
     }
 
 
