@@ -124,12 +124,11 @@ class JingleSession(
 
         JingleStats.stanzaSent(jingleIq.action)
         val response = jingleApi.connection.sendIqAndGetResponse(jingleIq)
-        // XXX should we treat null as an error (timeout)?
-        return if (response == null || response.type == IQ.Type.result) {
-            true
-        } else {
-            logger.error("Unexpected response to transport-replace: " + response.toXML())
+        return if (response == null || response.type != IQ.Type.result) {
+            logger.error("Unexpected response to transport-replace: " + response?.toXML())
             false
+        } else {
+            true
         }
     }
 }
