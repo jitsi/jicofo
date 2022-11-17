@@ -37,7 +37,6 @@ class WeakValueMap<K, V>(
         map[key] = WeakReference(value)
         maybeClean()
     }
-    fun containsValue(value: V): Boolean = map.any { it.value.get() == value }
     fun containsKey(key: K): Boolean = (map[key]?.get() != null).also {
         maybeClean()
     }
