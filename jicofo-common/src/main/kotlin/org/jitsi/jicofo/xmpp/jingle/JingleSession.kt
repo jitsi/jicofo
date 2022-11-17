@@ -20,9 +20,9 @@ package org.jitsi.jicofo.xmpp.jingle
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.createSessionInitiate
 import org.jitsi.jicofo.xmpp.createTransportReplace
-import org.jitsi.jicofo.xmpp.jingle.JingleApi.encodeSources
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.GroupPacketExtension
@@ -30,6 +30,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
+import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ExtensionElement
@@ -114,7 +115,7 @@ class JingleSession(
     ): Boolean {
         logger.info("Sending transport-replace, sources=$sources.")
 
-        val contentsWithSources = if (encodeSourcesAsJson) contents else encodeSources(sources, contents)
+        val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
         val jingleIq = createTransportReplace(jingleApi.ourJID, this, contentsWithSources)
 
         jingleIq.addExtension(GroupPacketExtension.createBundleGroup(jingleIq.contentList))
@@ -168,7 +169,7 @@ class JingleSession(
         additionalExtensions: List<ExtensionElement>,
         sources: ConferenceSourceMap,
     ): Boolean {
-        val contentsWithSources = if (encodeSourcesAsJson) contents else encodeSources(sources, contents)
+        val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
         val sessionInitiate = createSessionInitiate(jingleApi.ourJID, address, sessionID, contentsWithSources).apply {
             addExtension(GroupPacketExtension.createBundleGroup(contentList))
             additionalExtensions.forEach { addExtension(it) }
@@ -219,3 +220,64 @@ class JingleSession(
  * @return the [JsonMessageExtension] encoding `sources`.
  */
 fun ConferenceSourceMap.toJsonMessageExtension() = JsonMessageExtension("{\"sources\":${compactJson()}}")
+
+/**
+ * Encodes the sources described in `sources` in the list of Jingle contents. If necessary, new
+ * [ContentPacketExtension]s are created. Returns the resulting list of [ContentPacketExtension] which
+ * contains the encoded sources.
+ *
+ * @return the resulting list of [ContentPacketExtension], which consists of `contents` plus any new
+ * [ContentPacketExtension]s that were created.
+ */
+private fun ConferenceSourceMap.toContents(
+    /** The list of existing [ContentPacketExtension] to which to add sources if possible. */
+    existingContents: List<ContentPacketExtension>
+): List<ContentPacketExtension> {
+    val ret = mutableListOf<ContentPacketExtension>()
+    var audioContent = existingContents.find { it.name == "audio" }
+    var videoContent = existingContents.find { it.name == "video" }
+
+    audioContent?.let { ret.add(it) }
+    videoContent?.let { ret.add(it) }
+
+    val audioSourceExtensions = createSourcePacketExtensions(MediaType.AUDIO)
+    val audioSsrcGroupExtensions = createSourceGroupPacketExtensions(MediaType.AUDIO)
+    if (audioSourceExtensions.isNotEmpty() || audioSsrcGroupExtensions.isNotEmpty()) {
+        if (audioContent == null) {
+            audioContent = ContentPacketExtension().apply { name = "audio" }
+            ret.add(audioContent)
+        }
+        var audioDescription = audioContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)
+        if (audioDescription == null) {
+            audioDescription = RtpDescriptionPacketExtension().apply { media = "audio" }
+            audioContent.addChildExtension(audioDescription)
+        }
+        for (extension in audioSourceExtensions) {
+            audioDescription.addChildExtension(extension)
+        }
+        for (extension in audioSsrcGroupExtensions) {
+            audioDescription.addChildExtension(extension)
+        }
+    }
+
+    val videoSourceExtensions = createSourcePacketExtensions(MediaType.VIDEO)
+    val videoSsrcGroupExtensions = createSourceGroupPacketExtensions(MediaType.VIDEO)
+    if (videoSourceExtensions.isNotEmpty() || videoSsrcGroupExtensions.isNotEmpty()) {
+        if (videoContent == null) {
+            videoContent = ContentPacketExtension().apply { name = "video" }
+            ret.add(videoContent)
+        }
+        var videoDescription = videoContent.getFirstChildOfType(RtpDescriptionPacketExtension::class.java)
+        if (videoDescription == null) {
+            videoDescription = RtpDescriptionPacketExtension().apply { media = "video" }
+            videoContent.addChildExtension(videoDescription)
+        }
+        for (extension in videoSourceExtensions) {
+            videoDescription.addChildExtension(extension)
+        }
+        for (extension in videoSsrcGroupExtensions) {
+            videoDescription.addChildExtension(extension)
+        }
+    }
+    return ret
+}
