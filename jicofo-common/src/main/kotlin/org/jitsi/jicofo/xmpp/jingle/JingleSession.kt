@@ -131,4 +131,28 @@ class JingleSession(
             true
         }
     }
+
+    /**
+     * Send a source-remove IQ with the specified sources. Returns immediately without waiting for a response.
+     */
+    fun removeSource(
+        sourcesToRemove: ConferenceSourceMap,
+        encodeSourcesAsJson: Boolean
+    ) {
+        val removeSourceIq = JingleIQ(JingleAction.SOURCEREMOVE, sessionID).apply {
+            from = jingleApi.ourJID
+            type = IQ.Type.set
+            to = address
+        }
+
+        if (encodeSourcesAsJson) {
+            removeSourceIq.addExtension(encodeSourcesAsJson(sourcesToRemove))
+        } else {
+            sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
+        }
+        logger.debug { "Sending source-remove, sources=$sourcesToRemove" }
+        jingleApi.connection.tryToSendStanza(removeSourceIq)
+        JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
+    }
+
 }

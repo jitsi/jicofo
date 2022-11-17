@@ -302,37 +302,6 @@ public class JingleApi
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public void sendRemoveSourceIQ(
-            ConferenceSourceMap sourcesToRemove,
-            JingleSession session,
-            boolean encodeSourcesAsJson)
-    {
-        JingleIQ removeSourceIq = new JingleIQ(JingleAction.SOURCEREMOVE, session.getSessionID());
-
-        removeSourceIq.setFrom(getOurJID());
-        removeSourceIq.setType(IQ.Type.set);
-        removeSourceIq.setTo(session.getAddress());
-
-        if (encodeSourcesAsJson)
-        {
-            removeSourceIq.addExtension(encodeSourcesAsJson(sourcesToRemove));
-        }
-        else
-        {
-            sourcesToRemove.toJingle().forEach(removeSourceIq::addContent);
-        }
-
-        logger.debug(
-            "Sending source-remove to " + session.getAddress() + ", SID=" + session.getSessionID()
-                    + ", sources=" + sourcesToRemove);
-
-        UtilKt.tryToSendStanza(getConnection(), removeSourceIq);
-        JingleStats.stanzaSent(JingleAction.SOURCEREMOVE);
-    }
-
     public void removeSession(@NotNull JingleSession session)
     {
         sessions.remove(session.getSessionID());

@@ -608,7 +608,7 @@ public class Participant
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingle.sendRemoveSourceIQ(sources, jingleSession, encodeSourcesAsJson);
+                jingleSession.removeSource(sources, encodeSourcesAsJson);
             }
         }
     }
