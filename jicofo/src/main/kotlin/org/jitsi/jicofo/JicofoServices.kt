@@ -44,7 +44,7 @@ import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
-import org.jitsi.jicofo.xmpp.jingle.JingleApi
+import org.jitsi.jicofo.xmpp.jingle.JingleStats
 import org.jitsi.rest.createServer
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
@@ -74,6 +74,7 @@ open class JicofoServices {
             }
         }
     }
+
     private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
     val focusManager: FocusManager = FocusManager().apply { start() }
@@ -184,9 +185,11 @@ open class JicofoServices {
                     authConfig.authenticationLifetime,
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
+
                 AuthConfig.Type.JWT -> ExternalJWTAuthority(
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
+
                 AuthConfig.Type.SHIBBOLETH -> ShibbolethAuthAuthority(
                     authConfig.enableAutoLogin,
                     authConfig.authenticationLifetime,
@@ -212,7 +215,7 @@ open class JicofoServices {
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
-        put("jingle", JingleApi.getStats())
+        put("jingle", JingleStats.toJson())
         healthChecker?.let {
             put("slow_health_check", it.totalSlowHealthChecks)
             put("healthy", it.result == null)
@@ -235,6 +238,7 @@ open class JicofoServices {
     companion object {
         @JvmStatic
         val jicofoServicesSingletonSyncRoot = Any()
+
         @JvmStatic
         var jicofoServicesSingleton: JicofoServices? by SynchronizedDelegate(null, jicofoServicesSingletonSyncRoot)
     }

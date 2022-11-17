@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp.jingle;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -31,7 +30,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.iqrequest.*;
 import org.jivesoftware.smack.packet.*;
-import org.json.simple.*;
 import org.jxmpp.jid.Jid;
 
 import java.util.*;
@@ -43,13 +41,6 @@ public class JingleApi
     extends AbstractIqRequestHandler
 {
     private static final Logger logger = new LoggerImpl(JingleApi.class.getName());
-
-    public static final JingleStats stats = new JingleStats();
-
-    public static JSONObject getStats()
-    {
-        return stats.toJson();
-    }
 
     /**
      * The list of active Jingle sessions.
@@ -138,7 +129,7 @@ public class JingleApi
 
         sessions.put(sid, session);
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), inviteIQ);
-        stats.stanzaSent(inviteIQ.getAction());
+        JingleStats.stanzaSent(inviteIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
         {
@@ -189,7 +180,7 @@ public class JingleApi
         }
 
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), jingleIQ);
-        stats.stanzaSent(jingleIQ.getAction());
+        JingleStats.stanzaSent(jingleIQ.getAction());
 
         if (reply == null || IQ.Type.result.equals(reply.getType()))
         {
@@ -334,7 +325,7 @@ public class JingleApi
     {
         JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
         UtilKt.tryToSendStanza(getConnection(), addSourceIq);
-        stats.stanzaSent(JingleAction.SOURCEADD);
+        JingleStats.stanzaSent(JingleAction.SOURCEADD);
     }
 
     /**
@@ -351,7 +342,7 @@ public class JingleApi
     {
         JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
         IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), addSourceIq);
-        stats.stanzaSent(JingleAction.SOURCEADD);
+        JingleStats.stanzaSent(JingleAction.SOURCEADD);
 
         if (reply == null)
             return false;
@@ -390,7 +381,7 @@ public class JingleApi
                     + ", sources=" + sourcesToRemove);
 
         UtilKt.tryToSendStanza(getConnection(), removeSourceIq);
-        stats.stanzaSent(JingleAction.SOURCEREMOVE);
+        JingleStats.stanzaSent(JingleAction.SOURCEREMOVE);
     }
 
     public void removeSession(@NotNull JingleSession session)

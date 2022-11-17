@@ -46,7 +46,7 @@ class JingleSession(
         val action = iq.action
             ?: return StanzaError.getBuilder(StanzaError.Condition.bad_request)
                 .setConditionText("Missing 'action'").build()
-        JingleApi.stats.stanzaReceived(action)
+        JingleStats.stanzaReceived(action)
 
         return when (action) {
             JingleAction.SESSION_ACCEPT -> requestHandler.onSessionAccept(this, iq.contentList)
@@ -81,7 +81,7 @@ class JingleSession(
                 message
             )
             jingleApi.connection.tryToSendStanza(terminate)
-            JingleApi.stats.stanzaSent(JingleAction.SESSION_TERMINATE)
+            JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
         }
 
         jingleApi.removeSession(this)
