@@ -125,11 +125,11 @@ class JingleSession(
 
         JingleStats.stanzaSent(jingleIq.action)
         val response = jingleApi.connection.sendIqAndGetResponse(jingleIq)
-        return if (response == null || response.type != IQ.Type.result) {
-            logger.error("Unexpected response to transport-replace: " + response?.toXML())
-            false
-        } else {
+        return if (response?.type == IQ.Type.result) {
             true
+        } else {
+            logger.error("Unexpected response to transport-replace: ${response?.toXML()}")
+            false
         }
     }
 
@@ -180,11 +180,10 @@ class JingleSession(
         jingleApi.registerSession(this)
         JingleStats.stanzaSent(sessionInitiate.action)
         val response = jingleApi.connection.sendIqAndGetResponse(sessionInitiate)
-        // XXX treat null as an error (timeout)
-        return if (response == null || response.type == IQ.Type.result) {
+        return if (response?.type == IQ.Type.result) {
             true
         } else {
-            logger.error("Unexpected response to 'session-initiate': ${response.toXML()}")
+            logger.error("Unexpected response to session-initiate: ${response?.toXML()}")
             false
         }
     }
