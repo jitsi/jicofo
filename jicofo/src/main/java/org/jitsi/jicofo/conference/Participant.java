@@ -585,7 +585,6 @@ public class Participant
      */
     public void sendQueuedRemoteSources()
     {
-        JingleApi jingle = getJingleApi();
         JingleSession jingleSession = getJingleSession();
 
         if (jingleSession == null)
@@ -604,7 +603,7 @@ public class Participant
             logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingle.sendAddSourceIQ(sources, jingleSession, encodeSourcesAsJson);
+                jingleSession.addSource(sources, encodeSourcesAsJson);
             }
             else if (action == AddOrRemove.Remove)
             {

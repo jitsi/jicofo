@@ -155,4 +155,42 @@ class JingleSession(
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
     }
 
+    /**
+     * Send a source-add IQ with the specified sources. Returns immediately without waiting for a response.
+     */
+    fun addSource(sources: ConferenceSourceMap, encodeSourcesAsJson: Boolean) {
+        val addSourceIq: JingleIQ = createAddSourceIq(sources, encodeSourcesAsJson)
+        logger.debug { "Sending source-add, sources=$sources" }
+        JingleStats.stanzaSent(JingleAction.SOURCEADD)
+        jingleApi.connection.tryToSendStanza(addSourceIq)
+    }
+
+    /**
+     * Send a source-add IQ with the specified sources, and wait for a response. Return true if the response is
+     * successful and false otherwise.
+     * Note that this is only used in testing to simulate a source-add IQ being sent from a participant to jicofo. The
+     * tests should probably be changed.
+     */
+    @Throws(SmackException.NotConnectedException::class)
+    fun addSourceAndWaitForResponse(sources: ConferenceSourceMap, encodeSourcesAsJson: Boolean): Boolean {
+        val addSourceIq = createAddSourceIq(sources, encodeSourcesAsJson)
+        val response = jingleApi.connection.sendIqAndGetResponse(addSourceIq)
+        JingleStats.stanzaSent(JingleAction.SOURCEADD)
+        return response?.type == IQ.Type.result
+    }
+
+    private fun createAddSourceIq(
+        sources: ConferenceSourceMap,
+        encodeSourcesAsJson: Boolean
+    ): JingleIQ = JingleIQ(JingleAction.SOURCEADD, sessionID).apply {
+            from = jingleApi.ourJID
+            type = IQ.Type.set
+            to = address
+            if (encodeSourcesAsJson) {
+                addExtension(encodeSourcesAsJson(sources))
+            } else {
+                sources.toJingle().forEach { addContent(it) }
+            }
+    }
+
 }

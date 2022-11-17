@@ -247,61 +247,6 @@ public class JingleApi
         return ret;
     }
 
-    private JingleIQ createAddSourceIq(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
-    {
-        JingleIQ addSourceIq = new JingleIQ(JingleAction.SOURCEADD, session.getSessionID());
-        addSourceIq.setFrom(getOurJID());
-        addSourceIq.setType(IQ.Type.set);
-        addSourceIq.setTo(session.getAddress());
-        if (encodeSourcesAsJson)
-        {
-            addSourceIq.addExtension(encodeSourcesAsJson(sources));
-        }
-        else
-        {
-            sources.toJingle().forEach(addSourceIq::addContent);
-        }
-
-        logger.debug("Sending source-add to " + session.getAddress()
-                + ", SID=" + session.getSessionID() + ", sources=" + sources);
-        return addSourceIq;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void sendAddSourceIQ(ConferenceSourceMap sources, JingleSession session, boolean encodeSourcesAsJson)
-    {
-        JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
-        UtilKt.tryToSendStanza(getConnection(), addSourceIq);
-        JingleStats.stanzaSent(JingleAction.SOURCEADD);
-    }
-
-    /**
-     * Sends 'source-add' proprietary notification. Wait for response and return status.
-     *
-     * @param sources the sources to be included in the source-add message.
-     * @param session the <tt>JingleSession</tt> used to send the notification.
-     * @param encodeSourcesAsJson whether to encode {@code sources} as JSON or standard Jingle.
-     * @return {@code true} if the source-add completed successfully.
-     */
-    public boolean sendAddSourceIQAndGetResult(ConferenceSourceMap sources, JingleSession session,
-        boolean encodeSourcesAsJson)
-        throws SmackException.NotConnectedException
-    {
-        JingleIQ addSourceIq = createAddSourceIq(sources, session, encodeSourcesAsJson);
-        IQ reply = UtilKt.sendIqAndGetResponse(getConnection(), addSourceIq);
-        JingleStats.stanzaSent(JingleAction.SOURCEADD);
-
-        if (reply == null)
-            return false;
-        if (IQ.Type.result.equals(reply.getType()))
-            return true;
-
-        logger.error("Failed to do 'source-add' to " + session.getAddress() + ": " + reply.toXML());
-        return false;
-    }
-
     public void removeSession(@NotNull JingleSession session)
     {
         sessions.remove(session.getSessionID());

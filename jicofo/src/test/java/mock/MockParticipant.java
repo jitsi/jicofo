@@ -409,7 +409,7 @@ public class MockParticipant
 
         // Send source-add
         try {
-            return jingle.sendAddSourceIQAndGetResult(toAdd, jingleSession, false);
+            return jingleSession.addSourceAndWaitForResponse(toAdd, false);
         }
         catch (SmackException.NotConnectedException e)  {
             return false;
