@@ -1137,78 +1137,49 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Callback called when we receive 'source-add' notification from conference
-     * participant. New sources received are advertised to active participants.
-     * If some participant does not have Jingle session established yet then
-     * those sources are scheduled for future update.
+     * Attempts to add sources from {@code participant} to the conference.
+     *
+     * @param participant the participant that is adding the sources.
+     * @param sourcesAdvertised the sources that the participant is adding
+     *
+     * @throws SenderCountExceededException if the sender limits in the conference have been exceeded
+     * @throws ValidationFailedException if the addition of the sources would result in an invalid state of the
+     * conference sources (e.g. if there is a conflict with another participant, or the resulting source set for the
+     * participant is invalid).
      */
-    public StanzaError onAddSource(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
+    public void addSource(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesAdvertised)
+    throws SenderCountExceededException, ValidationFailedException
     {
-        Jid address = jingleSession.getRemoteJid();
-        Participant participant = getParticipant(jingleSession);
-        if (participant == null)
-        {
-            String errorMsg = "no session for " + address;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        if (participant.getChatMember().getRole() == MemberRole.VISITOR)
-        {
-            return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build();
-        }
-
-        String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
-        logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
-        if (sourcesAdvertised.isEmpty())
-        {
-            logger.warn("Received source-add with empty sources, ignoring");
-            return null;
-        }
-
         boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
                 chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
+        boolean rejectedVideoSource = sourcesAdvertised.getHasVideo() &&
+                chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders();
 
-        if (rejectedAudioSource ||
-                sourcesAdvertised.getHasVideo() &&
-                chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
+        if (rejectedAudioSource || rejectedVideoSource)
         {
-            String errorMsg = "Source add rejected. Maximum number of " +
-                    (rejectedAudioSource ? "audio" : "video") + " senders reached.";
-            logger.warn(() -> participantId + ": " + errorMsg);
-            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
+            throw new SenderCountExceededException(
+                    "Sender count exceeded for: " + (rejectedAudioSource ? "audio " : "")
+                            + (rejectedVideoSource ? "video" : ""));
         }
 
-        EndpointSourceSet sourcesAccepted;
-        try
-        {
-            sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-        }
-
-        logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
+        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
+        logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
         {
-            logger.warn("Stop processing source-add, no new sources added: " + participantId);
-            return null;
+            // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been an
+            // exception above)
+            logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
+            return;
         }
 
         // Updates source groups on the bridge
-        // We may miss the notification, but the state will be synced up
-        // after conference has been relocated to the new bridge
+        // We may miss the notification, but the state will be synced up after conference has been relocated to the new
+        // bridge
         getColibriSessionManager().updateParticipant(participant.getEndpointId(), null, participant.getSources());
-
         propagateNewSources(participant, sourcesAccepted);
-
-        return null;
     }
 
     /**
@@ -2101,6 +2072,14 @@ public class JitsiMeetConferenceImpl
             logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
                     + participantIds);
             reInviteParticipantsById(participantIds);
+        }
+    }
+
+    static class SenderCountExceededException extends Exception
+    {
+        SenderCountExceededException(String message)
+        {
+            super(message);
         }
     }
 }

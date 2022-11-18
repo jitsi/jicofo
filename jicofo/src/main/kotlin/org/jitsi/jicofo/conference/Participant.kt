@@ -20,13 +20,17 @@ package org.jitsi.jicofo.conference
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
+import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
+import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
+import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
@@ -34,6 +38,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import java.time.Clock
@@ -343,8 +348,37 @@ open class Participant @JvmOverloads constructor(
     )
 
     private inner class JingleRequestHandlerImpl : JingleRequestHandler {
-        override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
-            conference.onAddSource(jingleSession, contents)
+        private fun checkJingleSession(jingleSession: JingleSession): StanzaError? =
+            if (this@Participant.jingleSession != jingleSession)
+                StanzaError.from(StanzaError.Condition.item_not_found, "jingle session no longer active").build()
+            else null
+
+        override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? {
+            checkJingleSession(jingleSession)?.let { return it }
+
+            if (chatMember.role === MemberRole.VISITOR) {
+                return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build()
+            }
+
+            val sourcesAdvertised = fromJingle(contents)
+            logger.debug { "Received source-add: $sourcesAdvertised" }
+            if (sourcesAdvertised.isEmpty()) {
+                logger.warn("Received source-add with empty sources, ignoring")
+                return null
+            }
+
+            try {
+                conference.addSource(this@Participant, sourcesAdvertised)
+            } catch (e: SenderCountExceededException) {
+                logger.warn("Rejecting source-add: ${e.message}")
+                return StanzaError.from(StanzaError.Condition.resource_constraint, e.message).build()
+            } catch (e: ValidationFailedException) {
+                logger.warn("Rejecting source-add: ${e.message}")
+                return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
+            }
+
+            return null
+        }
         override fun onRemoveSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
             conference.onRemoveSource(jingleSession, contents)
         override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
