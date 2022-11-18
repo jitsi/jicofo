@@ -38,6 +38,8 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -383,8 +385,21 @@ open class Participant @JvmOverloads constructor(
             conference.onRemoveSource(jingleSession, contents)
         override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
             conference.onSessionAccept(jingleSession, contents)
-        override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ) =
-            conference.onSessionInfo(jingleSession, iq)
+        override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
+            checkJingleSession(jingleSession)?.let { return it }
+
+            val iceState = iq.getExtension(IceStatePacketExtension::class.java)?.text
+            if (!iceState.equals("failed", ignoreCase = true)) {
+                logger.info("Ignored unknown ice-state: $iceState")
+                return null
+            }
+            ConferenceMetrics.participantsIceFailed.inc()
+
+            val bridgeSessionId = iq.getExtension(BridgeSessionPacketExtension::class.java)?.id
+
+            conference.iceFailed(this@Participant, bridgeSessionId)
+            return null
+        }
         override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ) =
             conference.onSessionTerminate(jingleSession, iq)
         override fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =

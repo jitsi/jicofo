@@ -933,41 +933,19 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Will re-allocate channels on the bridge for participant who signals ICE
-     * state 'failed'. New transport is sent in the 'transport-info' message
-     * similar to the conference migration scenario.
+     * Handles a notification that a participant's ICE session failed.
+     *
+     * @param participant the participant whose ICE session failed.
+     * @param bridgeSessionId the ID of the bridge session that failed.
      */
-    public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
+    public void iceFailed(@NotNull Participant participant, String bridgeSessionId)
     {
-        Jid address = session.getRemoteJid();
-        Participant participant = getParticipant(session);
-
-        // FIXME: (duplicate) there's very similar logic in onSessionAccept
-        if (participant == null)
-        {
-            String errorMsg = "No session for " + address;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        IceStatePacketExtension iceStatePE = iq.getExtension(IceStatePacketExtension.class);
-        String iceState = iceStatePE != null ? iceStatePE.getText() : null;
-
-        if (!"failed".equalsIgnoreCase(iceState))
-        {
-            logger.info(String.format("Ignored ice-state %s from %s", iceState, address));
-
-            return null;
-        }
-
-        BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
-        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, bridge-session ID: %s",
-                    address,
+                    participant.getEndpointId(),
                     bridgeSessionId));
             reInviteParticipant(participant);
         }
@@ -975,12 +953,9 @@ public class JitsiMeetConferenceImpl
         {
             logger.info(String.format(
                     "Ignored ICE failed notification for invalid session, participant: %s, bridge session ID: %s",
-                    address,
+                    participant.getEndpointId(),
                     bridgeSessionId));
         }
-        ConferenceMetrics.participantsIceFailed.inc();
-
-        return null;
     }
 
     private BridgeSessionPacketExtension getBridgeSessionPacketExtension(@NotNull IQ iq)
