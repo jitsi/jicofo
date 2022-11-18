@@ -1057,21 +1057,12 @@ public class JitsiMeetConferenceImpl
 
 
     /**
-     * Callback called when we receive 'transport-info' from conference
-     * participant. The info is forwarded to the videobridge at this point.
+     * Update the transport information for a participant. Callback called when we receive a 'transport-info', the info
+     * is forwarded to the videobridge.
      */
-    public void onTransportInfo(
-            @NotNull JingleSession session,
-            @NotNull List<? extends ContentPacketExtension> contentList)
+    public void updateTransport(@NotNull Participant participant, @NotNull IceUdpTransportPacketExtension transport)
     {
-        Participant participant = getParticipant(session);
-        if (participant == null)
-        {
-            logger.warn("Failed to process transport-info, no session for: " + session.getRemoteJid());
-            return;
-        }
-
-        getColibriSessionManager().updateParticipant(participant.getEndpointId(), getTransport(contentList), null);
+        getColibriSessionManager().updateParticipant(participant.getEndpointId(), transport, null);
     }
 
     /**
@@ -1217,7 +1208,7 @@ public class JitsiMeetConferenceImpl
 
         getColibriSessionManager().updateParticipant(
             participant.getEndpointId(),
-            getTransport(contents),
+            ConferenceUtilKt.getTransport(contents),
             getSourcesForParticipant(participant));
 
         if (!sourcesAccepted.isEmpty())
@@ -1236,36 +1227,6 @@ public class JitsiMeetConferenceImpl
 
         return null;
     }
-
-    /**
-     * Find the first {@link IceUdpTransportPacketExtension} in a list of Jingle contents.
-     */
-    private IceUdpTransportPacketExtension getTransport(@NotNull List<? extends ContentPacketExtension> contents)
-    {
-        IceUdpTransportPacketExtension transport = null;
-        for (ContentPacketExtension content : contents)
-        {
-            transport = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
-            if (transport != null)
-            {
-                break;
-            }
-        }
-
-        if (transport == null)
-        {
-            logger.error("No valid transport supplied in transport-update from $participant");
-            return null;
-        }
-
-        if (!transport.isRtcpMux())
-        {
-            transport.addChildExtension(new IceRtcpmuxPacketExtension());
-        }
-
-        return transport;
-    }
-
 
     /**
      * Removes sources from the conference.

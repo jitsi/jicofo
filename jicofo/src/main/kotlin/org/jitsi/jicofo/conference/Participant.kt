@@ -37,6 +37,8 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
@@ -402,8 +404,18 @@ open class Participant @JvmOverloads constructor(
         }
         override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ) =
             conference.onSessionTerminate(jingleSession, iq)
-        override fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
-            conference.onTransportInfo(jingleSession, contents)
+        override fun onTransportInfo(
+            jingleSession: JingleSession,
+            contents: List<ContentPacketExtension>
+        ): StanzaError? {
+            checkJingleSession(jingleSession)?.let { return it }
+
+            val transport = contents.getTransport()
+                ?: return StanzaError.from(StanzaError.Condition.bad_request, "missing transport active").build()
+            conference.updateTransport(this@Participant, transport)
+
+            return null
+        }
         override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
             conference.onTransportAccept(jingleSession, contents)
         override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {

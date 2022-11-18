@@ -184,7 +184,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             Set<Media> medias = new HashSet<>();
             offer.getContents().forEach(content -> {
-                Media media = UtilKt.toMedia(content);
+                Media media = ConferenceUtilKt.toMedia(content);
                 if (media != null)
                 {
                     medias.add(media);

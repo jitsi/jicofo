@@ -20,6 +20,8 @@ package org.jitsi.jicofo.conference
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 
 internal fun ContentPacketExtension.toMedia(): Media? {
@@ -39,3 +41,14 @@ internal fun ContentPacketExtension.toMedia(): Media? {
     }
     return media.build()
 }
+
+internal fun List<ContentPacketExtension>.getTransport(): IceUdpTransportPacketExtension? {
+    val transport = firstNotNullOfOrNull { it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java) }
+        ?: return null
+    // Insert rtcp-mux if missing. Is this still needed?
+    if (!transport.isRtcpMux) {
+        transport.addChildExtension(IceRtcpmuxPacketExtension())
+    }
+    return transport
+}
+
