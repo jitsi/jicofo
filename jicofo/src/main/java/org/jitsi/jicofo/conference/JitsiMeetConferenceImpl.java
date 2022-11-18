@@ -56,10 +56,10 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
  * participants, as well as the COLIBRI session with the jitsi-videobridge
  * instances used for the conference.
- *
+ * <p/>
  * A note on synchronization: this class uses a lot of 'synchronized' blocks,
  * on 3 different objects {@link #participantLock}, {@code this} and {@code BridgeSession#octoParticipant}).
- *
+ * <p/>
  * This seems safe, but it is hard to maintain this way, and we should
  * re-factor to simplify.
  *
@@ -1469,7 +1469,7 @@ public class JitsiMeetConferenceImpl
      * Checks if this conference has a member with a specific occupant JID. Note that we check for the existence of a
      * member in the chat room instead of a {@link Participant} (it's not clear whether the distinction is important).
      * @param jid the occupant JID of the member.
-     * @return
+     * @return true if the conference has a member with occupant JID {@code jid}.
      */
     public boolean hasMember(Jid jid)
     {
@@ -1584,7 +1584,7 @@ public class JitsiMeetConferenceImpl
             o.put("colibri_session_manager", colibriSessionManager.getDebugState());
         }
         OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
-        conferenceProperties.forEach(conferencePropertiesJson::put);
+        conferencePropertiesJson.putAll(conferenceProperties);
         o.put("conference_properties", conferencePropertiesJson);
         o.put("include_in_statistics", includeInStatistics);
         o.put("conference_sources", conferenceSources.toJson());
@@ -1618,7 +1618,7 @@ public class JitsiMeetConferenceImpl
         // Force mute at the backend. We assume this was successful. If for some reason it wasn't the colibri layer
         // should handle it (e.g. remove a broken bridge).
         getColibriSessionManager().mute(
-                participantsToMute.stream().map(p -> p.getEndpointId()).collect(Collectors.toSet()),
+                participantsToMute.stream().map(Participant::getEndpointId).collect(Collectors.toSet()),
                 true,
                 mediaType);
 

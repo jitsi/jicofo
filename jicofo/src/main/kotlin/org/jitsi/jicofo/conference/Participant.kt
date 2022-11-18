@@ -55,7 +55,7 @@ open class Participant @JvmOverloads constructor(
     /** The list of XMPP features supported by this participant. */
     private val supportedFeatures: List<String> = DiscoveryUtil.getDefaultParticipantFeatureSet(),
     /** The [Clock] used by this participant. */
-    private val clock: Clock = Clock.systemUTC()
+    clock: Clock = Clock.systemUTC()
 ) {
     /** The endpoint ID for this participant in the videobridge (Colibri) context. */
     val endpointId: String = chatMember.name
