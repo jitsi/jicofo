@@ -90,4 +90,4 @@ interface JingleRequestHandler {
 }
 
 /** Export a default impl so it can be used in java without -Xjvm-default */
-class NoOpeJingleRequestHandler : JingleRequestHandler
+class NoOpJingleRequestHandler : JingleRequestHandler
