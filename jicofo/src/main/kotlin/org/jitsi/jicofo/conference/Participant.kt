@@ -24,6 +24,7 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.util.Cancelable
+import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
@@ -34,10 +35,6 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import java.time.Clock
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import java.util.Deque
-import java.util.LinkedList
 import java.util.Locale
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -88,11 +85,7 @@ open class Participant @JvmOverloads constructor(
      */
     private var inviteRunnable: Cancelable? = null
 
-    /**
-     * The list stored the timestamp when the last restart requests have been received for this participant and is used
-     * for rate limiting. See [.incrementAndCheckRestartRequests] for more details.
-     */
-    private val restartRequests: Deque<Instant> = LinkedList()
+    private val restartRequestsRateLimit = RateLimit(clock = clock)
 
     /**
      * The Jingle session (if any) established with this peer.
@@ -215,34 +208,8 @@ open class Participant @JvmOverloads constructor(
     /** Returns <tt>true</tt> if this peer supports DTLS/SCTP. */
     fun hasSctpSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_SCTP)
 
-    /**
-     * Rate limiting mechanism for session restart requests received from participants.
-     * The rules ar as follows:
-     * - must be at least 10 second gap between the requests
-     * - no more than 3 requests within the last minute
-     *
-     * @return `true` if it's okay to process the request, as in it doesn't violate the current rate limiting
-     * policy, or `false` if the request should be denied.
-     */
-    fun incrementAndCheckRestartRequests(): Boolean {
-        val now = clock.instant()
-        val previousRequest = restartRequests.peekLast()
-        if (previousRequest == null) {
-            restartRequests.add(now)
-            return true
-        }
-        if (previousRequest.until(now, ChronoUnit.SECONDS) < 10) {
-            return false
-        }
-
-        // Allow only 3 requests within the last minute
-        restartRequests.removeIf { requestTime: Instant -> requestTime.until(now, ChronoUnit.SECONDS) > 60 }
-        if (restartRequests.size > 2) {
-            return false
-        }
-        restartRequests.add(now)
-        return true
-    }
+    /** Return true if a restart request should be accepted and false otherwise. */
+    fun acceptRestartRequest(): Boolean = restartRequestsRateLimit.accept()
 
     /** The stats ID of the participant. */
     val statId: String?

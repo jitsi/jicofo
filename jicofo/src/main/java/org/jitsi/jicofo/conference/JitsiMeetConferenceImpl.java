@@ -1053,7 +1053,7 @@ public class JitsiMeetConferenceImpl
 
             if (restartRequested)
             {
-                if (participant.incrementAndCheckRestartRequests())
+                if (participant.acceptRestartRequest())
                 {
                     participants.put(participant.getChatMember().getOccupantJid(), participant);
                     inviteParticipant(participant, false, false);
