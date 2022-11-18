@@ -1092,26 +1092,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Message sent by the client when for any reason it's unable to handle
-     * 'transport-replace' message.
-     */
-    public void onTransportReject(@NotNull JingleSession jingleSession, @NotNull JingleIQ reply)
-    {
-        Participant p = getParticipant(jingleSession);
-        if (p == null)
-        {
-            logger.warn("No participant for " + jingleSession);
-            return;
-        }
-
-        // We could expire channels immediately here, but we're leaving them to
-        // auto expire on the bridge or we're going to do that when user leaves
-        // the MUC anyway
-        logger.error("Participant has rejected our transport offer: " + p.getChatMember().getName()
-                + ", response: " + reply.toXML());
-    }
-
-    /**
      * Attempts to add sources from {@code participant} to the conference.
      *
      * @param participant the participant that is adding the sources.

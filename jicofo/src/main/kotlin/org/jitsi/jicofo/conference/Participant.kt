@@ -406,7 +406,10 @@ open class Participant @JvmOverloads constructor(
             conference.onTransportInfo(jingleSession, contents)
         override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
             conference.onTransportAccept(jingleSession, contents)
-        override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) =
-            conference.onTransportReject(jingleSession, iq)
+        override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {
+            checkJingleSession(jingleSession)?.let { return }
+
+            logger.warn("Received transport-reject: ${iq.toXML()}")
+        }
     }
 }
