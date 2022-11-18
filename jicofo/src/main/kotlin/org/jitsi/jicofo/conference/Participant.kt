@@ -25,12 +25,14 @@ import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
+import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -336,7 +338,26 @@ open class Participant @JvmOverloads constructor(
         mucJid,
         chatMember.chatRoom.xmppProvider.jingleIqRequestHandler,
         chatMember.chatRoom.xmppProvider.xmppConnection,
-        conference,
+        JingleRequestHandlerImpl(),
         ConferenceConfig.config.useJsonEncodedSources && supportsJsonEncodedSources()
     )
+
+    private inner class JingleRequestHandlerImpl : JingleRequestHandler {
+        override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            conference.onAddSource(jingleSession, contents)
+        override fun onRemoveSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            conference.onRemoveSource(jingleSession, contents)
+        override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            conference.onSessionAccept(jingleSession, contents)
+        override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ) =
+            conference.onSessionInfo(jingleSession, iq)
+        override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ) =
+            conference.onSessionTerminate(jingleSession, iq)
+        override fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            conference.onTransportInfo(jingleSession, contents)
+        override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            conference.onTransportAccept(jingleSession, contents)
+        override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) =
+            conference.onTransportReject(jingleSession, iq)
+    }
 }

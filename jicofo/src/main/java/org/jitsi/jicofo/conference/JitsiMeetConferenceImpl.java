@@ -67,9 +67,7 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
-    implements JingleRequestHandler,
-               JitsiMeetConference,
-               RegistrationListener
+    implements JitsiMeetConference, RegistrationListener
 {
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -923,12 +921,8 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Callback called when 'session-accept' is received from invited
-     * participant.
-     *
-     * {@inheritDoc}
+     * Callback called when 'session-accept' is received from invited participant.
      */
-    @Override
     public StanzaError onSessionAccept(
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> answer)
@@ -942,10 +936,7 @@ public class JitsiMeetConferenceImpl
      * Will re-allocate channels on the bridge for participant who signals ICE
      * state 'failed'. New transport is sent in the 'transport-info' message
      * similar to the conference migration scenario.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
         Jid address = session.getRemoteJid();
@@ -999,10 +990,7 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles 'session-terminate' received from the client.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public StanzaError onSessionTerminate(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
         Participant participant = getParticipant(session);
@@ -1096,10 +1084,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Callback called when we receive 'transport-info' from conference
      * participant. The info is forwarded to the videobridge at this point.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public void onTransportInfo(
             @NotNull JingleSession session,
             @NotNull List<? extends ContentPacketExtension> contentList)
@@ -1118,10 +1103,7 @@ public class JitsiMeetConferenceImpl
      * 'transport-accept' message is received by the focus after it has sent
      * 'transport-replace' which is supposed to move the conference to another
      * bridge. It means that the client has accepted new transport.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public StanzaError onTransportAccept(
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> contents)
@@ -1137,10 +1119,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Message sent by the client when for any reason it's unable to handle
      * 'transport-replace' message.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public void onTransportReject(@NotNull JingleSession jingleSession, @NotNull JingleIQ reply)
     {
         Participant p = getParticipant(jingleSession);
@@ -1162,10 +1141,7 @@ public class JitsiMeetConferenceImpl
      * participant. New sources received are advertised to active participants.
      * If some participant does not have Jingle session established yet then
      * those sources are scheduled for future update.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public StanzaError onAddSource(
             @NotNull JingleSession jingleSession,
             @NotNull List<? extends ContentPacketExtension> contents)
@@ -1240,10 +1216,7 @@ public class JitsiMeetConferenceImpl
      * conference participant. New sources received are advertised to active
      * participants. If some participant does not have Jingle session
      * established yet then those sources are scheduled for future update.
-     *
-     * {@inheritDoc}
      */
-    @Override
     public StanzaError onRemoveSource(
             @NotNull JingleSession sourceJingleSession,
             @NotNull List<? extends ContentPacketExtension> contents)
