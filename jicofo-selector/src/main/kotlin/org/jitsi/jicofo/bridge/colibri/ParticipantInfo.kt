@@ -22,9 +22,9 @@ import org.jitsi.utils.OrderedJsonObject
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
  */
-internal class ParticipantInfo(
+class ParticipantInfo(
     parameters: ParticipantAllocationParameters,
-    var session: Colibri2Session,
+    var session: Colibri2Session
 ) {
     val id = parameters.id
     val statsId = parameters.statsId
@@ -32,6 +32,7 @@ internal class ParticipantInfo(
     val medias = parameters.medias
     val supportsSourceNames = parameters.supportsSourceNames
     val useSsrcRewriting = parameters.useSsrcRewriting
+    val visitor = parameters.visitor
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
@@ -46,5 +47,6 @@ internal class ParticipantInfo(
         put("video_muted", videoMuted)
         put("source_names", supportsSourceNames)
         put("ssrc_rewriting", useSsrcRewriting)
+        put("visitor", visitor)
     }
 }

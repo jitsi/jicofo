@@ -22,9 +22,16 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.bridge.Cascade
+import org.jitsi.jicofo.bridge.CascadeRepair
 import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.bridge.ParticipantProperties
+import org.jitsi.jicofo.bridge.addNodeToMesh
+import org.jitsi.jicofo.bridge.getNodesBehind
+import org.jitsi.jicofo.bridge.getPathsFrom
+import org.jitsi.jicofo.bridge.removeNode
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -61,17 +68,21 @@ class ColibriV2SessionManager(
     internal val rtcStatsEnabled: Boolean,
     private val bridgeVersion: String?,
     parentLogger: Logger
-) : ColibriSessionManager {
+) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger)
 
     private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
+    private val topologySelectionStrategy = BridgeConfig.config.topologyStrategy.also {
+        logger.info("Using ${it.javaClass.name}")
+    }
+
     /**
      * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
      */
-    private val sessions = mutableMapOf<Bridge, Colibri2Session>()
+    override val sessions = mutableMapOf<String?, Colibri2Session>()
 
     /**
      * The set of participants that have associated colibri2 endpoints allocated, mapped by their ID. A participant is
@@ -114,10 +125,14 @@ class ColibriV2SessionManager(
         Unit
     }
 
+    private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>) =
+        topologySelectionStrategy.repairMesh(cascade, disconnectedMeshes)
+
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.expire()
-        sessions.remove(session.bridge)
+        removeNode(session, ::repairMesh)
+        sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
         session.relayId?.let { removedRelayId ->
@@ -145,11 +160,15 @@ class ColibriV2SessionManager(
                 sessionParticipantsToRemove.forEach { remove(it) }
                 participantsRemoved.addAll(sessionParticipantsToRemove)
 
-                // If the session was removed the relays themselves are expired, so there's no need to expire individual
-                // endpoints within a relay.
-                sessions.values.filter { it != session }.forEach { otherSession ->
-                    session.relayId?.let {
-                        otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
+                // Visitors don't have relay endpoints.
+                if (sessionParticipantsToRemove.any { !it.visitor }) {
+
+                    // If the session was removed the relays themselves are expired, so there's no need to expire
+                    // individual endpoints within a relay.
+                    getPathsFrom(session) { _, otherSession, from ->
+                        from?.relayId?.let {
+                            otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
+                        }
                     }
                 }
             }
@@ -205,20 +224,20 @@ class ColibriV2SessionManager(
     override val bridgeCount: Int
         get() = synchronized(syncRoot) { sessions.size }
     override val bridgeRegions: Set<String>
-        get() = synchronized(syncRoot) { sessions.keys.map { it.region }.filterNotNull().toSet() }
+        get() = synchronized(syncRoot) { sessions.values.mapNotNull { it.bridge.region }.toSet() }
 
     /**
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
      * a boolean indicating whether the session was just created (true) or existed (false).
      */
-    private fun getOrCreateSession(bridge: Bridge): Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
-        var session = sessions[bridge]
+    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean):
+        Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
+        var session = sessions[bridge.relayId]
         if (session != null) {
             return Pair(session, false)
         }
 
-        session = Colibri2Session(this, bridge, logger)
-        sessions[bridge] = session
+        session = Colibri2Session(this, bridge, visitor, logger)
         return Pair(session, true)
     }
 
@@ -226,7 +245,31 @@ class ColibriV2SessionManager(
     private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
-            .associate { Pair(it.key.bridge, ConferenceBridgeProperties(it.value.size)) }
+            .associate {
+                Pair(
+                    it.key.bridge,
+                    ConferenceBridgeProperties(
+                        it.value.size,
+                        it.value.firstOrNull()?.visitor == true
+                    )
+                )
+            }
+    }
+
+    override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
+        val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getVisibleSessionParticipants(it) }
+        val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap {
+            getVisibleSessionParticipants(it)
+        }
+
+        session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true, meshId)
+        otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false, meshId)
+    }
+
+    override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {
+        otherSession.relayId?.let { removedRelayId ->
+            session.expireRelay(removedRelayId)
+        }
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
@@ -245,19 +288,21 @@ class ColibriV2SessionManager(
                 logger.info("Selecting bridge. Conference is pinned to version \"$bridgeVersion\"")
             }
 
+            val visitor = participant.visitor
+
             // The requests for each session need to be sent in order, but we don't want to hold the lock while
             // waiting for a response. I am not sure if processing responses is guaranteed to be in the order in which
             // the requests were sent.
             val bridge = bridgeSelector.selectBridge(
                 getBridges(),
-                ParticipantProperties(participant.region),
+                ParticipantProperties(participant.region, visitor),
                 bridgeVersion
             ) ?: run {
                 eventEmitter.fireEvent { bridgeSelectionFailed() }
                 throw BridgeSelectionFailedException()
             }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
-            if (sessions.isNotEmpty() && sessions.none { it.key == bridge }) {
+            if (sessions.isNotEmpty() && sessions.none { it.value.bridge == bridge }) {
                 // There is an existing session, and this is a new bridge.
                 if (!OctoConfig.config.enabled) {
                     logger.error("A new bridge was selected, but Octo is disabled")
@@ -271,26 +316,38 @@ class ColibriV2SessionManager(
                     throw BridgeSelectionFailedException()
                 }
             }
-            getOrCreateSession(bridge).let {
+            getOrCreateSession(bridge, visitor).let {
                 session = it.first
                 created = it.second
             }
             logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
+            if (visitor != session.visitor) {
+                // Can happen if we're out of bridges for the specific class
+                logger.warn(
+                    "Session $session with visitor=${session.visitor} chosen for participant with visitor=$visitor"
+                )
+            }
             participantInfo = ParticipantInfo(participant, session)
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
-                sessions.values.filter { it != session }.forEach {
-                    logger.debug { "Creating relays between $session and $it." }
-                    // We already made sure that relayId is not null when there are multiple sessions.
-                    it.createRelay(session.relayId!!, getSessionParticipants(session), initiator = true)
-                    session.createRelay(it.relayId!!, getSessionParticipants(it), initiator = false)
-                }
+                val topologySelectionResult = topologySelectionStrategy.connectNode(
+                    this,
+                    session
+                )
+                addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
             } else {
-                sessions.values.filter { it != session }.forEach {
-                    logger.debug { "Adding a relayed endpoint to $it for ${participantInfo.id}." }
-                    // We already made sure that relayId is not null when there are multiple sessions.
-                    it.updateRemoteParticipant(participantInfo, session.relayId!!, create = true)
+                if (!participantInfo.visitor) {
+                    getPathsFrom(session) { _, otherSession, from ->
+                        if (from != null) {
+                            logger.debug {
+                                "Adding a relayed endpoint to $otherSession for ${participantInfo.id} " +
+                                    "from ${from.relayId}."
+                            }
+                            // We already made sure that relayId is not null when there are multiple sessions.
+                            otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
+                        }
+                    }
                 }
             }
         }
@@ -337,7 +394,7 @@ class ColibriV2SessionManager(
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
         // * Re-invite the participants (possibly on the same bridge) on this bridge
         // * Re-invite the participants on this bridge to a different bridge
-        if (!sessions.containsKey(session.bridge)) {
+        if (!sessions.containsKey(session.bridge.relayId)) {
             val reinvite = participants[participantInfo.id] == null
             logger.warn(
                 "Response for an unknown session, will ${if (reinvite) "" else "not "} reinvite the participant."
@@ -470,9 +527,13 @@ class ColibriV2SessionManager(
             // We don't need to make a copy, because we're already passed an unmodifiable copy.
             // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
-            sessions.values.filter { it != participantInfo.session }.forEach {
-                // We make sure that relayId is not null when there are multiple sessions.
-                it.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+            if (!participantInfo.visitor) {
+                getPathsFrom(participantInfo.session) { _, otherSession, from ->
+                    if (from != null) {
+                        // We make sure that relayId is not null when there are multiple sessions.
+                        otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+                    }
+                }
             }
         }
     }
@@ -527,7 +588,7 @@ class ColibriV2SessionManager(
         logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
-            if (!sessions.containsKey(session.bridge) || sessions[session.bridge] != session) {
+            if (!sessions.containsKey(session.bridge.relayId) || sessions[session.bridge.relayId] != session) {
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
                 return
             }
@@ -545,6 +606,12 @@ class ColibriV2SessionManager(
     private fun getSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
         participantsBySession[session]?.toList() ?: emptyList()
 
+    /* In cases where we only want visitors, don't create a data structure with all participants only to
+     * discard them later.
+     */
+    private fun getVisibleSessionParticipants(session: Colibri2Session): List<ParticipantInfo> =
+        participantsBySession[session]?.filter { !it.visitor }?.toList() ?: emptyList()
+
     private fun remove(participantInfo: ParticipantInfo) {
         participants.remove(participantInfo.id)
         participantsBySession[participantInfo.session]?.remove(participantInfo)
@@ -555,3 +622,5 @@ class ColibriV2SessionManager(
         participantsBySession.computeIfAbsent(participantInfo.session) { mutableListOf() }.add(participantInfo)
     }
 }
+
+typealias Colibri2CascadeRepair = CascadeRepair<Colibri2Session, Colibri2Session.Relay>

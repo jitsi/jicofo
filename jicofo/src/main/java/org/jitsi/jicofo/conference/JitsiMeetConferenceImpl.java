@@ -25,6 +25,7 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.version.*;
+import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.jingle.*;
@@ -590,12 +591,19 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
+            if (chatRoomMember.getRole() == MemberRole.VISITOR && !VisitorsConfig.config.getEnabled())
+            {
+                logger.warn("Ignoring a visitor because visitors are not configured:" + chatRoomMember.getName());
+                return;
+            }
+
             logger.info(
                     "Member joined:" + chatRoomMember.getName()
                             + " stats-id=" + chatRoomMember.getStatsId()
                             + " region=" + chatRoomMember.getRegion()
                             + " audioMuted=" + chatRoomMember.isAudioMuted()
                             + " videoMuted=" + chatRoomMember.isVideoMuted()
+                            + " role=" + chatRoomMember.getRole()
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi());
             hasHadAtLeastOneParticipant = true;
@@ -1171,6 +1179,11 @@ public class JitsiMeetConferenceImpl
             return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
 
+        if (participant.getChatMember().getRole() == MemberRole.VISITOR)
+        {
+            return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build();
+        }
+
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
         logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
@@ -1278,6 +1291,11 @@ public class JitsiMeetConferenceImpl
 
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
+        if (!sourcesAdvertised.isEmpty() && participant.getChatMember().getRole() == MemberRole.VISITOR)
+        {
+            return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build();
+        }
+
         if (logger.isDebugEnabled())
         {
             logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);

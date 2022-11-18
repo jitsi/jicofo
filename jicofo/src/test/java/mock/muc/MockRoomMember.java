@@ -38,7 +38,7 @@ public class MockRoomMember
 
     private final MockChatRoom room;
 
-    private MemberRole role = MemberRole.GUEST;
+    private MemberRole role = MemberRole.PARTICIPANT;
 
     /**
      * Indicates whether the member's audio sources are currently muted.

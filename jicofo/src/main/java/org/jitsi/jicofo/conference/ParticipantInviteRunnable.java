@@ -25,6 +25,7 @@ import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
+import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
@@ -203,6 +204,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     forceMuteAudio,
                     forceMuteVideo,
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
+                    (participant.getChatMember().getRole() == MemberRole.VISITOR),
                     medias);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }

@@ -40,10 +40,14 @@ enum class MemberRole {
     MODERATOR,
 
     /**
-     * A role which combines the standard XMPP 'member' and 'visitor' permissions, i.e. the member may or may not be
-     * allowed to send messages, but they certainly don't have any moderation permissions.
+     * A role implying the ability to send to a chat room
      */
-    GUEST;
+    PARTICIPANT,
+
+    /**
+     * A role implying only the ability to watch a chat room.
+     */
+    VISITOR;
 
     companion object {
         @JvmStatic
@@ -52,7 +56,8 @@ enum class MemberRole {
             MUCAffiliation.owner -> OWNER
             else -> when (mucRole) {
                 MUCRole.moderator -> MODERATOR
-                else -> GUEST
+                MUCRole.participant -> PARTICIPANT
+                else -> VISITOR
             }
         }
     }
