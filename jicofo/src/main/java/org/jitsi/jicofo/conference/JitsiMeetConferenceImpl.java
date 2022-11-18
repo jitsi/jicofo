@@ -66,8 +66,8 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
-    extends JingleRequestHandler //temporary
-    implements JitsiMeetConference,
+    implements JingleRequestHandler,
+               JitsiMeetConference,
                RegistrationListener
 {
     /**

@@ -108,7 +108,7 @@ public class TestJingleIqRequestHandler
 
         String sid = invite.getSID();
         JingleSession session = new JingleSession(
-                sid, invite.getFrom(), this, connection, new JingleRequestHandler() { }, false);
+                sid, invite.getFrom(), this, connection, new NoOpeJingleRequestHandler(), false);
 
         sessions.put(sid, session);
         return invite;

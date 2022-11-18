@@ -26,14 +26,14 @@ import org.jivesoftware.smack.packet.StanzaError
  *
  * @author Pawel Domas
  */
-abstract class JingleRequestHandler {
+interface JingleRequestHandler {
     /**
      * A 'source-add' IQ was received.
      *
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
+    fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'source-remove' IQ was received.
@@ -41,7 +41,7 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onRemoveSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
+    fun onRemoveSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'session-accept' IQ was received.
@@ -49,7 +49,7 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
+    fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'session-info' IQ was received.
@@ -57,7 +57,7 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? = null
+    fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? = null
 
     /**
      * A 'session-terminate' IQ was received.
@@ -65,12 +65,12 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ): StanzaError? = null
+    fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ): StanzaError? = null
 
     /**
      * A 'transport-info' IQ was received.
      */
-    open fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) { }
+    fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) { }
 
     /**
      * A 'transport-accept' IQ was received.
@@ -78,7 +78,7 @@ abstract class JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    open fun onTransportAccept(
+    fun onTransportAccept(
         jingleSession: JingleSession,
         contents: List<ContentPacketExtension>
     ): StanzaError? = null
@@ -86,5 +86,8 @@ abstract class JingleRequestHandler {
     /**
      * A 'transport-reject' IQ was received.
      */
-    open fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) { }
+    fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) { }
 }
+
+/** Export a default impl so it can be used in java without -Xjvm-default */
+class NoOpeJingleRequestHandler : JingleRequestHandler
