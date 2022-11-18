@@ -18,6 +18,8 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.CascadeLink
+import org.jitsi.jicofo.bridge.CascadeNode
 import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
@@ -37,15 +39,18 @@ import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smackx.muc.MUCRole
 import java.util.Collections.singletonList
 import java.util.UUID
 
 /** Represents a colibri2 session with one specific bridge. */
-internal class Colibri2Session(
+class Colibri2Session(
     val colibriSessionManager: ColibriV2SessionManager,
     val bridge: Bridge,
+    // Whether the session was constructed for the purpose of visitor nodes
+    val visitor: Boolean,
     parentLogger: Logger
-) {
+) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
@@ -53,10 +58,10 @@ internal class Colibri2Session(
     val id = UUID.randomUUID().toString()
     /**
      * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
-     * change in the context of a session. We maintain the invariant that whenever a a conference has multiple sessions,
+     * change in the context of a session. We maintain the invariant that whenever a conference has multiple sessions,
      * they all have non-null relay IDs.
      */
-    val relayId: String? = bridge.relayId
+    override val relayId: String? = bridge.relayId
 
     /**
      * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request
@@ -70,7 +75,7 @@ internal class Colibri2Session(
     internal var feedbackSources: ConferenceSourceMap = ConferenceSourceMap()
 
     /** The set of (octo) relays for the session, mapped by their ID (i.e. the relayId of the remote bridge). */
-    private val relays = mutableMapOf<String, Relay>()
+    override val relays = mutableMapOf<String, Relay>()
 
     /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
     internal fun sendAllocationRequest(participant: ParticipantInfo): StanzaCollector {
@@ -79,6 +84,9 @@ internal class Colibri2Session(
         val endpoint = participant.toEndpoint(create = true, expire = false).apply {
             if (participant.audioMuted || participant.videoMuted) {
                 setForceMute(participant.audioMuted, participant.videoMuted)
+            }
+            if (participant.visitor) {
+                setMucRole(MUCRole.visitor)
             }
             setTransport(
                 Transport.getBuilder().apply {
@@ -191,7 +199,9 @@ internal class Colibri2Session(
          * The single flag used internally to determine the ICE/DTLS/WS roles of the relay. The two sides in a relay
          * connection should have different values for [initiator].
          */
-        initiator: Boolean
+        initiator: Boolean,
+        /** The mesh ID of this relay connection */
+        meshId: String?
     ) {
         logger.info(
             "Creating relay $relayId (initiator=$initiator), initial participants: ${initialParticipants.map { it.id }}"
@@ -200,7 +210,7 @@ internal class Colibri2Session(
             throw IllegalStateException("Relay $relayId already exists")
         }
 
-        val relay = Relay(relayId, initiator)
+        val relay = Relay(relayId, initiator, meshId)
         relays[relayId] = relay
         relay.start(initialParticipants)
     }
@@ -291,7 +301,7 @@ internal class Colibri2Session(
         put(
             "relays",
             OrderedJsonObject().apply {
-                relays.values.forEach { put(it.id, it.toJson()) }
+                relays.values.forEach { put(it.relayId, it.toJson()) }
             }
         )
     }
@@ -299,25 +309,26 @@ internal class Colibri2Session(
     /**
      * Represents a colibri2 relay connection to another bridge.
      */
-    private inner class Relay(
+    inner class Relay(
         /** The relayId of the remote bridge. */
-        val id: String,
+        override val relayId: String,
         /**
          * A flag used to determine the roles. The associated [Relay] for the remote side should have the opposite
          * value.
          */
-        initiator: Boolean
-    ) {
+        initiator: Boolean,
+        override val meshId: String? = null
+    ) : CascadeLink {
         // TODO: One of the ways to select the ICE/DTLS roles might save an RTT. Which one?
         private val useUniquePort = initiator
         private val iceControlling = initiator
         private val dtlsSetup = if (initiator) "active" else "passive"
         private val websocketActive = initiator
 
-        private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", id) }
+        private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", relayId) }
 
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
-        fun start(initialParticipants: List<ParticipantInfo>) {
+        internal fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
             logger.trace { "Sending create relay: ${request.toXML()}" }
 
@@ -346,7 +357,7 @@ internal class Colibri2Session(
                 }
 
                 // Forward the response to the corresponding [Colibri2Session]
-                colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, id)
+                colibriSessionManager.setRelayTransport(this@Colibri2Session, iceUdpTransport, relayId)
             }
         }
 
@@ -365,7 +376,7 @@ internal class Colibri2Session(
                     logger.error("Response has an unexpected dtls setup field: ${it.setup}")
                     return
                 }
-                logger.info("Setting setup=$dtlsSetup for $id")
+                logger.info("Setting setup=$dtlsSetup for $relayId")
                 it.setup = dtlsSetup
             }
             // We always expect the bridge to advertise a websocket, but we want only one side to act as a client.
@@ -379,7 +390,7 @@ internal class Colibri2Session(
 
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {
-                setId(id)
+                setId(relayId)
                 setCreate(false)
             }
             relay.setTransport(Transport.getBuilder().apply { setIceUdpExtension(transport) }.build())
@@ -389,7 +400,7 @@ internal class Colibri2Session(
         }
 
         fun toJson() = OrderedJsonObject().apply {
-            put("id", id)
+            put("id", relayId)
             put("use_unique_port", useUniquePort)
             put("ice_controlling", iceControlling)
             put("dtls_setup", dtlsSetup)
@@ -400,7 +411,7 @@ internal class Colibri2Session(
         fun updateParticipant(participant: ParticipantInfo, create: Boolean) {
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {
-                setId(id)
+                setId(relayId)
             }
             val endpoints = Endpoints.getBuilder()
             endpoints.addEndpoint(participant.toEndpoint(create = create, expire = false).build())
@@ -411,11 +422,18 @@ internal class Colibri2Session(
 
         /** Expire relay endpoints for a set of participants. */
         fun expireParticipants(participants: List<ParticipantInfo>) {
+            if (participants.all { it.visitor }) {
+                return
+            }
             val request = createRequest()
-            val relay = Colibri2Relay.getBuilder().apply { setId(id) }
+            val relay = Colibri2Relay.getBuilder().apply { setId(relayId) }
             val endpoints = Endpoints.getBuilder()
 
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = false, expire = true).build()) }
+            participants.forEach {
+                if (!it.visitor) {
+                    endpoints.addEndpoint(it.toEndpoint(create = false, expire = true).build())
+                }
+            }
 
             relay.setEndpoints(endpoints.build())
             request.addRelay(relay.build())
@@ -427,7 +445,7 @@ internal class Colibri2Session(
         private fun buildCreateRelayRequest(participants: Collection<ParticipantInfo>): ConferenceModifyIQ {
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {
-                setId(id)
+                setId(relayId)
                 setCreate(true)
             }
 
@@ -447,7 +465,9 @@ internal class Colibri2Session(
             )
 
             val endpoints = Endpoints.getBuilder()
-            participants.forEach { endpoints.addEndpoint(it.toEndpoint(create = true, expire = false).build()) }
+            participants.filter { !it.visitor }.forEach {
+                endpoints.addEndpoint(it.toEndpoint(create = true, expire = false).build())
+            }
             relay.setEndpoints(endpoints.build())
 
             relay.setTransport(

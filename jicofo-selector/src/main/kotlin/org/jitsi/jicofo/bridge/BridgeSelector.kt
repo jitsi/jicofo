@@ -255,9 +255,11 @@ class BridgeSelector @JvmOverloads constructor(
 }
 
 data class ConferenceBridgeProperties(
-    val participantCount: Int
+    val participantCount: Int,
+    val visitor: Boolean = false
 )
 
 data class ParticipantProperties(
-    val region: String? = null
+    val region: String? = null,
+    val visitor: Boolean = false
 )

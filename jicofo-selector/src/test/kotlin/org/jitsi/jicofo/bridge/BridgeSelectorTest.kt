@@ -200,6 +200,26 @@ class BridgeSelectorTest : ShouldSpec() {
                 ParticipantProperties()
             ) shouldBe jvb2
         }
+        context(config = visitorConfig, name = "VisitorSelectionStrategy") {
+            val visitorSelector = BridgeSelector(clock)
+            val jvb1 = visitorSelector.addJvbAddress(jid1).apply { setStats(stress = 0.2, region = "r1") }
+            val jvb2 = visitorSelector.addJvbAddress(jid2).apply { setStats(stress = 0.2, region = "r1") }
+            val jvb3 = visitorSelector.addJvbAddress(jid3).apply { setStats(stress = 0.1, region = "r1") }
+
+            val participantBridge = visitorSelector.selectBridge(
+                mapOf(),
+                ParticipantProperties(visitor = false)
+            )
+            participantBridge shouldBeIn setOf(jvb1, jvb2, jvb3)
+
+            val visitorBridge = visitorSelector.selectBridge(
+                mapOf(
+                    participantBridge!! to ConferenceBridgeProperties(1)
+                ),
+                ParticipantProperties(visitor = true)
+            )
+            visitorBridge shouldNotBe participantBridge
+        }
         context("Lost bridges stats") {
             val selector = BridgeSelector(clock)
             // TODO use MetricsContainer.reset() instead
@@ -259,4 +279,10 @@ val regionBasedConfig = """
 private val splitConfig = """
     $enableOctoConfig
     jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
+""".trimIndent()
+private val visitorConfig = """
+    $enableOctoConfig
+    jicofo.bridge.selection-strategy=VisitorSelectionStrategy
+    jicofo.bridge.visitor-selection-strategy=SingleBridgeSelectionStrategy
+    jicofo.bridge.participant-selection-strategy=SingleBridgeSelectionStrategy
 """.trimIndent()
