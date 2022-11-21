@@ -24,13 +24,13 @@ import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
@@ -321,7 +321,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         }
         else if (!canceled)
         {
-            if (!doInviteOrReinvite(address, offer, colibriAllocation))
+            if (!doInviteOrReinvite(offer, colibriAllocation))
             {
                 expireChannels = true;
             }
@@ -344,17 +344,16 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      * the {@code participant}. Blocks until a response is received or a timeout
      * occurs.
      *
-     * @param address the destination JID.
      * @param offer The description of the offer to send (sources and a list of {@link ContentPacketExtension}s).
      * @return {@code false} on failure.
      * @throws SmackException.NotConnectedException if we are unable to send a packet because the XMPP connection is not
      * connected.
      */
-    private boolean doInviteOrReinvite(Jid address, Offer offer, ColibriAllocation colibriAllocation)
+    private boolean doInviteOrReinvite(Offer offer, ColibriAllocation colibriAllocation)
         throws SmackException.NotConnectedException
     {
-        OperationSetJingle jingle = meetConference.getJingle();
         JingleSession jingleSession = participant.getJingleSession();
+
         boolean initiateSession = !reInvite || jingleSession == null;
         boolean ack;
         List<ExtensionElement> additionalExtensions = new ArrayList<>();
@@ -377,32 +376,28 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap sources = participant.resetSignaledSources(offer.getSources());
         if (initiateSession)
         {
-            logger.info("Sending session-initiate to: " + address + " sources=" + offer.getSources());
-            ack = jingle.initiateSession(
-                    address,
+            if (jingleSession != null)
+            {
+                jingleSession.terminate(Reason.UNDEFINED, null, false);
+            }
+            jingleSession = participant.createNewJingleSession();
+            ack = jingleSession.initiateSession(
                     offer.getContents(),
                     additionalExtensions,
-                    meetConference,
-                    sources,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
+                    sources
+            );
+            logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + offer.getSources());
         }
         else
         {
-            logger.info("Sending transport-replace to: " + address + " sources=" + offer.getSources());
-            // will throw OperationFailedExc if XMPP connection is broken
-            ack = jingle.replaceTransport(
-                    jingleSession,
-                    offer.getContents(),
-                    additionalExtensions,
-                    sources,
-                    ConferenceConfig.config.getUseJsonEncodedSources() && participant.supportsJsonEncodedSources());
+            ack = jingleSession.replaceTransport(offer.getContents(), additionalExtensions, sources);
         }
 
         if (!ack)
         {
             // Failed to invite
             logger.info(
-                "Expiring " + address + " channels - no RESULT for "
+                "Expiring " + participant.getMucJid() + " channels - no RESULT for "
                     + (initiateSession ? "session-initiate"
                     : "transport-replace"));
             return false;

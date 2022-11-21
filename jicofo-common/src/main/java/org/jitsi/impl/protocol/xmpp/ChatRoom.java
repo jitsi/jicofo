@@ -18,6 +18,7 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -42,6 +43,8 @@ public interface ChatRoom
      */
     void join()
         throws SmackException, XMPPException, InterruptedException;
+
+    @NotNull XmppProvider getXmppProvider();
 
     /**
      * Returns true if the local user is currently in the multi user chat

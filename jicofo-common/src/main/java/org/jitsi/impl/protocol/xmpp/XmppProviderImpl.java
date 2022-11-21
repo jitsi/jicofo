@@ -23,7 +23,7 @@ import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.protocol.xmpp.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.retry.*;
 
 import org.jitsi.utils.logging2.*;
@@ -33,13 +33,10 @@ import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.disco.*;
 import org.jivesoftware.smackx.disco.packet.*;
-import org.json.simple.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
 
 import java.lang.*;
-import java.lang.SuppressWarnings;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -60,7 +57,7 @@ public class XmppProviderImpl
     /**
      * Jingle operation set.
      */
-    private final @NotNull OperationSetJingleImpl jingleOpSet;
+    private final @NotNull JingleIqRequestHandler jingleIqRequestHandler;
 
     private final Muc muc = new Muc();
 
@@ -102,10 +99,9 @@ public class XmppProviderImpl
 
         EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo");
 
-        jingleOpSet = new OperationSetJingleImpl(this);
-
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
+        jingleIqRequestHandler = new JingleIqRequestHandler();
     }
 
 
@@ -220,7 +216,7 @@ public class XmppProviderImpl
                     connection.login(login, pass, resource);
                 }
 
-                connection.registerIQRequestHandler(jingleOpSet);
+                connection.registerIQRequestHandler(jingleIqRequestHandler);
                 return false;
             }
             catch (Exception e)
@@ -265,7 +261,7 @@ public class XmppProviderImpl
             connection.disconnect();
             logger.info("Disconnected.");
 
-            connection.unregisterIQRequestHandler(jingleOpSet);
+            connection.unregisterIQRequestHandler(jingleIqRequestHandler);
             connection.removeConnectionListener(connListener);
         }
 
@@ -285,9 +281,9 @@ public class XmppProviderImpl
     }
 
     @Override
-    public @NotNull OperationSetJingle getJingleApi()
+    public @NotNull JingleIqRequestHandler getJingleIqRequestHandler()
     {
-        return jingleOpSet;
+        return jingleIqRequestHandler;
     }
 
     @Override

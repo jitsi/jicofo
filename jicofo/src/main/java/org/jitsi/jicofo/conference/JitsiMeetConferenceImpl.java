@@ -24,11 +24,11 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
-import org.jitsi.jicofo.lipsynchack.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
@@ -39,7 +39,6 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.jibri.*;
-import org.jitsi.protocol.xmpp.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -68,9 +67,9 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
-    implements JitsiMeetConference,
-               RegistrationListener,
-               JingleRequestHandler
+    implements JingleRequestHandler,
+               JitsiMeetConference,
+               RegistrationListener
 {
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -99,11 +98,6 @@ public class JitsiMeetConferenceImpl
      * Conference room chat instance.
      */
     private volatile ChatRoom chatRoom;
-
-    /**
-     * Operation set used to handle Jingle sessions with conference participants.
-     */
-    private OperationSetJingle jingle;
 
     /**
      * Map of occupant JID to Participant.
@@ -313,14 +307,6 @@ public class JitsiMeetConferenceImpl
         try
         {
             XmppProvider clientXmppProvider = getClientXmppProvider();
-            jingle = clientXmppProvider.getJingleApi();
-
-            // Wraps OperationSetJingle in order to introduce our nasty "lip-sync" hack. Note that lip-sync will only
-            // be used for clients that signal support (see Participant.hasLipSyncSupport).
-            if (ConferenceConfig.config.enableLipSync())
-            {
-                jingle = new LipSyncHack(this, jingle, logger);
-            }
 
             BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
@@ -426,18 +412,6 @@ public class JitsiMeetConferenceImpl
         catch (Exception e)
         {
             logger.error("leaveTheRoom error", e);
-        }
-
-        if (jingle != null)
-        {
-            try
-            {
-                jingle.terminateHandlersSessions(this);
-            }
-            catch (Exception e)
-            {
-                logger.error("terminateHandlersSessions error", e);
-            }
         }
 
         logger.info("Stopped.");
@@ -869,7 +843,7 @@ public class JitsiMeetConferenceImpl
             JingleSession jingleSession = participant.getJingleSession();
             if (jingleSession != null)
             {
-                jingle.terminateSession(jingleSession, reason, message, sendSessionTerminate);
+                jingleSession.terminate(reason, message, sendSessionTerminate);
             }
 
             EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
@@ -921,7 +895,7 @@ public class JitsiMeetConferenceImpl
     @Nullable
     private Participant getParticipant(@NotNull JingleSession jingleSession)
     {
-        return participants.get(jingleSession.getAddress());
+        return participants.get(jingleSession.getRemoteJid());
     }
 
     @Nullable
@@ -955,9 +929,11 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> answer)
+    public StanzaError onSessionAccept(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> answer)
     {
-        logger.info("Receive session-accept from " + jingleSession.getAddress());
+        logger.info("Receive session-accept from " + jingleSession.getRemoteJid());
 
         return onSessionAcceptInternal(jingleSession, answer);
     }
@@ -970,9 +946,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionInfo(@NotNull JingleSession session, JingleIQ iq)
+    public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
-        Jid address = session.getAddress();
+        Jid address = session.getRemoteJid();
         Participant participant = getParticipant(session);
 
         // FIXME: (duplicate) there's very similar logic in onSessionAccept
@@ -1027,14 +1003,14 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onSessionTerminate(@NotNull JingleSession session, JingleIQ iq)
+    public StanzaError onSessionTerminate(@NotNull JingleSession session, @NotNull JingleIQ iq)
     {
         Participant participant = getParticipant(session);
 
         // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
         if (participant == null)
         {
-            String errorMsg = "No participant for " + session.getAddress();
+            String errorMsg = "No participant for " + session.getRemoteJid();
             logger.warn(errorMsg);
             return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
         }
@@ -1124,12 +1100,14 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportInfo(@NotNull JingleSession session, List<ContentPacketExtension> contentList)
+    public void onTransportInfo(
+            @NotNull JingleSession session,
+            @NotNull List<? extends ContentPacketExtension> contentList)
     {
         Participant participant = getParticipant(session);
         if (participant == null)
         {
-            logger.warn("Failed to process transport-info, no session for: " + session.getAddress());
+            logger.warn("Failed to process transport-info, no session for: " + session.getRemoteJid());
             return;
         }
 
@@ -1144,9 +1122,11 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onTransportAccept(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onTransportAccept(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
-        logger.info("Received transport-accept from " + jingleSession.getAddress());
+        logger.info("Received transport-accept from " + jingleSession.getRemoteJid());
 
         // We basically do the same processing as with session-accept by just
         // forwarding transport/rtp information to the bridge + propagate the
@@ -1161,7 +1141,7 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public void onTransportReject(@NotNull JingleSession jingleSession, JingleIQ reply)
+    public void onTransportReject(@NotNull JingleSession jingleSession, @NotNull JingleIQ reply)
     {
         Participant p = getParticipant(jingleSession);
         if (p == null)
@@ -1186,9 +1166,11 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onAddSource(@NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onAddSource(
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
-        Jid address = jingleSession.getAddress();
+        Jid address = jingleSession.getRemoteJid();
         Participant participant = getParticipant(jingleSession);
         if (participant == null)
         {
@@ -1262,7 +1244,9 @@ public class JitsiMeetConferenceImpl
      * {@inheritDoc}
      */
     @Override
-    public StanzaError onRemoveSource(@NotNull JingleSession sourceJingleSession, List<ContentPacketExtension> contents)
+    public StanzaError onRemoveSource(
+            @NotNull JingleSession sourceJingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
 
@@ -1284,10 +1268,11 @@ public class JitsiMeetConferenceImpl
      * Jingle IQs.
      */
     private StanzaError onSessionAcceptInternal(
-            @NotNull JingleSession jingleSession, List<ContentPacketExtension> contents)
+            @NotNull JingleSession jingleSession,
+            @NotNull List<? extends ContentPacketExtension> contents)
     {
         Participant participant = getParticipant(jingleSession);
-        Jid participantJid = jingleSession.getAddress();
+        Jid participantJid = jingleSession.getRemoteJid();
 
         if (participant == null)
         {
@@ -1356,7 +1341,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Find the first {@link IceUdpTransportPacketExtension} in a list of Jingle contents.
      */
-    private IceUdpTransportPacketExtension getTransport(@NotNull List<ContentPacketExtension> contents)
+    private IceUdpTransportPacketExtension getTransport(@NotNull List<? extends ContentPacketExtension> contents)
     {
         IceUdpTransportPacketExtension transport = null;
         for (ContentPacketExtension content : contents)
@@ -1505,14 +1490,6 @@ public class JitsiMeetConferenceImpl
     public boolean hasHadAtLeastOneParticipant()
     {
         return hasHadAtLeastOneParticipant;
-    }
-
-    /**
-     * Returns <tt>OperationSetJingle</tt> for the XMPP connection used in this <tt>JitsiMeetConference</tt> instance.
-     */
-    public OperationSetJingle getJingle()
-    {
-        return jingle;
     }
 
     /**
@@ -1828,7 +1805,7 @@ public class JitsiMeetConferenceImpl
                     JingleSession jingleSession = participant.getJingleSession();
                     if (jingleSession != null)
                     {
-                        jingle.terminateSession(jingleSession, Reason.SUCCESS, "moving", true);
+                        jingleSession.terminate(Reason.SUCCESS, "moving", true);
                     }
                     participant.setJingleSession(null);
                 }

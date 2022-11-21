@@ -94,13 +94,6 @@ public class DiscoveryUtil
     public final static String FEATURE_OPUS_RED = "http://jitsi.org/opus-red";
 
     /**
-     * A namespace for our custom "lip-sync" feature. Advertised by the clients
-     * that support all of the functionality required for doing the lip-sync
-     * properly.
-     */
-    public final static String FEATURE_LIPSYNC = "http://jitsi.org/meet/lipsync";
-
-    /**
      * A namespace for detecting whether a participant (jigasi users) can be
      * muted.
      */

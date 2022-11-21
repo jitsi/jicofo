@@ -134,7 +134,7 @@ public class ChatMemberImpl
         return presence;
     }
 
-    public EntityFullJid getOccupantJid()
+    public @NotNull EntityFullJid getOccupantJid()
     {
         return occupantJid;
     }
@@ -147,6 +147,12 @@ public class ChatMemberImpl
     public String getName()
     {
         return resourcepart.toString();
+    }
+
+    @Override
+    public @NotNull ChatRoom getChatRoom()
+    {
+        return chatRoom;
     }
 
     @Override

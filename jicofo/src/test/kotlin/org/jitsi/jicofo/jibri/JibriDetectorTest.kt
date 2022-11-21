@@ -21,6 +21,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
@@ -129,6 +130,7 @@ class JibriChatRoomMember(
     val detector: JibriDetector
 ) : ChatRoomMember {
     override fun getName(): String = TODO("Not yet implemented")
+    override fun getChatRoom(): ChatRoom = TODO("Not yet implemented")
     override fun getRole(): MemberRole = TODO("Not yet implemented")
     override fun setRole(role: MemberRole?) = TODO("Not yet implemented")
     override fun getJid(): Jid = TODO("Not yet implemented")

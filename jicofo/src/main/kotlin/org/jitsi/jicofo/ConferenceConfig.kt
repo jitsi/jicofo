@@ -64,11 +64,6 @@ class ConferenceConfig private constructor() {
         "jicofo.conference.max-video-senders".from(newConfig)
     }
 
-    val enableLipSync: Boolean by config {
-        "jicofo.conference.enable-lip-sync".from(newConfig)
-    }
-    fun enableLipSync(): Boolean = enableLipSync
-
     val useSsrcRewriting: Boolean by config {
         "jicofo.conference.use-ssrc-rewriting".from(newConfig)
     }

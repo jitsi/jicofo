@@ -35,6 +35,7 @@ import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
 import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.discovery.DiscoveryUtil.FEATURE_SCTP
 import org.jitsi.jicofo.discovery.DiscoveryUtil.FEATURE_VIDEO
+import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
@@ -99,18 +100,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 every { hasMember(any()) } returns true
             }
             every { getSourcesForParticipant(any()) } returns ConferenceSourceMap()
-            every { jingle } returns mockk {
-                every {
-                    initiateSession(
-                        any(),
-                        capture(jingleContentsSlot),
-                        any(),
-                        any(),
-                        capture(sourcesContentsSlot),
-                        any()
-                    )
-                } returns true
-            }
         }
         listOf(true, false).forEach { supportsVideo ->
             val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
@@ -118,7 +107,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 if (!supportsVideo) remove(FEATURE_VIDEO)
             }
 
-            val participant = Participant(
+            val participant = object : Participant(
                 mockk {
                     every { occupantJid } returns JidCreate.entityFullFrom("conference@example.com/participant")
                     every { name } returns "participant"
@@ -130,7 +119,18 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 features,
                 LoggerImpl("test"),
                 conference
-            )
+            ) {
+                override fun createNewJingleSession(): JingleSession = mockk {
+                    every {
+                        initiateSession(
+                            capture(jingleContentsSlot),
+                            any(),
+                            capture(sourcesContentsSlot)
+                        )
+                    } returns true
+                }
+            }
+
             val participantInviteRunnable = ParticipantInviteRunnable(
                 conference,
                 colibriSessionManager,

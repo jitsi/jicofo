@@ -17,15 +17,15 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.protocol.xmpp.JingleSession
+import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 
-fun createSessionInitiate(from: Jid, to: Jid, contents: List<ContentPacketExtension>) =
-    JingleIQ(JingleAction.SESSION_INITIATE, JingleIQ.generateSID()).apply {
+fun createSessionInitiate(from: Jid, to: Jid, sid: String, contents: List<ContentPacketExtension>) =
+    JingleIQ(JingleAction.SESSION_INITIATE, sid).apply {
         this.from = from
         this.to = to
         initiator = from
@@ -34,9 +34,9 @@ fun createSessionInitiate(from: Jid, to: Jid, contents: List<ContentPacketExtens
     }
 
 fun createTransportReplace(from: Jid, session: JingleSession, contents: List<ContentPacketExtension>) =
-    JingleIQ(JingleAction.TRANSPORT_REPLACE, session.sessionID).apply {
+    JingleIQ(JingleAction.TRANSPORT_REPLACE, session.sid).apply {
         this.from = from
-        this.to = session.address
+        this.to = session.remoteJid
         initiator = from
         type = IQ.Type.set
         contents.forEach { addContent(it) }

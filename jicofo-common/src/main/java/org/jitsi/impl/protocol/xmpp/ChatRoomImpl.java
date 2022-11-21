@@ -225,6 +225,12 @@ public class ChatRoomImpl
     }
 
     @Override
+    public @NotNull XmppProvider getXmppProvider()
+    {
+        return xmppProvider;
+    }
+
+    @Override
     public boolean isBreakoutRoom()
     {
         return isBreakoutRoom;

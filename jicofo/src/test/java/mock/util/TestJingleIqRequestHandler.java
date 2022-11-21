@@ -19,31 +19,30 @@ package mock.util;
 
 import mock.*;
 import mock.xmpp.*;
+import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
-import org.jitsi.protocol.xmpp.*;
-
-import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
 import java.util.concurrent.*;
 
-public class UtilityJingleOpSet
-    extends AbstractOperationSetJingle
+public class TestJingleIqRequestHandler
+    extends JingleIqRequestHandler
 {
     /**
      * The logger instance used by this class.
      */
-    private final static Logger logger = new LoggerImpl(UtilityJingleOpSet.class.getName());
-
-    private final MockXmppConnection connection;
+    private final static Logger logger = new LoggerImpl(TestJingleIqRequestHandler.class.getName());
 
     private final BlockingQueue<JingleIQ> sessionInvites = new LinkedBlockingQueue<>();
     public MockParticipant mockParticipant;
+    @NotNull private final MockXmppConnection connection;
 
-    public UtilityJingleOpSet(MockXmppConnection connection)
+    public TestJingleIqRequestHandler(MockXmppConnection connection)
     {
+        super();
         this.connection = connection;
     }
 
@@ -61,7 +60,9 @@ public class UtilityJingleOpSet
                     if (sessions.containsKey(sid))
                     {
                         logger.error("Received session-initiate for existing session: " + sid);
-                        return null;
+                        return IQ.createErrorResponse(
+                                jingleIQ,
+                                StanzaError.getBuilder(StanzaError.Condition.conflict).build());
                     }
                     sessionInvites.put(jingleIQ);
                 }
@@ -84,17 +85,10 @@ public class UtilityJingleOpSet
                 break;
         }
 
-        return null;
+        return IQ.createResultIQ(jingleIQ);
     }
 
-    @Override
-    protected AbstractXMPPConnection getConnection()
-    {
-        return connection;
-    }
-
-    public JingleIQ acceptSession(
-        long timeout, final JingleRequestHandler requestHandler)
+    public JingleIQ acceptSession(long timeout)
         throws InterruptedException
     {
         JingleIQ invite;
@@ -113,9 +107,15 @@ public class UtilityJingleOpSet
         }
 
         String sid = invite.getSID();
-        JingleSession session = new JingleSession(sid, invite.getFrom(), requestHandler);
+        JingleSession session = new JingleSession(
+                sid, invite.getFrom(), this, connection, new NoOpJingleRequestHandler(), false);
 
         sessions.put(sid, session);
         return invite;
+    }
+
+    public JingleSession getSession(String sid)
+    {
+        return sessions.get(sid);
     }
 }

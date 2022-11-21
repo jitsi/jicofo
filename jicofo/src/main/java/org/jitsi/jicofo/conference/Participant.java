@@ -23,10 +23,11 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
-import org.jitsi.protocol.xmpp.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.extensions.jingle.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -328,15 +329,6 @@ public class Participant
     }
 
     /**
-     * Returns <tt>true</tt> if this participant supports 'lip-sync' or
-     * <tt>false</tt> otherwise.
-     */
-    public boolean hasLipSyncSupport()
-    {
-        return supportedFeatures.contains(DiscoveryUtil.FEATURE_LIPSYNC);
-    }
-
-    /**
      * Returns {@code true} iff this participant supports REMB.
      */
     public boolean hasRembSupport()
@@ -589,22 +581,13 @@ public class Participant
      */
     public void sendQueuedRemoteSources()
     {
-        OperationSetJingle jingle = conference.getJingle();
-        if (jingle == null)
-        {
-            logger.error("Can not signal remote sources, no Jingle API available");
-            return;
-        }
-
         JingleSession jingleSession = getJingleSession();
+
         if (jingleSession == null)
         {
             logger.warn("Can not signal remote sources, Jingle session not established.");
             return;
         }
-
-        boolean encodeSourcesAsJson
-                = ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources();
 
         for (SourcesToAddOrRemove sourcesToAddOrRemove : sourceSignaling.update())
         {
@@ -613,11 +596,11 @@ public class Participant
             logger.info("Sending a queued source-" + action.toString().toLowerCase() + ", sources:" + sources);
             if (action == AddOrRemove.Add)
             {
-                jingle.sendAddSourceIQ(sources, jingleSession, encodeSourcesAsJson);
+                jingleSession.addSource(sources);
             }
             else if (action == AddOrRemove.Remove)
             {
-                jingle.sendRemoveSourceIQ(sources, jingleSession, encodeSourcesAsJson);
+                jingleSession.removeSource(sources);
             }
         }
     }
@@ -655,5 +638,19 @@ public class Participant
         //o.put("room_member", roomMember.getDebugState());
         o.put("jingle_session", jingleSession == null ? "null" : "not null");
         return o;
+    }
+
+    /**
+     * Create a new {@link JingleSession} instance for this participant. Defined here so it can be mocked for testing.
+     */
+    JingleSession createNewJingleSession()
+    {
+        return new JingleSession(
+                JingleIQ.generateSID(),
+                getMucJid(),
+                roomMember.getChatRoom().getXmppProvider().getJingleIqRequestHandler(),
+                roomMember.getChatRoom().getXmppProvider().getXmppConnection(),
+                conference,
+                ConferenceConfig.config.getUseJsonEncodedSources() && supportsJsonEncodedSources());
     }
 }

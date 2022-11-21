@@ -175,6 +175,12 @@ public class MockChatRoom
         isJoined = true;
     }
 
+    @Override
+    public @NotNull XmppProvider getXmppProvider()
+    {
+        return xmppProvider;
+    }
+
     public MockRoomMember createMockRoomMember(String nickname)
             throws XmppStringprepException
     {

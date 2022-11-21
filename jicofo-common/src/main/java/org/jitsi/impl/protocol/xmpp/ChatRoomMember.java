@@ -46,6 +46,8 @@ public interface ChatRoomMember
      */
     String getName();
 
+    @NotNull ChatRoom getChatRoom();
+
     /**
      * Returns the role of this chat room member in its containing room.
      *
