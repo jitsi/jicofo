@@ -894,15 +894,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * @return the {@link Participant} associated with a specific {@link JingleSession}, if any.
-     */
-    @Nullable
-    private Participant getParticipant(@NotNull JingleSession jingleSession)
-    {
-        return participants.get(jingleSession.getRemoteJid());
-    }
-
     @Nullable
     public Participant getParticipant(@NotNull Jid occupantJid)
     {
@@ -925,18 +916,6 @@ public class JitsiMeetConferenceImpl
             }
         }
         return null;
-    }
-
-    /**
-     * Callback called when 'session-accept' is received from invited participant.
-     */
-    public StanzaError onSessionAccept(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> answer)
-    {
-        logger.info("Receive session-accept from " + jingleSession.getRemoteJid());
-
-        return onSessionAcceptInternal(jingleSession, answer);
     }
 
     /**
@@ -1037,23 +1016,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * 'transport-accept' message is received by the focus after it has sent
-     * 'transport-replace' which is supposed to move the conference to another
-     * bridge. It means that the client has accepted new transport.
-     */
-    public StanzaError onTransportAccept(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
-    {
-        logger.info("Received transport-accept from " + jingleSession.getRemoteJid());
-
-        // We basically do the same processing as with session-accept by just
-        // forwarding transport/rtp information to the bridge + propagate the
-        // participants sources & source groups to remote bridges.
-        return onSessionAcceptInternal(jingleSession, contents);
-    }
-
-    /**
      * Attempts to add sources from {@code participant} to the conference.
      *
      * @param participant the participant that is adding the sources.
@@ -1113,63 +1075,24 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Updates the RTP description, transport and propagates sources and source
-     * groups of a participant that sends the session-accept or transport-accept
-     * Jingle IQs.
+     * Handles a "session-accept" or "transport-accept" request from a participant.
      */
-    private StanzaError onSessionAcceptInternal(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
+    void acceptSession(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesAdvertised,
+            IceUdpTransportPacketExtension transport)
+    throws ValidationFailedException
     {
-        Participant participant = getParticipant(jingleSession);
-        Jid participantJid = jingleSession.getRemoteJid();
-
-        if (participant == null)
-        {
-            String errorMsg = "No participant found for: " + participantJid;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        if (participant.getJingleSession() != null && participant.getJingleSession() != jingleSession)
-        {
-            //FIXME: we should reject it ?
-            logger.error("Reassigning jingle session for participant: " + participantJid);
-        }
-
-        participant.setJingleSession(jingleSession);
-
         String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
-        if (!sourcesAdvertised.isEmpty() && participant.getChatMember().getRole() == MemberRole.VISITOR)
-        {
-            return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build();
-        }
-
-        if (logger.isDebugEnabled())
-        {
-            logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
-        }
+        EntityFullJid participantJid = participant.getMucJid();
 
         EndpointSourceSet sourcesAccepted = EndpointSourceSet.Companion.getEMPTY();
         if (!sourcesAdvertised.isEmpty())
         {
-            try
-            {
-                sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
-            }
-            catch (ValidationFailedException e)
-            {
-                logger.error("Error processing session-accept from: " + participantJid + ": " + e.getMessage());
-
-                return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-            }
+            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
         }
 
-        getColibriSessionManager().updateParticipant(
-            participant.getEndpointId(),
-            ConferenceUtilKt.getTransport(contents),
-            getSourcesForParticipant(participant));
+        getColibriSessionManager().updateParticipant(participantId, transport, getSourcesForParticipant(participant));
 
         if (!sourcesAccepted.isEmpty())
         {
@@ -1184,8 +1107,6 @@ public class JitsiMeetConferenceImpl
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
-
-        return null;
     }
 
     /**

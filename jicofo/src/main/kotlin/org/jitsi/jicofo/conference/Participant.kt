@@ -39,6 +39,7 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
+import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
@@ -383,6 +384,7 @@ open class Participant @JvmOverloads constructor(
 
             return null
         }
+
         override fun onRemoveSource(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>
@@ -403,8 +405,39 @@ open class Participant @JvmOverloads constructor(
 
             return null
         }
-        override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
-            conference.onSessionAccept(jingleSession, contents)
+
+        override fun onSessionAccept(
+            jingleSession: JingleSession,
+            contents: List<ContentPacketExtension>
+        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.SESSION_ACCEPT)
+
+        private fun onSessionOrTransportAccept(
+            jingleSession: JingleSession,
+            contents: List<ContentPacketExtension>,
+            action: JingleAction
+        ): StanzaError? {
+            if (this@Participant.jingleSession != null && this@Participant.jingleSession != jingleSession) {
+                //FIXME: we should reject it ?
+                logger.error("Reassigning jingle session.")
+            }
+            this@Participant.jingleSession = jingleSession
+
+            logger.info("Received $action")
+            val sourcesAdvertised = fromJingle(contents)
+            if (!sourcesAdvertised.isEmpty() && this@Participant.chatMember.role == MemberRole.VISITOR)
+            {
+                return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build()
+            }
+
+            try {
+                conference.acceptSession(this@Participant, sourcesAdvertised, contents.getTransport())
+            } catch (e: ValidationFailedException) {
+                return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
+            }
+
+            return null
+        }
+
         override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
 
@@ -420,6 +453,7 @@ open class Participant @JvmOverloads constructor(
             conference.iceFailed(this@Participant, bridgeSessionId)
             return null
         }
+
         override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
 
@@ -447,6 +481,7 @@ open class Participant @JvmOverloads constructor(
             return null
 
         }
+
         override fun onTransportInfo(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>
@@ -459,8 +494,12 @@ open class Participant @JvmOverloads constructor(
 
             return null
         }
-        override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
-            conference.onTransportAccept(jingleSession, contents)
+
+        override fun onTransportAccept(
+            jingleSession: JingleSession,
+            contents: List<ContentPacketExtension>
+        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.TRANSPORT_ACCEPT)
+
         override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {
             checkJingleSession(jingleSession)?.let { return }
 
