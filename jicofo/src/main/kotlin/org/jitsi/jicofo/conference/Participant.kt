@@ -23,7 +23,6 @@ import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
-import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.source.VideoType
@@ -72,8 +71,10 @@ open class Participant @JvmOverloads constructor(
     /** The endpoint ID for this participant in the videobridge (Colibri) context. */
     val endpointId: String = chatMember.name
 
-    private val logger: Logger = (parentLogger?.createChildLogger(Participant::javaClass.name)
-        ?: LoggerImpl(Participant::javaClass.name)).apply {
+    private val logger: Logger = (
+        parentLogger?.createChildLogger(Participant::javaClass.name)
+            ?: LoggerImpl(Participant::javaClass.name)
+        ).apply {
         addContext("participant", endpointId)
     }
 
@@ -417,15 +418,14 @@ open class Participant @JvmOverloads constructor(
             action: JingleAction
         ): StanzaError? {
             if (this@Participant.jingleSession != null && this@Participant.jingleSession != jingleSession) {
-                //FIXME: we should reject it ?
+                // FIXME: we should reject it ?
                 logger.error("Reassigning jingle session.")
             }
             this@Participant.jingleSession = jingleSession
 
             logger.info("Received $action")
             val sourcesAdvertised = fromJingle(contents)
-            if (!sourcesAdvertised.isEmpty() && this@Participant.chatMember.role == MemberRole.VISITOR)
-            {
+            if (!sourcesAdvertised.isEmpty() && this@Participant.chatMember.role == MemberRole.VISITOR) {
                 return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build()
             }
 
@@ -479,7 +479,6 @@ open class Participant @JvmOverloads constructor(
             }
 
             return null
-
         }
 
         override fun onTransportInfo(

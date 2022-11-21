@@ -51,4 +51,3 @@ internal fun List<ContentPacketExtension>.getTransport(): IceUdpTransportPacketE
     }
     return transport
 }
-
