@@ -22,6 +22,7 @@ import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
 import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
@@ -114,7 +115,7 @@ class Colibri2Session(
         /** The transport info to set for the colibri2 endpoint, or null if it is not to be modified. */
         transport: IceUdpTransportPacketExtension?,
         /** The sources to set for the colibri2 endpoint, or null if the sources are not to be modified. */
-        sources: ConferenceSourceMap?
+        sources: EndpointSourceSet?
     ) {
         if (transport == null && sources == null) {
             logger.info("Nothing to update.")
@@ -132,7 +133,7 @@ class Colibri2Session(
         }
 
         if (sources != null) {
-            endpoint.setSources(sources.toColibriMediaSources())
+            endpoint.setSources(sources.toColibriMediaSources(participant.id))
         }
 
         request.addEndpoint(endpoint.build())

@@ -99,7 +99,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             every { chatRoom } returns mockk {
                 every { hasMember(any()) } returns true
             }
-            every { getSourcesForParticipant(any()) } returns ConferenceSourceMap()
+            every { getSourcesForParticipant(any()) } returns EndpointSourceSet.EMPTY
         }
         listOf(true, false).forEach { supportsVideo ->
             val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {

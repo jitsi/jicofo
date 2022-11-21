@@ -23,6 +23,7 @@ import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.source.VideoType
@@ -232,7 +233,7 @@ open class Participant @JvmOverloads constructor(
     val mucJid: EntityFullJid = chatMember.occupantJid
 
     /** The sources advertised by this participant. They are stored in a common map by the conference. */
-    val sources: ConferenceSourceMap
+    val sources: EndpointSourceSet
         get() = conference.getSourcesForParticipant(this)
 
     /**

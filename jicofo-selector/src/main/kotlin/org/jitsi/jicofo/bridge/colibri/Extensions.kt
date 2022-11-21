@@ -60,38 +60,34 @@ fun ConferenceModifiedIQ.parseSources(): ConferenceSourceMap {
     return parsedSources
 }
 
-fun ConferenceSourceMap.toColibriMediaSources(): Sources {
+fun EndpointSourceSet.toColibriMediaSources(endpointId: String): Sources {
     val mediaSources: MutableMap<String, MediaSource.Builder> = mutableMapOf()
 
     // We use the signaled "name" of the source at the colibri2 source ID. If a source name isn't signaled, we use a
     // default ID of "endpointId-v0". This allows backwards compat with clients that don't signal source names
     // (and only support a single source).
-    forEach { (owner, endpointSourceSet) ->
-        endpointSourceSet.sources.forEach { source ->
-            val sourceId = source.name
-                ?: Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), source.mediaType, 0)
-            val mediaSource = mediaSources.computeIfAbsent(sourceId) {
-                MediaSource.getBuilder()
-                    .setType(source.mediaType)
-                    .setId(sourceId)
-            }
-            mediaSource.addSource(source.toPacketExtension(encodeMsid = false))
+    sources.forEach { source ->
+        val sourceId = source.name ?: Source.nameForIdAndMediaType(endpointId, source.mediaType, 0)
+        val mediaSource = mediaSources.computeIfAbsent(sourceId) {
+            MediaSource.getBuilder()
+                .setType(source.mediaType)
+                .setId(sourceId)
         }
-        endpointSourceSet.ssrcGroups.forEach group@{ ssrcGroup ->
-            if (ssrcGroup.ssrcs.isEmpty()) return@group
+        mediaSource.addSource(source.toPacketExtension(encodeMsid = false))
+    }
+    ssrcGroups.forEach group@{ ssrcGroup ->
+        if (ssrcGroup.ssrcs.isEmpty()) return@group
 
-            val firstSource = endpointSourceSet.sources.firstOrNull() { ssrcGroup.ssrcs.contains(it.ssrc) }
-                ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")
+        val firstSource = sources.firstOrNull { ssrcGroup.ssrcs.contains(it.ssrc) }
+            ?: throw IllegalStateException("An SsrcGroup in an EndpointSourceSet has an SSRC without a Source")
 
-            val sourceId = firstSource.name
-                ?: Source.nameForIdAndMediaType(owner!!.resourceOrEmpty.toString(), ssrcGroup.mediaType, 0)
-            val mediaSource = mediaSources.computeIfAbsent(sourceId) {
-                MediaSource.getBuilder()
-                    .setType(ssrcGroup.mediaType)
-                    .setId(sourceId)
-            }
-            mediaSource.addSsrcGroup(ssrcGroup.toPacketExtension())
+        val sourceId = firstSource.name ?: Source.nameForIdAndMediaType(endpointId, ssrcGroup.mediaType, 0)
+        val mediaSource = mediaSources.computeIfAbsent(sourceId) {
+            MediaSource.getBuilder()
+                .setType(ssrcGroup.mediaType)
+                .setId(sourceId)
         }
+        mediaSource.addSsrcGroup(ssrcGroup.toPacketExtension())
     }
 
     val sources = Sources.getBuilder()
@@ -119,7 +115,7 @@ internal fun ParticipantInfo.toEndpoint(
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
     if (!expire) {
-        setSources(sources.toColibriMediaSources())
+        setSources(sources.toColibriMediaSources(id))
     }
     if (expire) {
         setExpire(true)

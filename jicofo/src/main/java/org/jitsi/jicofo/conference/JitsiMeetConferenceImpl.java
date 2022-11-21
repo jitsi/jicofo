@@ -698,15 +698,10 @@ public class JitsiMeetConferenceImpl
         TaskPools.getIoPool().execute(channelAllocator);
     }
 
-    @NotNull
-    ConferenceSourceMap getSourcesForParticipant(@NotNull Participant participant)
+    @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
     {
-        EndpointSourceSet participantSourcesSet = conferenceSources.get(participant.getMucJid());
-        ConferenceSourceMap participantSourceMap
-                = participantSourcesSet == null
-                    ? new ConferenceSourceMap()
-                    : new ConferenceSourceMap(participant.getMucJid(), participantSourcesSet);
-        return participantSourceMap.unmodifiable();
+        EndpointSourceSet s = conferenceSources.get(participant.getMucJid());
+        return s != null ? s : EndpointSourceSet.EMPTY;
     }
 
     /**
@@ -1001,7 +996,10 @@ public class JitsiMeetConferenceImpl
      */
     public void updateTransport(@NotNull Participant participant, @NotNull IceUdpTransportPacketExtension transport)
     {
-        getColibriSessionManager().updateParticipant(participant.getEndpointId(), transport, null);
+        getColibriSessionManager().updateParticipant(
+                participant.getEndpointId(),
+                transport,
+                EndpointSourceSet.EMPTY);
     }
 
     /**
@@ -1098,7 +1096,7 @@ public class JitsiMeetConferenceImpl
         String participantId = participant.getEndpointId();
         EntityFullJid participantJid = participant.getMucJid();
 
-        EndpointSourceSet sourcesAccepted = EndpointSourceSet.Companion.getEMPTY();
+        EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
         if (!sourcesAdvertised.isEmpty())
         {
             sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);

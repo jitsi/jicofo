@@ -156,6 +156,7 @@ data class EndpointSourceSet(
 
     companion object {
         /** An [EndpointSourceSet] instance with no sources or source groups */
+        @JvmField
         val EMPTY = EndpointSourceSet()
 
         /**
