@@ -23,6 +23,7 @@ import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.source.VideoType
@@ -382,8 +383,26 @@ open class Participant @JvmOverloads constructor(
 
             return null
         }
-        override fun onRemoveSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
-            conference.onRemoveSource(jingleSession, contents)
+        override fun onRemoveSource(
+            jingleSession: JingleSession,
+            contents: List<ContentPacketExtension>
+        ): StanzaError? {
+            checkJingleSession(jingleSession)?.let { return it }
+
+            val sources = fromJingle(contents)
+            if (sources.isEmpty()) {
+                logger.info("Ignoring source-remove with no sources specified.")
+                return null
+            }
+
+            try {
+                conference.removeSources(this@Participant, sources)
+            } catch (e: ValidationFailedException) {
+                return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
+            }
+
+            return null
+        }
         override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
             conference.onSessionAccept(jingleSession, contents)
         override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {

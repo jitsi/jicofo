@@ -847,7 +847,14 @@ public class JitsiMeetConferenceImpl
             EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
             if (participantSources != null)
             {
-                removeSources(participant, participantSources, false, sendSourceRemove);
+                try
+                {
+                    removeSources(participant, participantSources, false, sendSourceRemove);
+                }
+                catch (ValidationFailedException e)
+                {
+                    logger.warn("Failed to remove sources while terminating participant.", e);
+                }
             }
 
             participant.setJingleSession(null);
@@ -1093,27 +1100,16 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Callback called when we receive 'source-remove' notification from
-     * conference participant. New sources received are advertised to active
-     * participants. If some participant does not have Jingle session
-     * established yet then those sources are scheduled for future update.
+     * Handles a request from a participant to remove sources.
+     * @throws ValidationFailedException if the request failed because the resulting source set for the participant
+     * is invalid, or the participant was not allowed to remove some of the sources.
      */
-    public StanzaError onRemoveSource(
-            @NotNull JingleSession sourceJingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
+    public void removeSources(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesRequestedToBeRemoved)
+        throws ValidationFailedException
     {
-        EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
-
-        Participant participant = getParticipant(sourceJingleSession);
-        if (participant == null)
-        {
-            logger.warn("No participant for jingle-session: " + sourceJingleSession);
-            return StanzaError.from(StanzaError.Condition.bad_request, "No associated participant").build();
-        }
-        else
-        {
-            return removeSources(participant, sourcesRequestedToBeRemoved, true, true);
-        }
+        removeSources(participant, sourcesRequestedToBeRemoved, true, true);
     }
 
     /**
@@ -1201,23 +1197,17 @@ public class JitsiMeetConferenceImpl
      * "false" to avoid sending an unnecessary "remove source" message just prior to the "expire" message).
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    private StanzaError removeSources(
+    @NotNull
+    private EndpointSourceSet removeSources(
             @NotNull Participant participant,
-            EndpointSourceSet sourcesRequestedToBeRemoved,
+            @NotNull EndpointSourceSet sourcesRequestedToBeRemoved,
             boolean removeColibriSourcesFromLocalBridge,
             boolean sendSourceRemove)
+    throws ValidationFailedException
     {
         Jid participantJid = participant.getMucJid();
-        EndpointSourceSet sourcesAcceptedToBeRemoved;
-        try
-        {
-            sourcesAcceptedToBeRemoved = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error removing SSRCs from: " + participantJid + ": " + e.getMessage());
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-        }
+        EndpointSourceSet sourcesAcceptedToBeRemoved
+                = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
 
         String participantId = participant.getEndpointId();
         logger.debug(
@@ -1229,7 +1219,7 @@ public class JitsiMeetConferenceImpl
             logger.warn(
                     "No sources or groups to be removed from " + participantId
                             + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
-            return null;
+            return sourcesAcceptedToBeRemoved;
         }
 
         getColibriSessionManager().updateParticipant(
@@ -1243,7 +1233,7 @@ public class JitsiMeetConferenceImpl
             sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
         }
 
-        return null;
+        return sourcesRequestedToBeRemoved;
     }
 
     /**
@@ -1623,7 +1613,14 @@ public class JitsiMeetConferenceImpl
                     EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
                     if (participantSources != null && !participantSources.isEmpty())
                     {
-                        removeSources(participant, participantSources, false, true);
+                        try
+                        {
+                            removeSources(participant, participantSources, false, true);
+                        }
+                        catch (ValidationFailedException e)
+                        {
+                            logger.warn("Failed to remove sources.", e);
+                        }
                     }
 
                     JingleSession jingleSession = participant.getJingleSession();
