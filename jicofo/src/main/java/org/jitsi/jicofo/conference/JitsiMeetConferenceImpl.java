@@ -844,18 +844,7 @@ public class JitsiMeetConferenceImpl
                 jingleSession.terminate(reason, message, sendSessionTerminate);
             }
 
-            EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-            if (participantSources != null)
-            {
-                try
-                {
-                    removeSources(participant, participantSources, false, sendSourceRemove);
-                }
-                catch (ValidationFailedException e)
-                {
-                    logger.warn("Failed to remove sources while terminating participant.", e);
-                }
-            }
+            removeParticipantSources(participant, sendSourceRemove);
 
             participant.setJingleSession(null);
 
@@ -1071,7 +1060,30 @@ public class JitsiMeetConferenceImpl
             @NotNull EndpointSourceSet sourcesRequestedToBeRemoved)
         throws ValidationFailedException
     {
-        removeSources(participant, sourcesRequestedToBeRemoved, true, true);
+        Jid participantJid = participant.getMucJid();
+        EndpointSourceSet sourcesAcceptedToBeRemoved
+                = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
+
+        String participantId = participant.getEndpointId();
+        logger.debug(
+                () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
+        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
+
+        if (sourcesAcceptedToBeRemoved.isEmpty())
+        {
+            logger.warn(
+                    "No sources or groups to be removed from " + participantId
+                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
+            return;
+        }
+
+        getColibriSessionManager().updateParticipant(
+                participant.getEndpointId(),
+                null,
+                participant.getSources(),
+                false);
+
+        sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
     }
 
     /**
@@ -1110,51 +1122,29 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Removes sources from the conference.
+     * Removes a participant's sources from the conference.
      *
-     * @param participant the participant that owns the sources to be removed.
-     * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
-     * @param removeColibriSourcesFromLocalBridge whether to signal the source removal to the local bridge (we use
-     * "false" to avoid sending an unnecessary "remove source" message just prior to the "expire" message).
+     * @param participant the participant whose sources are to be removed.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    @NotNull
-    private EndpointSourceSet removeSources(
-            @NotNull Participant participant,
-            @NotNull EndpointSourceSet sourcesRequestedToBeRemoved,
-            boolean removeColibriSourcesFromLocalBridge,
-            boolean sendSourceRemove)
-    throws ValidationFailedException
+    private void removeParticipantSources(@NotNull Participant participant, boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
-        EndpointSourceSet sourcesAcceptedToBeRemoved
-                = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
+        EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantJid);
 
-        String participantId = participant.getEndpointId();
-        logger.debug(
-                () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
-        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
-
-        if (sourcesAcceptedToBeRemoved.isEmpty())
+        if (sourcesRemoved != null && !sourcesRemoved.isEmpty())
         {
-            logger.warn(
-                    "No sources or groups to be removed from " + participantId
-                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
-            return sourcesAcceptedToBeRemoved;
-        }
-
-        getColibriSessionManager().updateParticipant(
+            getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 null,
                 participant.getSources(),
-                !removeColibriSourcesFromLocalBridge);
+                true);
 
-        if (sendSourceRemove)
-        {
-            sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
+            if (sendSourceRemove)
+            {
+                sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesRemoved), participant);
+            }
         }
-
-        return sourcesRequestedToBeRemoved;
     }
 
     /**
@@ -1531,19 +1521,7 @@ public class JitsiMeetConferenceImpl
 
                 if (restartJingle)
                 {
-                    EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-                    if (participantSources != null && !participantSources.isEmpty())
-                    {
-                        try
-                        {
-                            removeSources(participant, participantSources, false, true);
-                        }
-                        catch (ValidationFailedException e)
-                        {
-                            logger.warn("Failed to remove sources.", e);
-                        }
-                    }
-
+                    removeParticipantSources(participant, true);
                     JingleSession jingleSession = participant.getJingleSession();
                     if (jingleSession != null)
                     {
