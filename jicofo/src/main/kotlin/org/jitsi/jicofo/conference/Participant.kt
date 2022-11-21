@@ -20,6 +20,7 @@ package org.jitsi.jicofo.conference
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
+import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
@@ -37,8 +38,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
-import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
-import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
@@ -402,8 +401,33 @@ open class Participant @JvmOverloads constructor(
             conference.iceFailed(this@Participant, bridgeSessionId)
             return null
         }
-        override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ) =
-            conference.onSessionTerminate(jingleSession, iq)
+        override fun onSessionTerminate(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
+            checkJingleSession(jingleSession)?.let { return it }
+
+            val bridgeSessionPacketExtension = iq.getExtension(BridgeSessionPacketExtension::class.java)
+            val restartRequested = bridgeSessionPacketExtension?.isRestart ?: false
+            val bridgeSessionId = bridgeSessionPacketExtension?.id
+            if (restartRequested) {
+                ConferenceMetrics.participantsRequestedRestart.inc()
+            }
+            val reinvite = restartRequested && acceptRestartRequest()
+            logger.info("Received session-terminate, bsId=$bridgeSessionId, restartRequested=$restartRequested")
+
+            try {
+                conference.terminateSession(this@Participant, bridgeSessionPacketExtension?.id, reinvite)
+            } catch (e: InvalidBridgeSessionIdException) {
+                return StanzaError.from(StanzaError.Condition.item_not_found, e.message).build()
+            }
+
+            // Note we still handle the termination above, we just don't start a new session.
+            if (restartRequested && !reinvite) {
+                logger.warn("Rate limiting restart request.")
+                return StanzaError.from(StanzaError.Condition.resource_constraint, "rate-limited").build()
+            }
+
+            return null
+
+        }
         override fun onTransportInfo(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>

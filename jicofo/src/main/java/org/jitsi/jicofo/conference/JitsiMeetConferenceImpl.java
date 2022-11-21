@@ -958,52 +958,27 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private BridgeSessionPacketExtension getBridgeSessionPacketExtension(@NotNull IQ iq)
-    {
-        return iq.getExtension(BridgeSessionPacketExtension.class);
-    }
-
     /**
-     * Handles 'session-terminate' received from the client.
+     * Handles a request from a {@link Participant} to terminate its session and optionally start it again.
+     *
+     * @param bridgeSessionId the ID of the bridge session that the participant requested to be terminated.
+     * @param reinvite whether to start a new session after the current one is terminated.
+     *
+     * @throws InvalidBridgeSessionIdException if bridgeSessionId doesn't match the ID of the (colibri) session that
+     * the participant currently has.
      */
-    public StanzaError onSessionTerminate(@NotNull JingleSession session, @NotNull JingleIQ iq)
+    void terminateSession(
+            @NotNull Participant participant,
+            String bridgeSessionId,
+            boolean reinvite)
+    throws InvalidBridgeSessionIdException
     {
-        Participant participant = getParticipant(session);
-
-        // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
-        if (participant == null)
-        {
-            String errorMsg = "No participant for " + session.getRemoteJid();
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
-        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
+        // TODO: maybe move the bridgeSessionId logic to Participant
         String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        boolean restartRequested = bsPE != null && bsPE.isRestart();
-
-        if (restartRequested)
-        {
-            ConferenceMetrics.participantsRequestedRestart.inc();
-        }
-
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
-            logger.info(String.format(
-                    "Ignored session-terminate for invalid session: %s, bridge session ID: %s restart: %s",
-                    participant,
-                    bridgeSessionId,
-                    restartRequested));
-
-            return StanzaError.from(StanzaError.Condition.item_not_found, "invalid bridge session ID").build();
+            throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
         }
-
-        logger.info(String.format(
-                "Received session-terminate from %s, bridge-session ID: %s, restart: %s",
-                participant,
-                bridgeSessionId,
-                restartRequested));
 
         synchronized (participantLock)
         {
@@ -1014,23 +989,12 @@ public class JitsiMeetConferenceImpl
                     /* do not send session-terminate */ false,
                     /* do send source-remove */ true);
 
-            if (restartRequested)
+            if (reinvite)
             {
-                if (participant.acceptRestartRequest())
-                {
-                    participants.put(participant.getChatMember().getOccupantJid(), participant);
-                    inviteParticipant(participant, false, false);
-                }
-                else
-                {
-                    logger.warn(String.format("Rate limiting %s for restart requests", participant));
-
-                    return StanzaError.from(StanzaError.Condition.resource_constraint, "rate-limited").build();
-                }
+                participants.put(participant.getChatMember().getOccupantJid(), participant);
+                inviteParticipant(participant, false, false);
             }
         }
-
-        return null;
     }
 
     /**
@@ -1994,6 +1958,14 @@ public class JitsiMeetConferenceImpl
     static class SenderCountExceededException extends Exception
     {
         SenderCountExceededException(String message)
+        {
+            super(message);
+        }
+    }
+
+    static class InvalidBridgeSessionIdException extends Exception
+    {
+        InvalidBridgeSessionIdException(String message)
         {
             super(message);
         }
