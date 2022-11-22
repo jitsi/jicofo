@@ -143,7 +143,7 @@ open class Participant @JvmOverloads constructor(
      */
     private fun updateDesktopSourceIsMuted(sourceInfos: Set<SourceInfo>): Boolean {
         val newValue = sourceInfos.stream()
-            .anyMatch { (_, muted, videoType): SourceInfo -> videoType === VideoType.Desktop && muted }
+            .anyMatch { (_, muted, videoType) -> videoType === VideoType.Desktop && muted }
         if (desktopSourceIsMuted != newValue) {
             desktopSourceIsMuted = newValue
             return true
@@ -172,11 +172,11 @@ open class Participant @JvmOverloads constructor(
      */
     fun setInviteRunnable(inviteRunnable: Cancelable?) {
         synchronized(inviteRunnableSyncRoot) {
-            if (this.inviteRunnable != null) {
-                // There is an ongoing thread allocating channels and sending
-                // an invite for this participant. Tell it to stop.
-                logger.warn("Canceling " + this.inviteRunnable)
-                this.inviteRunnable!!.cancel()
+            this.inviteRunnable?.let {
+                // There is an ongoing thread allocating channels and sending an invite for this participant. Tell it to
+                // stop.
+                logger.warn("Canceling $it")
+                it.cancel()
             }
             this.inviteRunnable = inviteRunnable
         }
@@ -314,9 +314,7 @@ open class Participant @JvmOverloads constructor(
             return
         }
         for ((action, sources) in sourceSignaling.update()) {
-            logger.info(
-                "Sending a queued source-" + action.toString().lowercase(Locale.getDefault()) + ", sources:" + sources
-            )
+            logger.info("Sending a queued source-${action.toString().lowercase()}, sources=$sources")
             if (action === AddOrRemove.Add) {
                 jingleSession.addSource(sources)
             } else if (action === AddOrRemove.Remove) {
@@ -329,7 +327,7 @@ open class Participant @JvmOverloads constructor(
      * Whether force-muting should be suppressed for this participant (it is a trusted participant and doesn't
      * support unmuting).
      */
-    fun shouldSuppressForceMute() = chatMember.isJigasi && !hasAudioMuteSupport() || chatMember.isJibri
+    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri
     /** Checks whether this [Participant]'s role has moderator rights. */
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
@@ -489,7 +487,7 @@ open class Participant @JvmOverloads constructor(
             checkJingleSession(jingleSession)?.let { return it }
 
             val transport = contents.getTransport()
-                ?: return StanzaError.from(StanzaError.Condition.bad_request, "missing transport active").build()
+                ?: return StanzaError.from(StanzaError.Condition.bad_request, "missing transport").build()
             conference.updateTransport(this@Participant, transport)
 
             return null
