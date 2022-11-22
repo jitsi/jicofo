@@ -45,7 +45,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
-import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -154,7 +153,7 @@ open class Participant @JvmOverloads constructor(
      * Notify this participant that another participant's (identified by `owner`) screensharing source was muted
      * or unmuted.
      */
-    fun remoteDesktopSourceIsMutedChanged(owner: Jid, muted: Boolean) {
+    fun remoteDesktopSourceIsMutedChanged(owner: String, muted: Boolean) {
         // This is only needed for backwards compatibility with clients that don't support receiving multiple streams.
         if (supportsReceivingMultipleVideoStreams()) {
             return

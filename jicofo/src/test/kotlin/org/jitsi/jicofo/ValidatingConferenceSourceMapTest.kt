@@ -37,15 +37,14 @@ import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
-import org.jxmpp.jid.impl.JidCreate
 
 @Suppress("NAME_SHADOWING")
 class ValidatingConferenceSourceMapTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
     init {
-        val jid1 = JidCreate.from("jid1")
-        val jid2 = JidCreate.from("jid2")
+        val jid1 = "jid1"
+        val jid2 = "jid2"
         val msid = "msid"
 
         val s1 = Source(1, VIDEO, msid = msid)

@@ -190,11 +190,11 @@ public class MockParticipant
             endpointSourceSet.getSources().forEach(source -> {
                 if (source.getMediaType() == MediaType.AUDIO)
                 {
-                    audioRtpDesc.addChildExtension(source.toPacketExtension(getMyJid()));
+                    audioRtpDesc.addChildExtension(source.toPacketExtension(nick));
                 }
                 else
                 {
-                    videoRtpDesc.addChildExtension(source.toPacketExtension(getMyJid()));
+                    videoRtpDesc.addChildExtension(source.toPacketExtension(nick));
                 }
             });
         });
@@ -382,14 +382,14 @@ public class MockParticipant
     public void audioSourceRemove()
     {
         // Remove 1 audio source.
-        Source audioSource = localSSRCs.get(getMyJid()).getSources().stream().findFirst().orElse(null);
+        Source audioSource = localSSRCs.get(nick).getSources().stream().findFirst().orElse(null);
 
         if (audioSource == null)
         {
             throw new IllegalArgumentException("no audio source available to remove");
         }
 
-        ConferenceSourceMap toRemove = new ConferenceSourceMap(getMyJid(), new EndpointSourceSet(audioSource));
+        ConferenceSourceMap toRemove = new ConferenceSourceMap(nick, new EndpointSourceSet(audioSource));
 
         localSSRCs.remove(toRemove);
         jingleSession.removeSource(toRemove);
@@ -400,18 +400,19 @@ public class MockParticipant
         ConferenceSourceMap toAdd = new ConferenceSourceMap();
 
         // Create new SSRCs
-        for (int i=0; i<newSSRCs.length; i++)
+        for (long newSSRC : newSSRCs)
         {
-            Source ssrcPe = addLocalSSRC(media, newSSRCs[i]);
-
-            toAdd.add(getMyJid(), new EndpointSourceSet(ssrcPe));
+            Source ssrcPe = addLocalSSRC(media, newSSRC);
+            toAdd.add(nick, new EndpointSourceSet(ssrcPe));
         }
 
         // Send source-add
-        try {
+        try
+        {
             return jingleSession.addSourceAndWaitForResponse(toAdd);
         }
-        catch (SmackException.NotConnectedException e)  {
+        catch (SmackException.NotConnectedException e)
+        {
             return false;
         }
     }
@@ -473,12 +474,15 @@ public class MockParticipant
         return myJid;
     }
 
+    public String getId()
+    {
+        return nick;
+    }
+
     private Source addLocalSSRC(String media, long ssrc)
     {
         Source source = new Source(ssrc, MediaType.parseString(media), null, null, null);
-
-        localSSRCs.add(getMyJid(), new EndpointSourceSet(source));
-
+        localSSRCs.add(nick, new EndpointSourceSet(source));
         return source;
     }
 
@@ -494,7 +498,7 @@ public class MockParticipant
 
     private void removeSsrcs(ChatRoomMember member)
     {
-        remoteSSRCs.remove(member.getJid());
+        remoteSSRCs.remove(member.getJid().getResourceOrEmpty().toString());
     }
 
     private class ChatRoomListenerImpl extends DefaultChatRoomListener

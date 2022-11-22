@@ -23,13 +23,13 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
-import org.jxmpp.jid.Jid
 
 fun ConferenceSourceMap.numSourcesOfType(mediaType: MediaType) =
     values.flatMap { it.sources }.count { it.mediaType == mediaType }
 fun ConferenceSourceMap.numSourceGroupsOfype(mediaType: MediaType) =
     values.flatMap { it.ssrcGroups }.count { it.mediaType == mediaType }
-fun EndpointSourceSet.getFirstSourceOfType(mediaType: MediaType) = sources.firstOrNull { it.mediaType == mediaType }
+fun EndpointSourceSet?.getFirstSourceOfType(mediaType: MediaType) =
+    this?.sources?.firstOrNull { it.mediaType == mediaType }
 
 fun SourcePacketExtension.getOwner() = getFirstChildOfType(SSRCInfoPacketExtension::class.java)?.owner
 
@@ -37,8 +37,9 @@ fun SourcePacketExtension.getOwner() = getFirstChildOfType(SSRCInfoPacketExtensi
  * sources. We only need this for testing, because normally we do not trust the "owner" field and assign the
  * advertised sources to the endpoint that sent the request. */
 fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): ConferenceSourceMap {
-    val sourceSets = mutableMapOf<Jid?, EndpointSourceSet>()
-    fun findOwner(ssrc: Long): Jid? = sourceSets.entries.find { it.value.sources.any { it.ssrc == ssrc } }?.key
+    val sourceSets = mutableMapOf<String, EndpointSourceSet>()
+    fun findOwner(ssrc: Long): String = sourceSets.entries.find { it.value.sources.any { it.ssrc == ssrc } }?.key
+        ?: "no-owner"
 
     contents.forEach { content ->
         val rtpDesc: RtpDescriptionPacketExtension? =
@@ -51,7 +52,7 @@ fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): Conference
         // "description" elements, so this is reproduced here. I don't know which one is correct and/or used.
         rtpDesc?.let {
             rtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
-                val owner = spe.getOwner()
+                val owner = spe.getOwner().toString()
                 val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet.EMPTY }
                 sourceSets[owner] = ownerSourceSet + Source(mediaType, spe)
             }
@@ -63,7 +64,7 @@ fun parseConferenceSourceMap(contents: List<ContentPacketExtension>): Conference
             }
         }
         content.getChildExtensionsOfType(SourcePacketExtension::class.java).forEach { spe ->
-            val owner = spe.getOwner()
+            val owner = spe.getOwner().toString()
             val ownerSourceSet = sourceSets.computeIfAbsent(owner) { EndpointSourceSet.EMPTY }
             sourceSets[owner] = ownerSourceSet + Source(mediaType, spe)
         }

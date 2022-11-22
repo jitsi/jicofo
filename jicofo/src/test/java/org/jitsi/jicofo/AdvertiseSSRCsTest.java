@@ -52,10 +52,10 @@ public class AdvertiseSSRCsTest
         MockChatRoom chatRoom = testConf.getChatRoom();
 
         // Join with all users
-        MockParticipant user1 = new MockParticipant("User1");
+        MockParticipant user1 = new MockParticipant("user1");
         user1.join(chatRoom);
 
-        MockParticipant user2 = new MockParticipant("User2");
+        MockParticipant user2 = new MockParticipant("user2");
         user2.join(chatRoom);
 
         // Accept invite with all users
@@ -71,14 +71,14 @@ public class AdvertiseSSRCsTest
 
         // Verify SSRC owners and video types
         // From user 1 perspective
-        EndpointSourceSet user1User2Sources = user1RemoteSources.get(user2.getMyJid());
+        EndpointSourceSet user1User2Sources = user1RemoteSources.get(user2.getId());
         Source user1User2AudioSource = ExtensionsKt.getFirstSourceOfType(user1User2Sources, MediaType.AUDIO);
         assertNotNull(user1User2AudioSource);
         Source user1User2VideoSource = ExtensionsKt.getFirstSourceOfType(user1User2Sources, MediaType.VIDEO);
         assertNotNull(user1User2VideoSource);
 
         // From user 2 perspective
-        EndpointSourceSet user2User1Sources = user2.getRemoteSources().get(user1.getMyJid());
+        EndpointSourceSet user2User1Sources = user2.getRemoteSources().get(user1.getId());
         Source user2User1AudioSource = ExtensionsKt.getFirstSourceOfType(user2User1Sources, MediaType.AUDIO);
         assertNotNull(user2User1AudioSource);
         Source user2User1VideoSource = ExtensionsKt.getFirstSourceOfType(user2User1Sources, MediaType.VIDEO);

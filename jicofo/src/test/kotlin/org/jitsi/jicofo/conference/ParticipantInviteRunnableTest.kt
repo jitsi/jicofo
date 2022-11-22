@@ -53,8 +53,8 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                 )
             )
         )
-        val jid1 = JidCreate.entityFullFrom("conference@example.com/p1")
-        val jid2 = JidCreate.entityFullFrom("conference@example.com/p2")
+        val jid1 = "p1"
+        val jid2 = "p2"
         val conferenceSources = ConferenceSourceMap(
             jid1 to EndpointSourceSet(
                 setOf(

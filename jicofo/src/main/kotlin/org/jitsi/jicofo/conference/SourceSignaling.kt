@@ -26,7 +26,6 @@ import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
-import org.jxmpp.jid.Jid
 
 class SourceSignaling(
     audio: Boolean = true,
@@ -132,11 +131,11 @@ class SourceSignaling(
      * Notifies this instance that a remote participant (identified by [owner]) has muted or unmuted their screensharing
      * source.
      */
-    fun remoteDesktopSourceIsMutedChanged(owner: Jid, muted: Boolean) {
+    fun remoteDesktopSourceIsMutedChanged(owner: String, muted: Boolean) {
         if (muted) {
             // so that we can fall back to the video source
             val allParticipantSources = updatedSources[owner] ?: EndpointSourceSet()
-            var desktopSources = allParticipantSources.getDesktopSources()
+            val desktopSources = allParticipantSources.getDesktopSources()
 
             // The source was muted. If there was a screensharing source signaled (desktopSources is not empty)
             // we remove it from [updatedSources], so that we can signal a source-remove with the next update.
