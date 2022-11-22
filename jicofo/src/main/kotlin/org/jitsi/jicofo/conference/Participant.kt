@@ -47,7 +47,6 @@ import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import java.time.Clock
-import java.util.Locale
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
