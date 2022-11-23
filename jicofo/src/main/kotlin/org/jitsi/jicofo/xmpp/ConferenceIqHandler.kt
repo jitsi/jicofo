@@ -58,7 +58,8 @@ class ConferenceIqHandler(
         registrationChanged(xmppProvider.isRegistered)
     }
 
-    private fun handleConferenceIq(query: ConferenceIq): IQ {
+    /** Handle a [ConferenceIq] synchronously and return a response. */
+    fun handleConferenceIq(query: ConferenceIq): IQ {
         val response = ConferenceIq()
         val room = query.room ?: return IQ.createErrorResponse(
             query,

@@ -18,13 +18,13 @@
 package org.jitsi.jicofo.auth
 
 import io.kotest.core.spec.IsolationMode
-import io.kotest.core.spec.Spec
-import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
-import mock.xmpp.MockXmppConnectionWrapper
-import org.jitsi.jicofo.JicofoHarness
+import io.mockk.mockk
+import org.jitsi.jicofo.JicofoHarnessTest
+import org.jitsi.jicofo.xmpp.ConferenceIqHandler
+import org.jitsi.utils.days
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jitsi.xmpp.extensions.jitsimeet.SessionInvalidPacketExtension
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -38,35 +38,31 @@ import org.jxmpp.jid.impl.JidCreate
  *
  * @author Pawel Domas
  */
-class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
+class ShibbolethAuthenticationAuthorityTest : JicofoHarnessTest() {
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
-    private var harness: JicofoHarness? = null
-    private val xmppConnection = MockXmppConnectionWrapper()
-
-    override suspend fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {
-        // Enable shibboleth authentication
-        // TODO port to withLegacyConfig
-        System.setProperty(AuthConfig.legacyLoginUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST)
-        System.setProperty(AuthConfig.legacyLogoutUrlPropertyName, ShibbolethAuthAuthority.DEFAULT_URL_CONST)
-        harness = JicofoHarness()
-    }
-
-    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
-        xmppConnection.shutdown()
-        harness?.shutdown()
-        System.clearProperty(AuthConfig.legacyLoginUrlPropertyName)
-        System.clearProperty(AuthConfig.legacyLogoutUrlPropertyName)
-    }
+    private val shibbolethAuth = ShibbolethAuthAuthority(
+        true,
+        1.days,
+        ShibbolethAuthAuthority.DEFAULT_URL_CONST,
+        ShibbolethAuthAuthority.DEFAULT_URL_CONST
+    )
+    /** The authentication logic is shared between [ShibbolethAuthAuthority] and the IQ handler, so we test both. */
+    private val conferenceIqHandler = ConferenceIqHandler(
+        xmppProvider = mockk(relaxed = true),
+        focusManager = harness.jicofoServices.focusManager,
+        focusAuthJid = "",
+        true,
+        shibbolethAuth,
+        false
+    )
 
     init {
         context("Shibboleth authentication") {
-            val shibbolethAuth = harness?.jicofoServices?.authenticationAuthority
-            shibbolethAuth.shouldBeInstanceOf<ShibbolethAuthAuthority>()
 
             val room = JidCreate.entityBareFrom("testroom1-shibboeth@example.com")
             val query = ConferenceIq().apply {
-                to = harness?.jicofoServices?.jicofoJid
+                to = harness.jicofoServices.jicofoJid
                 type = IQ.Type.set
                 this.room = room
             }
@@ -78,7 +74,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                 query.machineUID = machineUid
 
                 context("And no session-id was passed") {
-                    xmppConnection.sendIqAndGetResponse(query).let {
+                    conferenceIqHandler.handleConferenceIq(query).let {
                         // REPLY WITH: 'not-authorized'
                         it.shouldBeInstanceOf<ErrorIQ>()
                         it.error.condition shouldBe StanzaError.Condition.not_authorized
@@ -87,7 +83,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                 context("And a valid session-id was passed") {
                     // create a session
                     query.sessionId = shibbolethAuth.authenticateUser(machineUid, identity, room)
-                    xmppConnection.sendIqAndGetResponse(query).shouldBeInstanceOf<ConferenceIq>()
+                    conferenceIqHandler.handleConferenceIq(query).shouldBeInstanceOf<ConferenceIq>()
                 }
             }
 
@@ -100,14 +96,14 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                     query.sessionId = null
                     query.from = userJid
                     query.machineUID = machineUid
-                    xmppConnection.sendIqAndGetResponse(query).shouldBeInstanceOf<ConferenceIq>()
+                    conferenceIqHandler.handleConferenceIq(query).shouldBeInstanceOf<ConferenceIq>()
                 }
                 context("And the session-id is invalid") {
                     // CASE 4: invalid session-id, room exists
                     query.sessionId = "someinvalidsessionid"
                     query.from = userJid
                     query.machineUID = machineUid
-                    xmppConnection.sendIqAndGetResponse(query).let {
+                    conferenceIqHandler.handleConferenceIq(query).let {
                         // REPLY with session-invalid
                         it.shouldBeInstanceOf<ErrorIQ>()
                         it.error.getExtension<ExtensionElement>(
@@ -122,7 +118,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                     query.sessionId = sessionId
                     query.from = userJid
                     query.machineUID = machineUid
-                    xmppConnection.sendIqAndGetResponse(query).shouldBeInstanceOf<ConferenceIq>()
+                    conferenceIqHandler.handleConferenceIq(query).shouldBeInstanceOf<ConferenceIq>()
 
                     context("Create another session") {
                         val machineUid2 = "machine1uid"
@@ -134,7 +130,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.from = userJid2
                             query.sessionId = sessionId // mismatch
                             query.machineUID = machineUid2
-                            xmppConnection.sendIqAndGetResponse(query).let {
+                            conferenceIqHandler.handleConferenceIq(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
                                 it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
@@ -143,7 +139,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.from = userJid2
                             query.sessionId = sessionId2
                             query.machineUID = null
-                            xmppConnection.sendIqAndGetResponse(query).let {
+                            conferenceIqHandler.handleConferenceIq(query).let {
                                 it.shouldBeInstanceOf<ErrorIQ>()
                                 it.error.condition shouldBe StanzaError.Condition.not_acceptable
                             }
@@ -160,7 +156,7 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
                             query.from = userJid2
                             query.machineUID = machineUid3
                             query.sessionId = sessionId3
-                            xmppConnection.sendIqAndGetResponse(query).shouldBeInstanceOf<ConferenceIq>()
+                            conferenceIqHandler.handleConferenceIq(query).shouldBeInstanceOf<ConferenceIq>()
                         }
                     }
                 }
