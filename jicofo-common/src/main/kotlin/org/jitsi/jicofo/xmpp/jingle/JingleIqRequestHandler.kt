@@ -51,6 +51,7 @@ open class JingleIqRequestHandler :
         return if (error == null) {
             IQ.createResultIQ(iq)
         } else {
+            logger.info("Returning error: request=${iq.toXML()}, error=${error.toXML()} ")
             IQ.createErrorResponse(iq, error)
         }
     }
