@@ -52,9 +52,9 @@ class ShibbolethAuthenticationAuthorityTest : JicofoHarnessTest() {
         xmppProvider = mockk(relaxed = true),
         focusManager = harness.jicofoServices.focusManager,
         focusAuthJid = "",
-        true,
-        shibbolethAuth,
-        false
+        isFocusAnonymous = true,
+        authAuthority = shibbolethAuth,
+        jigasiEnabled = false
     )
 
     init {

@@ -26,9 +26,9 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         xmppProvider = mockk(relaxed = true),
         focusManager = harness.jicofoServices.focusManager,
         focusAuthJid = "",
-        true,
-        authAuthority,
-        false
+        isFocusAnonymous = true,
+        authAuthority = authAuthority,
+        jigasiEnabled = false
     )
 
     init {

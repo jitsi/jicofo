@@ -17,30 +17,38 @@
  */
 package org.jitsi.jicofo
 
-import io.kotest.core.spec.Spec
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
-import mock.xmpp.MockXmppConnection
-import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
+import io.mockk.every
+import io.mockk.mockk
+import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
-class AllocateConferenceTest : JicofoHarnessTest() {
-    private val from = JidCreate.bareFrom("from@example.com")
-    private val xmppConnection = MockXmppConnection(from)
-
-    override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also { xmppConnection.disconnect() }
+class ConferenceIqHandlerTest : ShouldSpec() {
+    private val conferenceIqHandler = ConferenceIqHandler(
+        xmppProvider = mockk(relaxed = true),
+        focusManager = mockk {
+            every { getConference(any()) } returns null
+            every { conferenceRequest(any(), any()) } returns true
+        },
+        focusAuthJid = "",
+        isFocusAnonymous = true,
+        authAuthority = null,
+        jigasiEnabled = false
+    )
 
     init {
         context("Handling a ConferenceIQ") {
             val conferenceIq = ConferenceIq().apply {
                 this.from = from
                 room = JidCreate.entityBareFrom("testRoom@example.com")
-                to = harness.jicofoServices.jicofoJid
+                to = JidCreate.from("example.com")
                 type = IQ.Type.set
             }
 
-            xmppConnection.sendIqAndGetResponse(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
+            conferenceIqHandler.handleConferenceIq(conferenceIq).shouldBeInstanceOf<ConferenceIq>()
         }
     }
 }
