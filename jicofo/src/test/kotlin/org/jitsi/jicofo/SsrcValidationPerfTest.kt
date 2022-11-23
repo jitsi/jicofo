@@ -26,7 +26,6 @@ import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
-import org.jxmpp.jid.impl.JidCreate
 import java.time.Clock
 import java.time.Duration
 
@@ -39,19 +38,19 @@ class SsrcValidationPerfTest : ShouldSpec() {
                 conferenceSources.size shouldBe numEndpoints
 
                 val newEndpointSourceSet = createEndpointSourceSet("new-endpoint", ssrcCount)
-                val newEndpointJid = JidCreate.fullFrom("$jidPrefix/new-endpoint")
+                val newEndpointId = "new-endpoint"
                 ssrcCount += newEndpointSourceSet.sources.size
 
                 var added: EndpointSourceSet? = null
                 measureAndLog("Single add") {
-                    added = conferenceSources.tryToAdd(newEndpointJid, newEndpointSourceSet)
+                    added = conferenceSources.tryToAdd(newEndpointId, newEndpointSourceSet)
                 }
                 added shouldBe newEndpointSourceSet
                 conferenceSources.size shouldBe numEndpoints + 1
 
                 var removed: EndpointSourceSet? = null
                 measureAndLog("Single remove") {
-                    removed = conferenceSources.tryToRemove(newEndpointJid, newEndpointSourceSet)
+                    removed = conferenceSources.tryToRemove(newEndpointId, newEndpointSourceSet)
                 }
                 conferenceSources.size shouldBe numEndpoints
                 removed shouldBe newEndpointSourceSet
@@ -64,11 +63,10 @@ class SsrcValidationPerfTest : ShouldSpec() {
                 measureAndLog("Adding all endpoints") {
                     for (i in 0 until numEndpoints) {
                         val endpointId = "endpoint-$i"
-                        val endpointJid = JidCreate.fullFrom("$jidPrefix/$endpointId")
                         val sourceSet = createEndpointSourceSet(endpointId, ssrcCount)
                         ssrcCount += sourceSet.sources.size
                         measureAndLog("Adding endpoint $i") {
-                            conferenceSources.tryToAdd(endpointJid, sourceSet)
+                            conferenceSources.tryToAdd(endpointId, sourceSet)
                         }
                     }
                 }
@@ -89,7 +87,6 @@ class SsrcValidationPerfTest : ShouldSpec() {
     }
 
     private var ssrcCount = 1L
-    private val jidPrefix = "confname@conference.example.com/"
 
     private fun createEndpointSourceSet(endpointId: String, ssrcBase: Long) = EndpointSourceSet(
         setOf(
@@ -116,7 +113,7 @@ class SsrcValidationPerfTest : ShouldSpec() {
         for (i in 0 until numEndpoints) {
             val endpointSourceSet = createEndpointSourceSet(i.toString(), ssrcCount)
             ssrcCount += endpointSourceSet.sources.size
-            add(JidCreate.fullFrom("$jidPrefix/endpoint$i"), endpointSourceSet)
+            add("endpoint$i", endpointSourceSet)
         }
     }
 

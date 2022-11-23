@@ -24,7 +24,6 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.json.simple.JSONArray
-import org.jxmpp.jid.Jid
 import java.lang.IllegalArgumentException
 import kotlin.jvm.Throws
 
@@ -56,7 +55,7 @@ data class EndpointSourceSet(
     /**
      * Creates a list of Jingle [ContentPacketExtension]s that describe the sources in this [EndpointSourceSet].
      */
-    fun toJingle(owner: Jid? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
+    fun toJingle(owner: String? = null): List<ContentPacketExtension> = toJingle(mutableMapOf(), owner)
 
     val audioSsrcs: Set<Long> by lazy { getSsrcs(AUDIO) }
     val videoSsrcs: Set<Long> by lazy { getSsrcs(VIDEO) }
@@ -207,7 +206,7 @@ data class EndpointSourceSet(
  */
 fun EndpointSourceSet.toJingle(
     contentMap: MutableMap<MediaType, ContentPacketExtension>,
-    owner: Jid?
+    owner: String?
 ): List<ContentPacketExtension> {
 
     sources.forEach { source ->

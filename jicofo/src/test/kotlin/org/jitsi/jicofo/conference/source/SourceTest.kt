@@ -24,7 +24,6 @@ import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
-import org.jxmpp.jid.impl.JidCreate
 
 class SourceTest : ShouldSpec() {
     init {
@@ -44,8 +43,8 @@ class SourceTest : ShouldSpec() {
             val nameValue = "source-name-value"
             val videoType = VideoType.Desktop
             val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, videoType = videoType)
-            val ownerJid = JidCreate.fullFrom("confname@conference.example.com/abcdabcd")
-            val extension = source.toPacketExtension(owner = ownerJid)
+            val owner = "abcdabcd"
+            val extension = source.toPacketExtension(owner = owner)
 
             extension.ssrc shouldBe 1
             extension.name shouldBe nameValue
@@ -55,7 +54,7 @@ class SourceTest : ShouldSpec() {
 
             val ssrcInfo = extension.getFirstChildOfType(SSRCInfoPacketExtension::class.java)
             ssrcInfo shouldNotBe null
-            ssrcInfo.owner shouldBe ownerJid
+            ssrcInfo.owner.toString() shouldBe owner
         }
         context("Compact JSON") {
             Source(1, MediaType.VIDEO, name = "test-name", msid = "msid").compactJson shouldBe

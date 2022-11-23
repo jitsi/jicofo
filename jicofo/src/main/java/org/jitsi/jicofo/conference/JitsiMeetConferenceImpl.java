@@ -700,7 +700,7 @@ public class JitsiMeetConferenceImpl
 
     @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
     {
-        EndpointSourceSet s = conferenceSources.get(participant.getMucJid());
+        EndpointSourceSet s = conferenceSources.get(participant.getEndpointId());
         return s != null ? s : EndpointSourceSet.EMPTY;
     }
 
@@ -982,7 +982,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        final ConferenceSourceMap conferenceSourceMap = new ConferenceSourceMap(sourceOwner.getMucJid(), sources);
+        final ConferenceSourceMap conferenceSourceMap = new ConferenceSourceMap(sourceOwner.getEndpointId(), sources);
 
         participants.values().stream()
             .filter(otherParticipant -> otherParticipant != sourceOwner)
@@ -1030,7 +1030,7 @@ public class JitsiMeetConferenceImpl
                             + (rejectedVideoSource ? "video" : ""));
         }
 
-        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
+        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
         logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
@@ -1058,11 +1058,10 @@ public class JitsiMeetConferenceImpl
             @NotNull EndpointSourceSet sourcesRequestedToBeRemoved)
         throws ValidationFailedException
     {
-        Jid participantJid = participant.getMucJid();
-        EndpointSourceSet sourcesAcceptedToBeRemoved
-                = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
-
         String participantId = participant.getEndpointId();
+        EndpointSourceSet sourcesAcceptedToBeRemoved
+                = conferenceSources.tryToRemove(participantId, sourcesRequestedToBeRemoved);
+
         logger.debug(
                 () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
         logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
@@ -1081,7 +1080,7 @@ public class JitsiMeetConferenceImpl
                 participant.getSources(),
                 false);
 
-        sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
+        sendSourceRemove(new ConferenceSourceMap(participantId, sourcesAcceptedToBeRemoved), participant);
     }
 
     /**
@@ -1094,12 +1093,11 @@ public class JitsiMeetConferenceImpl
     throws ValidationFailedException
     {
         String participantId = participant.getEndpointId();
-        EntityFullJid participantJid = participant.getMucJid();
 
         EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
         if (!sourcesAdvertised.isEmpty())
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
+            sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
         }
 
         getColibriSessionManager().updateParticipant(participantId, transport, getSourcesForParticipant(participant));
@@ -1127,8 +1125,8 @@ public class JitsiMeetConferenceImpl
      */
     private void removeParticipantSources(@NotNull Participant participant, boolean sendSourceRemove)
     {
-        Jid participantJid = participant.getMucJid();
-        EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantJid);
+        String participantId = participant.getEndpointId();
+        EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantId);
 
         if (sourcesRemoved != null && !sourcesRemoved.isEmpty())
         {
@@ -1140,7 +1138,7 @@ public class JitsiMeetConferenceImpl
 
             if (sendSourceRemove)
             {
-                sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesRemoved), participant);
+                sendSourceRemove(new ConferenceSourceMap(participantId, sourcesRemoved), participant);
             }
         }
     }
@@ -1631,7 +1629,7 @@ public class JitsiMeetConferenceImpl
         participants.values().stream()
                 .filter(p -> p != participant)
                 .filter(p -> !p.supportsReceivingMultipleVideoStreams())
-                .forEach(p -> p.remoteDesktopSourceIsMutedChanged(participant.getMucJid(), desktopSourceIsMuted));
+                .forEach(p -> p.remoteDesktopSourceIsMutedChanged(participant.getEndpointId(), desktopSourceIsMuted));
     }
 
     /**

@@ -31,8 +31,6 @@ import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
-import org.jxmpp.jid.Jid
-import org.jxmpp.jid.impl.JidCreate
 
 /** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
 fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? {
@@ -137,4 +135,4 @@ internal fun AbstractXMPPConnection.sendIqAndHandleResponseAsync(iq: IQ, block: 
  * The constant value used as owner attribute value of
  * {@link SSRCInfoPacketExtension} for the SSRC which belongs to the JVB.
  */
-val SSRC_OWNER_JVB: Jid = JidCreate.from("jvb")
+const val SSRC_OWNER_JVB = "jvb"

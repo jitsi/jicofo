@@ -20,7 +20,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
-import org.jxmpp.jid.Jid
 import java.lang.UnsupportedOperationException
 import java.util.concurrent.ConcurrentHashMap
 
@@ -39,25 +38,25 @@ open class ConferenceSourceMap(
      * The sources mapped by endpoint ID.
      * Note that this primary constructor uses the provided [ConcurrentHashMap], and not a copy, as the underlying map.
      */
-    private val endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet> = ConcurrentHashMap()
-) : Map<Jid?, EndpointSourceSet> by endpointSourceSets {
+    private val endpointSourceSets: ConcurrentHashMap<String, EndpointSourceSet> = ConcurrentHashMap()
+) : Map<String, EndpointSourceSet> by endpointSourceSets {
 
     /** Constructs a new [ConferenceSourceMap] from the entries in [map] ([map] itself is not reused). */
-    constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
-    constructor(vararg entries: Pair<Jid?, EndpointSourceSet>) : this(entries.toMap())
-    constructor(owner: Jid?, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
-    constructor(owner: Jid?, source: Source) : this(owner, EndpointSourceSet(source))
-    constructor(owner: Jid?, contents: List<ContentPacketExtension>) :
+    constructor(map: Map<String, EndpointSourceSet>) : this(ConcurrentHashMap(map))
+    constructor(vararg entries: Pair<String, EndpointSourceSet>) : this(entries.toMap())
+    constructor(owner: String, endpointSourceSet: EndpointSourceSet) : this(owner to endpointSourceSet)
+    constructor(owner: String, source: Source) : this(owner, EndpointSourceSet(source))
+    constructor(owner: String, contents: List<ContentPacketExtension>) :
         this(owner, EndpointSourceSet.fromJingle(contents))
 
-    constructor(owner: Jid?, sources: Set<Source>, groups: Set<SsrcGroup>) :
+    constructor(owner: String, sources: Set<Source>, groups: Set<SsrcGroup>) :
         this(owner, EndpointSourceSet(sources, groups))
 
     /** The lock used for write operations to the map. Can and should be used by extending classes. */
     protected val syncRoot = Any()
 
     /** Remove the entry associated with [owner]. */
-    open fun remove(owner: Jid?) = synchronized(syncRoot) {
+    open fun remove(owner: String) = synchronized(syncRoot) {
         endpointSourceSets.remove(owner)
     }
 
@@ -76,7 +75,7 @@ open class ConferenceSourceMap(
     }
 
     /** Adds [endpointSourceSet] as sources owned by [owner]. */
-    open fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
+    open fun add(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         endpointSourceSets[owner] += endpointSourceSet
     }
 
@@ -94,11 +93,7 @@ open class ConferenceSourceMap(
             append("{")
             endpointSourceSets.entries.forEachIndexed { i, entry ->
                 if (i > 0) append(",")
-                // In practice we use either the owner's full JID (for endpoints) or the string "jvb" (for bridges).
-                val ownerJid = entry.key
-                // The XMPP resource or domain are safe to encode as JSON.
-                val ownerId = ownerJid?.resourceOrNull ?: ownerJid?.domain.toString()
-                append(""""$ownerId":${entry.value.compactJson}""")
+                append(""""${entry.key}":${entry.value.compactJson}""")
             }
             append("}")
         }
@@ -212,20 +207,20 @@ open class ConferenceSourceMap(
  * standard [java.util.Map] mutating methods will result in an exception.
  */
 class UnmodifiableConferenceSourceMap(
-    endpointSourceSets: ConcurrentHashMap<Jid?, EndpointSourceSet>
+    endpointSourceSets: ConcurrentHashMap<String, EndpointSourceSet>
 ) : ConferenceSourceMap(endpointSourceSets) {
-    constructor(map: Map<Jid?, EndpointSourceSet>) : this(ConcurrentHashMap(map))
+    constructor(map: Map<String, EndpointSourceSet>) : this(ConcurrentHashMap(map))
 
     override fun add(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
 
-    override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) =
+    override fun add(owner: String, endpointSourceSet: EndpointSourceSet) =
         throw UnsupportedOperationException("add() not supported in unmodifiable view")
 
     override fun remove(other: ConferenceSourceMap) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 
-    override fun remove(owner: Jid?) =
+    override fun remove(owner: String) =
         throw UnsupportedOperationException("remove() not supported in unmodifiable view")
 
     override fun map(transform: (EndpointSourceSet) -> EndpointSourceSet) =

@@ -29,8 +29,6 @@ import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
-import org.jxmpp.jid.Jid
-import org.jxmpp.jid.impl.JidCreate
 
 @Suppress("NAME_SHADOWING")
 class EndpointSourceSetTest : ShouldSpec() {
@@ -130,8 +128,8 @@ class EndpointSourceSetTest : ShouldSpec() {
     }
 }
 
-val jid1: Jid = JidCreate.from("jid1")
-val jid2: Jid = JidCreate.from("jid2")
+const val jid1 = "jid1"
+const val jid2 = "jid2"
 val s1 = Source(1, VIDEO)
 val s2 = Source(2, VIDEO)
 val s3 = Source(3, VIDEO)

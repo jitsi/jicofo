@@ -20,7 +20,7 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
-import org.jxmpp.jid.Jid
+import org.jxmpp.jid.impl.JidCreate
 
 /**
  * The description of a single source (i.e. an SSRC and its properties from "a=ssrc" lines in SDP).
@@ -50,13 +50,13 @@ data class Source(
     @JvmOverloads
     fun toPacketExtension(
         /** An optional JID for the owner of this source to encode in the XML extension. */
-        owner: Jid? = null,
+        owner: String? = null,
         encodeMsid: Boolean = true
     ) = SourcePacketExtension().apply {
         ssrc = this@Source.ssrc
         name = this@Source.name
         if (owner != null) {
-            addChildExtension(SSRCInfoPacketExtension().apply { this.owner = owner })
+            addChildExtension(SSRCInfoPacketExtension().apply { this.owner = JidCreate.from(owner) })
         }
 
         if (encodeMsid && msid != null) {

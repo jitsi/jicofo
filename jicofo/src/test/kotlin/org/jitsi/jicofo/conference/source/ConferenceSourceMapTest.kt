@@ -30,7 +30,6 @@ import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
-import org.jxmpp.jid.impl.JidCreate
 import shouldBeValidJson
 import java.lang.UnsupportedOperationException
 
@@ -148,11 +147,7 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
             }
             context("Nonexistent endpoint") {
-                conferenceSourceMap.remove(
-                    ConferenceSourceMap(
-                        JidCreate.from("differentJid") to endpoint1CombinedSourceSet
-                    )
-                )
+                conferenceSourceMap.remove(ConferenceSourceMap("differentJid" to endpoint1CombinedSourceSet))
                 conferenceSourceMap.size shouldBe 2
                 conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
                 conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
@@ -237,15 +232,13 @@ class ConferenceSourceMapTest : ShouldSpec() {
         context("Compact JSON") {
             val endpointId1 = "bebebebe"
             val endpointId2 = "dadadada"
-            val jid1 = JidCreate.from("confname@conference.exmaple.com/$endpointId1")
-            val jid2 = JidCreate.from("confname@conference.exmaple.com/$endpointId2")
-            val jvbJid = JidCreate.from("jvb")
+            val jvb = "jvb"
             val jvbEndpointSourceSet = EndpointSourceSet(Source(12345, MediaType.VIDEO))
 
             val conferenceSourceMap = ConferenceSourceMap(
-                jid1 to sourceSet,
-                jid2 to e2sourceSet,
-                jvbJid to jvbEndpointSourceSet
+                endpointId1 to sourceSet,
+                endpointId2 to e2sourceSet,
+                jvb to jvbEndpointSourceSet
             )
             val jsonString = conferenceSourceMap.compactJson()
             val json = JSONParser().parse(jsonString)
@@ -255,8 +248,8 @@ class ConferenceSourceMapTest : ShouldSpec() {
         }
         context("Debug json") {
             val conferenceSourceMap = ConferenceSourceMap(
-                JidCreate.from("jid1") to endpoint1CombinedSourceSet,
-                JidCreate.from("jid2") to endpoint2SourceSet
+                "jid1" to endpoint1CombinedSourceSet,
+                "jid2" to endpoint2SourceSet
             )
             conferenceSourceMap.toJson().shouldBeValidJson()
         }

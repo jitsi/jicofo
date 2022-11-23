@@ -26,31 +26,30 @@ import org.jitsi.jicofo.conference.SourceSignaling
 import org.jitsi.utils.MediaType
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
-import org.jxmpp.jid.impl.JidCreate
 
 class SourceSignalingTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     init {
-        val jid1 = JidCreate.from("jid1")
+        val e1 = "endpoint1"
         val e1a = Source(1, MediaType.AUDIO)
         val e1v = Source(11, MediaType.VIDEO)
-        val s1 = ConferenceSourceMap(jid1 to EndpointSourceSet(setOf(e1a, e1v))).unmodifiable
+        val s1 = ConferenceSourceMap(e1 to EndpointSourceSet(setOf(e1a, e1v))).unmodifiable
 
-        val jid2 = JidCreate.from("jid2")
+        val e2 = "endpoint2"
         val e2a = Source(2, MediaType.AUDIO)
         val e2v = Source(22, MediaType.VIDEO)
-        val s2 = ConferenceSourceMap(jid2 to EndpointSourceSet(setOf(e2a, e2v))).unmodifiable
+        val s2 = ConferenceSourceMap(e2 to EndpointSourceSet(setOf(e2a, e2v))).unmodifiable
 
         val e2a2 = Source(222, MediaType.AUDIO)
         val e2v2 = Source(2222, MediaType.VIDEO)
-        val s2new = ConferenceSourceMap(jid2 to EndpointSourceSet(setOf(e2a2, e2v2))).unmodifiable
+        val s2new = ConferenceSourceMap(e2 to EndpointSourceSet(setOf(e2a2, e2v2))).unmodifiable
 
-        val jid3 = JidCreate.from("jid3")
+        val e3 = "endpoint3"
         val e3a = Source(3, MediaType.AUDIO)
-        val s3 = ConferenceSourceMap(jid3 to EndpointSourceSet(e3a)).unmodifiable
+        val s3 = ConferenceSourceMap(e3 to EndpointSourceSet(e3a)).unmodifiable
 
-        val jid4 = JidCreate.from("jid4")
+        val e4 = "endpoint4"
         val e4a1 = Source(4, MediaType.AUDIO)
         val e4v1a = Source(43, MediaType.VIDEO, name = "e4-v1")
         val e4v1b = Source(44, MediaType.VIDEO, name = "e4-v1")
@@ -67,15 +66,15 @@ class SourceSignalingTest : ShouldSpec() {
         val e4ss1a = Source(46, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
         val e4ss1b = Source(47, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
         val e4ss1c = Source(48, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
-        val s4audio = ConferenceSourceMap(jid4 to EndpointSourceSet(e4a1))
+        val s4audio = ConferenceSourceMap(e4 to EndpointSourceSet(e4a1))
         val s4video = ConferenceSourceMap(
-            jid4 to EndpointSourceSet(
+            e4 to EndpointSourceSet(
                 setOf(e4v1a, e4v1b, e4v1c, e4v1a_r, e4v1b_r, e4v1c_r),
                 e4vgroups
             )
         )
         val s4ss = ConferenceSourceMap(
-            jid4 to EndpointSourceSet(
+            e4 to EndpointSourceSet(
                 setOf(e4ss1a, e4ss1b, e4ss1c),
                 setOf()
             )
@@ -85,7 +84,7 @@ class SourceSignalingTest : ShouldSpec() {
             SsrcGroup(SsrcGroupSemantics.Sim, listOf(43, 44, 45), MediaType.VIDEO),
             SsrcGroup(SsrcGroupSemantics.Sim, listOf(46, 47, 48), MediaType.VIDEO)
         )
-        val s4 = ConferenceSourceMap(jid4 to EndpointSourceSet(e4sources, e4groups))
+        val s4 = ConferenceSourceMap(e4 to EndpointSourceSet(e4sources, e4groups))
 
         context("Queueing remote sources") {
             val sourceSignaling = SourceSignaling()
@@ -174,8 +173,8 @@ class SourceSignalingTest : ShouldSpec() {
 
                 sourceSignaling.reset(s1 + s2).shouldBe(
                     ConferenceSourceMap(
-                        jid1 to EndpointSourceSet(e1a),
-                        jid2 to EndpointSourceSet(e2a)
+                        e1 to EndpointSourceSet(e1a),
+                        e2 to EndpointSourceSet(e2a)
                     )
                 )
 
@@ -183,14 +182,14 @@ class SourceSignalingTest : ShouldSpec() {
                 sourceSignaling.update().let {
                     it.size shouldBe 1
                     it[0].action shouldBe Add
-                    it[0].sources shouldBe ConferenceSourceMap(jid2 to EndpointSourceSet(e2a2))
+                    it[0].sources shouldBe ConferenceSourceMap(e2 to EndpointSourceSet(e2a2))
                 }
 
                 sourceSignaling.removeSources(s1)
                 sourceSignaling.update().let {
                     it.size shouldBe 1
                     it[0].action shouldBe Remove
-                    it[0].sources shouldBe ConferenceSourceMap(jid1 to EndpointSourceSet(e1a))
+                    it[0].sources shouldBe ConferenceSourceMap(e1 to EndpointSourceSet(e1a))
                 }
 
                 sourceSignaling.addSources(s1)

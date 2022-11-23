@@ -19,7 +19,6 @@ package org.jitsi.jicofo.conference.source
 
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
-import org.jxmpp.jid.Jid
 import java.lang.IllegalStateException
 
 /**
@@ -45,14 +44,14 @@ class ValidatingConferenceSourceMap(
      *
      * Note that since the value is nullable [Map.containsKey] must be used when checking for the existence of an entry.
      */
-    private val ssrcToOwnerMap = mutableMapOf<Long, Jid?>()
+    private val ssrcToOwnerMap = mutableMapOf<Long, String>()
 
     /**
      * Maps an MSID to the JID of the endpoint that owns it. Used to detect cross-endpoint conflicts efficiently.
      *
      * Note that since the value is nullable [Map.containsKey] must be used when checking for the existence of an entry.
      */
-    private val msidToOwnerMap = mutableMapOf<String, Jid?>()
+    private val msidToOwnerMap = mutableMapOf<String, String>()
 
     /**
      * Attempts to add [sourcesToAdd] as sources owned by [owner]. The attempt is successful if the addition does not
@@ -71,7 +70,7 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been accepted and added.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToAdd(owner: Jid?, sourcesToAdd: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
+    fun tryToAdd(owner: String, sourcesToAdd: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
         val existingSourceSet = this[owner] ?: EndpointSourceSet.EMPTY
 
         // Check for validity of the new SSRCs, and conflicts with other endpoints.
@@ -139,7 +138,7 @@ class ValidatingConferenceSourceMap(
      * @return The sources that have been removed.
      */
     @Throws(ValidationFailedException::class)
-    fun tryToRemove(owner: Jid?, sourcesToRemove: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
+    fun tryToRemove(owner: String, sourcesToRemove: EndpointSourceSet): EndpointSourceSet = synchronized(syncRoot) {
         if (sourcesToRemove.isEmpty()) return EndpointSourceSet.EMPTY
 
         val existingSources = this[owner]
@@ -186,13 +185,13 @@ class ValidatingConferenceSourceMap(
     }
 
     /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
-    override fun add(owner: Jid?, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
+    override fun add(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         super.add(owner, endpointSourceSet).also {
             sourceSetAdded(owner, endpointSourceSet)
         }
     }
 
-    private fun sourceSetAdded(owner: Jid?, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
+    private fun sourceSetAdded(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         endpointSourceSet.sources.forEach { source ->
             ssrcToOwnerMap[source.ssrc] = owner
             source.msid?.let {
@@ -209,7 +208,7 @@ class ValidatingConferenceSourceMap(
     }
 
     /** Override [remove] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
-    override fun remove(owner: Jid?): EndpointSourceSet? = synchronized(syncRoot) {
+    override fun remove(owner: String): EndpointSourceSet? = synchronized(syncRoot) {
         val ownerRemovedSourceSet = super.remove(owner)
         ownerRemovedSourceSet?.let {
             sourceSetRemoved(owner, it)
@@ -222,7 +221,7 @@ class ValidatingConferenceSourceMap(
      * @param owner the owner of the removed source set.
      * @param endpointSourceSet the source set which has already been removed.
      */
-    private fun sourceSetRemoved(owner: Jid?, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
+    private fun sourceSetRemoved(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         val ownerRemainingSourceSet = this[owner]
         endpointSourceSet.sources.forEach { source ->
             ssrcToOwnerMap.remove(source.ssrc)
