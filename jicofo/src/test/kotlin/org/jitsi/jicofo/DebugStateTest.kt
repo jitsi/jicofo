@@ -55,7 +55,7 @@ class DebugStateTest : JicofoHarnessTest() {
             val member = ChatMemberImpl(JidCreate.entityFullFrom("conference@example.com/member"), chatRoom, logger, 0)
             member.debugState.shouldBeValidJson()
 
-            val participant = Participant(member, logger, conference)
+            val participant = Participant(member, conference)
             participant.debugState.shouldBeValidJson()
         }
         context("Jigasi detector") {

@@ -32,7 +32,7 @@ import org.jitsi.jicofo.bridge.addNodeToMesh
 import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
 import org.jitsi.jicofo.bridge.removeNode
-import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -508,7 +508,7 @@ class ColibriV2SessionManager(
     override fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension?,
-        sources: ConferenceSourceMap?,
+        sources: EndpointSourceSet?,
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
         logger.info("Updating $participantId with transport=$transport, sources=$sources")
@@ -524,8 +524,6 @@ class ColibriV2SessionManager(
             participantInfo.session.updateParticipant(participantInfo, transport, sources)
         }
         if (sources != null) {
-            // We don't need to make a copy, because we're already passed an unmodifiable copy.
-            // TODO: refactor to make that clear (explicit use of UnmodifiableConferenceSourceMap).
             participantInfo.sources = sources
             if (!participantInfo.visitor) {
                 getPathsFrom(participantInfo.session) { _, otherSession, from ->

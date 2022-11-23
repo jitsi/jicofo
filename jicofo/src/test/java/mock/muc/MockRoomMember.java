@@ -32,7 +32,7 @@ import java.util.*;
 public class MockRoomMember
     implements ChatRoomMember
 {
-    private final Resourcepart name;
+    @NotNull private final Resourcepart name;
 
     private final EntityFullJid address;
 

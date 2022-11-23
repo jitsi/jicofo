@@ -73,7 +73,7 @@ class JingleSession(
             JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
             JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq)
             JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
-            JingleAction.TRANSPORT_INFO -> { requestHandler.onTransportInfo(this, iq.contentList); null }
+            JingleAction.TRANSPORT_INFO -> requestHandler.onTransportInfo(this, iq.contentList)
             JingleAction.TRANSPORT_REJECT -> { requestHandler.onTransportReject(this, iq); null }
             JingleAction.ADDSOURCE, JingleAction.SOURCEADD -> requestHandler.onAddSource(this, iq.contentList)
             JingleAction.REMOVESOURCE, JingleAction.SOURCEREMOVE -> requestHandler.onRemoveSource(this, iq.contentList)

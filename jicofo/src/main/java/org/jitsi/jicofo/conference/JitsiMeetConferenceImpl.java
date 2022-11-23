@@ -56,10 +56,10 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
  * participants, as well as the COLIBRI session with the jitsi-videobridge
  * instances used for the conference.
- *
+ * <p/>
  * A note on synchronization: this class uses a lot of 'synchronized' blocks,
  * on 3 different objects {@link #participantLock}, {@code this} and {@code BridgeSession#octoParticipant}).
- *
+ * <p/>
  * This seems safe, but it is hard to maintain this way, and we should
  * re-factor to simplify.
  *
@@ -67,9 +67,7 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
-    implements JingleRequestHandler,
-               JitsiMeetConference,
-               RegistrationListener
+    implements JitsiMeetConference, RegistrationListener
 {
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
@@ -659,7 +657,7 @@ public class JitsiMeetConferenceImpl
             // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
             List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
-            final Participant participant = new Participant(chatRoomMember, features, logger, this);
+            final Participant participant = new Participant(chatRoomMember, this, logger, features);
 
             ConferenceMetrics.participants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
@@ -700,15 +698,10 @@ public class JitsiMeetConferenceImpl
         TaskPools.getIoPool().execute(channelAllocator);
     }
 
-    @NotNull
-    ConferenceSourceMap getSourcesForParticipant(@NotNull Participant participant)
+    @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
     {
-        EndpointSourceSet participantSourcesSet = conferenceSources.get(participant.getMucJid());
-        ConferenceSourceMap participantSourceMap
-                = participantSourcesSet == null
-                    ? new ConferenceSourceMap()
-                    : new ConferenceSourceMap(participant.getMucJid(), participantSourcesSet);
-        return participantSourceMap.unmodifiable();
+        EndpointSourceSet s = conferenceSources.get(participant.getMucJid());
+        return s != null ? s : EndpointSourceSet.EMPTY;
     }
 
     /**
@@ -846,11 +839,7 @@ public class JitsiMeetConferenceImpl
                 jingleSession.terminate(reason, message, sendSessionTerminate);
             }
 
-            EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-            if (participantSources != null)
-            {
-                removeSources(participant, participantSources, false, sendSourceRemove);
-            }
+            removeParticipantSources(participant, sendSourceRemove);
 
             participant.setJingleSession(null);
 
@@ -889,15 +878,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    /**
-     * @return the {@link Participant} associated with a specific {@link JingleSession}, if any.
-     */
-    @Nullable
-    private Participant getParticipant(@NotNull JingleSession jingleSession)
-    {
-        return participants.get(jingleSession.getRemoteJid());
-    }
-
     @Nullable
     public Participant getParticipant(@NotNull Jid occupantJid)
     {
@@ -923,60 +903,19 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Callback called when 'session-accept' is received from invited
-     * participant.
+     * Handles a notification that a participant's ICE session failed.
      *
-     * {@inheritDoc}
+     * @param participant the participant whose ICE session failed.
+     * @param bridgeSessionId the ID of the bridge session that failed.
      */
-    @Override
-    public StanzaError onSessionAccept(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> answer)
+    public void iceFailed(@NotNull Participant participant, String bridgeSessionId)
     {
-        logger.info("Receive session-accept from " + jingleSession.getRemoteJid());
-
-        return onSessionAcceptInternal(jingleSession, answer);
-    }
-
-    /**
-     * Will re-allocate channels on the bridge for participant who signals ICE
-     * state 'failed'. New transport is sent in the 'transport-info' message
-     * similar to the conference migration scenario.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public StanzaError onSessionInfo(@NotNull JingleSession session, @NotNull JingleIQ iq)
-    {
-        Jid address = session.getRemoteJid();
-        Participant participant = getParticipant(session);
-
-        // FIXME: (duplicate) there's very similar logic in onSessionAccept
-        if (participant == null)
-        {
-            String errorMsg = "No session for " + address;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        IceStatePacketExtension iceStatePE = iq.getExtension(IceStatePacketExtension.class);
-        String iceState = iceStatePE != null ? iceStatePE.getText() : null;
-
-        if (!"failed".equalsIgnoreCase(iceState))
-        {
-            logger.info(String.format("Ignored ice-state %s from %s", iceState, address));
-
-            return null;
-        }
-
-        BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
-        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
         String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
         if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, bridge-session ID: %s",
-                    address,
+                    participant.getEndpointId(),
                     bridgeSessionId));
             reInviteParticipant(participant);
         }
@@ -984,63 +923,32 @@ public class JitsiMeetConferenceImpl
         {
             logger.info(String.format(
                     "Ignored ICE failed notification for invalid session, participant: %s, bridge session ID: %s",
-                    address,
+                    participant.getEndpointId(),
                     bridgeSessionId));
         }
-        ConferenceMetrics.participantsIceFailed.inc();
-
-        return null;
-    }
-
-    private BridgeSessionPacketExtension getBridgeSessionPacketExtension(@NotNull IQ iq)
-    {
-        return iq.getExtension(BridgeSessionPacketExtension.class);
     }
 
     /**
-     * Handles 'session-terminate' received from the client.
+     * Handles a request from a {@link Participant} to terminate its session and optionally start it again.
      *
-     * {@inheritDoc}
+     * @param bridgeSessionId the ID of the bridge session that the participant requested to be terminated.
+     * @param reinvite whether to start a new session after the current one is terminated.
+     *
+     * @throws InvalidBridgeSessionIdException if bridgeSessionId doesn't match the ID of the (colibri) session that
+     * the participant currently has.
      */
-    @Override
-    public StanzaError onSessionTerminate(@NotNull JingleSession session, @NotNull JingleIQ iq)
+    void terminateSession(
+            @NotNull Participant participant,
+            String bridgeSessionId,
+            boolean reinvite)
+    throws InvalidBridgeSessionIdException
     {
-        Participant participant = getParticipant(session);
-
-        // FIXME: (duplicate) there's very similar logic in onSessionAccept/onSessionInfo
-        if (participant == null)
-        {
-            String errorMsg = "No participant for " + session.getRemoteJid();
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        BridgeSessionPacketExtension bsPE = getBridgeSessionPacketExtension(iq);
-        String bridgeSessionId = bsPE != null ? bsPE.getId() : null;
+        // TODO: maybe move the bridgeSessionId logic to Participant
         String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        boolean restartRequested = bsPE != null && bsPE.isRestart();
-
-        if (restartRequested)
-        {
-            ConferenceMetrics.participantsRequestedRestart.inc();
-        }
-
         if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
         {
-            logger.info(String.format(
-                    "Ignored session-terminate for invalid session: %s, bridge session ID: %s restart: %s",
-                    participant,
-                    bridgeSessionId,
-                    restartRequested));
-
-            return StanzaError.from(StanzaError.Condition.item_not_found, "invalid bridge session ID").build();
+            throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
         }
-
-        logger.info(String.format(
-                "Received session-terminate from %s, bridge-session ID: %s, restart: %s",
-                participant,
-                bridgeSessionId,
-                restartRequested));
 
         synchronized (participantLock)
         {
@@ -1051,23 +959,12 @@ public class JitsiMeetConferenceImpl
                     /* do not send session-terminate */ false,
                     /* do send source-remove */ true);
 
-            if (restartRequested)
+            if (reinvite)
             {
-                if (participant.incrementAndCheckRestartRequests())
-                {
-                    participants.put(participant.getChatMember().getOccupantJid(), participant);
-                    inviteParticipant(participant, false, false);
-                }
-                else
-                {
-                    logger.warn(String.format("Rate limiting %s for restart requests", participant));
-
-                    return StanzaError.from(StanzaError.Condition.resource_constraint, "rate-limited").build();
-                }
+                participants.put(participant.getChatMember().getOccupantJid(), participant);
+                inviteParticipant(participant, false, false);
             }
         }
-
-        return null;
     }
 
     /**
@@ -1094,232 +991,118 @@ public class JitsiMeetConferenceImpl
 
 
     /**
-     * Callback called when we receive 'transport-info' from conference
-     * participant. The info is forwarded to the videobridge at this point.
-     *
-     * {@inheritDoc}
+     * Update the transport information for a participant. Callback called when we receive a 'transport-info', the info
+     * is forwarded to the videobridge.
      */
-    @Override
-    public void onTransportInfo(
-            @NotNull JingleSession session,
-            @NotNull List<? extends ContentPacketExtension> contentList)
+    public void updateTransport(@NotNull Participant participant, @NotNull IceUdpTransportPacketExtension transport)
     {
-        Participant participant = getParticipant(session);
-        if (participant == null)
-        {
-            logger.warn("Failed to process transport-info, no session for: " + session.getRemoteJid());
-            return;
-        }
-
-        getColibriSessionManager().updateParticipant(participant.getEndpointId(), getTransport(contentList), null);
+        getColibriSessionManager().updateParticipant(
+                participant.getEndpointId(),
+                transport,
+                EndpointSourceSet.EMPTY);
     }
 
     /**
-     * 'transport-accept' message is received by the focus after it has sent
-     * 'transport-replace' which is supposed to move the conference to another
-     * bridge. It means that the client has accepted new transport.
+     * Attempts to add sources from {@code participant} to the conference.
      *
-     * {@inheritDoc}
-     */
-    @Override
-    public StanzaError onTransportAccept(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
-    {
-        logger.info("Received transport-accept from " + jingleSession.getRemoteJid());
-
-        // We basically do the same processing as with session-accept by just
-        // forwarding transport/rtp information to the bridge + propagate the
-        // participants sources & source groups to remote bridges.
-        return onSessionAcceptInternal(jingleSession, contents);
-    }
-
-    /**
-     * Message sent by the client when for any reason it's unable to handle
-     * 'transport-replace' message.
+     * @param participant the participant that is adding the sources.
+     * @param sourcesAdvertised the sources that the participant is adding
      *
-     * {@inheritDoc}
+     * @throws SenderCountExceededException if the sender limits in the conference have been exceeded
+     * @throws ValidationFailedException if the addition of the sources would result in an invalid state of the
+     * conference sources (e.g. if there is a conflict with another participant, or the resulting source set for the
+     * participant is invalid).
      */
-    @Override
-    public void onTransportReject(@NotNull JingleSession jingleSession, @NotNull JingleIQ reply)
+    public void addSource(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesAdvertised)
+    throws SenderCountExceededException, ValidationFailedException
     {
-        Participant p = getParticipant(jingleSession);
-        if (p == null)
-        {
-            logger.warn("No participant for " + jingleSession);
-            return;
-        }
-
-        // We could expire channels immediately here, but we're leaving them to
-        // auto expire on the bridge or we're going to do that when user leaves
-        // the MUC anyway
-        logger.error("Participant has rejected our transport offer: " + p.getChatMember().getName()
-                + ", response: " + reply.toXML());
-    }
-
-    /**
-     * Callback called when we receive 'source-add' notification from conference
-     * participant. New sources received are advertised to active participants.
-     * If some participant does not have Jingle session established yet then
-     * those sources are scheduled for future update.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public StanzaError onAddSource(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
-    {
-        Jid address = jingleSession.getRemoteJid();
-        Participant participant = getParticipant(jingleSession);
-        if (participant == null)
-        {
-            String errorMsg = "no session for " + address;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        if (participant.getChatMember().getRole() == MemberRole.VISITOR)
-        {
-            return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build();
-        }
-
-        String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
-        logger.debug(() -> "Received source-add from " + participantId + ": " + sourcesAdvertised);
-        if (sourcesAdvertised.isEmpty())
-        {
-            logger.warn("Received source-add with empty sources, ignoring");
-            return null;
-        }
-
         boolean rejectedAudioSource = sourcesAdvertised.getHasAudio() &&
                 chatRoom.getAudioSendersCount() >= ConferenceConfig.config.getMaxAudioSenders();
+        boolean rejectedVideoSource = sourcesAdvertised.getHasVideo() &&
+                chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders();
 
-        if (rejectedAudioSource ||
-                sourcesAdvertised.getHasVideo() &&
-                chatRoom.getVideoSendersCount() >= ConferenceConfig.config.getMaxVideoSenders())
+        if (rejectedAudioSource || rejectedVideoSource)
         {
-            String errorMsg = "Source add rejected. Maximum number of " +
-                    (rejectedAudioSource ? "audio" : "video") + " senders reached.";
-            logger.warn(() -> participantId + ": " + errorMsg);
-            return StanzaError.from(StanzaError.Condition.resource_constraint, errorMsg).build();
+            throw new SenderCountExceededException(
+                    "Sender count exceeded for: " + (rejectedAudioSource ? "audio " : "")
+                            + (rejectedVideoSource ? "video" : ""));
         }
 
-        EndpointSourceSet sourcesAccepted;
-        try
-        {
-            sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error adding SSRCs from: " + address + ": " + e.getMessage());
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-        }
-
-        logger.debug(() -> "Accepted sources from " + participantId + ": " + sourcesAccepted);
+        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getMucJid(), sourcesAdvertised);
+        logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
         {
-            logger.warn("Stop processing source-add, no new sources added: " + participantId);
-            return null;
+            // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been an
+            // exception above)
+            logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
+            return;
         }
 
         // Updates source groups on the bridge
-        // We may miss the notification, but the state will be synced up
-        // after conference has been relocated to the new bridge
+        // We may miss the notification, but the state will be synced up after conference has been relocated to the new
+        // bridge
         getColibriSessionManager().updateParticipant(participant.getEndpointId(), null, participant.getSources());
-
         propagateNewSources(participant, sourcesAccepted);
-
-        return null;
     }
 
     /**
-     * Callback called when we receive 'source-remove' notification from
-     * conference participant. New sources received are advertised to active
-     * participants. If some participant does not have Jingle session
-     * established yet then those sources are scheduled for future update.
-     *
-     * {@inheritDoc}
+     * Handles a request from a participant to remove sources.
+     * @throws ValidationFailedException if the request failed because the resulting source set for the participant
+     * is invalid, or the participant was not allowed to remove some of the sources.
      */
-    @Override
-    public StanzaError onRemoveSource(
-            @NotNull JingleSession sourceJingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
+    public void removeSources(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesRequestedToBeRemoved)
+        throws ValidationFailedException
     {
-        EndpointSourceSet sourcesRequestedToBeRemoved = EndpointSourceSet.fromJingle(contents);
-
-        Participant participant = getParticipant(sourceJingleSession);
-        if (participant == null)
-        {
-            logger.warn("No participant for jingle-session: " + sourceJingleSession);
-            return StanzaError.from(StanzaError.Condition.bad_request, "No associated participant").build();
-        }
-        else
-        {
-            return removeSources(participant, sourcesRequestedToBeRemoved, true, true);
-        }
-    }
-
-    /**
-     * Updates the RTP description, transport and propagates sources and source
-     * groups of a participant that sends the session-accept or transport-accept
-     * Jingle IQs.
-     */
-    private StanzaError onSessionAcceptInternal(
-            @NotNull JingleSession jingleSession,
-            @NotNull List<? extends ContentPacketExtension> contents)
-    {
-        Participant participant = getParticipant(jingleSession);
-        Jid participantJid = jingleSession.getRemoteJid();
-
-        if (participant == null)
-        {
-            String errorMsg = "No participant found for: " + participantJid;
-            logger.warn(errorMsg);
-            return StanzaError.from(StanzaError.Condition.item_not_found, errorMsg).build();
-        }
-
-        if (participant.getJingleSession() != null && participant.getJingleSession() != jingleSession)
-        {
-            //FIXME: we should reject it ?
-            logger.error("Reassigning jingle session for participant: " + participantJid);
-        }
-
-        participant.setJingleSession(jingleSession);
+        Jid participantJid = participant.getMucJid();
+        EndpointSourceSet sourcesAcceptedToBeRemoved
+                = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
 
         String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAdvertised = EndpointSourceSet.fromJingle(contents);
-        if (!sourcesAdvertised.isEmpty() && participant.getChatMember().getRole() == MemberRole.VISITOR)
-        {
-            return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build();
-        }
+        logger.debug(
+                () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
+        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
 
-        if (logger.isDebugEnabled())
+        if (sourcesAcceptedToBeRemoved.isEmpty())
         {
-            logger.debug("Received initial sources from " + participantId + ": " + sourcesAdvertised);
-        }
-
-        EndpointSourceSet sourcesAccepted = EndpointSourceSet.Companion.getEMPTY();
-        if (!sourcesAdvertised.isEmpty())
-        {
-            try
-            {
-                sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
-            }
-            catch (ValidationFailedException e)
-            {
-                logger.error("Error processing session-accept from: " + participantJid + ": " + e.getMessage());
-
-                return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-            }
+            logger.warn(
+                    "No sources or groups to be removed from " + participantId
+                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
+            return;
         }
 
         getColibriSessionManager().updateParticipant(
-            participant.getEndpointId(),
-            getTransport(contents),
-            getSourcesForParticipant(participant));
+                participant.getEndpointId(),
+                null,
+                participant.getSources(),
+                false);
+
+        sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
+    }
+
+    /**
+     * Handles a "session-accept" or "transport-accept" request from a participant.
+     */
+    void acceptSession(
+            @NotNull Participant participant,
+            @NotNull EndpointSourceSet sourcesAdvertised,
+            IceUdpTransportPacketExtension transport)
+    throws ValidationFailedException
+    {
+        String participantId = participant.getEndpointId();
+        EntityFullJid participantJid = participant.getMucJid();
+
+        EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
+        if (!sourcesAdvertised.isEmpty())
+        {
+            sourcesAccepted = conferenceSources.tryToAdd(participantJid, sourcesAdvertised);
+        }
+
+        getColibriSessionManager().updateParticipant(participantId, transport, getSourcesForParticipant(participant));
 
         if (!sourcesAccepted.isEmpty())
         {
@@ -1334,92 +1117,32 @@ public class JitsiMeetConferenceImpl
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
-
-        return null;
     }
 
     /**
-     * Find the first {@link IceUdpTransportPacketExtension} in a list of Jingle contents.
-     */
-    private IceUdpTransportPacketExtension getTransport(@NotNull List<? extends ContentPacketExtension> contents)
-    {
-        IceUdpTransportPacketExtension transport = null;
-        for (ContentPacketExtension content : contents)
-        {
-            transport = content.getFirstChildOfType(IceUdpTransportPacketExtension.class);
-            if (transport != null)
-            {
-                break;
-            }
-        }
-
-        if (transport == null)
-        {
-            logger.error("No valid transport supplied in transport-update from $participant");
-            return null;
-        }
-
-        if (!transport.isRtcpMux())
-        {
-            transport.addChildExtension(new IceRtcpmuxPacketExtension());
-        }
-
-        return transport;
-    }
-
-
-    /**
-     * Removes sources from the conference.
+     * Removes a participant's sources from the conference.
      *
-     * @param participant the participant that owns the sources to be removed.
-     * @param sourcesRequestedToBeRemoved the sources that an endpoint requested to be removed from the conference.
-     * @param removeColibriSourcesFromLocalBridge whether to signal the source removal to the local bridge (we use
-     * "false" to avoid sending an unnecessary "remove source" message just prior to the "expire" message).
+     * @param participant the participant whose sources are to be removed.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    private StanzaError removeSources(
-            @NotNull Participant participant,
-            EndpointSourceSet sourcesRequestedToBeRemoved,
-            boolean removeColibriSourcesFromLocalBridge,
-            boolean sendSourceRemove)
+    private void removeParticipantSources(@NotNull Participant participant, boolean sendSourceRemove)
     {
         Jid participantJid = participant.getMucJid();
-        EndpointSourceSet sourcesAcceptedToBeRemoved;
-        try
-        {
-            sourcesAcceptedToBeRemoved = conferenceSources.tryToRemove(participantJid, sourcesRequestedToBeRemoved);
-        }
-        catch (ValidationFailedException e)
-        {
-            logger.error("Error removing SSRCs from: " + participantJid + ": " + e.getMessage());
-            return StanzaError.from(StanzaError.Condition.bad_request, e.getMessage()).build();
-        }
+        EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantJid);
 
-        String participantId = participant.getEndpointId();
-        logger.debug(
-                () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
-        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
-
-        if (sourcesAcceptedToBeRemoved.isEmpty())
+        if (sourcesRemoved != null && !sourcesRemoved.isEmpty())
         {
-            logger.warn(
-                    "No sources or groups to be removed from " + participantId
-                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
-            return null;
-        }
-
-        getColibriSessionManager().updateParticipant(
+            getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 null,
                 participant.getSources(),
-                !removeColibriSourcesFromLocalBridge);
+                true);
 
-        if (sendSourceRemove)
-        {
-            sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesAcceptedToBeRemoved), participant);
+            if (sendSourceRemove)
+            {
+                sendSourceRemove(new ConferenceSourceMap(participantJid, sourcesRemoved), participant);
+            }
         }
-
-        return null;
     }
 
     /**
@@ -1469,7 +1192,7 @@ public class JitsiMeetConferenceImpl
      * Checks if this conference has a member with a specific occupant JID. Note that we check for the existence of a
      * member in the chat room instead of a {@link Participant} (it's not clear whether the distinction is important).
      * @param jid the occupant JID of the member.
-     * @return
+     * @return true if the conference has a member with occupant JID {@code jid}.
      */
     public boolean hasMember(Jid jid)
     {
@@ -1584,7 +1307,7 @@ public class JitsiMeetConferenceImpl
             o.put("colibri_session_manager", colibriSessionManager.getDebugState());
         }
         OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
-        conferenceProperties.forEach(conferencePropertiesJson::put);
+        conferencePropertiesJson.putAll(conferenceProperties);
         o.put("conference_properties", conferencePropertiesJson);
         o.put("include_in_statistics", includeInStatistics);
         o.put("conference_sources", conferenceSources.toJson());
@@ -1618,7 +1341,7 @@ public class JitsiMeetConferenceImpl
         // Force mute at the backend. We assume this was successful. If for some reason it wasn't the colibri layer
         // should handle it (e.g. remove a broken bridge).
         getColibriSessionManager().mute(
-                participantsToMute.stream().map(p -> p.getEndpointId()).collect(Collectors.toSet()),
+                participantsToMute.stream().map(Participant::getEndpointId).collect(Collectors.toSet()),
                 true,
                 mediaType);
 
@@ -1796,12 +1519,7 @@ public class JitsiMeetConferenceImpl
 
                 if (restartJingle)
                 {
-                    EndpointSourceSet participantSources = participant.getSources().get(participant.getMucJid());
-                    if (participantSources != null && !participantSources.isEmpty())
-                    {
-                        removeSources(participant, participantSources, false, true);
-                    }
-
+                    removeParticipantSources(participant, true);
                     JingleSession jingleSession = participant.getJingleSession();
                     if (jingleSession != null)
                     {
@@ -2128,6 +1846,22 @@ public class JitsiMeetConferenceImpl
             logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
                     + participantIds);
             reInviteParticipantsById(participantIds);
+        }
+    }
+
+    static class SenderCountExceededException extends Exception
+    {
+        SenderCountExceededException(String message)
+        {
+            super(message);
+        }
+    }
+
+    static class InvalidBridgeSessionIdException extends Exception
+    {
+        InvalidBridgeSessionIdException(String message)
+        {
+            super(message);
         }
     }
 }

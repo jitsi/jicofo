@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
-import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -46,13 +46,13 @@ interface ColibriSessionManager {
     fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension? = null,
-        sources: ConferenceSourceMap? = null,
+        sources: EndpointSourceSet? = null,
     ) = updateParticipant(participantId, transport, sources, false)
 
     fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension? = null,
-        sources: ConferenceSourceMap? = null,
+        sources: EndpointSourceSet? = null,
         suppressLocalBridgeUpdate: Boolean = false
     )
     fun getBridgeSessionId(participantId: String): String?
@@ -89,7 +89,7 @@ data class ParticipantAllocationParameters(
     val id: String,
     val statsId: String?,
     val region: String?,
-    val sources: ConferenceSourceMap,
+    val sources: EndpointSourceSet,
     val supportsSourceNames: Boolean,
     val useSsrcRewriting: Boolean,
     val forceMuteAudio: Boolean,

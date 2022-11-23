@@ -70,7 +70,7 @@ interface JingleRequestHandler {
     /**
      * A 'transport-info' IQ was received.
      */
-    fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>) { }
+    fun onTransportInfo(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'transport-accept' IQ was received.

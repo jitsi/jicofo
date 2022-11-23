@@ -99,7 +99,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             every { chatRoom } returns mockk {
                 every { hasMember(any()) } returns true
             }
-            every { getSourcesForParticipant(any()) } returns ConferenceSourceMap()
+            every { getSourcesForParticipant(any()) } returns EndpointSourceSet.EMPTY
         }
         listOf(true, false).forEach { supportsVideo ->
             val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
@@ -116,9 +116,8 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { statsId } returns "statsId"
                     every { region } returns "region"
                 },
-                features,
-                LoggerImpl("test"),
-                conference
+                conference,
+                supportedFeatures = features
             ) {
                 override fun createNewJingleSession(): JingleSession = mockk {
                     every {
