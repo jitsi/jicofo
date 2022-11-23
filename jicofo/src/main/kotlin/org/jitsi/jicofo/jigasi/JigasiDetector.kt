@@ -18,7 +18,7 @@
 package org.jitsi.jicofo.jigasi
 
 import org.jitsi.impl.protocol.xmpp.XmppProvider
-import org.jitsi.jicofo.JicofoConfig.Companion.config
+import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -33,9 +33,10 @@ import org.jxmpp.jid.Jid
  * and publish their status in MUC presence.
  * @author Damian Minkov
  */
-class JigasiDetector(
+open class JigasiDetector(
     xmppProvider: XmppProvider,
-    breweryJid: EntityBareJid
+    breweryJid: EntityBareJid,
+    private val localRegion: String? = JicofoConfig.config.localRegion
 ) : BaseBrewery<ColibriStatsExtension>(
     xmppProvider,
     breweryJid,
@@ -55,8 +56,8 @@ class JigasiDetector(
      * @return the JID of the selected instance, or  `null` if there are no available jigasis that satisfy the
      * constraints (are not excluded and support transcription).
      */
-    fun selectTranscriber(exclude: List<Jid>, preferredRegions: Collection<String>): Jid? =
-        selectJigasi(instances, exclude, preferredRegions, config.localRegion, transcriber = true)
+    fun selectTranscriber(exclude: List<Jid> = emptyList(), preferredRegions: Collection<String> = emptySet()): Jid? =
+        selectJigasi(instances, exclude, preferredRegions, localRegion, transcriber = true)
 
     /**
      * Selects a jigasi instance which supports SIP.
@@ -65,8 +66,8 @@ class JigasiDetector(
      * @return the JID of the selected instance, or  `null` if there are no available jigasis that satisfy the
      * constraints (are not excluded and support SIP).
      */
-    fun selectSipJigasi(exclude: List<Jid>, preferredRegions: Collection<String>): Jid? =
-        selectJigasi(instances, exclude, preferredRegions, config.localRegion, transcriber = false)
+    fun selectSipJigasi(exclude: List<Jid> = emptyList(), preferredRegions: Collection<String> = emptySet()): Jid? =
+        selectJigasi(instances, exclude, preferredRegions, localRegion, transcriber = false)
 
     val stats: JSONObject
         get() = JSONObject().apply {
@@ -93,12 +94,12 @@ class JigasiDetector(
      */
     companion object {
         @JvmStatic
-        fun selectJigasi(
+        private fun selectJigasi(
             instances: List<BaseBrewery<ColibriStatsExtension>.BrewInstance>,
-            exclude: List<Jid>,
-            preferredRegions: Collection<String>,
-            localRegion: String?,
-            transcriber: Boolean
+            exclude: List<Jid> = emptyList(),
+            preferredRegions: Collection<String> = emptyList(),
+            localRegion: String? = null,
+            transcriber: Boolean = false
         ): Jid? {
 
             val availableInstances = instances
