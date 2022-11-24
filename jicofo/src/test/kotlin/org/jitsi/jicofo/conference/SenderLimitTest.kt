@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo
+package org.jitsi.jicofo.conference
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
@@ -23,7 +23,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
+import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
