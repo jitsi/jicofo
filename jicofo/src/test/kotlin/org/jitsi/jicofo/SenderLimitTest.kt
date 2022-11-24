@@ -15,96 +15,99 @@
  */
 package org.jitsi.jicofo
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
-import io.kotest.matchers.booleans.shouldBeFalse
-import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import mock.MockParticipant
-import mock.util.TestConference
+import io.mockk.every
+import io.mockk.mockk
 import org.jitsi.config.withNewConfig
+import org.jitsi.impl.protocol.xmpp.ChatRoom
+import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
+import org.jitsi.jicofo.conference.source.ValidationFailedException
+import org.jitsi.utils.MediaType
 import org.jxmpp.jid.impl.JidCreate
+import java.util.logging.Level
 
 /**
  * Test audio and video sender limits.
  */
-class SenderLimitTest : JicofoHarnessTest() {
-    override fun isolationMode(): IsolationMode? = IsolationMode.SingleInstance
+class SenderLimitTest : ShouldSpec() {
+    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
     init {
+        var ssrcs = 1L
+        fun nextSource(mediaType: MediaType) = EndpointSourceSet(Source(ssrcs++, mediaType))
+        var videoSenders = 0
+        var audioSenders = 0
+        val chatRoom: ChatRoom = mockk(relaxed = true) {
+            every { videoSendersCount } answers { videoSenders }
+            every { audioSendersCount } answers { audioSenders }
+        }
+        val conference = JitsiMeetConferenceImpl(
+            JidCreate.entityBareFrom("test@example.com"),
+            mockk(),
+            mockk(relaxed = true),
+            Level.INFO,
+            null,
+            false,
+            mockk(relaxed = true) {
+                every { xmppServices } returns mockk(relaxed = true) {
+                    every { clientConnection } returns mockk {
+                        every { isRegistered } returns true
+                        every { findOrCreateRoom(any()) } returns chatRoom
+                    }
+                }
+                every { authenticationAuthority } returns null
+            }
+        ).apply { start() }
 
-        val names = arrayOf(
-            "Tipsy_0", "Queasy_1", "Surly_2", "Sleazy_3", "Edgy_4", "Dizzy_5", "Remorseful_6"
-        )
-
-        context("sender limit test") {
-            withNewConfig(
-                "jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5," +
-                    " jicofo.colibri.enable-colibri2=true"
-            ) {
-
-                ConferenceConfig.config.maxVideoSenders shouldBe 5
-                ConferenceConfig.config.maxAudioSenders shouldBe 5
-
-                val roomName = JidCreate.entityBareFrom("test@example.com")
-                val testConference = TestConference(harness, roomName)
-
-                testConference.conference.start()
-
-                val ps = Array(names.size) { i -> MockParticipant(names[i]).also { it.join(testConference.chatRoom) } }
-
-                context("set it up") {
-                    ps.forEach { it.acceptInvite(4000) }
-                    ps.forEach { it.waitForAddSource(4000) }
+        context("Sender limits") {
+            withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
+                context("Configuration") {
+                    ConferenceConfig.config.maxVideoSenders shouldBe 5
+                    ConferenceConfig.config.maxAudioSenders shouldBe 5
                 }
 
-                context("video sender limit test") {
-                    addVideoSource(ps[0]).shouldBeTrue()
-                    addVideoSource(ps[1]).shouldBeTrue()
-                    addVideoSource(ps[2]).shouldBeTrue()
-                    addVideoSource(ps[3]).shouldBeTrue()
-                    addVideoSource(ps[4]).shouldBeTrue()
-                    addVideoSource(ps[5]).shouldBeFalse()
-                    addVideoSource(ps[6]).shouldBeFalse()
+                context("Video") {
+                    val videoSource = nextSource(MediaType.VIDEO)
+                    conference.addSource(mockk(relaxed = true), videoSource)
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), videoSource)
+                    }
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.VIDEO)))
+                    }
 
-                    ps[0].videoMute(true)
-                    addVideoSource(ps[5]).shouldBeTrue()
-                    addVideoSource(ps[6]).shouldBeFalse()
+                    videoSenders = 10
+                    shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
+                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
+                    }
 
-                    ps[1].videoMute(true)
-                    addVideoSource(ps[6]).shouldBeTrue()
+                    videoSenders = 2
+                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
                 }
+                context("Audio") {
+                    val audioSource = nextSource(MediaType.AUDIO)
+                    conference.addSource(mockk(relaxed = true), audioSource)
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), audioSource)
+                    }
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.AUDIO)))
+                    }
 
-                context("audio sender limit test") {
-                    addAudioSource(ps[0]).shouldBeTrue()
-                    addAudioSource(ps[1]).shouldBeTrue()
-                    addAudioSource(ps[2]).shouldBeTrue()
-                    addAudioSource(ps[3]).shouldBeTrue()
-                    addAudioSource(ps[4]).shouldBeTrue()
-                    addAudioSource(ps[5]).shouldBeFalse()
-                    addAudioSource(ps[6]).shouldBeFalse()
+                    audioSenders = 10
+                    shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
+                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
+                    }
 
-                    ps[0].audioMute(true)
-                    addAudioSource(ps[5]).shouldBeTrue()
-                    addAudioSource(ps[6]).shouldBeFalse()
-
-                    ps[1].audioMute(true)
-                    addAudioSource(ps[6]).shouldBeTrue()
+                    audioSenders = 2
+                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
                 }
             }
         }
     }
-}
-
-fun addVideoSource(p: MockParticipant): Boolean {
-    val result = p.videoSourceAdd(longArrayOf(MockParticipant.nextSSRC()))
-    if (result)
-        p.videoMute(false)
-    return result
-}
-
-fun addAudioSource(p: MockParticipant): Boolean {
-    val result = p.audioSourceAdd(longArrayOf(MockParticipant.nextSSRC()))
-    if (result)
-        p.audioMute(false)
-    return result
 }

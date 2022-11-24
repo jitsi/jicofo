@@ -137,7 +137,8 @@ class FocusManager @JvmOverloads constructor(
                 config,
                 logLevel,
                 jvbVersion,
-                includeInStatistics
+                includeInStatistics,
+                JicofoServices.jicofoServicesSingleton!!
             )
             conferences[room] = conference
             conferencesCache.add(conference)
