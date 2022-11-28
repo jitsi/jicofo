@@ -41,7 +41,7 @@ import java.lang.Exception
 import kotlin.jvm.Throws
 import kotlin.random.Random
 
-class MockColibri2Server {
+class TestColibri2Server {
     private val conferences = mutableMapOf<String, Conference>()
 
     fun stop() = conferences.clear()

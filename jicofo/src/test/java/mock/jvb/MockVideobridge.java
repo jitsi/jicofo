@@ -17,7 +17,6 @@
  */
 package mock.jvb;
 
-import mock.xmpp.*;
 import mock.xmpp.MockXmppConnection;
 import org.jitsi.jicofo.mock.*;
 import org.jitsi.utils.logging2.*;
@@ -38,7 +37,7 @@ public class MockVideobridge
 
     private final MockXmppConnection connection;
 
-    private MockColibri2Server bridge;
+    private TestColibri2Server bridge;
 
     private final ConferenceModifyIqHandler conferenceModifyIqGetHandler
             = new ConferenceModifyIqHandler(IQ.Type.get);
@@ -52,7 +51,7 @@ public class MockVideobridge
 
     public void start()
     {
-        bridge = new MockColibri2Server();
+        bridge = new TestColibri2Server();
         connection.registerIQRequestHandler(conferenceModifyIqGetHandler);
         connection.registerIQRequestHandler(conferenceModifyIqSetHandler);
     }
