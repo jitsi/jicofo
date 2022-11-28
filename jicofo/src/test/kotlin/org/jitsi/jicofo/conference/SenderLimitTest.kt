@@ -22,11 +22,11 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
+import org.jitsi.jicofo.mock.MockXmppProvider
 import org.jitsi.utils.MediaType
 import org.jxmpp.jid.impl.JidCreate
 import java.util.logging.Level
@@ -40,14 +40,21 @@ class SenderLimitTest : ShouldSpec() {
     init {
         var ssrcs = 1L
         fun nextSource(mediaType: MediaType) = EndpointSourceSet(Source(ssrcs++, mediaType))
+        val roomName = JidCreate.entityBareFrom("test@example.com")
+
         var videoSenders = 0
         var audioSenders = 0
-        val chatRoom: ChatRoom = mockk(relaxed = true) {
+
+        val xmppProvider = MockXmppProvider()
+
+        // Add the mocked instance to the provider. The conference will retrieve it from xmppProvider by roomName.
+        xmppProvider.xmppProvider.findOrCreateRoom(roomName).apply {
             every { videoSendersCount } answers { videoSenders }
             every { audioSendersCount } answers { audioSenders }
         }
+
         val conference = JitsiMeetConferenceImpl(
-            JidCreate.entityBareFrom("test@example.com"),
+            roomName,
             mockk(),
             mockk(relaxed = true),
             Level.INFO,
@@ -55,12 +62,8 @@ class SenderLimitTest : ShouldSpec() {
             false,
             mockk(relaxed = true) {
                 every { xmppServices } returns mockk(relaxed = true) {
-                    every { clientConnection } returns mockk {
-                        every { isRegistered } returns true
-                        every { findOrCreateRoom(any()) } returns chatRoom
-                    }
+                    every { clientConnection } returns xmppProvider.xmppProvider
                 }
-                every { authenticationAuthority } returns null
             }
         ).apply { start() }
 

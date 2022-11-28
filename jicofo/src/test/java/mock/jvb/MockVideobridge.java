@@ -18,6 +18,7 @@
 package mock.jvb;
 
 import mock.xmpp.*;
+import mock.xmpp.MockXmppConnection;
 import org.jitsi.jicofo.mock.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.colibri2.*;
