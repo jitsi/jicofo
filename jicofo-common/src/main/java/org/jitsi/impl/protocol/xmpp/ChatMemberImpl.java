@@ -184,12 +184,6 @@ public class ChatMemberImpl
     }
 
     @Override
-    public void setRole(MemberRole role)
-    {
-        throw new RuntimeException("Not implemented yet.");
-    }
-
-    @Override
     public Jid getJid()
     {
         if (jid == null)

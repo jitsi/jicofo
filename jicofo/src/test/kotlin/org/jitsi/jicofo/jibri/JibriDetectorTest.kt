@@ -132,7 +132,6 @@ class JibriChatRoomMember(
     override fun getName(): String = TODO("Not yet implemented")
     override fun getChatRoom(): ChatRoom = TODO("Not yet implemented")
     override fun getRole(): MemberRole = TODO("Not yet implemented")
-    override fun setRole(role: MemberRole?) = TODO("Not yet implemented")
     override fun getJid(): Jid = TODO("Not yet implemented")
     override fun getSourceInfos(): MutableSet<SourceInfo> = TODO("Not yet implemented")
 

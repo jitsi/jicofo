@@ -57,14 +57,6 @@ public interface ChatRoomMember
     MemberRole getRole();
 
     /**
-     * Sets the role of this chat room member in its containing room.
-     *
-     * @param role <tt>ChatRoomMemberRole</tt> instance indicating the role
-     * to set for this member in its containing chat room.
-     */
-    void setRole(MemberRole role);
-
-    /**
      * Returns the JID of the user (outside the MUC), i.e. the "real" JID.
      */
     Jid getJid();
