@@ -230,7 +230,8 @@ public class JitsiMeetConferenceImpl
             @NotNull JitsiMeetConfig config,
             Level logLevel,
             String jvbVersion,
-            boolean includeInStatistics)
+            boolean includeInStatistics,
+            @NotNull JicofoServices jicofoServices)
     {
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
@@ -242,20 +243,10 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
 
-        this.jicofoServices = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton());
+        this.jicofoServices = jicofoServices;
         this.jvbVersion = jvbVersion;
 
         logger.info("Created new conference.");
-    }
-
-    public JitsiMeetConferenceImpl(
-            @NotNull EntityBareJid roomName,
-            ConferenceListener listener,
-            @NotNull JitsiMeetConfig config,
-            Level logLevel,
-            String jvbVersion)
-    {
-       this(roomName, listener, config, logLevel, jvbVersion, false);
     }
 
     /**
@@ -1847,7 +1838,7 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    static class SenderCountExceededException extends Exception
+    public static class SenderCountExceededException extends Exception
     {
         SenderCountExceededException(String message)
         {

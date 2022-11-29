@@ -193,19 +193,6 @@ class JingleSession(
         }
     }
 
-    /**
-     * Send a source-add IQ with the specified sources, and wait for a response. Return true if the response is
-     * successful and false otherwise.
-     * Note that this is only used in testing to simulate a source-add IQ being sent from a participant to jicofo. The
-     * tests should probably be changed.
-     */
-    @Throws(SmackException.NotConnectedException::class)
-    fun addSourceAndWaitForResponse(sources: ConferenceSourceMap): Boolean {
-        val response = connection.sendIqAndGetResponse(createAddSourceIq(sources))
-        JingleStats.stanzaSent(JingleAction.SOURCEADD)
-        return response?.type == IQ.Type.result
-    }
-
     private fun createAddSourceIq(sources: ConferenceSourceMap) = JingleIQ(JingleAction.SOURCEADD, sid).apply {
         from = localJid
         type = IQ.Type.set

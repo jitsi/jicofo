@@ -47,9 +47,10 @@ import java.util.logging.Level
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class FocusManager @JvmOverloads constructor(
+class FocusManager(
+    private val jicofoServices: JicofoServices,
     /** Clock to use for pin timeouts. */
-    private val clock: Clock = Clock.systemUTC()
+    private val clock: Clock = Clock.systemUTC(),
 ) : ConferenceListener, ConferenceStore, RegistrationListener {
 
     val logger = createLogger()
@@ -137,7 +138,8 @@ class FocusManager @JvmOverloads constructor(
                 config,
                 logLevel,
                 jvbVersion,
-                includeInStatistics
+                includeInStatistics,
+                jicofoServices
             )
             conferences[room] = conference
             conferencesCache.add(conference)

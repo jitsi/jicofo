@@ -18,47 +18,66 @@
 package org.jitsi.jicofo.xmpp
 
 import io.kotest.core.spec.style.ShouldSpec
-import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.shouldBe
 import io.mockk.mockk
-import mock.xmpp.MockXmppConnection
-import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Nonza
+import org.jivesoftware.smack.packet.Stanza
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.parts.Resourcepart
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
+/**
+ * This tests the bridge between Smack and our [AbstractIqHandler]. [AbstractXMPPConnection] uses its own executors
+ * to process stanzas, and since it's impossible to mock them we're forced to just wait.
+ *
+ * The intention is to leave this as the only test that requires blindly waiting for other threads, while the rest
+ * of the tests can assume that the Smack layer works and can pass IQs directly and synchronously to the intended
+ * IQ handler.
+ */
 class AbstractIqHandlerTest : ShouldSpec() {
     init {
         context("Receiving IQs of both types, on both connections") {
             val jid1 = JidCreate.from("jid1@example.com")
             val jid2 = JidCreate.from("jid2@example.com")
-            val connection1 = MockXmppConnection(jid1)
-            val connection2 = MockXmppConnection(jid2)
-            val handler = DummyIqHandler(setOf(connection1, connection2))
+            val connection1 = TestXmppConnection().apply { connect() }
+            val connection2 = TestXmppConnection().apply { connect() }
 
             val senderJid = JidCreate.from("sender@example.com")
-            val senderConnection = MockXmppConnection(senderJid)
 
-            listOf(IQ.Type.get, IQ.Type.set).forEach { type ->
-                listOf(jid1, jid2).forEach { to ->
-                    val dummyIq = DummyIq().apply {
-                        this.from = senderJid
-                        this.to = to
-                        this.type = type
+            // Pre-construct the IQs we'll send
+            val requests = buildList<IQ> {
+                listOf(IQ.Type.get, IQ.Type.set).forEach { type ->
+                    listOf(jid1, jid2).forEach { to ->
+                        add(
+                            DummyIq().apply {
+                                this.from = senderJid
+                                this.to = to
+                                this.type = type
+                            }
+                        )
                     }
-
-                    val response = senderConnection.sendIqAndGetResponse(dummyIq)
-
-                    response shouldNotBe null
-
-                    response.shouldBeInstanceOf<DummyIq>()
                 }
             }
 
+            // We expect to receive each request from each of the 2 connections
+            val latch = CountDownLatch(2 * requests.size)
+            val handler = DummyIqHandler(setOf(connection1, connection2), latch)
+            requests.forEach {
+                connection1.mockProcessStanza(it)
+                connection2.mockProcessStanza(it)
+            }
+
+            should("Receive all requests") {
+                // This is a very simple test and should complete quickly unless something is completely broken. Use
+                // a very long timeout to prevent false-positives coming from e.g. the test machines not being scheduled
+                // enough CPU cycles.
+                latch.await(1, TimeUnit.MINUTES) shouldBe true
+            }
+
             handler.shutdown()
-            connection1.disconnect()
-            connection2.disconnect()
-            senderConnection.disconnect()
         }
     }
 
@@ -66,21 +85,31 @@ class AbstractIqHandlerTest : ShouldSpec() {
         override fun getIQChildElementBuilder(p0: IQChildElementXmlStringBuilder): IQChildElementXmlStringBuilder =
             mockk()
         companion object {
-            const val ELEMENT = "dummy-namespace"
+            const val ELEMENT = "dummy-name"
             const val NAMESPACE = "dummy-namespace"
         }
     }
 
-    private class DummyIqHandler(connections: Set<AbstractXMPPConnection>) :
-        AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
+    private class DummyIqHandler(
+        connections: Set<AbstractXMPPConnection>,
+        private val latch: CountDownLatch
+    ) : AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
-        override fun handleRequest(request: IqRequest<DummyIq>) = AcceptedWithResponse(
-            DummyIq().apply {
-                type = IQ.Type.result
-                to = request.iq.from
-                from = request.iq.to
-                stanzaId = request.iq.stanzaId
-            }
-        )
+        override fun handleRequest(request: IqRequest<DummyIq>): IqProcessingResult =
+            IqProcessingResult.AcceptedWithNoResponse().also { latch.countDown() }
     }
+}
+
+private class TestXmppConnection : AbstractXMPPConnection(mockk(relaxed = true)) {
+    override fun isSecureConnection(): Boolean = true
+    override fun isUsingCompression(): Boolean = false
+    override fun sendNonza(p0: Nonza?) { }
+    override fun sendStanzaInternal(p0: Stanza?) { }
+    override fun connectInternal() { connected = true }
+    override fun loginInternal(p0: String?, p1: String?, p2: Resourcepart?) { }
+    override fun instantShutdown() { }
+    override fun shutdown() { }
+
+    /** Expose as public. */
+    fun mockProcessStanza(stanza: Stanza) = invokeStanzaCollectorsAndNotifyRecvListeners(stanza)
 }

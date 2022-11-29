@@ -280,6 +280,10 @@ open class Participant @JvmOverloads constructor(
                     delayMs.toLong(),
                     TimeUnit.MILLISECONDS
                 )
+                if (signalQueuedSourcesTask?.isDone == true) {
+                    // In case the executor ran immediately in the same thread (i.e. in tests).
+                    signalQueuedSourcesTask = null
+                }
             }
         }
     }

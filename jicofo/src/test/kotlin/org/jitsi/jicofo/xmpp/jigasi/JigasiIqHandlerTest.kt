@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.jigasi
 
-import MockJigasi
-import MockXmppEndpoint
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.Spec
 import io.kotest.core.spec.style.ShouldSpec
@@ -26,68 +24,81 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConference
+import org.jitsi.jicofo.conference.inPlaceExecutor
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.util.ListConferenceStore
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
+import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
-import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.StanzaError.Condition
+import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 
 class JigasiIqHandlerTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
-    val jicofo = MockXmppEndpoint(JidCreate.from("jicofo@example.com")).apply {
-        // This prevents the test from blocking for the default 15 seconds, and makes sure that jicofo detects a
-        // jigasi timeout before the participant detects a timeout from jicofo.
-        xmppConnection.replyTimeout = 1000
-    }
+    private val jicofo = JidCreate.from("jicofo@example.com")
     private val conferenceJid = JidCreate.entityBareFrom("conference@muc.example.com")
-    private val participant = MockXmppEndpoint(JidCreate.from("$conferenceJid/endpoint_id"))
-    private val jigasi1 = MockJigasi(JidCreate.from("jigasi1@example.com"))
-    private val jigasi2 = MockJigasi(JidCreate.from("jigasi2@example.com"))
-    private val jigasiDetector: JigasiDetector = mockk()
+    private val participant = JidCreate.from("$conferenceJid/endpoint_id")
+    private val jigasi1 = JidCreate.from("jigasi1@example.com")
+    private val jigasi2 = JidCreate.from("jigasi2@example.com")
+    private val jigasiXmppConnection = JigasiXmppConnection()
+    private val jigasiDetector: JigasiDetector = mockk {
+        every { xmppConnection } returns jigasiXmppConnection.xmppConnection
+    }
 
     private val conferenceStore = ListConferenceStore()
-    private val jigasiIqHandler = JigasiIqHandler(setOf(jicofo.xmppConnection), conferenceStore, jigasiDetector)
+    private val jigasiIqHandler = JigasiIqHandler(setOf(), conferenceStore, jigasiDetector)
 
-    private val dialRequest = DialIq().apply {
-        from = participant.jid
-        to = jicofo.jid
-        type = IQ.Type.set
+    private val dialResponses = mutableListOf<Stanza>()
+    private val dialRequest = IqRequest(
+        DialIq().apply {
+            from = participant
+            to = jicofo
+            type = IQ.Type.set
+        },
+        mockk {
+            every { sendStanza(capture(dialResponses)) } returns Unit
+        }
+    )
+
+    override suspend fun beforeSpec(spec: Spec) = super.beforeSpec(spec).also {
+        TaskPools.ioPool = inPlaceExecutor
     }
 
     override suspend fun afterSpec(spec: Spec) = super.afterSpec(spec).also {
-        jicofo.shutdown()
-        participant.shutdown()
-        jigasi1.shutdown()
-        jigasi2.shutdown()
-        jigasiIqHandler.shutdown()
+        TaskPools.resetIoPool()
     }
 
     init {
-        // The XMPPConnection that jicofo uses to send requests to jigasi
-        every { jigasiDetector.xmppConnection } returns jicofo.xmppConnection
-
         context("When the conference doesn't exist") {
-            val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-            response.shouldBeError(Condition.item_not_found)
+            jigasiIqHandler.handleRequest(dialRequest).let {
+                it.shouldBeInstanceOf<RejectedWithError>()
+                it.response.shouldBeError(Condition.item_not_found)
+            }
         }
         context("When the conference exists") {
-            val conference: JitsiMeetConference = mockk()
-            every { conference.roomName } returns conferenceJid
-            every { conference.bridgeRegions } returns emptySet()
-            conferenceStore.apply { add(conference) }
+            val conference: JitsiMeetConference = mockk(relaxed = true) {
+                every { roomName } returns conferenceJid
+            }
+            conferenceStore.add(conference)
 
             context("And rejects the request") {
                 every { conference.acceptJigasiRequest(any()) } returns false
 
-                val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                response.shouldBeError(Condition.forbidden)
+                jigasiIqHandler.handleRequest(dialRequest).let {
+                    it.shouldBeInstanceOf<RejectedWithError>()
+                    it.response.shouldBeError(Condition.forbidden)
+                }
             }
             context("And accepts the request") {
                 every { conference.acceptJigasiRequest(any()) } returns true
@@ -95,41 +106,56 @@ class JigasiIqHandlerTest : ShouldSpec() {
                 context("And there are no Jigasis available") {
                     every { jigasiDetector.selectSipJigasi(any(), any()) } returns null
 
-                    val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                    response.shouldBeError(Condition.service_unavailable)
+                    jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeError(Condition.service_unavailable)
+                    }
                 }
                 context("And the only jigasi instance fails") {
-                    jigasi1.response = MockJigasi.Response.Failure
-                    every { jigasiDetector.selectSipJigasi(any(), any()) } answers { jigasi1.jid } andThen null
+                    jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Failure
+                    every { jigasiDetector.selectSipJigasi(any(), any()) } answers { jigasi1 } andThen null
 
-                    val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                    response.shouldBeError()
+                    jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeError()
+                    }
                 }
                 context("And the only jigasi instance times out") {
-                    jigasi1.response = MockJigasi.Response.Timeout
-                    every { jigasiDetector.selectSipJigasi(any(), any()) } answers { jigasi1.jid } andThen null
+                    jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Timeout
+                    every { jigasiDetector.selectSipJigasi(any(), any()) } answers { jigasi1 } andThen null
 
-                    val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                    response.shouldBeError()
+                    jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeError()
+                    }
                 }
                 context("And the only jigasi instance succeeds") {
-                    jigasi1.response = MockJigasi.Response.Success
-                    every { jigasiDetector.selectSipJigasi(any(), any()) } returns jigasi1.jid
+                    jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Success
+                    every { jigasiDetector.selectSipJigasi(any(), any()) } returns jigasi1
 
-                    val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                    response.shouldBeSuccessful()
+                    jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeSuccessful()
+                    }
                 }
                 context("The first jigasi instance fails, but the second succeeds") {
-                    jigasi1.response = MockJigasi.Response.Failure
-                    jigasi2.response = MockJigasi.Response.Success
+                    jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Failure
+                    jigasiXmppConnection.responses[jigasi2] = JigasiXmppConnection.Response.Success
                     every { jigasiDetector.selectSipJigasi(any(), any()) } answers {
-                        jigasi1.jid
+                        jigasi1
                     } andThenAnswer {
-                        jigasi2.jid
+                        jigasi2
                     }
 
-                    val response = participant.xmppConnection.sendIqAndGetResponse(dialRequest)
-                    response.shouldBeSuccessful()
+                    jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeSuccessful()
+                    }
                 }
             }
         }
@@ -144,4 +170,23 @@ private fun IQ?.shouldBeError(condition: Condition? = null) {
 
 private fun IQ?.shouldBeSuccessful() {
     this.shouldBeInstanceOf<EmptyResultIQ>()
+}
+
+class JigasiXmppConnection : MockXmppConnection() {
+    val responses = mutableMapOf<Jid, Response>()
+    override fun handleIq(iq: IQ): IQ? = when (iq) {
+        is DialIq -> responses.computeIfAbsent(iq.to) { Response.Success }.let {
+            when (it) {
+                Response.Success -> IQ.createResultIQ(iq)
+                Response.Failure -> IQ.createErrorResponse(iq, Condition.internal_server_error)
+                Response.Timeout -> null
+            }
+        }
+        else -> {
+            println("Not handling ${iq.toXML()}")
+            null
+        }
+    }
+
+    enum class Response { Success, Failure, Timeout }
 }
