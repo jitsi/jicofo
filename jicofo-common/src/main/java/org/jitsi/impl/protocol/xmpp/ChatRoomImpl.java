@@ -201,7 +201,7 @@ public class ChatRoomImpl
         eventEmitter.removeHandler(listener);
     }
 
-    void setStartMuted(boolean[] startMuted)
+    public void setStartMuted(boolean[] startMuted)
     {
         eventEmitter.fireEvent(handler -> {
             handler.startMutedChanged(startMuted[0], startMuted[1]);
@@ -553,7 +553,7 @@ public class ChatRoomImpl
         return false;
     }
 
-    Occupant getOccupant(ChatMemberImpl chatMember)
+    public Occupant getOccupant(ChatMemberImpl chatMember)
     {
         return muc.getOccupant(chatMember.getOccupantJid());
     }
@@ -759,7 +759,7 @@ public class ChatRoomImpl
      * @param occupantJid the occupant JID.
      * @return the "real" JID of the occupant, or {@code null}.
      */
-    Jid getJid(EntityFullJid occupantJid)
+    public Jid getJid(EntityFullJid occupantJid)
     {
         Occupant occupant = muc.getOccupant(occupantJid);
         if (occupant == null)
