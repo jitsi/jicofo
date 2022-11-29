@@ -391,7 +391,7 @@ val inPlaceScheduledExecutor: ScheduledExecutorService = mockk() {
 }
 
 /**
- * Mocks an [AbstractXMPPConnection] which responds to colibri2 and Jingle IQs. Creates [RemoteParticipant]s that moodel
+ * Mocks an [AbstractXMPPConnection] which responds to colibri2 and Jingle IQs. Creates [RemoteParticipant]s that model
  * the remote side of a Jingle session.
  */
 class ColibriAndJingleXmppConnection : MockXmppConnection() {
