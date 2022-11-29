@@ -21,8 +21,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHolder
 import org.glassfish.jersey.servlet.ServletContainer
-import org.jitsi.impl.protocol.xmpp.XmppProvider
-import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -40,15 +38,12 @@ import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
-import org.jitsi.jicofo.xmpp.XmppConnectionConfig
-import org.jitsi.jicofo.xmpp.XmppProviderFactory
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
 import org.jitsi.rest.createServer
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
-import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
@@ -59,23 +54,13 @@ import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
  * Start/stop jicofo-specific services.
  */
 @SuppressFBWarnings("MS_CANNOT_BE_FINAL")
-open class JicofoServices {
+class JicofoServices {
     private val logger = createLogger()
 
-    open fun createXmppProviderFactory(): XmppProviderFactory {
+    init {
         // Init smack shit
         initializeSmack()
-        return object : XmppProviderFactory {
-            override fun createXmppProvider(
-                config: XmppConnectionConfig,
-                parentLogger: Logger
-            ): XmppProvider {
-                return XmppProviderImpl(config, parentLogger)
-            }
-        }
     }
-
-    private val xmppProviderFactory: XmppProviderFactory = createXmppProviderFactory()
 
     val focusManager: FocusManager = FocusManager().apply { start() }
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
@@ -84,7 +69,6 @@ open class JicofoServices {
     }
 
     val xmppServices = XmppServices(
-        xmppProviderFactory = xmppProviderFactory,
         conferenceStore = focusManager,
         focusManager = focusManager, // TODO do not use FocusManager directly
         authenticationAuthority = authenticationAuthority

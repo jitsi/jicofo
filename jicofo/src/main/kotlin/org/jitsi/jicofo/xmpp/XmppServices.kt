@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
 import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -28,22 +29,19 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
 class XmppServices(
-    xmppProviderFactory: XmppProviderFactory,
     conferenceStore: ConferenceStore,
     authenticationAuthority: AbstractAuthAuthority?,
     focusManager: FocusManager
 ) {
     private val logger = createLogger()
 
-    val clientConnection: XmppProvider = xmppProviderFactory.createXmppProvider(XmppConfig.client, logger).apply {
+    val clientConnection: XmppProvider = XmppProviderImpl(XmppConfig.client, logger).apply {
         start()
     }
 
     val serviceConnection: XmppProvider = if (XmppConfig.service.enabled) {
         logger.info("Using a dedicated Service XMPP connection.")
-        xmppProviderFactory.createXmppProvider(XmppConfig.service, logger).apply {
-            start()
-        }
+        XmppProviderImpl(XmppConfig.service, logger).apply { start() }
     } else {
         logger.info("No dedicated Service XMPP connection configured, re-using the client XMPP connection.")
         clientConnection
