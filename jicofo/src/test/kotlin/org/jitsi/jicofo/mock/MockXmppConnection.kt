@@ -32,7 +32,7 @@ open class MockXmppConnection {
         }
 
         val stanzaIdSource = object : StanzaIdSource {
-            var stanzaId = 0
+            private var stanzaId = 0
             override fun getNewStanzaId() = "${stanzaId++}"
         }
         every { stanzaFactory } returns StanzaFactory(stanzaIdSource)

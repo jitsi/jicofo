@@ -34,7 +34,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
     }
 
     fun addMember(id: String): ChatRoomMember {
-        val member  = mockk<ChatRoomMember>(relaxed = true) {
+        val member = mockk<ChatRoomMember>(relaxed = true) {
             every { name } returns id
             every { chatRoom } returns this@MockChatRoom.chatRoom
         }

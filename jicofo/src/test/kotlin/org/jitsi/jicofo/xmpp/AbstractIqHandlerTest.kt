@@ -92,17 +92,15 @@ class AbstractIqHandlerTest : ShouldSpec() {
 
     private class DummyIqHandler(
         connections: Set<AbstractXMPPConnection>,
-        private val latch: CountDownLatch) :
-        AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
+        private val latch: CountDownLatch
+    ) : AbstractIqHandler<DummyIq>(connections, DummyIq.ELEMENT, DummyIq.NAMESPACE) {
 
         override fun handleRequest(request: IqRequest<DummyIq>): IqProcessingResult =
             IqProcessingResult.AcceptedWithNoResponse().also { latch.countDown() }
     }
 }
 
-
-private class TestXmppConnection : AbstractXMPPConnection(mockk(relaxed = true) {
-}) {
+private class TestXmppConnection : AbstractXMPPConnection(mockk(relaxed = true)) {
     override fun isSecureConnection(): Boolean = true
     override fun isUsingCompression(): Boolean = false
     override fun sendNonza(p0: Nonza?) { }

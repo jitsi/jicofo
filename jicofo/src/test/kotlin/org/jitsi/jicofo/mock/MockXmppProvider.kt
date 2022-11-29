@@ -23,7 +23,6 @@ import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jxmpp.jid.EntityBareJid
 
-
 class MockXmppProvider(
     val xmppConnection: AbstractXMPPConnection = MockXmppConnection().xmppConnection,
     val jingleIqRequestHandler: JingleIqRequestHandler = mockk(relaxed = true)

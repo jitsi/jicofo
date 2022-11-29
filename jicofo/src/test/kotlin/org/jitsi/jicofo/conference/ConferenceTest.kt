@@ -74,7 +74,7 @@ class ConferenceTest : ShouldSpec() {
         val conference = JitsiMeetConferenceImpl(
             roomName,
             mockk {
-                  every { conferenceEnded(any()) } answers { ended = true }
+                every { conferenceEnded(any()) } answers { ended = true }
             },
             mockk(relaxed = true),
             Level.INFO,
@@ -236,7 +236,6 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
 
         fun createSessionAccept(): JingleIQ {
             val accept = JingleIQ(JingleAction.SESSION_ACCEPT, sessionInitiate.sid).apply {
-                //stanzaId = stanzaIdSource.getNewStanzaId()
                 type = IQ.Type.set
                 from = sessionInitiate.to
                 to = sessionInitiate.from
@@ -251,7 +250,6 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
                 }
             }
 
-            //addLocalAudioSSRC(MockParticipant.nextSSRC())
             val videoContent = ContentPacketExtension().apply {
                 name = "video"
                 creator = ContentPacketExtension.CreatorEnum.responder // xxx
@@ -267,9 +265,7 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
             accept.addContent(videoContent)
 
             return accept
-
         }
-
     }
 }
 
