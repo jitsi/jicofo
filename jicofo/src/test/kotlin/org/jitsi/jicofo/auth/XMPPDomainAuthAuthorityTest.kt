@@ -59,7 +59,6 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
                 machineUID = user1MachineUid
                 to = JidCreate.from("jicofo@example.com")
                 type = IQ.Type.set
-
             }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_authorized
