@@ -42,7 +42,7 @@ class BridgePinTest : ShouldSpec() {
     init {
         context("basic functionality") {
             val clock = FakeClock()
-            val focusManager = FocusManager(clock, mockk())
+            val focusManager = FocusManager(mockk(), clock)
 
             focusManager.pinConference(conf1, v1, Duration.ofMinutes(10))
             focusManager.pinConference(conf2, v2, Duration.ofMinutes(12))
@@ -77,7 +77,7 @@ class BridgePinTest : ShouldSpec() {
         }
         context("modifications") {
             val clock = FakeClock()
-            val focusManager = FocusManager(clock, mockk())
+            val focusManager = FocusManager(mockk(), clock)
 
             focusManager.pinConference(conf1, v1, Duration.ofMinutes(10))
             focusManager.pinConference(conf2, v2, Duration.ofMinutes(12))

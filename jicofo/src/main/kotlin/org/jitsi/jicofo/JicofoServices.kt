@@ -62,7 +62,7 @@ class JicofoServices {
         initializeSmack()
     }
 
-    val focusManager: FocusManager = FocusManager().apply { start() }
+    val focusManager: FocusManager = FocusManager(this).apply { start() }
     val authenticationAuthority: AbstractAuthAuthority? = createAuthenticationAuthority()?.apply {
         start()
         focusManager.addListener(this)

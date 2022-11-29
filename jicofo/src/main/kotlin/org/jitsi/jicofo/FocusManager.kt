@@ -47,10 +47,10 @@ import java.util.logging.Level
  * @author Pawel Domas
  * @author Boris Grozev
  */
-class FocusManager @JvmOverloads constructor(
+class FocusManager(
+    private val jicofoServices: JicofoServices,
     /** Clock to use for pin timeouts. */
     private val clock: Clock = Clock.systemUTC(),
-    private val jicofoServices: JicofoServices = JicofoServices.jicofoServicesSingleton!!
 ) : ConferenceListener, ConferenceStore, RegistrationListener {
 
     val logger = createLogger()
