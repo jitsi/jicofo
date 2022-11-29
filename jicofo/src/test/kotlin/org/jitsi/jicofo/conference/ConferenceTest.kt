@@ -25,6 +25,7 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
+import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -51,6 +52,43 @@ import java.util.concurrent.ExecutorService
 import java.util.logging.Level
 
 class ConferenceTest : ShouldSpec() {
+    private val roomName = JidCreate.entityBareFrom("test@example.com")
+    private val xmppConnection = ColibriAndJingleXmppConnection()
+    private val jingleSessions = mutableListOf<JingleSession>()
+    private val xmppProvider = MockXmppProvider(
+        xmppConnection.xmppConnection,
+        mockk(relaxed = true) {
+            every { registerSession(capture(jingleSessions)) } returns Unit
+        }
+    )
+    private val chatRoom = xmppProvider.getRoom(roomName)
+
+    private var memberCounter = 0
+    private fun nextMemberId() = "member-${memberCounter++}"
+
+    private var ended = false
+    private val conference = JitsiMeetConferenceImpl(
+        roomName,
+        mockk {
+            every { conferenceEnded(any()) } answers { ended = true }
+        },
+        mockk(relaxed = true),
+        Level.INFO,
+        null,
+        false,
+        mockk(relaxed = true) {
+            every { xmppServices } returns mockk(relaxed = true) {
+                every { clientConnection } returns xmppProvider.xmppProvider
+                every { serviceConnection } returns xmppProvider.xmppProvider
+                every { bridgeSelector } returns mockk(relaxed = true) {
+                    every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
+                        every { jid } returns JidCreate.from("jvb@example.com/jvb1")
+                    }
+                }
+            }
+        }
+    ).apply { start() }
+
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
@@ -61,42 +99,21 @@ class ConferenceTest : ShouldSpec() {
         TaskPools.resetIoPool()
     }
 
+    private fun addParticipants(n: Int): List<ChatRoomMember> {
+        val members = buildList { repeat(n) { add(chatRoom.addMember(nextMemberId())) } }
+
+        members.forEach { member ->
+            val remoteParticipant = xmppConnection.remoteParticipants[member.occupantJid]!!
+            val jingleSession = jingleSessions.find { it.sid == remoteParticipant.sessionInitiate.sid }!!
+            jingleSession.processIq(remoteParticipant.createSessionAccept())
+        }
+        return members
+    }
+
+    private fun ChatRoomMember.getParticipant() = conference.getParticipant(occupantJid)
+    private fun ChatRoomMember.getRemoteParticipant() = xmppConnection.remoteParticipants[occupantJid]
+
     init {
-        val roomName = JidCreate.entityBareFrom("test@example.com")
-
-        val xmppConnection = ColibriAndJingleXmppConnection()
-        val jingleSessions = mutableListOf<JingleSession>()
-        val xmppProvider = MockXmppProvider(
-            xmppConnection.xmppConnection,
-            mockk(relaxed = true) {
-                every { registerSession(capture(jingleSessions)) } returns Unit
-            }
-        )
-        val chatRoom = xmppProvider.getRoom(roomName)
-
-        var ended = false
-        val conference = JitsiMeetConferenceImpl(
-            roomName,
-            mockk {
-                every { conferenceEnded(any()) } answers { ended = true }
-            },
-            mockk(relaxed = true),
-            Level.INFO,
-            null,
-            false,
-            mockk(relaxed = true) {
-                every { xmppServices } returns mockk(relaxed = true) {
-                    every { clientConnection } returns xmppProvider.xmppProvider
-                    every { serviceConnection } returns xmppProvider.xmppProvider
-                    every { bridgeSelector } returns mockk(relaxed = true) {
-                        every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
-                            every { jid } returns JidCreate.from("jvb@example.com/jvb1")
-                        }
-                    }
-                }
-            }
-        ).apply { start() }
-
         context("Test inviting 2 participants initially") {
             // Simulate occupants entering the MUC
             val member1 = chatRoom.addMember("member1")
@@ -104,11 +121,11 @@ class ConferenceTest : ShouldSpec() {
 
             conference.participantCount shouldBe 2
 
-            val participant1 = conference.getParticipant(member1.occupantJid)!!
-            val participant2 = conference.getParticipant(member2.occupantJid)!!
+            val participant1 = member1.getParticipant()!!
+            val participant2 = member2.getParticipant()!!
 
-            val remoteParticipant1 = xmppConnection.remoteParticipants[member1.occupantJid]!!
-            val remoteParticipant2 = xmppConnection.remoteParticipants[member2.occupantJid]!!
+            val remoteParticipant1 = member1.getRemoteParticipant()!!
+            val remoteParticipant2 = member2.getRemoteParticipant()!!
 
             val jingleSession1 = jingleSessions.find { it.sid == remoteParticipant1.sessionInitiate.sid }!!
             val jingleSession2 = jingleSessions.find { it.sid == remoteParticipant2.sessionInitiate.sid }!!
@@ -124,11 +141,8 @@ class ConferenceTest : ShouldSpec() {
             participant2.sources.sources.size shouldBe 2
 
             context("And then inviting one more") {
-                val member3 = chatRoom.addMember("member3")
+                addParticipants(1)
                 conference.participantCount shouldBe 3
-                val remoteParticipant3 = xmppConnection.remoteParticipants[member3.occupantJid]!!
-                val jingleSession3 = jingleSessions.find { it.sid == remoteParticipant3.sessionInitiate.sid }!!
-                jingleSession3.processIq(remoteParticipant3.createSessionAccept())
             }
             context("And then leaving") {
                 chatRoom.removeMember(member1)
@@ -141,23 +155,15 @@ class ConferenceTest : ShouldSpec() {
             }
         }
         context("Test inviting more than 2 initially") {
-            val members = buildList {
-                repeat(5) { i ->
-                    add(chatRoom.addMember("member-$i"))
-                }
-            }
-
+            val members = addParticipants(5)
             conference.participantCount shouldBe 5
-            members.forEach { member ->
-                val remoteParticipant = xmppConnection.remoteParticipants[member.occupantJid]!!
-                val jingleSession = jingleSessions.find { it.sid == remoteParticipant.sessionInitiate.sid }!!
-                jingleSession.processIq(remoteParticipant.createSessionAccept())
-            }
 
-            members.forEach { member ->
-                val participant = conference.getParticipant(member.occupantJid)!!
-                participant.jingleSession shouldNotBe null
-                participant.sources.sources.size shouldBe 2
+            members.forEach {member ->
+                member.getParticipant().let {
+                    it shouldNotBe null
+                    it!!.jingleSession shouldNotBe null
+                    it.sources.sources.size shouldBe 2
+                }
             }
 
             members.forEach { chatRoom.removeMember(it) }
