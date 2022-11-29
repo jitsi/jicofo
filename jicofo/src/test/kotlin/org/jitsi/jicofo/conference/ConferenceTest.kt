@@ -35,6 +35,7 @@ import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.MockXmppProvider
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
+import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -244,6 +245,34 @@ class ConferenceTest : ShouldSpec() {
                     chatRoom.chatRoom.apply { every { audioSendersCount } returns 2 }
                     conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
                 }
+            }
+        }
+        context("Muting") {
+            val members = addParticipants(2)
+            val muter = members[0].getParticipant()!!
+            val mutee = members[1].getParticipant()!!
+            fun mute() = conference.handleMuteRequest(muter.mucJid, mutee.mucJid, true, MediaType.AUDIO)
+            fun unmute() = conference.handleMuteRequest(muter.mucJid, mutee.mucJid, false, MediaType.VIDEO)
+
+            context("When the muter is an owner") {
+                muter.chatMember.apply { every { role } returns MemberRole.OWNER }
+                mute() shouldBe MuteResult.SUCCESS
+                unmute() shouldBe MuteResult.NOT_ALLOWED
+            }
+            context("When the muter is a moderator") {
+                muter.chatMember.apply { every { role } returns MemberRole.MODERATOR }
+                mute() shouldBe MuteResult.SUCCESS
+                unmute() shouldBe MuteResult.NOT_ALLOWED
+            }
+            context("When the muter is a participant") {
+                muter.chatMember.apply { every { role } returns MemberRole.PARTICIPANT }
+                mute() shouldBe MuteResult.NOT_ALLOWED
+                unmute() shouldBe MuteResult.NOT_ALLOWED
+            }
+            context("When the muter is a visitor") {
+                muter.chatMember.apply { every { role } returns MemberRole.VISITOR }
+                mute() shouldBe MuteResult.NOT_ALLOWED
+                unmute() shouldBe MuteResult.NOT_ALLOWED
             }
         }
     }
