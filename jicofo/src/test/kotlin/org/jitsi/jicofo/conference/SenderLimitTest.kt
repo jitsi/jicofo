@@ -41,17 +41,7 @@ class SenderLimitTest : ShouldSpec() {
         var ssrcs = 1L
         fun nextSource(mediaType: MediaType) = EndpointSourceSet(Source(ssrcs++, mediaType))
         val roomName = JidCreate.entityBareFrom("test@example.com")
-
-        var videoSenders = 0
-        var audioSenders = 0
-
         val xmppProvider = MockXmppProvider()
-
-        // Add the mocked instance to the provider. The conference will retrieve it from xmppProvider by roomName.
-        xmppProvider.xmppProvider.findOrCreateRoom(roomName).apply {
-            every { videoSendersCount } answers { videoSenders }
-            every { audioSendersCount } answers { audioSenders }
-        }
 
         val conference = JitsiMeetConferenceImpl(
             roomName,
@@ -66,6 +56,7 @@ class SenderLimitTest : ShouldSpec() {
                 }
             }
         ).apply { start() }
+        val chatRoom = conference.chatRoom!!
 
         context("Sender limits") {
             withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
@@ -73,6 +64,8 @@ class SenderLimitTest : ShouldSpec() {
                     ConferenceConfig.config.maxVideoSenders shouldBe 5
                     ConferenceConfig.config.maxAudioSenders shouldBe 5
                 }
+                chatRoom.apply { every { videoSendersCount } returns 0 }
+                chatRoom.apply { every { audioSendersCount } returns 0 }
 
                 context("Video") {
                     val videoSource = nextSource(MediaType.VIDEO)
@@ -84,12 +77,12 @@ class SenderLimitTest : ShouldSpec() {
                         conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.VIDEO)))
                     }
 
-                    videoSenders = 10
+                    chatRoom.apply { every { videoSendersCount } returns 10 }
                     shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
                         conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
                     }
 
-                    videoSenders = 2
+                    chatRoom.apply { every { videoSendersCount } returns 2 }
                     conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
                 }
                 context("Audio") {
@@ -102,12 +95,12 @@ class SenderLimitTest : ShouldSpec() {
                         conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.AUDIO)))
                     }
 
-                    audioSenders = 10
+                    chatRoom.apply { every { audioSendersCount } returns 10 }
                     shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
                         conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
                     }
 
-                    audioSenders = 2
+                    chatRoom.apply { every { audioSendersCount } returns 2 }
                     conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
                 }
             }
