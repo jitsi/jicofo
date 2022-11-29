@@ -315,7 +315,11 @@ open class Participant @JvmOverloads constructor(
             logger.warn("Can not signal remote sources, Jingle session not established.")
             return
         }
-        for ((action, sources) in sourceSignaling.update()) {
+        var modifiedSources: List<SourcesToAddOrRemove>
+        synchronized(sourceSignaling) {
+            modifiedSources = sourceSignaling.update()
+        }
+        for ((action, sources) in modifiedSources) {
             logger.info("Sending a queued source-${action.toString().lowercase()}, sources=$sources")
             if (action === AddOrRemove.Add) {
                 jingleSession.addSource(sources)
