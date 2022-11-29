@@ -166,7 +166,7 @@ class ConferenceTest : ShouldSpec() {
             val members = addParticipants(5)
             conference.participantCount shouldBe 5
 
-            members.forEach {member ->
+            members.forEach { member ->
                 member.getParticipant().let {
                     it shouldNotBe null
                     it!!.jingleSession shouldNotBe null
@@ -371,7 +371,7 @@ val inPlaceExecutor: ExecutorService = mockk {
 val inPlaceScheduledExecutor: ScheduledExecutorService = mockk() {
     every { schedule(any(), any(), any()) } answers {
         firstArg<Runnable>().run()
-        mockk(relaxed = true){
+        mockk(relaxed = true) {
             every { isDone } returns true
         }
     }
@@ -411,10 +411,10 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
                 ?: throw IllegalStateException("session-initiate not received")
 
         fun createSourceAdd(sources: EndpointSourceSet) = JingleIQ(JingleAction.SOURCEADD, sessionInitiate.sid).apply {
-                from = sessionInitiate.to
-                type = IQ.Type.set
-                to = sessionInitiate.from
-                sources.toJingle().forEach { addContent(it) }
+            from = sessionInitiate.to
+            type = IQ.Type.set
+            to = sessionInitiate.from
+            sources.toJingle().forEach { addContent(it) }
         }
         fun createSourceRemove(
             sources: EndpointSourceSet
