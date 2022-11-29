@@ -40,7 +40,7 @@ import org.jxmpp.jid.Jid
  *
  * @author Pawel Domas
  */
-class ChatMemberImpl(
+class ChatRoomMemberImpl(
     /** The full MUC JID (room_name@muc.server.net/nickname) */
     override val occupantJid: EntityFullJid,
     override val chatRoom: ChatRoomImpl,

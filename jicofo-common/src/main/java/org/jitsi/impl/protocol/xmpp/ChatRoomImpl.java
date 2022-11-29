@@ -103,7 +103,7 @@ public class ChatRoomImpl
      */
     private final Consumer<ChatRoomImpl> leaveCallback;
 
-    private final Map<EntityFullJid, ChatMemberImpl> members = new ConcurrentHashMap<>();
+    private final Map<EntityFullJid, ChatRoomMemberImpl> members = new ConcurrentHashMap<>();
 
     /**
      * Local user role.
@@ -432,7 +432,7 @@ public class ChatRoomImpl
         }
         else
         {
-            ChatMemberImpl member = members.get(occupantJid);
+            ChatRoomMemberImpl member = members.get(occupantJid);
             if (member != null)
             {
                 member.resetCachedRole();
@@ -470,7 +470,7 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatMemberImpl getChatMember(EntityFullJid occupantJid)
+    public ChatRoomMemberImpl getChatMember(EntityFullJid occupantJid)
     {
         if (occupantJid == null)
         {
@@ -553,7 +553,7 @@ public class ChatRoomImpl
         return false;
     }
 
-    public Occupant getOccupant(ChatMemberImpl chatMember)
+    public Occupant getOccupant(ChatRoomMemberImpl chatMember)
     {
         return muc.getOccupant(chatMember.getOccupantJid());
     }
@@ -725,13 +725,13 @@ public class ChatRoomImpl
     }
 
     /**
-     * Adds a new {@link ChatMemberImpl} with the given JID to {@link #members}.
+     * Adds a new {@link ChatRoomMemberImpl} with the given JID to {@link #members}.
      * If a member with the given JID already exists, it returns the existing
      * instance.
      * @param jid the JID of the member.
-     * @return the {@link ChatMemberImpl} for the member with the given JID.
+     * @return the {@link ChatRoomMemberImpl} for the member with the given JID.
      */
-    private ChatMemberImpl addMember(EntityFullJid jid)
+    private ChatRoomMemberImpl addMember(EntityFullJid jid)
     {
         synchronized (members)
         {
@@ -740,7 +740,7 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, logger);
+            ChatRoomMemberImpl newMember = new ChatRoomMemberImpl(jid, ChatRoomImpl.this, logger);
 
             members.put(jid, newMember);
 
@@ -826,7 +826,7 @@ public class ChatRoomImpl
             return;
         }
 
-        ChatMemberImpl chatMember;
+        ChatRoomMemberImpl chatMember;
         boolean memberJoined = false;
         boolean memberLeft = false;
 
@@ -976,7 +976,7 @@ public class ChatRoomImpl
         o.put("room_jid", roomJid.toString());
         o.put("my_occupant_jid", String.valueOf(myOccupantJid));
         OrderedJsonObject membersJson = new OrderedJsonObject();
-        for (ChatMemberImpl m : members.values())
+        for (ChatRoomMemberImpl m : members.values())
         {
             membersJson.put(m.getJid(), m.getDebugState());
         }
@@ -1013,11 +1013,11 @@ public class ChatRoomImpl
             }
         }
 
-        private ChatMemberImpl removeMember(EntityFullJid occupantJid)
+        private ChatRoomMemberImpl removeMember(EntityFullJid occupantJid)
         {
             synchronized (members)
             {
-                ChatMemberImpl removed = members.remove(occupantJid);
+                ChatRoomMemberImpl removed = members.remove(occupantJid);
 
                 if (removed == null)
                 {
@@ -1041,7 +1041,7 @@ public class ChatRoomImpl
         @Override
         public void left(EntityFullJid occupantJid)
         {
-            ChatMemberImpl member;
+            ChatRoomMemberImpl member;
 
             synchronized (members)
             {
@@ -1069,7 +1069,7 @@ public class ChatRoomImpl
         @Override
         public void kicked(EntityFullJid occupantJid, Jid actor, String reason)
         {
-            ChatMemberImpl member;
+            ChatRoomMemberImpl member;
 
             synchronized (members)
             {
