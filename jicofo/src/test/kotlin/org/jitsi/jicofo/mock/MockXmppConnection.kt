@@ -19,6 +19,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.StanzaFactory
 import org.jivesoftware.smack.packet.id.StanzaIdSource
 
@@ -29,6 +30,17 @@ open class MockXmppConnection {
             mockk(relaxed = true) {
                 every { nextResult<IQ>() } answers { handleIq(request) }
             }
+        }
+
+        every { trySendStanza(any()) } answers {
+            val request = arg<Stanza>(0)
+            if (request is IQ) handleIq(request)
+            true
+        }
+
+        every { sendStanza(any()) } answers {
+            val request = arg<Stanza>(0)
+            if (request is IQ) handleIq(request)
         }
 
         val stanzaIdSource = object : StanzaIdSource {

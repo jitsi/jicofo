@@ -22,6 +22,7 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
@@ -29,6 +30,7 @@ import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.mock.MockXmppConnection
@@ -46,10 +48,12 @@ import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.logging.Level
 
 class ConferenceTest : ShouldSpec() {
@@ -64,7 +68,7 @@ class ConferenceTest : ShouldSpec() {
     )
     private val chatRoom = xmppProvider.getRoom(roomName)
 
-    private var memberCounter = 0
+    private var memberCounter = 1
     private fun nextMemberId() = "member-${memberCounter++}"
 
     private var ended = false
@@ -94,10 +98,12 @@ class ConferenceTest : ShouldSpec() {
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         TaskPools.ioPool = inPlaceExecutor
+        TaskPools.scheduledPool = inPlaceScheduledExecutor
     }
 
     override suspend fun afterAny(testCase: TestCase, result: TestResult) = super.afterAny(testCase, result).also {
         TaskPools.resetIoPool()
+        TaskPools.resetScheduledPool()
     }
 
     private fun addParticipants(n: Int): List<ChatRoomMember> {
@@ -145,9 +151,10 @@ class ConferenceTest : ShouldSpec() {
                 addParticipants(1)
                 conference.participantCount shouldBe 3
             }
-            context("And then leaving") {
+            context("Single participant timeout") {
                 chatRoom.removeMember(member1)
-                conference.participantCount shouldBe 1
+                // The single-participant timeout should execute immediately and end the jingle session
+                conference.participantCount shouldBe 0
                 ended shouldBe false
 
                 chatRoom.removeMember(member2)
@@ -275,6 +282,78 @@ class ConferenceTest : ShouldSpec() {
                 unmute() shouldBe MuteResult.NOT_ALLOWED
             }
         }
+        context("Signaling sources") {
+            val members = addParticipants(2)
+            val participants = members.map { it.getParticipant()!! }
+            val remoteParticipants = members.map { it.getRemoteParticipant()!! }
+            participants.forEach { it.sources.sources.size shouldBe 2 }
+
+            val member3 = addParticipants(1)[0]
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+            participant3.sources.sources.size shouldBe 2
+
+            remoteParticipants.forEach {
+                val lastJingleMessageSent = it.requests.last()
+                lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
+                fromJingle(lastJingleMessageSent.contentList) shouldBe participant3.sources
+            }
+
+            // Add an additional source
+            val newSource = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.VIDEO))
+            jingleSession3.processIq(remoteParticipant3.createSourceAdd(newSource))
+            remoteParticipants.forEach {
+                val lastJingleMessageSent = it.requests.last()
+                lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
+                fromJingle(lastJingleMessageSent.contentList) shouldBe newSource
+            }
+
+            // Now remove it
+            jingleSession3.processIq(remoteParticipant3.createSourceRemove(newSource))
+            remoteParticipants.forEach {
+                val lastJingleMessageSent = it.requests.last()
+                lastJingleMessageSent.action shouldBe JingleAction.SOURCEREMOVE
+                fromJingle(lastJingleMessageSent.contentList) shouldBe newSource
+            }
+
+            context("Adding sources already signaled") {
+                val sources = remoteParticipant3.sources
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources)).let {
+                    it shouldNotBe null
+                    it.shouldBeInstanceOf<StanzaError>()
+                }
+            }
+            context("Adding sources used by another participant") {
+                val sources = remoteParticipants[1].sources
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources)).let {
+                    it shouldNotBe null
+                    it.shouldBeInstanceOf<StanzaError>()
+                }
+            }
+            context("Adding invalid sources") {
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(remoteParticipant3.sources)).let {
+                    it shouldNotBe null
+                    it.shouldBeInstanceOf<StanzaError>()
+                }
+            }
+            context("A participant leaving") {
+                val newSource2 = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.AUDIO))
+                participant3.jingleSession!!.processIq(remoteParticipant3.createSourceAdd(newSource2))
+                remoteParticipants.forEach {
+                    val lastJingleMessageSent = it.requests.last()
+                    lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
+                    fromJingle(lastJingleMessageSent.contentList) shouldBe newSource2
+                }
+
+                chatRoom.removeMember(member3)
+                remoteParticipants.forEach {
+                    val lastJingleMessageSent = it.requests.last()
+                    // A source-remove should NOT have been sent on leave.
+                    lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
+                }
+            }
+        }
     }
 }
 
@@ -286,6 +365,15 @@ val inPlaceExecutor: ExecutorService = mockk {
     }
     every { execute(any()) } answers {
         firstArg<Runnable>().run()
+    }
+}
+
+val inPlaceScheduledExecutor: ScheduledExecutorService = mockk() {
+    every { schedule(any(), any(), any()) } answers {
+        firstArg<Runnable>().run()
+        mockk(relaxed = true){
+            every { isDone } returns true
+        }
     }
 }
 
@@ -321,6 +409,23 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
         val sessionInitiate: JingleIQ
             get() = requests.find { it.action == JingleAction.SESSION_INITIATE }
                 ?: throw IllegalStateException("session-initiate not received")
+
+        fun createSourceAdd(sources: EndpointSourceSet) = JingleIQ(JingleAction.SOURCEADD, sessionInitiate.sid).apply {
+                from = sessionInitiate.to
+                type = IQ.Type.set
+                to = sessionInitiate.from
+                sources.toJingle().forEach { addContent(it) }
+        }
+        fun createSourceRemove(
+            sources: EndpointSourceSet
+        ) = JingleIQ(JingleAction.SOURCEREMOVE, sessionInitiate.sid).apply {
+            from = sessionInitiate.to
+            type = IQ.Type.set
+            to = sessionInitiate.from
+            sources.toJingle().forEach { addContent(it) }
+        }
+
+        fun nextSource(mediaType: MediaType) = this@ColibriAndJingleXmppConnection.nextSource(mediaType)
 
         fun createSessionAccept(): JingleIQ {
             val accept = JingleIQ(JingleAction.SESSION_ACCEPT, sessionInitiate.sid).apply {
