@@ -22,7 +22,7 @@ import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaFactory
 import org.jivesoftware.smack.packet.id.StanzaIdSource
 
-class MockXmppConnection(handleIq: (IQ) -> IQ? = { null }) {
+open class MockXmppConnection {
     val xmppConnection: AbstractXMPPConnection = mockk(relaxed = true) {
         every { createStanzaCollectorAndSend(any()) } answers {
             val request = arg<IQ>(0)
@@ -37,4 +37,6 @@ class MockXmppConnection(handleIq: (IQ) -> IQ? = { null }) {
         }
         every { stanzaFactory } returns StanzaFactory(stanzaIdSource)
     }
+
+    open fun handleIq(iq: IQ): IQ? = null
 }

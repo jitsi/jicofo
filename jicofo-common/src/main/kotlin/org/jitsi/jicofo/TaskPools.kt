@@ -17,16 +17,22 @@
  */
 package org.jitsi.jicofo
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 
+@SuppressFBWarnings("NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR")
 class TaskPools {
     companion object {
-        @JvmStatic
-        val ioPool: ExecutorService =
+        private val defaultIoPool: ExecutorService =
             Executors.newCachedThreadPool(CustomizableThreadFactory("Jicofo Global IO Pool", false))
+
+        @JvmStatic
+        var ioPool: ExecutorService = defaultIoPool
+
+        fun resetIoPool() { ioPool = defaultIoPool }
 
         @JvmStatic
         val scheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(

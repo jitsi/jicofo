@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
+import java.lang.IllegalArgumentException
 
 class MockChatRoom(val xmppProvider: XmppProvider) {
     val chatRoomListeners = mutableListOf<ChatRoomListener>()
@@ -32,8 +33,19 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
     }
 
-    fun addMember(member: ChatRoomMember) {
+    fun addMember(id: String): ChatRoomMember {
+        val member  = mockk<ChatRoomMember>(relaxed = true) {
+            every { name } returns id
+            every { chatRoom } returns this@MockChatRoom.chatRoom
+        }
         memberList.add(member)
         chatRoomListeners.forEach { it.memberJoined(member) }
+        return member
+    }
+
+    fun removeMember(member: ChatRoomMember) {
+        if (!memberList.contains(member)) throw IllegalArgumentException("not a member")
+        memberList.remove(member)
+        chatRoomListeners.forEach { it.memberLeft(member) }
     }
 }

@@ -19,12 +19,14 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.discovery.DiscoveryUtil
+import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jxmpp.jid.EntityBareJid
 
 
 class MockXmppProvider(
-    val xmppConnection: AbstractXMPPConnection = MockXmppConnection().xmppConnection
+    val xmppConnection: AbstractXMPPConnection = MockXmppConnection().xmppConnection,
+    val jingleIqRequestHandler: JingleIqRequestHandler = mockk(relaxed = true)
 ) {
     val chatRooms = mutableMapOf<EntityBareJid, MockChatRoom>()
     val xmppProvider = mockk<XmppProvider>(relaxed = true) {
@@ -32,6 +34,7 @@ class MockXmppProvider(
         every { findOrCreateRoom(any()) } answers { getRoom(arg(0)).chatRoom }
         every { discoverFeatures(any()) } returns DiscoveryUtil.getDefaultParticipantFeatureSet()
         every { xmppConnection } returns this@MockXmppProvider.xmppConnection
+        every { jingleIqRequestHandler } returns this@MockXmppProvider.jingleIqRequestHandler
     }
 
     fun getRoom(jid: EntityBareJid): MockChatRoom =
