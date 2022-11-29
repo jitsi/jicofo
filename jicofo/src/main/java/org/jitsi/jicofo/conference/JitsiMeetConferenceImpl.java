@@ -679,8 +679,8 @@ public class JitsiMeetConferenceImpl
                 this,
                 getColibriSessionManager(),
                 participant,
-                hasToStartAudioMuted(participant, justJoined),
-                hasToStartVideoMuted(participant, justJoined),
+                hasToStartAudioMuted(justJoined),
+                hasToStartVideoMuted(justJoined),
                 reInvite,
                 logger
         );
@@ -696,10 +696,10 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns true if {@code participant} should be invited with the "start audio muted" option given that they just
+     * Returns true if a participant should be invited with the "start audio muted" option given that they just
      * joined or are being re-invited (depending on the value of {@code justJoined}.
      */
-    private boolean hasToStartAudioMuted(@NotNull Participant participant, boolean justJoined)
+    private boolean hasToStartAudioMuted(boolean justJoined)
     {
         if (startAudioMuted && justJoined)
         {
@@ -712,14 +712,14 @@ public class JitsiMeetConferenceImpl
         {
             limit = Math.min(limit, startAudioMutedInt);
         }
-        return participant.getChatMember().getJoinOrderNumber() > limit;
+        return getParticipantCount() > limit;
     }
 
     /**
-     * Returns true if {@code participant} should be invited with the "start video muted" option given that they just
+     * Returns true if a participant should be invited with the "start video muted" option given that they just
      * joined or are being re-invited (depending on the value of {@code justJoined}.
      */
-    private boolean hasToStartVideoMuted(@NotNull Participant participant, boolean justJoined)
+    private boolean hasToStartVideoMuted(boolean justJoined)
     {
         if (startVideoMuted && justJoined)
         {
@@ -732,7 +732,7 @@ public class JitsiMeetConferenceImpl
         {
             limit = Math.min(limit, startVideoMutedInt);
         }
-        return participant.getChatMember().getJoinOrderNumber() > limit;
+        return getParticipantCount() > limit;
     }
 
     /**

@@ -56,8 +56,7 @@ class DebugStateTest : ShouldSpec() {
             val member = ChatMemberImpl(
                 JidCreate.entityFullFrom("conference@example.com/member"),
                 chatRoom,
-                mockk(relaxed = true),
-                0
+                mockk(relaxed = true)
             )
             member.debugState.shouldBeValidJson()
         }

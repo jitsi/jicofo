@@ -72,13 +72,6 @@ public interface ChatRoomMember
     EntityFullJid getOccupantJid();
 
     /**
-     * Returns number based on the order of joining of the members in the room.
-     * @return number based on the order of joining of the members in the room.
-     * TODO: only needed because of startMuted, remove once startMuted is client side.
-     */
-    int getJoinOrderNumber();
-
-    /**
      * Obtains the last MUC <tt>Presence</tt> seen for this chat member.
      * @return the last {@link Presence} packet received for this
      *         <tt>XmppChatMember</tt> or <tt>null</tt> if we haven't received

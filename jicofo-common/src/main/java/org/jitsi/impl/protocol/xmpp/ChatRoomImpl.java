@@ -740,7 +740,7 @@ public class ChatRoomImpl
                 return members.get(jid);
             }
 
-            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, logger, members.size() + 1);
+            ChatMemberImpl newMember = new ChatMemberImpl(jid, ChatRoomImpl.this, logger);
 
             members.put(jid, newMember);
 

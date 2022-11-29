@@ -135,7 +135,6 @@ class JibriChatRoomMember(
     override fun getJid(): Jid = TODO("Not yet implemented")
     override fun getSourceInfos(): MutableSet<SourceInfo> = TODO("Not yet implemented")
 
-    override fun getJoinOrderNumber(): Int = TODO("Not yet implemented")
     override fun isRobot(): Boolean = TODO("Not yet implemented")
     override fun isJigasi(): Boolean = TODO("Not yet implemented")
     override fun isJibri(): Boolean = TODO("Not yet implemented")

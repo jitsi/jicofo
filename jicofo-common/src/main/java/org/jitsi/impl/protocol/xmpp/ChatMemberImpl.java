@@ -63,11 +63,6 @@ public class ChatMemberImpl
     private final ChatRoomImpl chatRoom;
 
     /**
-     * Join order number
-     */
-    private final int joinOrderNumber;
-
-    /**
      * Full MUC address:
      * room_name@muc.server.net/nickname
      */
@@ -114,13 +109,11 @@ public class ChatMemberImpl
     @NotNull
     private Set<SourceInfo> sourceInfos = Collections.emptySet();
 
-    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom, Logger parentLogger,
-                          int joinOrderNumber)
+    public ChatMemberImpl(EntityFullJid fullJid, ChatRoomImpl chatRoom, Logger parentLogger)
     {
         this.occupantJid = fullJid;
         this.resourcepart = fullJid.getResourceOrThrow();
         this.chatRoom = chatRoom;
-        this.joinOrderNumber = joinOrderNumber;
         this.logger = parentLogger.createChildLogger(getClass().getName());
         logger.addContext("occupant", resourcepart.toString());
     }
@@ -191,12 +184,6 @@ public class ChatMemberImpl
             jid = chatRoom.getJid(occupantJid);
         }
         return jid;
-    }
-
-    @Override
-    public int getJoinOrderNumber()
-    {
-        return joinOrderNumber;
     }
 
     /**
@@ -417,7 +404,6 @@ public class ChatMemberImpl
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("resourcepart", resourcepart.toString());
         o.put("region", String.valueOf(region));
-        o.put("join_order_number", joinOrderNumber);
         o.put("occupant_jid", occupantJid.toString());
         o.put("jid", String.valueOf(jid));
         o.put("robot", robot);
