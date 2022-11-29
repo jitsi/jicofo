@@ -107,7 +107,7 @@ private class TestXmppConnection : AbstractXMPPConnection(mockk(relaxed = true) 
     override fun isUsingCompression(): Boolean = false
     override fun sendNonza(p0: Nonza?) { }
     override fun sendStanzaInternal(p0: Stanza?) { }
-    override fun connectInternal() {}
+    override fun connectInternal() { connected = true }
     override fun loginInternal(p0: String?, p1: String?, p2: Resourcepart?) { }
     override fun instantShutdown() { }
     override fun shutdown() { }
