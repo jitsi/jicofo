@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import io.kotest.matchers.shouldNotBe
+import io.kotest.core.spec.style.ShouldSpec
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatMemberImpl
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
-import org.jitsi.jicofo.JicofoHarnessTest
-import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.FocusManager
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.jibri.JibriChatRoomMember
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.utils.OrderedJsonObject
-import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.EntityFullJid
@@ -34,33 +33,37 @@ import org.jxmpp.jid.impl.JidCreate
 /**
  * All debugState interfaces should produce valid JSON.
  */
-class DebugStateTest : JicofoHarnessTest() {
+class DebugStateTest : ShouldSpec() {
     init {
-        context("JicofoServices and JitsiMeetConference") {
+        context("BridgeSelector") {
+            val bridgeSelector = BridgeSelector().apply { addJvbAddress(JidCreate.from("jvb")) }
+            bridgeSelector.debugState.shouldBeValidJson()
+        }
+        context("FocusManager") {
             val conferenceJid = JidCreate.entityBareFrom("conference@example.com")
-            val logger = LoggerImpl("test")
 
-            harness.jicofoServices.bridgeSelector.addJvbAddress(JidCreate.from("jvb"))
-            harness.jicofoServices.focusManager.conferenceRequest(conferenceJid, emptyMap())
+            val focusManager = FocusManager(jicofoServices = mockk(relaxed = true)).apply {
+                conferenceRequest(conferenceJid, emptyMap())
+            }
+            focusManager.getDebugState(true).shouldBeValidJson()
+        }
+        context("ChatRoomImpl and members") {
+            val conferenceJid = JidCreate.entityBareFrom("conference@example.com")
 
-            harness.jicofoServices.getDebugState(true).shouldBeValidJson()
-
-            val conference = harness.jicofoServices.focusManager.getConference(conferenceJid)
-            conference shouldNotBe null
-            conference!!.debugState.shouldBeValidJson()
-
-            val chatRoom = ChatRoomImpl(harness.xmppProvider, conferenceJid) { }
+            val chatRoom = ChatRoomImpl(mockk(relaxed = true), conferenceJid) { }
             chatRoom.debugState.shouldBeValidJson()
 
-            val member = ChatMemberImpl(JidCreate.entityFullFrom("conference@example.com/member"), chatRoom, logger, 0)
+            val member = ChatMemberImpl(
+                JidCreate.entityFullFrom("conference@example.com/member"),
+                chatRoom,
+                mockk(relaxed = true),
+                0
+            )
             member.debugState.shouldBeValidJson()
-
-            val participant = Participant(member, conference)
-            participant.debugState.shouldBeValidJson()
         }
         context("Jigasi detector") {
             val jigasiDetector = JigasiDetector(
-                harness.jicofoServices.xmppServices.clientConnection,
+                mockk(relaxed = true),
                 JidCreate.entityBareFrom("JigasiBrewery@example.com")
             )
             jigasiDetector.processMemberPresence(
@@ -71,7 +74,7 @@ class DebugStateTest : JicofoHarnessTest() {
         }
         context("Jibri detector") {
             val jibriDetector = JibriDetector(
-                harness.jicofoServices.xmppServices.clientConnection,
+                mockk(relaxed = true),
                 JidCreate.entityBareFrom("JibriBrewery@example.com"),
                 false
             )
@@ -87,7 +90,7 @@ class DebugStateTest : JicofoHarnessTest() {
     }
 }
 
-fun OrderedJsonObject.shouldBeValidJson() = JSONParser().parse(this.toJSONString())
+fun OrderedJsonObject.shouldBeValidJson() { JSONParser().parse(this.toJSONString()) }
 
 private fun jigasiChatMember(jid: EntityFullJid) = mockk<ChatRoomMember> {
     every { occupantJid } returns jid

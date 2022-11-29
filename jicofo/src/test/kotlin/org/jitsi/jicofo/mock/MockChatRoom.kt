@@ -21,6 +21,7 @@ import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
+import org.jitsi.utils.OrderedJsonObject
 import java.lang.IllegalArgumentException
 
 class MockChatRoom(val xmppProvider: XmppProvider) {
@@ -31,6 +32,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
         every { members } returns memberList
         every { membersCount } answers { memberList.size }
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
+        every { debugState } returns OrderedJsonObject()
     }
 
     fun addMember(id: String): ChatRoomMember {

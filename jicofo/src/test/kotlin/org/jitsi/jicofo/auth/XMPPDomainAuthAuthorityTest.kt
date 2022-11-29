@@ -1,8 +1,11 @@
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.jicofo.JicofoHarnessTest
+import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -12,7 +15,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
-class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
+class XMPPDomainAuthAuthorityTest : ShouldSpec() {
     private val authDomain = "auth.server.net"
     private val guestDomain = "guest.server.net"
     private val authAuthority = XMPPDomainAuthAuthority(
@@ -20,16 +23,19 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         Duration.ofDays(1),
         JidCreate.domainBareFrom(authDomain)
     )
+    val focusManager = mockk<FocusManager>(relaxed = true)
 
     /** The authentication logic is shared between [XMPPDomainAuthAuthority] and the IQ handler, so we test both. */
     private val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = mockk(relaxed = true),
-        focusManager = harness.jicofoServices.focusManager,
+        focusManager = focusManager,
         focusAuthJid = "",
         isFocusAnonymous = true,
         authAuthority = authAuthority,
         jigasiEnabled = false
     )
+
+    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
 
     init {
         val user1GuestJid = JidCreate.from("user1@$guestDomain")
@@ -44,15 +50,17 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         val room2 = JidCreate.entityBareFrom("newroom@example.com")
         val room3 = JidCreate.entityBareFrom("newroom2@example.com")
 
-        val query = ConferenceIq()
-
         context("CASE 1: guest Domain, no session-id passed and room does not exist") {
-            query.from = user1GuestJid
-            query.sessionId = null
-            query.room = room1
-            query.machineUID = user1MachineUid
-            query.to = harness.jicofoServices.jicofoJid
-            query.type = IQ.Type.set
+            every { focusManager.getConference(any()) } returns null
+            val query = ConferenceIq().apply {
+                from = user1GuestJid
+                sessionId = null
+                room = room1
+                machineUID = user1MachineUid
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+
+            }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_authorized
         }
@@ -60,10 +68,15 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         // Save the session ID that will be created with the request below
         lateinit var user1SessionId: String
         context("CASE 2: Auth domain, no session-id and room does not exist") {
-            query.from = user1AuthJid
-            query.sessionId = null
-            query.room = room1
-            query.machineUID = user1MachineUid
+            every { focusManager.getConference(any()) } returns null
+            val query = ConferenceIq().apply {
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                from = user1AuthJid
+                sessionId = null
+                room = room1
+                machineUID = user1MachineUid
+            }
 
             conferenceIqHandler.handleConferenceIq(query).let {
                 it.shouldBeInstanceOf<ConferenceIq>()
@@ -73,21 +86,33 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         }
 
         context("CASE 3: guest domain, no session-id, room exists") {
-            query.from = user2GuestJid
-            query.sessionId = null
-            query.machineUID = user2MachineUid
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                to = JidCreate.from("jicofo@example.com")
+                from = user2GuestJid
+                sessionId = null
+                room = room1
+                machineUID = user2MachineUid
+            }
 
+            println("query=${query.toXML()}")
             conferenceIqHandler.handleConferenceIq(query).let {
+                println("XXX ${it.toXML()}")
                 it.shouldBeInstanceOf<ConferenceIq>()
                 it.sessionId shouldBe null
             }
         }
 
         context("CASE 4: guest domain, session-id, room does not exists") {
-            query.from = user1GuestJid
-            query.sessionId = user1SessionId
-            query.machineUID = user1MachineUid
-            query.room = room2
+            every { focusManager.getConference(any()) } returns null
+            val query = ConferenceIq().apply {
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                from = user1GuestJid
+                sessionId = user1SessionId
+                machineUID = user1MachineUid
+                room = room2
+            }
 
             conferenceIqHandler.handleConferenceIq(query).let {
                 it.shouldBeInstanceOf<ConferenceIq>()
@@ -96,9 +121,15 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         }
 
         context("CASE 5: guest jid, invalid session-id, room exists") {
-            query.from = user2GuestJid
-            query.sessionId = "someinvalidsessionid"
-            query.machineUID = user2MachineUid
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                room = room2
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                from = user2GuestJid
+                sessionId = "someinvalidsessionid"
+                machineUID = user2MachineUid
+            }
 
             conferenceIqHandler.handleConferenceIq(query).let {
                 val sessionInvalidPacketExtension: SessionInvalidPacketExtension =
@@ -111,43 +142,72 @@ class XMPPDomainAuthAuthorityTest : JicofoHarnessTest() {
         }
 
         context("CASE 6: do not allow to use session-id from different machine") {
-            query.sessionId = user1SessionId
-            query.from = user2GuestJid
-            query.machineUID = user2MachineUid
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                room = room2
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                sessionId = user1SessionId
+                from = user2GuestJid
+                machineUID = user2MachineUid
+            }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_acceptable
         }
 
         context("CASE 7: auth jid, but stolen session id") {
-            query.sessionId = user1SessionId
-            query.from = user2GuestJid
-            query.machineUID = user2MachineUid
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                room = room2
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                sessionId = user1SessionId
+                from = user2GuestJid
+                machineUID = user2MachineUid
+            }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_acceptable
         }
 
         context("CASE 8: guest jid, session used without machine UID") {
-            query.from = user1GuestJid
-            query.sessionId = user1SessionId
-            query.machineUID = null
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                room = room2
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                from = user1GuestJid
+                sessionId = user1SessionId
+                machineUID = null
+            }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_acceptable
         }
 
         context("CASE 9: auth jid, try to create session without machine UID") {
-            query.room = room3
-            query.from = user2AuthJid
-            query.sessionId = null
-            query.machineUID = null
+            every { focusManager.getConference(any()) } returns mockk()
+            val query = ConferenceIq().apply {
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                room = room3
+                from = user2AuthJid
+                sessionId = null
+                machineUID = null
+            }
 
             conferenceIqHandler.handleConferenceIq(query).error.condition shouldBe Condition.not_acceptable
         }
 
         context("CASE 10: same user, different machine UID - assign separate session") {
+            every { focusManager.getConference(any()) } returns mockk()
             val user3MachineUID = "user3machineUID"
-            query.from = user1AuthJid
-            query.machineUID = user3MachineUID
-            query.sessionId = null
+            val query = ConferenceIq().apply {
+                room = room3
+                to = JidCreate.from("jicofo@example.com")
+                type = IQ.Type.set
+                from = user1AuthJid
+                machineUID = user3MachineUID
+                sessionId = null
+            }
 
             conferenceIqHandler.handleConferenceIq(query).let {
                 it.shouldBeInstanceOf<ConferenceIq>()

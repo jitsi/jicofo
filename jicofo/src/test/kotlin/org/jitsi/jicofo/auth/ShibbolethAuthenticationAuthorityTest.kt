@@ -18,11 +18,13 @@
 package org.jitsi.jicofo.auth
 
 import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.jicofo.JicofoHarnessTest
+import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.days
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -38,36 +40,38 @@ import org.jxmpp.jid.impl.JidCreate
  *
  * @author Pawel Domas
  */
-class ShibbolethAuthenticationAuthorityTest : JicofoHarnessTest() {
-    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
-
+class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
+    private val room = JidCreate.entityBareFrom("testroom1-shibboeth@example.com")
     private val shibbolethAuth = ShibbolethAuthAuthority(
         true,
         1.days,
         ShibbolethAuthAuthority.DEFAULT_URL_CONST,
         ShibbolethAuthAuthority.DEFAULT_URL_CONST
     )
+    private val focusManager = mockk<FocusManager>(relaxed = true)
+
     /** The authentication logic is shared between [ShibbolethAuthAuthority] and the IQ handler, so we test both. */
     private val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = mockk(relaxed = true),
-        focusManager = harness.jicofoServices.focusManager,
+        focusManager = focusManager,
         focusAuthJid = "",
         isFocusAnonymous = true,
         authAuthority = shibbolethAuth,
         jigasiEnabled = false
     )
 
+    override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
+
     init {
         context("Shibboleth authentication") {
-
-            val room = JidCreate.entityBareFrom("testroom1-shibboeth@example.com")
             val query = ConferenceIq().apply {
-                to = harness.jicofoServices.jicofoJid
+                to = JidCreate.from("jicofo@example.com")
                 type = IQ.Type.set
-                this.room = room
+                room = this@ShibbolethAuthenticationAuthorityTest.room
             }
 
             context("When the room does not exist") {
+                every { focusManager.getConference(any()) } returns null
                 val machineUid = "machineUid"
                 val identity = "user1@shibboleth.idp.com"
                 query.from = JidCreate.entityBareFrom("user1@server.net")
@@ -88,6 +92,7 @@ class ShibbolethAuthenticationAuthorityTest : JicofoHarnessTest() {
             }
 
             context("When the room exists") {
+                every { focusManager.getConference(any()) } returns mockk()
                 val userJid = JidCreate.from("user2@server.net")
                 val machineUid = "machine2uid"
                 val shibbolethIdentity = "user2@shibboleth.idp.com"

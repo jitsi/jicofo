@@ -39,6 +39,7 @@ import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
@@ -51,6 +52,7 @@ import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
+import shouldBeValidJson
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -77,7 +79,7 @@ class ConferenceTest : ShouldSpec() {
         mockk {
             every { conferenceEnded(any()) } answers { ended = true }
         },
-        mockk(relaxed = true),
+        mockk(relaxed = true) { every { debugState } returns OrderedJsonObject() },
         Level.INFO,
         null,
         false,
@@ -88,6 +90,7 @@ class ConferenceTest : ShouldSpec() {
                 every { bridgeSelector } returns mockk(relaxed = true) {
                     every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
                         every { jid } returns JidCreate.from("jvb@example.com/jvb1")
+                        every { debugState } returns OrderedJsonObject()
                     }
                 }
             }
@@ -352,6 +355,16 @@ class ConferenceTest : ShouldSpec() {
                     // A source-remove should NOT have been sent on leave.
                     lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
                 }
+            }
+        }
+        context("Debug state") {
+            conference.debugState.shouldBeValidJson()
+
+            val members = addParticipants(5)
+
+            conference.debugState.shouldBeValidJson()
+            members.map { it.getParticipant()!! }.forEach {
+                it.debugState.shouldBeValidJson()
             }
         }
     }
