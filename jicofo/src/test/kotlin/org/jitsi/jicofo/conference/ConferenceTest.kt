@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -23,9 +24,12 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.config.withNewConfig
+import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
+import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.MockXmppProvider
 import org.jitsi.jicofo.mock.TestColibri2Server
@@ -186,6 +190,55 @@ class ConferenceTest : ShouldSpec() {
             members.take(3).forEach { chatRoom.removeMember(it) }
             conference.participantCount shouldBe 0
             ended shouldBe true
+        }
+        context("Sender limits") {
+            withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
+                context("Configuration") {
+                    ConferenceConfig.config.maxVideoSenders shouldBe 5
+                    ConferenceConfig.config.maxAudioSenders shouldBe 5
+                }
+                chatRoom.chatRoom.apply { every { videoSendersCount } returns 0 }
+                chatRoom.chatRoom.apply { every { audioSendersCount } returns 0 }
+                var ssrcs = 1L
+                fun nextSource(mediaType: MediaType) = EndpointSourceSet(Source(ssrcs++, mediaType))
+
+                context("Video") {
+                    val videoSource = nextSource(MediaType.VIDEO)
+                    conference.addSource(mockk(relaxed = true), videoSource)
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), videoSource)
+                    }
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.VIDEO)))
+                    }
+
+                    chatRoom.chatRoom.apply { every { videoSendersCount } returns 10 }
+                    shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
+                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
+                    }
+
+                    chatRoom.chatRoom.apply { every { videoSendersCount } returns 2 }
+                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
+                }
+                context("Audio") {
+                    val audioSource = nextSource(MediaType.AUDIO)
+                    conference.addSource(mockk(relaxed = true), audioSource)
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), audioSource)
+                    }
+                    shouldThrow<ValidationFailedException> {
+                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.AUDIO)))
+                    }
+
+                    chatRoom.chatRoom.apply { every { audioSendersCount } returns 10 }
+                    shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
+                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
+                    }
+
+                    chatRoom.chatRoom.apply { every { audioSendersCount } returns 2 }
+                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
+                }
+            }
         }
     }
 }
