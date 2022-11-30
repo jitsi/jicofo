@@ -26,7 +26,6 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -37,6 +36,7 @@ import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.MockXmppProvider
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -265,22 +265,22 @@ class ConferenceTest : ShouldSpec() {
             fun unmute() = conference.handleMuteRequest(muter.mucJid, mutee.mucJid, false, MediaType.VIDEO)
 
             context("When the muter is an owner") {
-                muter.chatMember.apply { every { role } returns MemberRole.OWNER }
+                every { muter.chatMember.role } returns MemberRole.OWNER
                 mute() shouldBe MuteResult.SUCCESS
                 unmute() shouldBe MuteResult.NOT_ALLOWED
             }
             context("When the muter is a moderator") {
-                muter.chatMember.apply { every { role } returns MemberRole.MODERATOR }
+                every { muter.chatMember.role } returns MemberRole.MODERATOR
                 mute() shouldBe MuteResult.SUCCESS
                 unmute() shouldBe MuteResult.NOT_ALLOWED
             }
             context("When the muter is a participant") {
-                muter.chatMember.apply { every { role } returns MemberRole.PARTICIPANT }
+                every { muter.chatMember.role } returns MemberRole.PARTICIPANT
                 mute() shouldBe MuteResult.NOT_ALLOWED
                 unmute() shouldBe MuteResult.NOT_ALLOWED
             }
             context("When the muter is a visitor") {
-                muter.chatMember.apply { every { role } returns MemberRole.VISITOR }
+                every { muter.chatMember.role } returns MemberRole.VISITOR
                 mute() shouldBe MuteResult.NOT_ALLOWED
                 unmute() shouldBe MuteResult.NOT_ALLOWED
             }

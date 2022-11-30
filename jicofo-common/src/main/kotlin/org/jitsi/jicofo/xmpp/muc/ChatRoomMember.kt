@@ -34,7 +34,7 @@ import org.jxmpp.jid.Jid
 interface ChatRoomMember {
     val chatRoom: ChatRoom
     /** The ID of this member. Set to the resource part of the occupant JID. */
-    val name: String?
+    val name: String
 
     /** The role of this chat room member in its containing room. */
     val role: MemberRole?
@@ -43,10 +43,10 @@ interface ChatRoomMember {
     val jid: Jid?
 
     /** Get the latest [SourceInfo]s advertised by this chat member in presence. */
-    val sourceInfos: Set<SourceInfo?>
+    val sourceInfos: Set<SourceInfo>
 
     /** The occupant JID of the member in the chat room */
-    val occupantJid: EntityFullJid?
+    val occupantJid: EntityFullJid
 
     /** The last [Presence] packet received for this member (or null it if no presence has been received yet) */
     val presence: Presence?

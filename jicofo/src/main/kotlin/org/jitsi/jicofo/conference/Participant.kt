@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference
 
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
@@ -32,6 +31,7 @@ import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights

@@ -16,14 +16,14 @@
 import io.kotest.core.spec.style.ShouldSpec
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.ChatMemberImpl
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.jibri.JibriChatRoomMember
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMemberImpl
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.parser.JSONParser
@@ -53,7 +53,7 @@ class DebugStateTest : ShouldSpec() {
             val chatRoom = ChatRoomImpl(mockk(relaxed = true), conferenceJid) { }
             chatRoom.debugState.shouldBeValidJson()
 
-            val member = ChatMemberImpl(
+            val member = ChatRoomMemberImpl(
                 JidCreate.entityFullFrom("conference@example.com/member"),
                 chatRoom,
                 mockk(relaxed = true)

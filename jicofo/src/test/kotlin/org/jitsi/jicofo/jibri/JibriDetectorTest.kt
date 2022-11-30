@@ -22,10 +22,10 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.utils.mins
@@ -126,23 +126,21 @@ class JibriDetectorTest : ShouldSpec({
 })
 
 class JibriChatRoomMember(
-    val jid_: EntityFullJid,
+    override val occupantJid: EntityFullJid,
     val detector: JibriDetector
 ) : ChatRoomMember {
-    override fun getName(): String = TODO("Not yet implemented")
-    override fun getChatRoom(): ChatRoom = TODO("Not yet implemented")
-    override fun getRole(): MemberRole = TODO("Not yet implemented")
-    override fun getJid(): Jid = TODO("Not yet implemented")
-    override fun getSourceInfos(): MutableSet<SourceInfo> = TODO("Not yet implemented")
-
-    override fun isRobot(): Boolean = TODO("Not yet implemented")
-    override fun isJigasi(): Boolean = TODO("Not yet implemented")
-    override fun isJibri(): Boolean = TODO("Not yet implemented")
-    override fun isAudioMuted(): Boolean = TODO("Not yet implemented")
-    override fun isVideoMuted(): Boolean = TODO("Not yet implemented")
-
-    override fun getRegion(): String = TODO("Not yet implemented")
-    override fun getStatsId(): String = TODO("Not yet implemented")
+    override val chatRoom: ChatRoom get() = TODO("Not yet implemented")
+    override val name: String get() = TODO("Not yet implemented")
+    override val role: MemberRole? get() = TODO("Not yet implemented")
+    override val jid: Jid? get() = TODO("Not yet implemented")
+    override val sourceInfos: Set<SourceInfo> get() = TODO("Not yet implemented")
+    override val isRobot: Boolean get() = TODO("Not yet implemented")
+    override val isJigasi: Boolean get() = TODO("Not yet implemented")
+    override val isJibri: Boolean get() = TODO("Not yet implemented")
+    override val isAudioMuted: Boolean get() = TODO("Not yet implemented")
+    override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
+    override val region: String? get() = TODO("Not yet implemented")
+    override val statsId: String? get() = TODO("Not yet implemented")
 
     var idle: Boolean = true
     var healthy: Boolean = true
@@ -157,19 +155,19 @@ class JibriChatRoomMember(
         detector.processMemberPresence(this)
     }
 
-    override fun getOccupantJid(): EntityFullJid = jid_
-    override fun getPresence(): Presence = mockk {
-        every {
-            getExtensionElement(JibriStatusPacketExt.ELEMENT, JibriStatusPacketExt.NAMESPACE)
-        } answers {
-            JibriStatusPacketExt().apply {
-                healthStatus = HealthStatusPacketExt().apply {
-                    status = if (healthy) HEALTHY else UNHEALTHY
-                }
-                busyStatus = JibriBusyStatusPacketExt().apply {
-                    setAttribute("status", if (idle) "idle" else "busy")
+    override val presence: Presence
+        get() = mockk {
+            every {
+                getExtensionElement(JibriStatusPacketExt.ELEMENT, JibriStatusPacketExt.NAMESPACE)
+            } answers {
+                JibriStatusPacketExt().apply {
+                    healthStatus = HealthStatusPacketExt().apply {
+                        status = if (healthy) HEALTHY else UNHEALTHY
+                    }
+                    busyStatus = JibriBusyStatusPacketExt().apply {
+                        setAttribute("status", if (idle) "idle" else "busy")
+                    }
                 }
             }
         }
-    }
 }
