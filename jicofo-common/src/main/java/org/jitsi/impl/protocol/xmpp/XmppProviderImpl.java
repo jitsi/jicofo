@@ -23,7 +23,6 @@ import org.jitsi.impl.protocol.xmpp.log.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.discovery.*;
 import org.jitsi.jicofo.xmpp.*;
-import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.retry.*;
 
 import org.jitsi.utils.logging2.*;
@@ -53,11 +52,6 @@ public class XmppProviderImpl
     }
 
     private final Logger logger;
-
-    /**
-     * Jingle operation set.
-     */
-    private final @NotNull JingleIqRequestHandler jingleIqRequestHandler;
 
     private final Muc muc = new Muc();
 
@@ -101,7 +95,6 @@ public class XmppProviderImpl
 
         connection = createXmppConnection();
         connectRetry = new RetryStrategy(TaskPools.getScheduledPool());
-        jingleIqRequestHandler = new JingleIqRequestHandler();
     }
 
 
@@ -216,7 +209,6 @@ public class XmppProviderImpl
                     connection.login(login, pass, resource);
                 }
 
-                connection.registerIQRequestHandler(jingleIqRequestHandler);
                 return false;
             }
             catch (Exception e)
@@ -261,7 +253,6 @@ public class XmppProviderImpl
             connection.disconnect();
             logger.info("Disconnected.");
 
-            connection.unregisterIQRequestHandler(jingleIqRequestHandler);
             connection.removeConnectionListener(connListener);
         }
 
@@ -278,12 +269,6 @@ public class XmppProviderImpl
     public AbstractXMPPConnection getXmppConnection()
     {
         return connection;
-    }
-
-    @Override
-    public @NotNull JingleIqRequestHandler getJingleIqRequestHandler()
-    {
-        return jingleIqRequestHandler;
     }
 
     @Override

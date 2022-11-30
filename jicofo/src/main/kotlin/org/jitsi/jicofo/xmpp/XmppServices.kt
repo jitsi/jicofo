@@ -25,6 +25,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
@@ -80,6 +81,7 @@ class XmppServices(
     private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
+    val jingleHandler = JingleIqRequestHandler(setOf(clientConnection.xmppConnection))
 
     private val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
@@ -110,6 +112,7 @@ class XmppServices(
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
         avModerationHandler.shutdown()
+        jingleHandler.shutdown()
 
         clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
         authenticationIqHandler?.let {

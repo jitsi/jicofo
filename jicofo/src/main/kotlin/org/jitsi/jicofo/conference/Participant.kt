@@ -29,6 +29,7 @@ import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
+import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
@@ -61,6 +62,8 @@ open class Participant @JvmOverloads constructor(
     val chatMember: ChatRoomMember,
     /** The conference in which this participant participates. */
     private val conference: JitsiMeetConferenceImpl,
+    /** The [JingleIqRequestHandler] with which to register the Jingle session. */
+    private val jingleIqRequestHandler: JingleIqRequestHandler,
     parentLogger: Logger? = null,
     /** The list of XMPP features supported by this participant. */
     private val supportedFeatures: List<String> = DiscoveryUtil.getDefaultParticipantFeatureSet(),
@@ -352,7 +355,7 @@ open class Participant @JvmOverloads constructor(
     open fun createNewJingleSession(): JingleSession = JingleSession(
         JingleIQ.generateSID(),
         mucJid,
-        chatMember.chatRoom.xmppProvider.jingleIqRequestHandler,
+        jingleIqRequestHandler,
         chatMember.chatRoom.xmppProvider.xmppConnection,
         JingleRequestHandlerImpl(),
         ConferenceConfig.config.useJsonEncodedSources && supportsJsonEncodedSources()

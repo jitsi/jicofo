@@ -62,12 +62,7 @@ class ConferenceTest : ShouldSpec() {
     private val roomName = JidCreate.entityBareFrom("test@example.com")
     private val xmppConnection = ColibriAndJingleXmppConnection()
     private val jingleSessions = mutableListOf<JingleSession>()
-    private val xmppProvider = MockXmppProvider(
-        xmppConnection.xmppConnection,
-        mockk(relaxed = true) {
-            every { registerSession(capture(jingleSessions)) } returns Unit
-        }
-    )
+    private val xmppProvider = MockXmppProvider(xmppConnection.xmppConnection)
     private val chatRoom = xmppProvider.getRoom(roomName)
 
     private var memberCounter = 1
@@ -91,6 +86,11 @@ class ConferenceTest : ShouldSpec() {
                     every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
                         every { jid } returns JidCreate.from("jvb@example.com/jvb1")
                         every { debugState } returns OrderedJsonObject()
+                    }
+                }
+                every { xmppServices } returns mockk(relaxed = true) {
+                    every { jingleHandler } returns mockk(relaxed = true) {
+                        every { registerSession(capture(jingleSessions)) } returns Unit
                     }
                 }
             }
