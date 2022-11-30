@@ -18,7 +18,6 @@
 package org.jitsi.impl.protocol.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jivesoftware.smack.*;
@@ -105,14 +104,6 @@ public interface ChatRoom
     * @param member the member to grant ownership to.
     */
     void grantOwnership(@NotNull ChatRoomMember member);
-
-    /**
-     * Destroys the chat room.
-     * @param reason the reason for destroying.
-     * @param alternateAddress the alternate address
-     * @return <tt>true</tt> if the room is destroyed.
-     */
-    boolean destroy(String reason, String alternateAddress);
 
     /**
      * Gets the name of this chat room as a JID.

@@ -530,29 +530,6 @@ public class ChatRoomImpl
         }
     }
 
-    @Override
-    public boolean destroy(String reason, String alternateAddress)
-    {
-        try
-        {
-            muc.destroy(reason,
-                alternateAddress != null ?
-                    JidCreate.entityBareFrom(alternateAddress) : null);
-        }
-        catch (XMPPException
-                | XmppStringprepException
-                | InterruptedException
-                | NoResponseException
-                | NotConnectedException e)
-        {
-            //FIXME: should not be runtime, but OperationFailed is not
-            // included in interface signature(see also other methods
-            // catching XMPPException in this class)
-            throw new RuntimeException(e);
-        }
-        return false;
-    }
-
     public Occupant getOccupant(ChatRoomMemberImpl chatMember)
     {
         return muc.getOccupant(chatMember.getOccupantJid());
