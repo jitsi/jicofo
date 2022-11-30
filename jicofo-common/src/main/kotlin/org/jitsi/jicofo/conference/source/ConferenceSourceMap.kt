@@ -195,8 +195,7 @@ open class ConferenceSourceMap(
     /** Expanded JSON format used for debugging */
     fun toJson() = OrderedJsonObject().apply {
         synchronized(syncRoot) {
-            endpointSourceSets.forEach { (owner, sourceSet) ->
-                put(owner?.toString() ?: "null", sourceSet.toJson())
+            endpointSourceSets.forEach { (owner, sourceSet) -> put(owner, sourceSet.toJson())
             }
         }
     }
