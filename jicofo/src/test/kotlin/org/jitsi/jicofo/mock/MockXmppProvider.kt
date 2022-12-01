@@ -18,7 +18,6 @@ package org.jitsi.jicofo.mock
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.XmppProvider
-import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jxmpp.jid.EntityBareJid
 
@@ -27,7 +26,6 @@ class MockXmppProvider(val xmppConnection: AbstractXMPPConnection = MockXmppConn
     val xmppProvider = mockk<XmppProvider>(relaxed = true) {
         every { isRegistered } returns true
         every { findOrCreateRoom(any()) } answers { getRoom(arg(0)).chatRoom }
-        every { discoverFeatures(any()) } returns DiscoveryUtil.getDefaultParticipantFeatureSet()
         every { xmppConnection } returns this@MockXmppProvider.xmppConnection
     }
 

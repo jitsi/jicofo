@@ -62,4 +62,10 @@ interface ChatRoomMember {
 
     /** The statistics id if any. */
     val statsId: String?
+
+    /**
+     * The list of features advertised as XMPP capabilities. Note that although the features are cached (XEP-0115),
+     * the first time [features] is accessed it may block waiting for a disco#info response!
+     */
+    val features: List<String>
 }

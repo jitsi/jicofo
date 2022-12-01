@@ -196,12 +196,14 @@ class ChatRoomMemberImpl(
     /**
      * Whether this member is a trusted entity (logged in to one of the pre-configured trusted domains).
      */
-    private fun isJidTrusted() = jid?.let {XmppConfig.config.trustedDomains.contains(it.asDomainBareJid()) } ?: false
+    private fun isJidTrusted() = jid?.let { XmppConfig.config.trustedDomains.contains(it.asDomainBareJid()) } ?: false
 
     /**
      * {@inheritDoc}
      */
     override fun toString() = "ChatMember[$name]"
+
+    override val features: List<String> by lazy { chatRoom.xmppProvider.discoverFeatures(occupantJid) }
 
     val debugState: OrderedJsonObject
         get() {

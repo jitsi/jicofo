@@ -88,10 +88,8 @@ class ConferenceTest : ShouldSpec() {
                         every { debugState } returns OrderedJsonObject()
                     }
                 }
-                every { xmppServices } returns mockk(relaxed = true) {
-                    every { jingleHandler } returns mockk(relaxed = true) {
-                        every { registerSession(capture(jingleSessions)) } returns Unit
-                    }
+                every { jingleHandler } returns mockk(relaxed = true) {
+                    every { registerSession(capture(jingleSessions)) } returns Unit
                 }
             }
         }
