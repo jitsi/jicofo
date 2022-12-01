@@ -150,7 +150,7 @@ class ChatRoomMemberImpl(
                         logger.warn(
                             "Jibri signaled from a non-trusted domain ($domain). The domain can be " +
                                 "configured as trusted with the jicofo.xmpp.trusted-domains property."
-                         )
+                        )
                     }
                 }
             }
