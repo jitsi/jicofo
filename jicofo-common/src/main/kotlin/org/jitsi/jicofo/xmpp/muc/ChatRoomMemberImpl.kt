@@ -46,11 +46,11 @@ class ChatRoomMemberImpl(
     override val chatRoom: ChatRoomImpl,
     parentLogger: Logger
 ) : ChatRoomMember {
+    override val name: String = occupantJid.resourceOrThrow.toString()
     private val logger: Logger = createChildLogger(parentLogger).apply {
         addContext("id", name)
     }
 
-    override val name: String = occupantJid.resourceOrThrow.toString()
 
     override var region: String? = null
         private set
