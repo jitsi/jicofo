@@ -23,6 +23,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
+import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -60,14 +61,23 @@ class ConferenceIqHandler(
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
     fun handleConferenceIq(query: ConferenceIq): IQ {
-        val response = ConferenceIq()
         val room = query.room ?: return IQ.createErrorResponse(
             query,
             StanzaError.from(StanzaError.Condition.bad_request, "No 'room' specified.").build()
         )
 
+        val response = ConferenceIq().apply {
+            type = IQ.Type.result
+            stanzaId = query.stanzaId
+            from = query.to
+            to = query.from
+            this.room = query.room
+            focusJid = focusAuthJid
+        }
+
         logger.info("Focus request for room: $room")
-        val roomExists = focusManager.getConference(room) != null
+        val conference = focusManager.getConference(room)
+        val roomExists = conference != null
 
         // Authentication logic
         val error: IQ? = processExtensions(query, room, response, roomExists)
@@ -75,20 +85,23 @@ class ConferenceIqHandler(
             return error
         }
 
+        val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(false) else null
+        if (vnode != null) {
+            response.vnode = vnode
+            val focusJid = XmppConfig.visitors.find { it.name == vnode }?.jid
+            if (focusJid != null) {
+                response.focusJid = focusJid
+            } else {
+                logger.error("No XmppConnectionConfig for vnode=$vnode")
+            }
+        }
+
         var ready: Boolean = focusManager.conferenceRequest(room, query.propertiesMap)
         if (!isFocusAnonymous && authAuthority == null) {
             // Focus is authenticated system admin, so we let them in immediately. Focus will get OWNER anyway.
             ready = true
         }
-        response.type = IQ.Type.result
-        response.stanzaId = query.stanzaId
-        response.from = query.to
-        response.to = query.from
-        response.room = query.room
         response.isReady = ready
-
-        // Config
-        response.focusJid = focusAuthJid
 
         // Authentication module enabled?
         if (authAuthority != null) {

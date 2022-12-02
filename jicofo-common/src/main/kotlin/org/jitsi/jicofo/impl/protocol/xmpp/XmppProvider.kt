@@ -54,7 +54,6 @@ interface XmppProvider {
     @Throws(RoomExistsException::class)
     fun createRoom(name: EntityBareJid): ChatRoom
 
-    @Throws(RoomExistsException::class)
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
     fun discoverFeatures(jid: EntityFullJid): List<String>

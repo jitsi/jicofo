@@ -39,7 +39,6 @@ import org.jivesoftware.smackx.xdata.form.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
 import org.jxmpp.jid.parts.*;
-import org.jxmpp.stringprep.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -199,6 +198,13 @@ public class ChatRoomImpl
     public void removeListener(@NotNull ChatRoomListener listener)
     {
         eventEmitter.removeHandler(listener);
+    }
+
+    @Override
+    public void removeAllListeners()
+    {
+        List<ChatRoomListener> listeners = new ArrayList<>(eventEmitter.getEventHandlers());
+        listeners.forEach(eventEmitter::removeHandler);
     }
 
     public void setStartMuted(boolean[] startMuted)

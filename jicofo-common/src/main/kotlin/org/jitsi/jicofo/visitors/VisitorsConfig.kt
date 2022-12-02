@@ -18,12 +18,20 @@
 package org.jitsi.jicofo.visitors
 
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.metaconfig.config
 
 class VisitorsConfig private constructor() {
     val enabled: Boolean by config {
         "jicofo.visitors.enabled".from(newConfig)
     }
+    val maxParticipants: Int by config {
+        "jicofo.visitors.max-participants".from(newConfig)
+    }
+    val maxVisitorsPerNode: Int by config {
+        "jicofo.visitors.max-visitors-per-node".from(newConfig)
+    }
+    val visitorNodeIds = XmppConfig.visitors.map { it.name }.toList()
 
     companion object {
         @JvmField

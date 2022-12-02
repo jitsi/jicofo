@@ -44,12 +44,16 @@ class XmppConfig private constructor() {
         @JvmField
         val client = XmppClientConnectionConfig()
 
+        @JvmStatic
         val visitors: List<XmppVisitorConnectionConfig> by config<List<XmppVisitorConnectionConfig>> {
             "jicofo.xmpp.visitors".from(newConfig)
                 .convertFrom<ConfigObject> { cfg ->
                     cfg.entries.map { it.toXmppVisitorConnectionConfig() }
                 }
         }
+
+        @JvmStatic
+        fun getVisitorConfigByName(name: String) = visitors.firstOrNull { it.name == name }
 
         @JvmField
         val config = XmppConfig()
@@ -68,6 +72,8 @@ interface XmppConnectionConfig {
     val disableCertificateVerification: Boolean
     val useTls: Boolean
     val name: String
+    val jid
+        get() = "$username/$domain"
 }
 
 class XmppVisitorConnectionConfig(
@@ -81,7 +87,8 @@ class XmppVisitorConnectionConfig(
     override val replyTimeout: Duration,
     override val disableCertificateVerification: Boolean,
     override val useTls: Boolean,
-    override val name: String
+    override val name: String,
+    val conferenceService: DomainBareJid
 ) : XmppConnectionConfig
 
 private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnectionConfig(): XmppVisitorConnectionConfig {
@@ -91,6 +98,8 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
         ?: throw NotFound("hostname required for visitors config $name")
     val domain = c["domain"]?.unwrapped()?.toString() ?: hostname
     val username = c["username"]?.unwrapped()?.toString() ?: "focus"
+    val conferenceService = c["conference-service"]?.unwrapped()?.toString()
+        ?: throw NotFound("conference-service required for visitors config $name")
 
     return XmppVisitorConnectionConfig(
         enabled = c["enabled"]?.let { it.unwrapped().toString().toBoolean() } ?: true,
@@ -105,7 +114,8 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
         disableCertificateVerification = c["disable-certificate-verification"]?.unwrapped()?.toString()?.toBoolean()
             ?: false,
         useTls = c["use-tls"]?.unwrapped()?.toString()?.toBoolean() ?: true,
-        name
+        name = name,
+        conferenceService = JidCreate.domainBareFrom(conferenceService)
     )
 }
 

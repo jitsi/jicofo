@@ -210,7 +210,7 @@ class ChatRoomMemberImpl(
     /**
      * {@inheritDoc}
      */
-    override fun toString() = "ChatMember[$name]"
+    override fun toString() = "ChatMember[id=$name role=$role]"
 
     override val features: List<String> by lazy {
         val features = chatRoom.xmppProvider.discoverFeatures(occupantJid)

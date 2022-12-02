@@ -88,9 +88,7 @@ class XmppConfigTest : ShouldSpec() {
                 shouldThrow<ConfigException> {
                     config.domain
                 }
-                shouldThrow<ConfigException> {
-                    config.username
-                }
+                config.username shouldBe Resourcepart.from("focus")
                 config.password shouldBe null
             }
             context("Legacy config") {
