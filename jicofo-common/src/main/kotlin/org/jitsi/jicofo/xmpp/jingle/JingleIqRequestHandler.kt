@@ -18,10 +18,14 @@
 package org.jitsi.jicofo.xmpp.jingle
 
 import org.jitsi.jicofo.util.WeakValueMap
+import org.jitsi.jicofo.xmpp.AbstractIqHandler
+import org.jitsi.jicofo.xmpp.IqProcessingResult
+import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
+import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
+import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
-import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
-import org.jivesoftware.smack.iqrequest.IQRequestHandler
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 
@@ -29,30 +33,32 @@ import org.jivesoftware.smack.packet.StanzaError
  * Maintain a weak map of [JingleSession]s and route incoming Jingle IQs to the associated session.
  * @author Pawel Domas
  */
-open class JingleIqRequestHandler :
-    AbstractIqRequestHandler(JingleIQ.ELEMENT, JingleIQ.NAMESPACE, IQ.Type.set, IQRequestHandler.Mode.sync) {
+class JingleIqRequestHandler(
+    connections: Set<AbstractXMPPConnection>
+) : AbstractIqHandler<JingleIQ>(connections, JingleIQ.ELEMENT, JingleIQ.NAMESPACE, setOf(IQ.Type.set)) {
     private val logger = createLogger()
 
-    /**
-     * The list of active Jingle sessions.
-     */
-    @JvmField
-    protected val sessions = WeakValueMap<String, JingleSession>()
+    /** The list of active Jingle sessions. */
+    private val sessions = WeakValueMap<String, JingleSession>()
 
-    override fun handleIQRequest(iq: IQ): IQ {
-        val jingleIq = iq as JingleIQ
-        val session = sessions.get(jingleIq.sid)
+    override fun handleRequest(request: IqRequest<JingleIQ>): IqProcessingResult {
+        val session = sessions.get(request.iq.sid)
         if (session == null) {
-            logger.warn("No session found for SID ${jingleIq.sid}")
-            return IQ.createErrorResponse(jingleIq, StanzaError.getBuilder(StanzaError.Condition.bad_request).build())
+            logger.warn("No session found for SID ${request.iq.sid}")
+            return RejectedWithError(
+                IQ.createErrorResponse(
+                    request.iq,
+                    StanzaError.getBuilder(StanzaError.Condition.bad_request).build()
+                )
+            )
         }
 
-        val error = session.processIq(jingleIq)
+        val error = session.processIq(request.iq)
         return if (error == null) {
-            IQ.createResultIQ(iq)
+            AcceptedWithResponse(IQ.createResultIQ(request.iq))
         } else {
-            logger.info("Returning error: request=${iq.toXML()}, error=${error.toXML()} ")
-            IQ.createErrorResponse(iq, error)
+            logger.info("Returning error: request=${request.iq.toXML()}, error=${error.toXML()} ")
+            RejectedWithError(IQ.createErrorResponse(request.iq, error))
         }
     }
 

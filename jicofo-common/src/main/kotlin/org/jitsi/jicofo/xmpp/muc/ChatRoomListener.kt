@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
-
 /** Listener for events fired from a [org.jitsi.impl.protocol.xmpp.ChatRoom] **/
 interface ChatRoomListener {
     fun memberJoined(member: ChatRoomMember) {}

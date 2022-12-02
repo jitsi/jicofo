@@ -647,8 +647,13 @@ public class JitsiMeetConferenceImpl
             // with the correct values. Note that this operation will block waiting for a disco#info response when
             // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
-            List<String> features = getClientXmppProvider().discoverFeatures(chatRoomMember.getOccupantJid());
-            final Participant participant = new Participant(chatRoomMember, this, logger, features);
+            List<String> features = chatRoomMember.getFeatures();
+            final Participant participant = new Participant(
+                    chatRoomMember,
+                    this,
+                    jicofoServices.getXmppServices().getJingleHandler(),
+                    logger,
+                    features);
 
             ConferenceMetrics.participants.inc();
             if (!participant.supportsReceivingMultipleVideoStreams())
@@ -679,8 +684,8 @@ public class JitsiMeetConferenceImpl
                 this,
                 getColibriSessionManager(),
                 participant,
-                hasToStartAudioMuted(participant, justJoined),
-                hasToStartVideoMuted(participant, justJoined),
+                hasToStartAudioMuted(justJoined),
+                hasToStartVideoMuted(justJoined),
                 reInvite,
                 logger
         );
@@ -696,10 +701,10 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns true if {@code participant} should be invited with the "start audio muted" option given that they just
+     * Returns true if a participant should be invited with the "start audio muted" option given that they just
      * joined or are being re-invited (depending on the value of {@code justJoined}.
      */
-    private boolean hasToStartAudioMuted(@NotNull Participant participant, boolean justJoined)
+    private boolean hasToStartAudioMuted(boolean justJoined)
     {
         if (startAudioMuted && justJoined)
         {
@@ -712,14 +717,14 @@ public class JitsiMeetConferenceImpl
         {
             limit = Math.min(limit, startAudioMutedInt);
         }
-        return participant.getChatMember().getJoinOrderNumber() > limit;
+        return getParticipantCount() > limit;
     }
 
     /**
-     * Returns true if {@code participant} should be invited with the "start video muted" option given that they just
+     * Returns true if a participant should be invited with the "start video muted" option given that they just
      * joined or are being re-invited (depending on the value of {@code justJoined}.
      */
-    private boolean hasToStartVideoMuted(@NotNull Participant participant, boolean justJoined)
+    private boolean hasToStartVideoMuted(boolean justJoined)
     {
         if (startVideoMuted && justJoined)
         {
@@ -732,7 +737,7 @@ public class JitsiMeetConferenceImpl
         {
             limit = Math.min(limit, startVideoMutedInt);
         }
-        return participant.getChatMember().getJoinOrderNumber() > limit;
+        return getParticipantCount() > limit;
     }
 
     /**

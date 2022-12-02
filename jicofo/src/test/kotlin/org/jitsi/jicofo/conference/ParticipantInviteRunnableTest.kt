@@ -117,7 +117,8 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { region } returns "region"
                 },
                 conference,
-                supportedFeatures = features
+                mockk(),
+                supportedFeatures = features,
             ) {
                 override fun createNewJingleSession(): JingleSession = mockk {
                     every {

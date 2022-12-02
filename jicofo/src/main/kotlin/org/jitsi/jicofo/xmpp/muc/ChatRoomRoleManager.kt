@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.ChatRoomMember
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
 import org.jitsi.utils.OrderedJsonObject
