@@ -490,7 +490,20 @@ open class Participant @JvmOverloads constructor(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>
         ): StanzaError? {
-            checkJingleSession(jingleSession)?.let { return it }
+            if (chatMember.isJigasi) {
+                // Jigasi insists on using trickle and only includes ICE credentials in a transport-info sent before
+                // session-accept. So we need to always accept transport-info.
+                if (this@Participant.jingleSession != null && this@Participant.jingleSession != jingleSession) {
+                    // If we somehow end up with more than one session we can't use the normal check to ignore requests
+                    // for the old one. Ideally the flow that sets Participant.jingleSession should be cleaned up
+                    // to simply contain the latest session, but until then just log a warning.
+                    logger.warn("Accepting transport-info for a different (new?) jingle session")
+                }
+            } else checkJingleSession(jingleSession)?.let {
+                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
+                // we prefer to avoid trickle at all and don't expect to see it.
+                logger.warn("Received an early or stale transport-info from non-jigasi.")
+            }
 
             val transport = contents.getTransport()
                 ?: return StanzaError.from(StanzaError.Condition.bad_request, "missing transport").build()
