@@ -84,8 +84,8 @@ open class Participant @JvmOverloads constructor(
      * The layer which keeps track of which sources have been signaled to this participant.
      */
     private val sourceSignaling = SourceSignaling(
-        hasAudioSupport(),
-        hasVideoSupport(),
+        audio = hasAudioSupport(),
+        video = hasVideoSupport(),
         ConferenceConfig.config.stripSimulcast(),
         supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.multiStreamBackwardCompat
     )
