@@ -816,7 +816,7 @@ public class JitsiMeetConferenceImpl
 
     private void terminateParticipant(
             Participant participant,
-            Reason reason,
+            @NotNull Reason reason,
             String message,
             boolean sendSessionTerminate,
             boolean sendSourceRemove)
@@ -950,8 +950,8 @@ public class JitsiMeetConferenceImpl
         {
             terminateParticipant(
                     participant,
-                    null,
-                    null,
+                    Reason.SUCCESS,
+                    (reinvite) ? "reinvite requested" : null,
                     /* do not send session-terminate */ false,
                     /* do send source-remove */ true);
 
