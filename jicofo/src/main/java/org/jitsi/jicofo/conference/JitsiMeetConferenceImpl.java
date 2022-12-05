@@ -816,7 +816,7 @@ public class JitsiMeetConferenceImpl
 
     private void terminateParticipant(
             Participant participant,
-            Reason reason,
+            @NotNull Reason reason,
             String message,
             boolean sendSessionTerminate,
             boolean sendSourceRemove)
