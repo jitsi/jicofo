@@ -656,11 +656,11 @@ public class JitsiMeetConferenceImpl
                     features);
 
             ConferenceMetrics.participants.inc();
-            if (!participant.supportsReceivingMultipleVideoStreams())
+            if (!participant.supportsReceivingMultipleVideoStreams() && !participant.getChatMember().isJigasi())
             {
                 ConferenceMetrics.participantsNoMultiStream.inc();
             }
-            if (!participant.hasSourceNameSupport())
+            if (!participant.hasSourceNameSupport() && !participant.getChatMember().isJigasi())
             {
                 ConferenceMetrics.participantsNoSourceName.inc();
             }
