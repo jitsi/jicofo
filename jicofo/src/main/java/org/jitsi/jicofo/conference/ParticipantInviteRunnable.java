@@ -381,12 +381,12 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                 jingleSession.terminate(Reason.UNDEFINED, null, false);
             }
             jingleSession = participant.createNewJingleSession();
+            logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + sources);
             ack = jingleSession.initiateSession(
                     offer.getContents(),
                     additionalExtensions,
                     sources
             );
-            logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + offer.getSources());
         }
         else
         {
