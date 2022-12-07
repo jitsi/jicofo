@@ -368,7 +368,12 @@ class ColibriV2SessionManager(
             try {
                 return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
-                logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
+                if (e is ConferenceAlreadyExistsException) {
+                    logger.warn("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
+                } else {
+                    logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
+                }
+
                 if (e is ColibriAllocationFailedException && e.removeBridge) {
                     // Add participantInfo just in case it wasn't there already (the set will take care of dups).
                     val removedParticipants = removeSession(session) + participantInfo
@@ -443,6 +448,10 @@ class ColibriV2SessionManager(
                             "XMPP error: ${response.error?.toXML()}",
                             true
                         )
+                    } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
+                        // The conference on the bridge already exists. The state between jicofo and the bridge
+                        // is out of sync.
+                        throw ConferenceAlreadyExistsException("Conference already exists error", true)
                     } else {
                         // An error coming from the bridge. The state between jicofo and the bridge must be out of sync.
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
