@@ -387,6 +387,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                 jingleSession.terminate(Reason.UNDEFINED, null, false);
             }
             jingleSession = participant.createNewJingleSession();
+            // Save a reference to jingleSession to prevent it from being garbage collected. Temporary fix!
+            participant.setJingleSessionTmp(jingleSession);
             logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + sources);
             ack = jingleSession.initiateSession(
                     offer.getContents(),
