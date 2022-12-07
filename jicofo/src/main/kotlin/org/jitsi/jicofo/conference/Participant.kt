@@ -80,6 +80,9 @@ open class Participant @JvmOverloads constructor(
         addContext("participant", endpointId)
     }
 
+    // Save a reference to jingleSession to prevent it from being garbage collected. Temporary fix!
+    var jingleSessionTmp: JingleSession? = null
+
     /**
      * The layer which keeps track of which sources have been signaled to this participant.
      */
