@@ -23,6 +23,7 @@ import org.jitsi.jicofo.xmpp.createTransportReplace
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.GroupPacketExtension
@@ -55,6 +56,9 @@ class JingleSession(
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
+    private var state = State.PENDING
+    fun isActive() = state == State.ACTIVE
+
     val logger = createLogger().apply {
         addContext("remoteJid", remoteJid.toString())
         addContext("sid", sid)
@@ -68,10 +72,23 @@ class JingleSession(
                 .setConditionText("Missing 'action'").build()
         JingleStats.stanzaReceived(action)
 
+        if (state == State.ENDED) {
+            return StanzaError.getBuilder(StanzaError.Condition.gone).setConditionText("session ended").build()
+        }
+
         return when (action) {
-            JingleAction.SESSION_ACCEPT -> requestHandler.onSessionAccept(this, iq.contentList)
+            JingleAction.SESSION_ACCEPT -> {
+                // The session needs to be marked as active early to allow code executing as part of onSessionAccept
+                // to proceed (e.g. to signal source updates).
+                state = State.ACTIVE
+                val error = requestHandler.onSessionAccept(this, iq.contentList)
+                if (error != null) state = State.ENDED
+                return error
+            }
             JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
-            JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq)
+            JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq).also {
+                state = State.ENDED
+            }
             JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
             JingleAction.TRANSPORT_INFO -> requestHandler.onTransportInfo(this, iq.contentList)
             JingleAction.TRANSPORT_REJECT -> { requestHandler.onTransportReject(this, iq); null }
@@ -88,20 +105,29 @@ class JingleSession(
     fun terminate(
         reason: Reason,
         message: String?,
-        sendTerminate: Boolean
+        /** Whether to send a session-terminate IQ, or only terminate the session locally. */
+        sendIq: Boolean
     ) {
-        logger.info("Terminating session with $remoteJid, reason=$reason, sendTerminate=$sendTerminate")
+        logger.info("Terminating session with $remoteJid, reason=$reason, sendIq=$sendIq")
+        val oldState = state
+        state = State.ENDED
 
-        if (sendTerminate) {
-            val terminate = JinglePacketFactory.createSessionTerminate(
-                localJid,
-                remoteJid,
-                sid,
-                reason,
-                message
-            )
-            connection.tryToSendStanza(terminate)
-            JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
+        if (oldState == State.ENDED) logger.warn("Terminating session which is already in state ENDED")
+
+        if (sendIq) {
+            if (oldState == State.ENDED) {
+                logger.warn("Not sending session-terminate for session in state $state")
+            } else {
+                val terminate = JinglePacketFactory.createSessionTerminate(
+                    localJid,
+                    remoteJid,
+                    sid,
+                    reason,
+                    message
+                )
+                connection.tryToSendStanza(terminate)
+                JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
+            }
         }
 
         jingleIqRequestHandler.removeSession(this)
@@ -118,6 +144,7 @@ class JingleSession(
         sources: ConferenceSourceMap
     ): Boolean {
         logger.info("Sending transport-replace, sources=$sources.")
+        if (state != State.ACTIVE) logger.error("Sending transport-replace for session in state $state")
 
         val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
         val jingleIq = createTransportReplace(localJid, this, contentsWithSources)
@@ -154,6 +181,7 @@ class JingleSession(
             sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
         }
         logger.debug { "Sending source-remove, sources=$sourcesToRemove" }
+        if (state != State.ACTIVE) logger.error("Sending source-remove for session in state $state")
         connection.tryToSendStanza(removeSourceIq)
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
     }
@@ -164,6 +192,7 @@ class JingleSession(
     fun addSource(sources: ConferenceSourceMap) {
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
+        if (state != State.ACTIVE) logger.error("Sending source-add for session in state $state")
         connection.tryToSendStanza(createAddSourceIq(sources))
     }
 
@@ -173,6 +202,7 @@ class JingleSession(
         additionalExtensions: List<ExtensionElement>,
         sources: ConferenceSourceMap,
     ): Boolean {
+        if (state != State.PENDING) logger.error("Sending session-initiate for session in state $state")
         val contentsWithSources = if (encodeSourcesAsJson) contents else sources.toContents(contents)
         val sessionInitiate = createSessionInitiate(localJid, remoteJid, sid, contentsWithSources).apply {
             addExtension(GroupPacketExtension.createBundleGroup(contentList))
@@ -203,6 +233,14 @@ class JingleSession(
             sources.toJingle().forEach { addContent(it) }
         }
     }
+
+    fun debugState() = OrderedJsonObject().apply {
+        put("sid", sid)
+        put("remoteJid", remoteJid.toString())
+        put("state", state.toString())
+    }
+
+    enum class State { PENDING, ACTIVE, ENDED }
 }
 
 /**

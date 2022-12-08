@@ -42,6 +42,7 @@ import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
+import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jivesoftware.smack.packet.StanzaError
@@ -80,8 +81,10 @@ open class Participant @JvmOverloads constructor(
         addContext("participant", endpointId)
     }
 
-    // Save a reference to jingleSession to prevent it from being garbage collected. Temporary fix!
-    var jingleSessionTmp: JingleSession? = null
+    fun terminateJingleSession(reason: Reason, message: String?, sendIq: Boolean) {
+        jingleSession?.terminate(reason, message, sendIq)
+        jingleSession = null
+    }
 
     /**
      * The layer which keeps track of which sources have been signaled to this participant.
@@ -109,6 +112,7 @@ open class Participant @JvmOverloads constructor(
      * The Jingle session (if any) established with this peer.
      */
     var jingleSession: JingleSession? = null
+        private set
 
     /**
      * The task, if any, currently scheduled to signal queued remote sources.
@@ -250,12 +254,10 @@ open class Participant @JvmOverloads constructor(
             return
         }
         synchronized(sourceSignaling) { sourceSignaling.addSources(sources) }
-        if (jingleSession == null) {
-            logger.debug("No Jingle session yet, queueing source-add.")
-            // No need to schedule, the sources will be signaled when the session is established.
-            return
+        if (jingleSession?.isActive() == true) {
+            synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
         }
-        synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
+        // No need to schedule, the queued sources will be signaled when the session becomes active.
     }
 
     /**
@@ -298,18 +300,16 @@ open class Participant @JvmOverloads constructor(
      * Remove a set of remote sources, which are to be signaled as removed to the remote side. The sources may be
      * signaled immediately, or queued to be signaled later.
      */
-    fun removeRemoteSources(sources: ConferenceSourceMap?) {
+    fun removeRemoteSources(sources: ConferenceSourceMap) {
         if (useSsrcRewriting()) {
             // Bridge will signal sources in this case.
             return
         }
-        synchronized(sourceSignaling) { sourceSignaling.removeSources(sources!!) }
-        if (jingleSession == null) {
-            logger.debug("No Jingle session yet, queueing source-remove.")
-            // No need to schedule, the sources will be signaled when the session is established.
-            return
+        synchronized(sourceSignaling) { sourceSignaling.removeSources(sources) }
+        if (jingleSession?.isActive() == true) {
+            synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
         }
-        synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
+        // No need to schedule, the queued sources will be signaled when the session becomes active.
     }
 
     /**
@@ -317,7 +317,7 @@ open class Participant @JvmOverloads constructor(
      */
     fun sendQueuedRemoteSources() {
         val jingleSession = jingleSession
-        if (jingleSession == null) {
+        if (jingleSession?.isActive() != true) {
             logger.warn("Can not signal remote sources, Jingle session not established.")
             return
         }
@@ -349,20 +349,29 @@ open class Participant @JvmOverloads constructor(
             this["id"] = endpointId
             this["source_signaling"] = sourceSignaling.debugState
             this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
-            this["jingle_session"] = if (jingleSession == null) "null" else "not null"
+            this["jingle_session"] = jingleSession?.debugState() ?: "null"
         }
 
     /**
      * Create a new [JingleSession] instance for this participant. Defined here and left open for easier testing.
      */
-    open fun createNewJingleSession(): JingleSession = JingleSession(
-        JingleIQ.generateSID(),
-        mucJid,
-        jingleIqRequestHandler,
-        chatMember.chatRoom.xmppProvider.xmppConnection,
-        JingleRequestHandlerImpl(),
-        ConferenceConfig.config.useJsonEncodedSources && supportsJsonEncodedSources()
-    )
+    open fun createNewJingleSession(): JingleSession {
+        jingleSession?.let {
+            logger.info("Terminating existing jingle session")
+            it.terminate(Reason.UNDEFINED, null, false)
+        }
+
+        return JingleSession(
+            JingleIQ.generateSID(),
+            mucJid,
+            jingleIqRequestHandler,
+            chatMember.chatRoom.xmppProvider.xmppConnection,
+            JingleRequestHandlerImpl(),
+            ConferenceConfig.config.useJsonEncodedSources && supportsJsonEncodedSources()
+        ).also {
+            jingleSession = it
+        }
+    }
 
     private inner class JingleRequestHandlerImpl : JingleRequestHandler {
         private fun checkJingleSession(jingleSession: JingleSession): StanzaError? =
@@ -429,10 +438,9 @@ open class Participant @JvmOverloads constructor(
             action: JingleAction
         ): StanzaError? {
             if (this@Participant.jingleSession != null && this@Participant.jingleSession != jingleSession) {
-                // FIXME: we should reject it ?
-                logger.error("Reassigning jingle session.")
+                logger.error("Rejecting $action for a session that has been replaced.")
+                return StanzaError.from(StanzaError.Condition.gone, "session has been replaced").build()
             }
-            this@Participant.jingleSession = jingleSession
 
             logger.info("Received $action")
             val sourcesAdvertised = fromJingle(contents)
