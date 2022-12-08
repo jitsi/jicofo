@@ -829,15 +829,9 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            JingleSession jingleSession = participant.getJingleSession();
-            if (jingleSession != null)
-            {
-                jingleSession.terminate(reason, message, sendSessionTerminate);
-            }
+            participant.terminateJingleSession(reason, message, sendSessionTerminate);
 
             removeParticipantSources(participant, sendSourceRemove);
-
-            participant.setJingleSession(null);
 
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
@@ -1514,12 +1508,7 @@ public class JitsiMeetConferenceImpl
                 if (restartJingle)
                 {
                     removeParticipantSources(participant, true);
-                    JingleSession jingleSession = participant.getJingleSession();
-                    if (jingleSession != null)
-                    {
-                        jingleSession.terminate(Reason.SUCCESS, "moving", true);
-                    }
-                    participant.setJingleSession(null);
+                    participant.terminateJingleSession(Reason.SUCCESS, "moving", true);
                 }
 
                 // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a

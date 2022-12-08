@@ -360,6 +360,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     {
         JingleSession jingleSession = participant.getJingleSession();
 
+        // If we're trying to re-invite, but there's no existing jingle session, start a new one.
         boolean initiateSession = !reInvite || jingleSession == null;
         boolean ack;
         List<ExtensionElement> additionalExtensions = new ArrayList<>();
@@ -382,13 +383,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         ConferenceSourceMap sources = participant.resetSignaledSources(offer.getSources());
         if (initiateSession)
         {
-            if (jingleSession != null)
-            {
-                jingleSession.terminate(Reason.UNDEFINED, null, false);
-            }
             jingleSession = participant.createNewJingleSession();
-            // Save a reference to jingleSession to prevent it from being garbage collected. Temporary fix!
-            participant.setJingleSessionTmp(jingleSession);
             logger.info("Sending session-initiate to: " + participant.getMucJid() + " sources=" + sources);
             ack = jingleSession.initiateSession(
                     offer.getContents(),
