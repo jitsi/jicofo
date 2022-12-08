@@ -82,11 +82,6 @@ open class ConferenceSourceMap(
     /**
      * Create a compact JSON representation of this [ConferenceSourceMap]. The JSON is a map of an ID of the owner
      * to the compact JSON of its [EndpointSourceSet] (see [EndpointSourceSet.compactJson]).
-     *
-     * The ID of the owner is taken from the JID by either taking the resource part (which is the endpoint ID), or
-     * the domain (the only use-case for this is bridge-owned sources, for which we use the JID "jid").
-     *
-     * TODO: migrate away from using [Jid] as the identifier in [ConferenceSourceMap]
      */
     fun compactJson(): String = synchronized(syncRoot) {
         buildString {
