@@ -109,19 +109,25 @@ class JingleSession(
         sendIq: Boolean
     ) {
         logger.info("Terminating session with $remoteJid, reason=$reason, sendIq=$sendIq")
-        if (state != State.ACTIVE) logger.error("Sending session-terminate for session in state $state")
+        val oldState = state
         state = State.ENDED
 
+        if (oldState == State.ENDED) logger.warn("Terminating session which is already in state ENDED")
+
         if (sendIq) {
-            val terminate = JinglePacketFactory.createSessionTerminate(
-                localJid,
-                remoteJid,
-                sid,
-                reason,
-                message
-            )
-            connection.tryToSendStanza(terminate)
-            JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
+            if (oldState == State.ENDED) {
+                logger.warn("Not sending session-terminate for session in state $state")
+            } else {
+                val terminate = JinglePacketFactory.createSessionTerminate(
+                    localJid,
+                    remoteJid,
+                    sid,
+                    reason,
+                    message
+                )
+                connection.tryToSendStanza(terminate)
+                JingleStats.stanzaSent(JingleAction.SESSION_TERMINATE)
+            }
         }
 
         jingleIqRequestHandler.removeSession(this)
