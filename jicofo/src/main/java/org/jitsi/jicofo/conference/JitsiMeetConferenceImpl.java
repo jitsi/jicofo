@@ -989,7 +989,7 @@ public class JitsiMeetConferenceImpl
         getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 transport,
-                EndpointSourceSet.EMPTY);
+                null /* no change in sources, just transport */);
     }
 
     /**

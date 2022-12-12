@@ -504,6 +504,7 @@ open class Participant @JvmOverloads constructor(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>
         ): StanzaError? {
+            logger.info("Received transport-info")
             if (chatMember.isJigasi) {
                 // Jigasi insists on using trickle and only includes ICE credentials in a transport-info sent before
                 // session-accept. So we need to always accept transport-info.
