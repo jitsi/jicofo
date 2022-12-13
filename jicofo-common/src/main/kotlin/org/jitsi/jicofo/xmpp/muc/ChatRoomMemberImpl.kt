@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
+import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.utils.OrderedJsonObject
@@ -32,6 +33,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
+import org.jivesoftware.smackx.caps.packet.CapsExtension
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 
@@ -68,6 +70,9 @@ class ChatRoomMemberImpl(
         private set
     override var sourceInfos = emptySet<SourceInfo>()
         private set
+
+    /** The node#ver advertised in a Caps extension. */
+    private var capsNodeVer: String? = null
 
     override var role: MemberRole? = null
         private set
@@ -134,6 +139,10 @@ class ChatRoomMemberImpl(
                 logger.debug { "robot: $robot" }
                 robot = newStatus
             }
+        }
+
+        presence.getExtension(CapsExtension::class.java)?.let {
+            capsNodeVer = "${it.node}#${it.ver}"
         }
 
         val sourceInfo = presence.getExtension<StandardExtensionElement>("SourceInfo", "jabber:client")
@@ -203,21 +212,29 @@ class ChatRoomMemberImpl(
      */
     override fun toString() = "ChatMember[$name]"
 
-    override val features: List<String> by lazy { chatRoom.xmppProvider.discoverFeatures(occupantJid) }
+    override val features: List<String> by lazy {
+        val features = chatRoom.xmppProvider.discoverFeatures(occupantJid)
+        // Update the stats once when the features are discovered.
+        capsNodeVer?.let {
+            XmppCapsStats.update(it, features)
+        } ?: logger.error("No caps nodeVer found")
 
-    val debugState: OrderedJsonObject
-        get() {
-            val o = OrderedJsonObject()
-            o["region"] = region.toString()
-            o["occupant_jid"] = occupantJid.toString()
-            o["jid"] = jid.toString()
-            o["robot"] = robot
-            o["is_jibri"] = isJibri
-            o["is_jigasi"] = isJigasi
-            o["role"] = role.toString()
-            o["stats_id"] = statsId.toString()
-            o["is_audio_muted"] = isAudioMuted
-            o["is_video_muted"] = isVideoMuted
-            return o
+        features
+    }
+
+    override val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["region"] = region.toString()
+            this["occupant_jid"] = occupantJid.toString()
+            this["jid"] = jid.toString()
+            this["robot"] = robot
+            this["is_jibri"] = isJibri
+            this["is_jigasi"] = isJigasi
+            this["role"] = role.toString()
+            this["stats_id"] = statsId.toString()
+            this["is_audio_muted"] = isAudioMuted
+            this["is_video_muted"] = isVideoMuted
+            this["features"] = features
+            this["capsNodeVer"] = capsNodeVer.toString()
         }
 }
