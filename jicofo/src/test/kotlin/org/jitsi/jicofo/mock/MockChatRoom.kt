@@ -41,6 +41,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
             every { name } returns id
             every { chatRoom } returns this@MockChatRoom.chatRoom
             every { features } returns DiscoveryUtil.getDefaultParticipantFeatureSet()
+            every { debugState } returns OrderedJsonObject()
         }
         memberList.add(member)
         chatRoomListeners.forEach { it.memberJoined(member) }

@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
+import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.Presence
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -68,4 +69,6 @@ interface ChatRoomMember {
      * the first time [features] is accessed it may block waiting for a disco#info response!
      */
     val features: List<String>
+
+    val debugState: OrderedJsonObject
 }

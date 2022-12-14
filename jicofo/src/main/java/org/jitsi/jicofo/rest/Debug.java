@@ -18,6 +18,7 @@ package org.jitsi.jicofo.rest;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.conference.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.*;
 import org.json.simple.*;
 
@@ -55,6 +56,15 @@ public class Debug
     {
         OrderedJsonObject confJson = jicofoServices.getConferenceDebugState(confId);
         return confJson.toJSONString();
+    }
+
+    @GET
+    @Path("xmpp-caps")
+    @Produces(MediaType.APPLICATION_JSON)
+    @NotNull
+    public String xmppCaps()
+    {
+        return XmppCapsStats.getStats().toJSONString();
     }
 
     @GET
