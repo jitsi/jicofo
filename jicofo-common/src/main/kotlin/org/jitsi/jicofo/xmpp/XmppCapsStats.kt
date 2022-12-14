@@ -22,7 +22,11 @@ import org.jitsi.utils.logging2.createLogger
 
 class XmppCapsStats {
     companion object {
-        private val map: MutableMap<String, E> = mutableMapOf()
+        /**
+         *  Maps a nodeVer string (the "node" and "ver" attributes from a caps extension (XEP-0115) joined by "#") to
+         *  the associated set of features and a counter for the number of participants with that nodeVer.
+         */
+        private val map: MutableMap<String, FeaturesAndCount> = mutableMapOf()
         private const val MAX_ENTRIES = 1000
         private val logger = createLogger()
 
@@ -39,7 +43,7 @@ class XmppCapsStats {
         fun update(nodeVer: String, features: List<String>) {
             synchronized(map) {
                 if (map.size < MAX_ENTRIES) {
-                    map.computeIfAbsent(nodeVer) { E(features) }.count++
+                    map.computeIfAbsent(nodeVer) { FeaturesAndCount(features) }.count++
                 } else {
                     map[nodeVer]?.let {
                         it.count++
@@ -49,7 +53,8 @@ class XmppCapsStats {
         }
     }
 
-    private class E(val features: List<String>) {
+    private class FeaturesAndCount(val features: List<String>) {
+        /** The number of participants seen with this set of features. */
         var count = 0
         fun json() = OrderedJsonObject().apply {
             this["count"] = count
