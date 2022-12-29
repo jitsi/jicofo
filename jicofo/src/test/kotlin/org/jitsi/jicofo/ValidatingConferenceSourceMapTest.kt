@@ -46,13 +46,14 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         val jid1 = "jid1"
         val jid2 = "jid2"
         val msid = "msid"
+        val cname = "cname"
 
-        val s1 = Source(1, VIDEO, msid = msid)
-        val s2 = Source(2, VIDEO, msid = msid)
-        val s3 = Source(3, VIDEO, msid = msid)
-        val s4 = Source(4, VIDEO, msid = msid)
-        val s5 = Source(5, VIDEO, msid = msid)
-        val s6 = Source(6, VIDEO, msid = msid)
+        val s1 = Source(1, VIDEO, msid = msid, cname = cname)
+        val s2 = Source(2, VIDEO, msid = msid, cname = cname)
+        val s3 = Source(3, VIDEO, msid = msid, cname = cname)
+        val s4 = Source(4, VIDEO, msid = msid, cname = cname)
+        val s5 = Source(5, VIDEO, msid = msid, cname = cname)
+        val s6 = Source(6, VIDEO, msid = msid, cname = cname)
         val s7 = Source(7, AUDIO)
         val videoSources = setOf(s1, s2, s3, s4, s5, s6)
         val sources = setOf(s1, s2, s3, s4, s5, s6, s7)
@@ -91,8 +92,8 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 context("Adding a second endpoint") {
                     val sourceSet2 = EndpointSourceSet(
                         setOf(
-                            Source(101, VIDEO, msid = "msid2"),
-                            Source(102, VIDEO, msid = "msid2"),
+                            Source(101, VIDEO, msid = "msid2", cname = cname),
+                            Source(102, VIDEO, msid = "msid2", cname = cname),
                             Source(103, AUDIO)
                         ),
                         setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(101, 102)))
@@ -192,9 +193,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             }
             context("SSRC group with missing MSID") {
                 val sources = setOf(
-                    Source(1, VIDEO, msid = null),
-                    Source(2, VIDEO, msid = null),
-                    Source(3, VIDEO, msid = null)
+                    Source(1, VIDEO, msid = null, cname = cname),
+                    Source(2, VIDEO, msid = null, cname = cname),
+                    Source(3, VIDEO, msid = null, cname = cname)
                 )
                 val groups = setOf(SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)))
                 shouldThrow<RequiredParameterMissingException> {
@@ -203,9 +204,9 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             }
             context("SSRC group with different MSID values") {
                 val sources = setOf(
-                    Source(1, VIDEO, msid = msid),
-                    Source(2, VIDEO, msid = msid),
-                    Source(3, VIDEO, msid = "differentMsid")
+                    Source(1, VIDEO, cname = cname, msid = msid),
+                    Source(2, VIDEO, cname = cname, msid = msid),
+                    Source(3, VIDEO, cname = cname, msid = "differentMsid")
                 )
                 val groups = setOf(SsrcGroup(SsrcGroupSemantics.Sim, listOf(1, 2, 3)))
 
@@ -219,7 +220,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         jid1,
                         EndpointSourceSet(
                             // No source for ssrc 2
-                            setOf(Source(1, VIDEO, msid = "msid")),
+                            setOf(Source(1, VIDEO, msid = "msid", cname = cname)),
                             setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(1, 2)))
                         )
                     )

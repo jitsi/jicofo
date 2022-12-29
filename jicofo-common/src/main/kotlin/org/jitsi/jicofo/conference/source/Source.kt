@@ -33,6 +33,8 @@ data class Source(
     val name: String? = null,
     /** Optional msid */
     val msid: String? = null,
+    /** Optional cname */
+    val cname: String? = null,
     /** Optional video type (camera or desktop) */
     val videoType: VideoType? = null
 ) {
@@ -43,6 +45,8 @@ data class Source(
         sourcePacketExtension.name,
         sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
+        sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
+            .filter { it.name == "cname" }.map { it.value }.firstOrNull(),
         if (sourcePacketExtension.videoType == null) null else VideoType.parseString(sourcePacketExtension.videoType)
     )
 
@@ -61,6 +65,10 @@ data class Source(
 
         if (encodeMsid && msid != null) {
             addChildExtension(ParameterPacketExtension("msid", msid))
+        }
+
+        if (cname != null) {
+            addChildExtension(ParameterPacketExtension("cname", cname))
         }
 
         this@Source.videoType?.let {
@@ -82,6 +90,9 @@ data class Source(
             msid?.let {
                 append(""","m":"$it"""")
             }
+            cname?.let {
+                append(""","c":"$it"""")
+            }
             if (videoType == VideoType.Desktop) {
                 append(""","v":"d"""")
             }
@@ -95,6 +106,7 @@ data class Source(
         put("media_type", mediaType.toString())
         put("name", name ?: "null")
         put("msid", msid ?: "null")
+        put("cname", cname ?: "null")
         put("videoType", videoType.toString())
     }
 

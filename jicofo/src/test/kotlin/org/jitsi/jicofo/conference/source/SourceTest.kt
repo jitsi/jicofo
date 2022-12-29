@@ -33,16 +33,18 @@ class SourceTest : ShouldSpec() {
                 name = "name-1"
                 videoType = "camera"
                 addChildExtension(ParameterPacketExtension("msid", "msid"))
+                addChildExtension(ParameterPacketExtension("cname", "cname"))
             }
 
             Source(MediaType.VIDEO, packetExtension) shouldBe
-                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", videoType = VideoType.Camera)
+                Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", cname = "cname", videoType = VideoType.Camera)
         }
         context("To XML") {
             val msidValue = "msid-value"
+            val cnameValue = "cname-value"
             val nameValue = "source-name-value"
             val videoType = VideoType.Desktop
-            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, videoType = videoType)
+            val source = Source(1, MediaType.VIDEO, name = nameValue, msid = msidValue, cname = cnameValue, videoType = videoType)
             val owner = "abcdabcd"
             val extension = source.toPacketExtension(owner = owner)
 
@@ -51,15 +53,16 @@ class SourceTest : ShouldSpec() {
             extension.videoType shouldBe videoType.toString()
             val parameters = extension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             parameters.filter { it.name == "msid" && it.value == msidValue }.size shouldBe 1
+            parameters.filter { it.name == "cname" && it.value == cnameValue }.size shouldBe 1
 
             val ssrcInfo = extension.getFirstChildOfType(SSRCInfoPacketExtension::class.java)
             ssrcInfo shouldNotBe null
             ssrcInfo.owner.toString() shouldBe owner
         }
         context("Compact JSON") {
-            Source(1, MediaType.VIDEO, name = "test-name", msid = "msid").compactJson shouldBe
+            Source(1, MediaType.VIDEO, name = "test-name", msid = "msid", cname = "cname").compactJson shouldBe
                 """
-                {"s":1,"n":"test-name","m":"msid"}
+                {"s":1,"n":"test-name","m":"msid","c":"cname"}
                 """.trimIndent()
             Source(
                 1,

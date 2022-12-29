@@ -47,7 +47,8 @@ fun ConferenceModifiedIQ.parseSources(): ConferenceSourceMap {
     sources?.mediaSources?.forEach { mediaSource ->
         mediaSource.sources.forEach { sourcePacketExtension ->
             val msid = "mixedmslabel mixedlabel${mediaSource.type}0"
-            val source = Source(sourcePacketExtension.ssrc, mediaSource.type, sourcePacketExtension.name, msid)
+            val cname = "mixed"
+            val source = Source(sourcePacketExtension.ssrc, mediaSource.type, sourcePacketExtension.name, msid, cname)
             parsedSources.add(SSRC_OWNER_JVB, EndpointSourceSet(source))
         }
         mediaSource.ssrcGroups.forEach {
