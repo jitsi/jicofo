@@ -27,6 +27,5 @@ data class OfferOptions(
     var tcc: Boolean = true,
     var remb: Boolean = false,
     var rtx: Boolean = true,
-    var opusRed: Boolean = true,
-    var opusMaxAverageBitrate: Int? = null
+    var opusRed: Boolean = true
 )

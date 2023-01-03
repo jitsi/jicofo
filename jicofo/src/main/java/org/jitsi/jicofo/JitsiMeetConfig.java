@@ -55,11 +55,6 @@ public class JitsiMeetConfig
      */
     public static final String PNAME_RTCSTATS_ENABLED = "rtcstatsEnabled";
 
-    /**
-     * The name of the "maxaveragebitrate" property.
-     */
-    public static final String PNAME_OPUS_MAX_AVG_BITRATE = "opusMaxAverageBitrate";
-
     private final Map<String, String> properties;
 
     /**
@@ -136,15 +131,6 @@ public class JitsiMeetConfig
         return enabled == null || enabled;
     }
 
-    /**
-     * @return the "maxaveragebitrate" which should be included in offers or -1 if not specified.
-     */
-    public int getOpusMaxAverageBitrate()
-    {
-        Integer maxAvgBitrate = getInt(PNAME_OPUS_MAX_AVG_BITRATE);
-        return maxAvgBitrate == null ? -1 : maxAvgBitrate;
-    }
-
     @NotNull
     public OrderedJsonObject getDebugState()
     {
@@ -152,7 +138,6 @@ public class JitsiMeetConfig
         o.put("start_audio_muted", String.valueOf(getStartAudioMuted()));
         o.put("start_video_muted", String.valueOf(getStartVideoMuted()));
         o.put("rtcstats_enabled", getRtcStatsEnabled());
-        o.put("opus_max_average_bitrate", getOpusMaxAverageBitrate());
 
         return o;
     }

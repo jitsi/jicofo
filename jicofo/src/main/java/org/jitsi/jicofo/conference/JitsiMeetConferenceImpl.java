@@ -1449,16 +1449,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Returns config for this conference.
-     * @return <tt>JitsiMeetConfig</tt> instance used in this conference.
-     */
-    @NotNull
-    public JitsiMeetConfig getConfig()
-    {
-        return config;
-    }
-
-    /**
      * Creates the shared document name by either using the conference room name
      * or a random string, depending on configuration.
      *

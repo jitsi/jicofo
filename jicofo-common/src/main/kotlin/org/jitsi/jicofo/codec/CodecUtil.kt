@@ -135,9 +135,6 @@ class CodecUtil {
 
                 // fmtp:111 minptime=10
                 opus.addParameterExtension("minptime", config.opus.minptime().toString())
-                if (options.opusMaxAverageBitrate != null) {
-                    opus.addParameterExtension("maxaveragebitrate", options.opusMaxAverageBitrate.toString())
-                }
                 // Avoid double FEC if RED is offered already.
                 if (config.opus.useInbandFec() && !config.opus.red.enabled()) {
                     // fmtp:111 useinbandfec=1
