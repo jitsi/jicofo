@@ -135,13 +135,6 @@ class CodecUtil {
 
                 // fmtp:111 minptime=10
                 opus.addParameterExtension("minptime", config.opus.minptime().toString())
-                if (options.stereo) {
-                    // fmtp: 111 stereo=1
-                    opus.addParameterExtension("stereo", "1")
-                }
-                if (options.opusMaxAverageBitrate != null) {
-                    opus.addParameterExtension("maxaveragebitrate", options.opusMaxAverageBitrate.toString())
-                }
                 // Avoid double FEC if RED is offered already.
                 if (config.opus.useInbandFec() && !config.opus.red.enabled()) {
                     // fmtp:111 useinbandfec=1
@@ -271,12 +264,6 @@ class CodecUtil {
 
             // a=rtcp-fb:XXX nack pli
             addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"))
-            if (options.minBitrate != null) {
-                addParameterExtension("x-google-min-bitrate", options.minBitrate.toString())
-            }
-            if (options.startBitrate != null) {
-                addParameterExtension("x-google-start-bitrate", options.startBitrate.toString())
-            }
             if (codecConfig.enableRemb && options.remb) {
                 // a=rtcp-fb:XXX goog-remb
                 addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null))

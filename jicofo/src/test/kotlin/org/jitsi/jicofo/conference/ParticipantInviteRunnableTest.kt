@@ -23,7 +23,6 @@ import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import org.jitsi.jicofo.JitsiMeetConfig
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocation
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.SSRC_OWNER_JVB
@@ -94,7 +93,6 @@ class ParticipantInviteRunnableTest : ShouldSpec({
         val jingleContentsSlot = slot<List<ContentPacketExtension>>()
         val sourcesContentsSlot = slot<ConferenceSourceMap>()
         val conference = mockk<JitsiMeetConferenceImpl> {
-            every { config } returns JitsiMeetConfig(HashMap())
             every { sources } returns conferenceSources
             every { chatRoom } returns mockk {
                 every { hasMember(any()) } returns true

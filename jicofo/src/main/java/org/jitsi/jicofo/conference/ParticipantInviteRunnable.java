@@ -277,10 +277,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private Offer createOffer()
         throws UnsupportedFeatureConfigurationException
     {
-        JitsiMeetConfig config = meetConference.getConfig();
-
         OfferOptions offerOptions = new OfferOptions();
-        OfferOptionsUtilKt.applyConstraints(offerOptions, config);
         OfferOptionsUtilKt.applyConstraints(offerOptions, participant);
         // Enable REMB only when TCC is not enabled.
         if (!offerOptions.getTcc() && participant.hasRembSupport())

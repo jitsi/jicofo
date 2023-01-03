@@ -17,23 +17,8 @@
  */
 package org.jitsi.jicofo.util
 
-import org.jitsi.jicofo.JitsiMeetConfig
 import org.jitsi.jicofo.codec.OfferOptions
 import org.jitsi.jicofo.conference.Participant
-
-fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
-    stereo = stereo && jitsiMeetConfig.stereoEnabled()
-    if (jitsiMeetConfig.minBitrate > 0) {
-        minBitrate = Integer.min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
-    }
-    if (jitsiMeetConfig.startBitrate > 0) {
-        startBitrate = Integer.min(jitsiMeetConfig.startBitrate, startBitrate ?: Int.MAX_VALUE)
-    }
-    if (jitsiMeetConfig.opusMaxAverageBitrate > 0) {
-        opusMaxAverageBitrate =
-            Integer.min(jitsiMeetConfig.opusMaxAverageBitrate, opusMaxAverageBitrate ?: Int.MAX_VALUE)
-    }
-}
 
 fun OfferOptions.applyConstraints(participant: Participant) {
     audio = audio && participant.hasAudioSupport()

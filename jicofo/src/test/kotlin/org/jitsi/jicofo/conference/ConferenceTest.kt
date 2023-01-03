@@ -74,7 +74,7 @@ class ConferenceTest : ShouldSpec() {
         mockk {
             every { conferenceEnded(any()) } answers { ended = true }
         },
-        mockk(relaxed = true) { every { debugState } returns OrderedJsonObject() },
+        HashMap(),
         Level.INFO,
         null,
         false,

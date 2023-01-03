@@ -128,14 +128,13 @@ class FocusManager(
         logLevel: Level,
         includeInStatistics: Boolean
     ): JitsiMeetConferenceImpl {
-        val config = JitsiMeetConfig(properties)
         var conference: JitsiMeetConferenceImpl
         synchronized(conferencesSyncRoot) {
             val jvbVersion = getBridgeVersionForConference(room)
             conference = JitsiMeetConferenceImpl(
                 room,
                 this,
-                config,
+                properties,
                 logLevel,
                 jvbVersion,
                 includeInStatistics,
