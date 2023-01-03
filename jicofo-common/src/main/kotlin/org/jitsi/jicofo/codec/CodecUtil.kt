@@ -271,9 +271,6 @@ class CodecUtil {
 
             // a=rtcp-fb:XXX nack pli
             addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"))
-            if (options.minBitrate != null) {
-                addParameterExtension("x-google-min-bitrate", options.minBitrate.toString())
-            }
             if (options.startBitrate != null) {
                 addParameterExtension("x-google-start-bitrate", options.startBitrate.toString())
             }

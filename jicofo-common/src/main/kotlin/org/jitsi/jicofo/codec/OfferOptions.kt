@@ -29,7 +29,6 @@ data class OfferOptions(
     var remb: Boolean = false,
     var rtx: Boolean = true,
     var opusRed: Boolean = true,
-    var minBitrate: Int? = null,
     var startBitrate: Int? = null,
     var opusMaxAverageBitrate: Int? = null
 )

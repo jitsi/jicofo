@@ -23,9 +23,6 @@ import org.jitsi.jicofo.conference.Participant
 
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
     stereo = stereo && jitsiMeetConfig.stereoEnabled()
-    if (jitsiMeetConfig.minBitrate > 0) {
-        minBitrate = Integer.min(jitsiMeetConfig.minBitrate, minBitrate ?: Int.MAX_VALUE)
-    }
     if (jitsiMeetConfig.startBitrate > 0) {
         startBitrate = Integer.min(jitsiMeetConfig.startBitrate, startBitrate ?: Int.MAX_VALUE)
     }

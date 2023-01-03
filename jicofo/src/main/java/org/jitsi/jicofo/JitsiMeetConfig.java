@@ -41,11 +41,6 @@ public class JitsiMeetConfig
     private final static Logger logger = new LoggerImpl(JitsiMeetConfig.class.getName());
 
     /**
-     * The name of the "minBitrate" property.
-     */
-    public static final String PNAME_MIN_BITRATE = "minBitrate";
-
-    /**
      * The name of the start muted property for audio.
      */
     public static final String PNAME_START_AUDIO_MUTED = "startAudioMuted";
@@ -157,15 +152,6 @@ public class JitsiMeetConfig
     }
 
     /**
-     * @return the "min bitrate" which should be included in offers.
-     */
-    public int getMinBitrate()
-    {
-        Integer minBitrate = getInt(PNAME_MIN_BITRATE);
-        return minBitrate == null ? -1 : minBitrate;
-    }
-
-    /**
      * @return the "start bitrate" which should be included in offers.
      */
     public int getStartBitrate()
@@ -199,7 +185,6 @@ public class JitsiMeetConfig
         o.put("start_audio_muted", String.valueOf(getStartAudioMuted()));
         o.put("start_video_muted", String.valueOf(getStartVideoMuted()));
         o.put("rtcstats_enabled", getRtcStatsEnabled());
-        o.put("min_bitrate", getMinBitrate());
         o.put("start_bitrate", getStartBitrate());
         o.put("stereo_enabled", stereoEnabled());
         o.put("opus_max_average_bitrate", getOpusMaxAverageBitrate());
