@@ -35,6 +35,7 @@ import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.rest.Application
+import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
@@ -129,7 +130,10 @@ class JicofoServices {
             val restApp = Application(
                 authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
-                healthChecker
+                healthChecker,
+                if (RestConfig.config.enableConferenceRequest) {
+                    ConferenceRequest(xmppServices.conferenceIqHandler)
+                } else null
             )
             createServer(RestConfig.config.httpServerConfig).also {
                 it.servletContextHandler.addServlet(

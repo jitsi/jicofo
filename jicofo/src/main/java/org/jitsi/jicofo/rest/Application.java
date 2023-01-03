@@ -37,7 +37,8 @@ public class Application
 
     public Application(ShibbolethAuthAuthority shibbolethAuthAuthority,
                        @NotNull Version version,
-                       JicofoHealthChecker healthChecker)
+                       JicofoHealthChecker healthChecker,
+                       ConferenceRequest conferenceRequest)
     {
         register(new AbstractBinder()
         {
@@ -64,6 +65,11 @@ public class Application
         if (RestConfig.config.getEnablePrometheus())
         {
             register(new Prometheus(JicofoMetricsContainer.getInstance()));
+        }
+
+        if (conferenceRequest != null)
+        {
+            register(conferenceRequest);
         }
     }
 }
