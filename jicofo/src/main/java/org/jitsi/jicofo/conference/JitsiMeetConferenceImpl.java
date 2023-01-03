@@ -28,7 +28,6 @@ import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
-import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
@@ -218,16 +217,13 @@ public class JitsiMeetConferenceImpl
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
-     * @param listener the listener that will be notified about this instance
-     *        events.
-     * @param config the conference configuration instance.
-     * @param logLevel (optional) the logging level to be used by this instance.
-     *        See {@link #logger} for more details.
+     * @param listener the listener that will be notified about this instance events.
+     * @param logLevel (optional) the logging level to be used by this instance. See {@link #logger} for more details.
      */
     public JitsiMeetConferenceImpl(
             @NotNull EntityBareJid roomName,
             ConferenceListener listener,
-            @NotNull JitsiMeetConfig config,
+            @NotNull Map<String, String> properties,
             Level logLevel,
             String jvbVersion,
             boolean includeInStatistics,
@@ -236,7 +232,7 @@ public class JitsiMeetConferenceImpl
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
 
-        this.config = config;
+        this.config = new JitsiMeetConfig(properties);
 
         this.roomName = roomName;
         this.listener = listener;
