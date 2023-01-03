@@ -271,9 +271,6 @@ class CodecUtil {
 
             // a=rtcp-fb:XXX nack pli
             addRtcpFeedbackType(createRtcpFbPacketExtension("nack", "pli"))
-            if (options.startBitrate != null) {
-                addParameterExtension("x-google-start-bitrate", options.startBitrate.toString())
-            }
             if (codecConfig.enableRemb && options.remb) {
                 // a=rtcp-fb:XXX goog-remb
                 addRtcpFeedbackType(createRtcpFbPacketExtension("goog-remb", null))
