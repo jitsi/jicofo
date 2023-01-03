@@ -22,7 +22,6 @@ import org.jitsi.jicofo.codec.OfferOptions
 import org.jitsi.jicofo.conference.Participant
 
 fun OfferOptions.applyConstraints(jitsiMeetConfig: JitsiMeetConfig) {
-    stereo = stereo && jitsiMeetConfig.stereoEnabled()
     if (jitsiMeetConfig.opusMaxAverageBitrate > 0) {
         opusMaxAverageBitrate =
             Integer.min(jitsiMeetConfig.opusMaxAverageBitrate, opusMaxAverageBitrate ?: Int.MAX_VALUE)

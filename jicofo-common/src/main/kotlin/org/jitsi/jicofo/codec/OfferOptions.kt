@@ -24,7 +24,6 @@ data class OfferOptions(
     var audio: Boolean = true,
     var video: Boolean = true,
     var sctp: Boolean = true,
-    var stereo: Boolean = true,
     var tcc: Boolean = true,
     var remb: Boolean = false,
     var rtx: Boolean = true,

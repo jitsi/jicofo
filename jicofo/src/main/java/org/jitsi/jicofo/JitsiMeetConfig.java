@@ -56,11 +56,6 @@ public class JitsiMeetConfig
     public static final String PNAME_RTCSTATS_ENABLED = "rtcstatsEnabled";
 
     /**
-     * The name of the "stereo" property.
-     */
-    public static final String PNAME_STEREO = "stereo";
-
-    /**
      * The name of the "maxaveragebitrate" property.
      */
     public static final String PNAME_OPUS_MAX_AVG_BITRATE = "opusMaxAverageBitrate";
@@ -142,15 +137,6 @@ public class JitsiMeetConfig
     }
 
     /**
-     * @return {@code true} iff stereo is enabled in this configuration.
-     */
-    public boolean stereoEnabled()
-    {
-        Boolean stereo = getBoolean(PNAME_STEREO);
-        return stereo != null && stereo;
-    }
-
-    /**
      * @return the "maxaveragebitrate" which should be included in offers or -1 if not specified.
      */
     public int getOpusMaxAverageBitrate()
@@ -166,7 +152,6 @@ public class JitsiMeetConfig
         o.put("start_audio_muted", String.valueOf(getStartAudioMuted()));
         o.put("start_video_muted", String.valueOf(getStartVideoMuted()));
         o.put("rtcstats_enabled", getRtcStatsEnabled());
-        o.put("stereo_enabled", stereoEnabled());
         o.put("opus_max_average_bitrate", getOpusMaxAverageBitrate());
 
         return o;

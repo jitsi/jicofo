@@ -135,10 +135,6 @@ class CodecUtil {
 
                 // fmtp:111 minptime=10
                 opus.addParameterExtension("minptime", config.opus.minptime().toString())
-                if (options.stereo) {
-                    // fmtp: 111 stereo=1
-                    opus.addParameterExtension("stereo", "1")
-                }
                 if (options.opusMaxAverageBitrate != null) {
                     opus.addParameterExtension("maxaveragebitrate", options.opusMaxAverageBitrate.toString())
                 }
