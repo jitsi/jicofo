@@ -176,7 +176,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-59-g76a5c13</version>
+        <version>1.0-61-gcdc27dc</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -207,6 +207,11 @@
         <groupId>org.glassfish.jersey.media</groupId>
         <artifactId>jersey-media-json-jackson</artifactId>
         <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+          <groupId>com.fasterxml.jackson.module</groupId>
+          <artifactId>jackson-module-kotlin</artifactId>
+          <version>2.14.1</version>
       </dependency>
       <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
       <dependency>

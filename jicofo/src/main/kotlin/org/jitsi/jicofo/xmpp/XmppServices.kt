@@ -83,7 +83,7 @@ class XmppServices(
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     val jingleHandler = JingleIqRequestHandler(setOf(clientConnection.xmppConnection))
 
-    private val conferenceIqHandler = ConferenceIqHandler(
+    val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
         focusManager = focusManager,
         focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
