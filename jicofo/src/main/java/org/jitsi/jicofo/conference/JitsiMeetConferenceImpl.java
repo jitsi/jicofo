@@ -107,6 +107,21 @@ public class JitsiMeetConferenceImpl
     private final Object participantLock = new Object();
 
     /**
+     * The number of conference participants with a visitor muc role.
+     */
+    private int numVisitors = 0;
+
+    /**
+     * The last time the number of visitors was updated.
+     */
+    private Instant visitorsLastUpdated = null;
+
+    /**
+     * A task to update the number of visitors.
+     */
+    private Future<?> sendNumVisitorsTask;
+
+    /**
      * The {@link JibriRecorder} instance used to provide live streaming through
      * Jibri.
      */
@@ -471,6 +486,15 @@ public class JitsiMeetConferenceImpl
             Boolean.TRUE.toString(),
             false);
 
+        if (VisitorsConfig.config.getEnabled())
+        {
+            setConferenceProperty(
+                ConferenceProperties.KEY_VISITORS_ENABLED,
+                Boolean.TRUE.toString(),
+                false
+            );
+        }
+
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
@@ -614,6 +638,11 @@ public class JitsiMeetConferenceImpl
             else
             {
                 inviteChatMember(chatRoomMember, true);
+            }
+
+            if (chatRoomMember.getRole() == MemberRole.VISITOR)
+            {
+                visitorAdded();
             }
         }
     }
@@ -802,6 +831,11 @@ public class JitsiMeetConferenceImpl
             {
                 expireBridgeSessions();
             }
+        }
+
+        if (chatRoomMember.getRole() == MemberRole.VISITOR)
+        {
+            visitorRemoved();
         }
 
         if (chatRoom == null || chatRoom.getMembersCount() == 0)
@@ -1517,6 +1551,54 @@ public class JitsiMeetConferenceImpl
                 new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
         logger.info("Scheduled single person timeout.");
+    }
+
+    /** Called when a new visitor has been added to the conference. */
+    private void visitorAdded()
+    {
+        updateVisitors(+1);
+    }
+
+    /** Called when a new visitor has been added to the conference. */
+    private void visitorRemoved()
+    {
+        updateVisitors(-1);
+    }
+
+    /** Called when the number of visitors in the conference has changed. */
+    private void updateVisitors(int delta)
+    {
+        synchronized(this)
+        {
+            numVisitors += delta;
+            Instant now = Instant.now();
+            if (sendNumVisitorsTask != null)
+            {
+                return;
+            }
+            if (visitorsLastUpdated != null &&
+                Duration.between(visitorsLastUpdated, now).
+                    compareTo(VisitorsConfig.config.getNotificationInterval()) < 0) {
+                sendNumVisitorsTask = TaskPools.getIoPool().submit(this::sendNumVisitors);
+                return;
+            }
+        }
+        sendNumVisitors();
+    }
+
+    private void sendNumVisitors()
+    {
+        int numVisitors;
+        synchronized (this) {
+            numVisitors = this.numVisitors;
+            visitorsLastUpdated = Instant.now();
+            sendNumVisitorsTask = null;
+        }
+        // Update the state in presence.
+        setConferenceProperty(
+            ConferenceProperties.KEY_VISITOR_COUNT,
+            Integer.toString(numVisitors)
+        );
     }
 
     /**
