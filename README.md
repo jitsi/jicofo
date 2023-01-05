@@ -11,7 +11,7 @@ Jitsi Meet conferences are associated with an XMPP
 XMPP server (prosody).
 
 Jicofo joins the conference MUC and is then responsible for initiating a 
-[Jingle](https://xmpp.org/extensions/xep-0166.html) with each participant (in this sense it is the "focus" of the 
+[Jingle](https://xmpp.org/extensions/xep-0166.html) session with each participant (in this sense it is the "focus" of the
 conference, which is where its name comes from). While Jicofo manages and terminates Jingle sessions, it does not
 process any of the media (audio/video). Instead, it uses one or more
 [Jitsi Videobridge](github.com/jitsi/jitsi-videobridge/).
@@ -59,7 +59,7 @@ administrator credentials to start. By default, Jitsi Meet uses XMPP domain with
 VirtualHost "auth.jitsi.example.com"
     authentication = "internal_hashed"
 ```
-Next step is to create admin user that will be used by Jicofo to log in:
+The next step is to create an admin user for Jicofo:
 ```
 sudo prosodyctl register focus auth.jitsi.example.com focuspassword
 ```
@@ -78,9 +78,9 @@ Build using maven with:
 mvn install
 ```
 
-This will created a packet in `jicofo/target/jicofo-1.1-SNAPSHOT-archive.zip`
+This will create a package in `jicofo/target/jicofo-1.1-SNAPSHOT-archive.zip`
 ### Running Jicofo
-Extract distribution package and run with `jicofo.sh`.
+Extract the distribution package and run with `jicofo.sh`.
 
 ### Certificates
 Jicofo uses an XMPP user connection (on port 5222 by default), and since the
