@@ -1578,7 +1578,8 @@ public class JitsiMeetConferenceImpl
             }
             if (visitorsLastUpdated != null &&
                 Duration.between(visitorsLastUpdated, now).
-                    compareTo(VisitorsConfig.config.getNotificationInterval()) < 0) {
+                    compareTo(VisitorsConfig.config.getNotificationInterval()) < 0)
+            {
                 sendNumVisitorsTask = TaskPools.getIoPool().submit(this::sendNumVisitors);
                 return;
             }
@@ -1589,7 +1590,8 @@ public class JitsiMeetConferenceImpl
     private void sendNumVisitors()
     {
         int numVisitors;
-        synchronized (this) {
+        synchronized (this)
+        {
             numVisitors = this.numVisitors;
             visitorsLastUpdated = Instant.now();
             sendNumVisitorsTask = null;
