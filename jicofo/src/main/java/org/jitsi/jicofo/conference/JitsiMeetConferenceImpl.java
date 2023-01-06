@@ -362,6 +362,11 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
+        if (sendNumVisitorsTask != null)
+        {
+            sendNumVisitorsTask.cancel(false);
+        }
+
         if (jibriSipGateway != null)
         {
             try
@@ -1580,11 +1585,17 @@ public class JitsiMeetConferenceImpl
             {
                 return;
             }
+
             if (visitorsLastUpdated != null &&
                 Duration.between(visitorsLastUpdated, now).
                     compareTo(VisitorsConfig.config.getNotificationInterval()) < 0)
             {
-                sendNumVisitorsTask = TaskPools.getIoPool().submit(this::sendNumVisitors);
+                Instant notificationTime = visitorsLastUpdated.plus(VisitorsConfig.config.getNotificationInterval());
+                Duration delay = Duration.between(now, notificationTime);
+                sendNumVisitorsTask =
+                    TaskPools.getScheduledPool().schedule(this::sendNumVisitors,
+                        delay.toMillis(),
+                        TimeUnit.MILLISECONDS);
                 return;
             }
         }
