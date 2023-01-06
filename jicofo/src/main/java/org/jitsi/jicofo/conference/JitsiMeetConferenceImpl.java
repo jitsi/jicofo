@@ -24,6 +24,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -107,19 +108,15 @@ public class JitsiMeetConferenceImpl
     private final Object participantLock = new Object();
 
     /**
-     * The number of conference participants with a visitor muc role.
+     * A stat number of conference participants with a visitor muc role.
      */
-    private int numVisitors = 0;
-
-    /**
-     * The last time the number of visitors was updated.
-     */
-    private Instant visitorsLastUpdated = null;
-
-    /**
-     * A task to update the number of visitors.
-     */
-    private Future<?> sendNumVisitorsTask;
+    private RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
+        (numVisitors) -> {
+            setConferenceProperty(
+                ConferenceProperties.KEY_VISITOR_COUNT,
+                Integer.toString(numVisitors));
+            return null;
+        });
 
     /**
      * The {@link JibriRecorder} instance used to provide live streaming through
@@ -1561,61 +1558,13 @@ public class JitsiMeetConferenceImpl
     /** Called when a new visitor has been added to the conference. */
     private void visitorAdded()
     {
-        updateVisitors(+1);
+        visitorCount.adjustValue(+1);
     }
 
     /** Called when a new visitor has been added to the conference. */
     private void visitorRemoved()
     {
-        updateVisitors(-1);
-    }
-
-    /** Called when the number of visitors in the conference has changed. */
-    private void updateVisitors(int delta)
-    {
-        synchronized(this)
-        {
-            numVisitors += delta;
-            if (numVisitors < 0) {
-                /* Something's gone wrong with our counting */
-                logger.error("numVisitors is " + numVisitors + ", something's wrong");
-            }
-            Instant now = Instant.now();
-            if (sendNumVisitorsTask != null)
-            {
-                return;
-            }
-
-            if (visitorsLastUpdated != null &&
-                Duration.between(visitorsLastUpdated, now).
-                    compareTo(VisitorsConfig.config.getNotificationInterval()) < 0)
-            {
-                Instant notificationTime = visitorsLastUpdated.plus(VisitorsConfig.config.getNotificationInterval());
-                Duration delay = Duration.between(now, notificationTime);
-                sendNumVisitorsTask =
-                    TaskPools.getScheduledPool().schedule(this::sendNumVisitors,
-                        delay.toMillis(),
-                        TimeUnit.MILLISECONDS);
-                return;
-            }
-        }
-        sendNumVisitors();
-    }
-
-    private void sendNumVisitors()
-    {
-        int numVisitors;
-        synchronized (this)
-        {
-            numVisitors = this.numVisitors;
-            visitorsLastUpdated = Instant.now();
-            sendNumVisitorsTask = null;
-        }
-        // Update the state in presence.
-        setConferenceProperty(
-            ConferenceProperties.KEY_VISITOR_COUNT,
-            Integer.toString(numVisitors)
-        );
+        visitorCount.adjustValue(-1);
     }
 
     /**
