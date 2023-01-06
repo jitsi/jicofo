@@ -73,7 +73,7 @@ interface XmppConnectionConfig {
     val useTls: Boolean
     val name: String
     val jid
-        get() = "$username/$domain"
+        get() = "$username@$domain"
 }
 
 class XmppVisitorConnectionConfig(
