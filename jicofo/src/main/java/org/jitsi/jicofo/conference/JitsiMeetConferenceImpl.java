@@ -1571,6 +1571,10 @@ public class JitsiMeetConferenceImpl
         synchronized(this)
         {
             numVisitors += delta;
+            if (numVisitors < 0) {
+                /* Something's gone wrong with our counting */
+                logger.error("numVisitors is " + numVisitors + ", something's wrong");
+            }
             Instant now = Instant.now();
             if (sendNumVisitorsTask != null)
             {
