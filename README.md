@@ -14,8 +14,7 @@ Jicofo joins the conference MUC and is then responsible for initiating a
 [Jingle](https://xmpp.org/extensions/xep-0166.html) session with each participant (in this sense it is the "focus" of the
 conference, which is where its name comes from). While Jicofo manages and terminates Jingle sessions, it does not
 process any of the media (audio/video). Instead, it uses one or more
-[Jitsi Videobridge](github.com/jitsi/jitsi-videobridge/).
-instances.
+[Jitsi Videobridge](github.com/jitsi/jitsi-videobridge/) instances.
 
 Jicofo is responsible for selecting a Jitsi Videobridge for each participant, and manages the set of videobridges for 
 the conference with the COLIBRI protocol (colibri version 2 is now used, the format in XEP-0340 is now deprecated).
@@ -52,24 +51,18 @@ This section is only required for a manual setup, not necessary when using Quick
 
 ### Prosody configuration
 
-Jicofo requires special 'owner' permissions in XMPP Multi User Chat to manage user roles. Because of that it needs
-administrator credentials to start. By default, Jitsi Meet uses XMPP domain with anonymous login method
-(jitsi.example.com), so additional VirtualHost has to be added to Prosody configuration(etc\prosody\prosody.cfg.lua):
+Jicofo needs privileges to create Multi-User Chat rooms. To grant these privileges we create an account for it and add
+it to the global `admins` list. We create a new virtual host, because the one used by clients only supports anonymous
+authentication. We add this to Prosody's config file (`/etc/prosody/prosody.cfg.lua` by default):
 ```
+admins = { focus@auth.jitsi.example.com }
 VirtualHost "auth.jitsi.example.com"
     authentication = "internal_hashed"
 ```
-The next step is to create an admin user for Jicofo:
-```
-sudo prosodyctl register focus auth.jitsi.example.com focuspassword
-```
-Include focus user as one of server admins:
-```
-admins = { focus@auth.jitsi.example.com }
-```
-Restart Prosody:
+Then restart Prosody and create the user account:
 ```
 sudo prosodyctl restart
+sudo prosodyctl register focus auth.jitsi.example.com focuspassword
 ```
 
 ### Building Jicofo
