@@ -41,36 +41,57 @@ constructor(
 
     private var updateTask: Future<*>? = null
 
-    val value: Int
+    var value: Int
         get() = synchronized(lock) { _value }
-    // TODO: we could also allow directly setting this value not just adjusting it, but will need to duplicate
-    //  or refactor code from adjustValue
+        set(newValue) {
+            val report: Boolean
+            synchronized(lock) {
+                _value = newValue
+
+                report = valueUpdated()
+            }
+
+            if (report) {
+                reportChanged()
+            }
+        }
 
     fun adjustValue(delta: Int) {
+        val report: Boolean
         synchronized(lock) {
             _value += delta
 
-            val now = Instant.now()
-            if (updateTask != null) {
-                return
-            }
-
-            lastChanged?.let {
-                if (Duration.between(it, now) < changeInterval) {
-                    val notificationTime = it.plus(changeInterval)
-                    val delay = Duration.between(now, notificationTime)
-                    updateTask = scheduledPool.schedule(
-                        { this.reportChanged() },
-                        delay.toMillis(),
-                        TimeUnit.MILLISECONDS
-                    )
-                }
-            }
+            report = valueUpdated()
         }
-        reportChanged()
+
+        if (report) {
+            reportChanged()
+        }
     }
 
-    fun stop() = updateTask?.cancel(false)
+    /** Call this inside the synchronization block after the value is updated.  If it returns true,
+     * call [reportChanged] immediately, *outside* the synchronization block.
+     */
+    private fun valueUpdated(): Boolean {
+        val now = Instant.now()
+        if (updateTask != null) {
+            return false
+        }
+
+        lastChanged?.let {
+            if (Duration.between(it, now) < changeInterval) {
+                val notificationTime = it.plus(changeInterval)
+                val delay = Duration.between(now, notificationTime)
+                updateTask = scheduledPool.schedule(
+                    { this.reportChanged() },
+                    delay.toMillis(),
+                    TimeUnit.MILLISECONDS
+                )
+                return false
+            }
+        }
+        return true
+    }
 
     private fun reportChanged() {
         val value: Int
@@ -81,4 +102,6 @@ constructor(
         }
         onChanged(value)
     }
+
+    fun stop() = updateTask?.cancel(false)
 }
