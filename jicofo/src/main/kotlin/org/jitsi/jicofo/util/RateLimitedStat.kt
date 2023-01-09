@@ -70,6 +70,8 @@ constructor(
         reportChanged()
     }
 
+    fun stop() = updateTask?.cancel(false)
+
     private fun reportChanged() {
         val value: Int
         synchronized(this) {

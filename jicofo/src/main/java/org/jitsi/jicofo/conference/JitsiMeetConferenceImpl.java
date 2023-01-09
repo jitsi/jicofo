@@ -359,10 +359,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        if (sendNumVisitorsTask != null)
-        {
-            sendNumVisitorsTask.cancel(false);
-        }
+        visitorCount.stop();
 
         if (jibriSipGateway != null)
         {
