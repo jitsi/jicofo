@@ -51,9 +51,9 @@ This section is only required for a manual setup, not necessary when using Quick
 
 ### Prosody configuration
 
-Jicofo needs privileges to create Multi-User Chat rooms. To grant those we create an account for it and add it to the
-global `admins` list. We create a separate `auth.` virtual host, because to default host used by clients only supports
-anonymous authentication. We add this to Prosody's config file (`/etc/prosody/prosody.cfg.lua` by default):
+Jicofo needs privileges to create Multi-User Chat rooms. To grant these privileges we create an account for it and add
+it to the global `admins` list. We create a new virtual host, because the one used by clients only supports anonymous
+authentication. We add this to Prosody's config file (`/etc/prosody/prosody.cfg.lua` by default):
 ```
 admins = { focus@auth.jitsi.example.com }
 VirtualHost "auth.jitsi.example.com"
