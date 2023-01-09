@@ -74,7 +74,7 @@ constructor(
 
     private fun reportChanged() {
         val value: Int
-        synchronized(this) {
+        synchronized(lock) {
             value = this._value
             lastChanged = clock.instant()
             updateTask = null
