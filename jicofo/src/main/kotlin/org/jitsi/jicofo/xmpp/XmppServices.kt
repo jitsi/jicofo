@@ -93,7 +93,9 @@ class XmppServices(
     private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
-    val jingleHandler = JingleIqRequestHandler(setOf(clientConnection.xmppConnection))
+    val jingleHandler = JingleIqRequestHandler(
+        visitorConnections.map { it.xmppConnection }.toSet() + clientConnection.xmppConnection
+    )
 
     val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
