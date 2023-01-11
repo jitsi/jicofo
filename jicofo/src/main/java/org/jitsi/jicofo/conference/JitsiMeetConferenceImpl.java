@@ -24,6 +24,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
@@ -111,6 +112,17 @@ public class JitsiMeetConferenceImpl
      * This lock is used to synchronise write access to {@link #participants}.
      */
     private final Object participantLock = new Object();
+
+    /**
+     * A stat number of conference participants with a visitor muc role.
+     */
+    private RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
+        (numVisitors) -> {
+            setConferenceProperty(
+                ConferenceProperties.KEY_VISITOR_COUNT,
+                Integer.toString(numVisitors));
+            return null;
+        });
 
     /**
      * The {@link JibriRecorder} instance used to provide live streaming through
@@ -353,6 +365,8 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
+        visitorCount.stop();
+
         if (jibriSipGateway != null)
         {
             try
@@ -476,6 +490,15 @@ public class JitsiMeetConferenceImpl
             ConferenceProperties.KEY_SUPPORTS_SESSION_RESTART,
             Boolean.TRUE.toString(),
             false);
+
+        if (VisitorsConfig.config.getEnabled())
+        {
+            setConferenceProperty(
+                ConferenceProperties.KEY_VISITORS_ENABLED,
+                Boolean.TRUE.toString(),
+                false
+            );
+        }
 
         presenceExtensions.add(createConferenceProperties());
 
@@ -636,6 +659,11 @@ public class JitsiMeetConferenceImpl
             else
             {
                 inviteChatMember(chatRoomMember, true);
+            }
+
+            if (chatRoomMember.getRole() == MemberRole.VISITOR)
+            {
+                visitorAdded();
             }
         }
     }
@@ -823,6 +851,11 @@ public class JitsiMeetConferenceImpl
             {
                 expireBridgeSessions();
             }
+        }
+
+        if (chatRoomMember.getRole() == MemberRole.VISITOR)
+        {
+            visitorRemoved();
         }
 
         if (chatRoom == null || chatRoom.getMembersCount() == 0)
@@ -1636,6 +1669,18 @@ public class JitsiMeetConferenceImpl
                 new SinglePersonTimeout(), timeout, TimeUnit.MILLISECONDS);
 
         logger.info("Scheduled single person timeout.");
+    }
+
+    /** Called when a new visitor has been added to the conference. */
+    private void visitorAdded()
+    {
+        visitorCount.adjustValue(+1);
+    }
+
+    /** Called when a new visitor has been added to the conference. */
+    private void visitorRemoved()
+    {
+        visitorCount.adjustValue(-1);
     }
 
     /**

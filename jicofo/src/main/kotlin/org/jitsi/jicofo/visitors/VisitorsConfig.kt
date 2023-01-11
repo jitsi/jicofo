@@ -20,6 +20,7 @@ package org.jitsi.jicofo.visitors
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.metaconfig.config
+import java.time.Duration
 
 class VisitorsConfig private constructor() {
     val enabled: Boolean by config {
@@ -32,6 +33,10 @@ class VisitorsConfig private constructor() {
         "jicofo.visitors.max-visitors-per-node".from(newConfig)
     }
     val visitorNodeIds = XmppConfig.visitors.map { it.name }.toList()
+
+    val notificationInterval: Duration by config {
+        "jicofo.visitors.notification-interval".from(newConfig)
+    }
 
     companion object {
         @JvmField
