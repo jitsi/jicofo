@@ -54,9 +54,8 @@ case "$1" in
         fi
 
         # Store values, so we can use it if we are configuring other packages on the same machine
-        # we are currently doing this on every upgrade in order to be able to succesfully upgrade
-        # from old packages, otherwise we can do it only on new configuraiton or reconfiguration
-        db_set jicofo/jicofo-authuser "$JICOFO_AUTH_USER"
+        # we are currently doing this on every upgrade in order to be able to successfully upgrade
+        # from old packages, otherwise we can do it only on new configuration or reconfiguration
         db_set jicofo/jicofo-authpassword "$JICOFO_AUTH_PASSWORD"
 
         # and we're done with debconf
