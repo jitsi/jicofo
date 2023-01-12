@@ -3,12 +3,6 @@ Type: string
 _Description: Hostname:
  The jicofo package needs the DNS hostname of your instance.
 
-Template: jicofo/jicofo-authuser
-Type: string
-Default: focus
-_Description: Jicofo username:
- The jicofo needs an authenticated admin user to connect to xmpp server.
-
 Template: jicofo/jicofo-authpassword
 Type: password
 _Description: Jicofo user password:
