@@ -116,7 +116,7 @@ public class JitsiMeetConferenceImpl
     /**
      * A stat number of conference participants with a visitor muc role.
      */
-    private RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
+    private final RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
         (numVisitors) -> {
             setConferenceProperty(
                 ConferenceProperties.KEY_VISITOR_COUNT,
@@ -1863,9 +1863,9 @@ public class JitsiMeetConferenceImpl
      */
     private class VisitorChatRoomListenerImpl extends DefaultChatRoomListener
     {
-        private Logger logger = JitsiMeetConferenceImpl.this.logger.createChildLogger(
+        private final Logger logger = JitsiMeetConferenceImpl.this.logger.createChildLogger(
                 VisitorChatRoomListenerImpl.class.getSimpleName());
-        private ChatRoom chatRoom;
+        private final ChatRoom chatRoom;
 
         private VisitorChatRoomListenerImpl(ChatRoom chatRoom)
         {
