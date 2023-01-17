@@ -45,15 +45,15 @@ class XmppConfig private constructor() {
         val client = XmppClientConnectionConfig()
 
         @JvmStatic
-        val visitors: List<XmppVisitorConnectionConfig> by config<List<XmppVisitorConnectionConfig>> {
+        val visitors: Map<String, XmppVisitorConnectionConfig> by config {
             "jicofo.xmpp.visitors".from(newConfig)
                 .convertFrom<ConfigObject> { cfg ->
-                    cfg.entries.map { it.toXmppVisitorConnectionConfig() }
+                    cfg.entries.associate {
+                        val xmppConfig = it.toXmppVisitorConnectionConfig()
+                        Pair(xmppConfig.name, xmppConfig)
+                    }
                 }
         }
-
-        @JvmStatic
-        fun getVisitorConfigByName(name: String) = visitors.firstOrNull { it.name == name }
 
         @JvmField
         val config = XmppConfig()

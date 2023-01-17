@@ -1487,7 +1487,7 @@ public class JitsiMeetConferenceImpl
                 return null;
             }
 
-            XmppVisitorConnectionConfig config = XmppConfig.getVisitorConfigByName(node);
+            XmppVisitorConnectionConfig config = XmppConfig.getVisitors().get(node);
             if (config == null)
             {
                 logger.error("No XMPP config for node " + node);

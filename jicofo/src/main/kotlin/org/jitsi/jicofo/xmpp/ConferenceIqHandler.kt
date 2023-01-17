@@ -87,14 +87,12 @@ class ConferenceIqHandler(
 
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
         val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(visitorRequested) else null
-        if (vnode != null) {
+        XmppConfig.visitors[vnode]?.jid?.let {
             response.vnode = vnode
-            val focusJid = XmppConfig.visitors.find { it.name == vnode }?.jid
-            if (focusJid != null) {
-                response.focusJid = focusJid
-            } else {
-                logger.error("No XmppConnectionConfig for vnode=$vnode")
-            }
+            response.focusJid = it
+        } ?: run {
+            // This shouldn't happen. But if it does go on without redirection.
+            logger.error("No XmppConnectionConfig for vnode=$vnode")
         }
 
         var ready: Boolean = focusManager.conferenceRequest(room, query.propertiesMap)

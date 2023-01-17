@@ -48,7 +48,7 @@ class XmppServices(
         clientConnection
     }
 
-    val visitorConnections: List<XmppProvider> = XmppConfig.visitors.mapNotNull { config ->
+    val visitorConnections: List<XmppProvider> = XmppConfig.visitors.values.mapNotNull { config ->
         if (config.enabled) {
             logger.info("Using XMPP visitor connection ${config.name}")
             XmppProviderImpl(config, logger).apply { start() }
