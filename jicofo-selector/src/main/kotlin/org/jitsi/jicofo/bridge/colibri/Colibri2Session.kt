@@ -406,6 +406,7 @@ class Colibri2Session(
             put("ice_controlling", iceControlling)
             put("dtls_setup", dtlsSetup)
             put("websocket_active", websocketActive)
+            meshId?.let { put("mesh_id", it) }
         }
 
         /** Update or create a relay endpoint for a specific participant. */
