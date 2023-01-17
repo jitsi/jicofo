@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.RegistrationListener
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority

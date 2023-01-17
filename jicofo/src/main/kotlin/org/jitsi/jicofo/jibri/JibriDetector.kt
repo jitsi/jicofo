@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter

@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager

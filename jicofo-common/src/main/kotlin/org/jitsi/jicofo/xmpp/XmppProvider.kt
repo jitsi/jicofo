@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp
+package org.jitsi.jicofo.xmpp
 
-import org.jitsi.jicofo.xmpp.XmppConnectionConfig
+import org.jitsi.impl.protocol.xmpp.ChatRoom
+import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smackx.disco.packet.DiscoverInfo
 import org.jxmpp.jid.EntityBareJid

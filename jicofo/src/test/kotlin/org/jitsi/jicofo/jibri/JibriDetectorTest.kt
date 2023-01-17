@@ -22,9 +22,9 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo

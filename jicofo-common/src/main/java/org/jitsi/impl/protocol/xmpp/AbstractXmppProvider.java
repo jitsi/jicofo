@@ -21,6 +21,7 @@ import java.util.*;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 
 /**

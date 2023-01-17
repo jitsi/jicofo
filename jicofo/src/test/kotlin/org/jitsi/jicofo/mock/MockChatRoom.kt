@@ -18,8 +18,8 @@ package org.jitsi.jicofo.mock
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.discovery.DiscoveryUtil
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.utils.OrderedJsonObject

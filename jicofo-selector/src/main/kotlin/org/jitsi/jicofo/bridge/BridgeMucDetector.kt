@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.bridge
 
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.BaseBrewery
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.EntityBareJid

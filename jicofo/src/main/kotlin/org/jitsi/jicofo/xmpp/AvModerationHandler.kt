@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.RegistrationListener
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType

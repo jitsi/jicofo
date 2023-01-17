@@ -17,7 +17,7 @@ package org.jitsi.jicofo.mock
 
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jxmpp.jid.EntityBareJid
 
