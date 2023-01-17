@@ -1460,8 +1460,8 @@ public class JitsiMeetConferenceImpl
     private String selectVisitorNode()
             throws Exception
     {
-        ChatRoom chatRoomToJoin = null;
-        String node = null;
+        ChatRoom chatRoomToJoin;
+        String node;
 
         synchronized (visitorChatRooms)
         {
@@ -1473,53 +1473,51 @@ public class JitsiMeetConferenceImpl
                 logger.warn("Visitor node required, but none available.");
                 return null;
             }
-            else
+            if (visitorChatRooms.containsKey(node))
             {
-                if (visitorChatRooms.containsKey(node))
-                {
-                    // Already joined.
-                    return node;
-                }
-                else
-                {
-                    XmppProvider xmppProvider = jicofoServices.getXmppServices().getXmppVisitorConnectionByName(node);
-                    XmppVisitorConnectionConfig config = XmppConfig.getVisitorConfigByName(node);
-                    EntityBareJid visitorMucJid = JidCreate.entityBareFrom(
-                            roomName.getLocalpart(), config.getConferenceService());
-
-                    // Will call join after releasing the lock
-                    chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
-                    chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoom));
-                    visitorChatRooms.put(node, chatRoomToJoin);
-                }
+                // Already joined.
+                return node;
             }
+
+            // Join a new visitor chat room on the selected [node].
+            XmppProvider xmppProvider = jicofoServices.getXmppServices().getXmppVisitorConnectionByName(node);
+            if (xmppProvider == null)
+            {
+                logger.error("No XMPP provider for node " + node);
+                return null;
+            }
+
+            XmppVisitorConnectionConfig config = XmppConfig.getVisitorConfigByName(node);
+            if (config == null)
+            {
+                logger.error("No XMPP config for node " + node);
+                return null;
+            }
+
+            EntityBareJid visitorMucJid
+                    = JidCreate.entityBareFrom(roomName.getLocalpart(), config.getConferenceService());
+
+            // Will call join after releasing the lock
+            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
+            chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
+            visitorChatRooms.put(node, chatRoomToJoin);
         }
 
-        if (chatRoomToJoin != null)
-        {
-            chatRoomToJoin.join();
-            // TODO: what do we want to include in presence in visitor MUCs?
-//        Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
-//
-//        // Advertise shared Etherpad document
-//        presenceExtensions.add(EtherpadPacketExt.forDocumentName(etherpadName));
-//
-//        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
-//        versionsExtension.addComponentVersion(
-//                ComponentVersionsExtension.COMPONENT_FOCUS,
-//                CurrentVersionImpl.VERSION.toString());
-//        presenceExtensions.add(versionsExtension);
-//
-//        setConferenceProperty(
-//                ConferenceProperties.KEY_SUPPORTS_SESSION_RESTART,
-//                Boolean.TRUE.toString(),
-//                false);
-//
-//        presenceExtensions.add(createConferenceProperties());
-//
-//        // updates presence with presenceExtensions and sends it
-//        chatRoom.modifyPresence(null, presenceExtensions);
-        }
+        chatRoomToJoin.join();
+        Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
+
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
+        versionsExtension.addComponentVersion(
+                ComponentVersionsExtension.COMPONENT_FOCUS,
+                CurrentVersionImpl.VERSION.toString());
+        presenceExtensions.add(versionsExtension);
+
+        // TODO: what do we want to include in presence in visitor MUCs? Do we need to keep their conference
+        // properties up to date?
+        presenceExtensions.add(createConferenceProperties());
+
+        // updates presence with presenceExtensions and sends it
+        chatRoomToJoin.modifyPresence(null, presenceExtensions);
 
         return node;
     }

@@ -66,5 +66,5 @@ internal fun selectVisitorNode(
     }
 
     val unusedNodes = allNodes.filterNot { existingNodes.keys.contains(it.config.name) }
-    return unusedNodes.firstOrNull { it.isRegistered }?.config?.name
+    return unusedNodes.firstOrNull { it.isRegistered }?.config?.name ?: min?.key
 }

@@ -85,7 +85,8 @@ class ConferenceIqHandler(
             return error
         }
 
-        val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(false) else null
+        val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
+        val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(visitorRequested) else null
         if (vnode != null) {
             response.vnode = vnode
             val focusJid = XmppConfig.visitors.find { it.name == vnode }?.jid
