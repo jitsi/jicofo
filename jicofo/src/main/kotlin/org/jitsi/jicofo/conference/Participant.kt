@@ -150,8 +150,8 @@ open class Participant @JvmOverloads constructor(
      * @return true if the value of [.desktopSourceIsMuted] changed as a result of this call.
      */
     private fun updateDesktopSourceIsMuted(sourceInfos: Set<SourceInfo>): Boolean {
-        val newValue = sourceInfos.stream()
-            .anyMatch { (_, muted, videoType) -> videoType === VideoType.Desktop && muted }
+        val newValue = sourceInfos
+            .any { (_, muted, videoType) -> videoType === VideoType.Desktop && muted }
         if (desktopSourceIsMuted != newValue) {
             desktopSourceIsMuted = newValue
             return true
