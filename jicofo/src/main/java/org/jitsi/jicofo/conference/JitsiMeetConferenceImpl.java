@@ -42,6 +42,7 @@ import org.jitsi.jicofo.jibri.*;
 
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
+import org.jxmpp.jid.impl.*;
 
 import java.time.*;
 import java.util.*;
@@ -98,6 +99,12 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
+     * Maps a visitor node ID (one of the values from {@link XmppConfig#getVisitors()}'s keys) to the {@link ChatRoom}
+     * on that node.
+     */
+    private final Map<String, ChatRoom> visitorChatRooms = new ConcurrentHashMap<>();
+
+    /**
      * Map of occupant JID to Participant.
      */
     private final Map<Jid, Participant> participants = new ConcurrentHashMap<>();
@@ -110,7 +117,7 @@ public class JitsiMeetConferenceImpl
     /**
      * A stat number of conference participants with a visitor muc role.
      */
-    private RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
+    private final RateLimitedStat visitorCount = new RateLimitedStat(VisitorsConfig.config.getNotificationInterval(),
         (numVisitors) -> {
             setConferenceProperty(
                 ConferenceProperties.KEY_VISITOR_COUNT,
@@ -589,6 +596,22 @@ public class JitsiMeetConferenceImpl
 
         chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
+
+        synchronized (visitorChatRooms)
+        {
+            visitorChatRooms.values().forEach(c -> {
+              try
+              {
+                  c.removeAllListeners();
+                  c.leave();
+              }
+              catch (Exception e)
+              {
+                  logger.error("Failed to leave visitor room", e);
+              }
+            });
+            visitorChatRooms.clear();
+        }
     }
 
     /**
@@ -645,7 +668,6 @@ public class JitsiMeetConferenceImpl
             }
         }
     }
-
 
     /**
      * Adds a {@link ChatRoomMember} to the conference. Creates the
@@ -1214,6 +1236,11 @@ public class JitsiMeetConferenceImpl
     public boolean hasMember(Jid jid)
     {
         ChatRoom chatRoom = this.chatRoom;
+        return hasMember(jid, chatRoom) || visitorChatRooms.values().stream().anyMatch(c -> hasMember(jid, c));
+    }
+
+    private boolean hasMember(Jid jid, ChatRoom chatRoom)
+    {
         return chatRoom != null
                 && (jid instanceof EntityFullJid)
                 && chatRoom.getChatMember((EntityFullJid) jid) != null;
@@ -1403,6 +1430,97 @@ public class JitsiMeetConferenceImpl
     public int getParticipantCount()
     {
         return participants.size();
+    }
+
+    /**
+     * Checks whether a request for a new endpoint to join this conference should be redirected to a visitor node.
+     * @return the name of the visitor node if it should be redirected, and null otherwise.
+     */
+    @Nullable
+    public String redirectVisitor(boolean visitorRequested)
+        throws Exception
+    {
+        if (!VisitorsConfig.config.getEnabled())
+        {
+            return null;
+        }
+
+        if (!visitorRequested && getParticipantCount() < VisitorsConfig.config.getMaxParticipants())
+        {
+            return null;
+        }
+
+        return selectVisitorNode();
+    }
+
+    /**
+     * Selects a visitor node for a new participant, and joins the associated chat room if not already joined
+     * @return
+     * @throws Exception if joining the chat room failed.
+     */
+    private String selectVisitorNode()
+            throws Exception
+    {
+        ChatRoom chatRoomToJoin;
+        String node;
+
+        synchronized (visitorChatRooms)
+        {
+            node = ConferenceUtilKt.selectVisitorNode(
+                    visitorChatRooms,
+                    jicofoServices.getXmppServices().getVisitorConnections());
+            if (node == null)
+            {
+                logger.warn("Visitor node required, but none available.");
+                return null;
+            }
+            if (visitorChatRooms.containsKey(node))
+            {
+                // Already joined.
+                return node;
+            }
+
+            // Join a new visitor chat room on the selected [node].
+            XmppProvider xmppProvider = jicofoServices.getXmppServices().getXmppVisitorConnectionByName(node);
+            if (xmppProvider == null)
+            {
+                logger.error("No XMPP provider for node " + node);
+                return null;
+            }
+
+            XmppVisitorConnectionConfig config = XmppConfig.getVisitors().get(node);
+            if (config == null)
+            {
+                logger.error("No XMPP config for node " + node);
+                return null;
+            }
+
+            EntityBareJid visitorMucJid
+                    = JidCreate.entityBareFrom(roomName.getLocalpart(), config.getConferenceService());
+
+            // Will call join after releasing the lock
+            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
+            chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
+            visitorChatRooms.put(node, chatRoomToJoin);
+        }
+
+        chatRoomToJoin.join();
+        Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
+
+        ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
+        versionsExtension.addComponentVersion(
+                ComponentVersionsExtension.COMPONENT_FOCUS,
+                CurrentVersionImpl.VERSION.toString());
+        presenceExtensions.add(versionsExtension);
+
+        // TODO: what do we want to include in presence in visitor MUCs? Do we need to keep their conference
+        // properties up to date?
+        presenceExtensions.add(createConferenceProperties());
+
+        // updates presence with presenceExtensions and sends it
+        chatRoomToJoin.modifyPresence(null, presenceExtensions);
+
+        return node;
     }
 
     private void onBridgeUp(Jid bridgeJid)
@@ -1738,6 +1856,88 @@ public class JitsiMeetConferenceImpl
         public void bridgeAdded(Bridge bridge)
         {
             onBridgeUp(bridge.getJid());
+        }
+    }
+
+    /**
+     * Handle events from members in one of the visitor MUCs.
+     */
+    private class VisitorChatRoomListenerImpl extends DefaultChatRoomListener
+    {
+        private final Logger logger = JitsiMeetConferenceImpl.this.logger.createChildLogger(
+                VisitorChatRoomListenerImpl.class.getSimpleName());
+        private final ChatRoom chatRoom;
+
+        private VisitorChatRoomListenerImpl(ChatRoom chatRoom)
+        {
+            this.chatRoom = chatRoom;
+            logger.addContext("visitor_muc", chatRoom.getRoomJid().toString());
+        }
+
+        @Override
+        public void roomDestroyed(String reason)
+        {
+            logger.info("Visitor room destroyed with reason=" + reason);
+            ChatRoom chatRoomToLeave = null;
+            synchronized (visitorChatRooms)
+            {
+                Map.Entry<String, ChatRoom> entry
+                        = visitorChatRooms.entrySet().stream()
+                            .filter(e -> e.getValue() == chatRoom).findFirst().orElse(null);
+                if (entry != null)
+                {
+                    chatRoomToLeave = entry.getValue();
+                    visitorChatRooms.remove(entry.getKey());
+                }
+            }
+
+            if (chatRoomToLeave != null)
+            {
+                ChatRoom finalChatRoom = chatRoomToLeave;
+                TaskPools.getIoPool().submit(() ->
+                {
+                    try
+                    {
+                        logger.info("Removing visitor chat room");
+                        finalChatRoom.leave();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.warn("Error while leaving chat room.", e);
+                    }
+                });
+            }
+        }
+
+        @Override
+        public void memberJoined(@NotNull ChatRoomMember member)
+        {
+            if (member.getRole() != MemberRole.VISITOR)
+            {
+                logger.debug("Ignoring non-visitor member of visitor room: " + member);
+                return;
+            }
+            onMemberJoined(member);
+        }
+
+        @Override
+        public void memberKicked(@NotNull ChatRoomMember member)
+        {
+            if (member.getRole() != MemberRole.VISITOR)
+            {
+                logger.debug("Member kicked for non-visitor member of visitor room: " + member);
+            }
+            onMemberKicked(member);
+        }
+
+        @Override
+        public void memberLeft(@NotNull ChatRoomMember member)
+        {
+            if (member.getRole() != MemberRole.VISITOR)
+            {
+                logger.debug("Member left for non-visitor member of visitor room: " + member);
+            }
+            onMemberLeft(member);
         }
     }
 

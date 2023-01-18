@@ -48,10 +48,22 @@ class XmppServices(
         clientConnection
     }
 
+    val visitorConnections: List<XmppProvider> = XmppConfig.visitors.values.mapNotNull { config ->
+        if (config.enabled) {
+            logger.info("Using XMPP visitor connection ${config.name}")
+            XmppProviderImpl(config, logger).apply { start() }
+        } else {
+            logger.info("Visitor connection ${config.name} is disabled.")
+            null
+        }
+    }
+
     fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
         XmppConnectionEnum.Client -> clientConnection
         XmppConnectionEnum.Service -> serviceConnection
     }
+
+    fun getXmppVisitorConnectionByName(name: String) = visitorConnections.find { it.config.name == name }
 
     val jigasiDetector = JigasiConfig.config.breweryJid?.let { breweryJid ->
         JigasiDetector(
@@ -81,12 +93,14 @@ class XmppServices(
     private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
-    val jingleHandler = JingleIqRequestHandler(setOf(clientConnection.xmppConnection))
+    val jingleHandler = JingleIqRequestHandler(
+        visitorConnections.map { it.xmppConnection }.toSet() + clientConnection.xmppConnection
+    )
 
     val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
         focusManager = focusManager,
-        focusAuthJid = "${XmppConfig.client.username}@${XmppConfig.client.domain}",
+        focusAuthJid = XmppConfig.client.jid,
         isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
         authAuthority = authenticationAuthority,
         jigasiEnabled = jigasiDetector != null

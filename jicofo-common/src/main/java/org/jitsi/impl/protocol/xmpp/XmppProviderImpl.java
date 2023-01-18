@@ -205,7 +205,7 @@ public class XmppProviderImpl
                 {
                     String login = config.getUsername().toString();
                     String pass = config.getPassword();
-                    Resourcepart resource = config.getUsername();
+                    Resourcepart resource = config.getResource();
                     connection.login(login, pass, resource);
                 }
 

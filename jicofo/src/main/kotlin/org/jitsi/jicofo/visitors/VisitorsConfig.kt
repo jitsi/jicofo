@@ -25,6 +25,12 @@ class VisitorsConfig private constructor() {
     val enabled: Boolean by config {
         "jicofo.visitors.enabled".from(newConfig)
     }
+    val maxParticipants: Int by config {
+        "jicofo.visitors.max-participants".from(newConfig)
+    }
+    val maxVisitorsPerNode: Int by config {
+        "jicofo.visitors.max-visitors-per-node".from(newConfig)
+    }
 
     val notificationInterval: Duration by config {
         "jicofo.visitors.notification-interval".from(newConfig)

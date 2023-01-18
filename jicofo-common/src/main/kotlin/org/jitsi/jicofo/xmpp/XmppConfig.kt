@@ -17,10 +17,15 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.typesafe.config.ConfigObject
+import com.typesafe.config.ConfigValue
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
+import org.jitsi.metaconfig.ConfigException
+import org.jitsi.metaconfig.ConfigException.UnableToRetrieve.NotFound
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
+import org.jitsi.utils.secs
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
@@ -39,6 +44,17 @@ class XmppConfig private constructor() {
         @JvmField
         val client = XmppClientConnectionConfig()
 
+        @JvmStatic
+        val visitors: Map<String, XmppVisitorConnectionConfig> by config {
+            "jicofo.xmpp.visitors".from(newConfig)
+                .convertFrom<ConfigObject> { cfg ->
+                    cfg.entries.associate {
+                        val xmppConfig = it.toXmppVisitorConnectionConfig()
+                        Pair(xmppConfig.name, xmppConfig)
+                    }
+                }
+        }
+
         @JvmField
         val config = XmppConfig()
     }
@@ -50,11 +66,57 @@ interface XmppConnectionConfig {
     val port: Int
     val domain: DomainBareJid
     val username: Resourcepart
+    val resource: Resourcepart
     val password: String?
     val replyTimeout: Duration
     val disableCertificateVerification: Boolean
     val useTls: Boolean
     val name: String
+    val jid
+        get() = "$username@$domain"
+}
+
+class XmppVisitorConnectionConfig(
+    override val enabled: Boolean,
+    override val hostname: String,
+    override val port: Int,
+    override val domain: DomainBareJid,
+    override val username: Resourcepart,
+    override val resource: Resourcepart,
+    override val password: String?,
+    override val replyTimeout: Duration,
+    override val disableCertificateVerification: Boolean,
+    override val useTls: Boolean,
+    override val name: String,
+    val conferenceService: DomainBareJid
+) : XmppConnectionConfig
+
+private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnectionConfig(): XmppVisitorConnectionConfig {
+    val name = this.key
+    val c = value as? ConfigObject ?: throw ConfigException.UnsupportedType("visitors config must be an object")
+    val hostname = c["hostname"]?.unwrapped()?.toString()
+        ?: throw NotFound("hostname required for visitors config $name")
+    val domain = c["domain"]?.unwrapped()?.toString() ?: hostname
+    val username = c["username"]?.unwrapped()?.toString() ?: "focus"
+    val conferenceService = c["conference-service"]?.unwrapped()?.toString()
+        ?: throw NotFound("conference-service required for visitors config $name")
+
+    return XmppVisitorConnectionConfig(
+        enabled = c["enabled"]?.let { it.unwrapped().toString().toBoolean() } ?: true,
+        hostname = c["hostname"]?.unwrapped()?.toString()
+            ?: throw NotFound("hostname required for visitors config $name"),
+        port = c["port"]?.unwrapped()?.toString()?.toInt() ?: 5222,
+        domain = JidCreate.domainBareFrom(domain),
+        username = Resourcepart.from(username),
+        resource = Resourcepart.from(c["resource"]?.unwrapped()?.toString() ?: username),
+        password = c["password"]?.unwrapped()?.toString(),
+        replyTimeout = c["reply-timeout"]?.unwrapped() as? Duration ?: 15.secs,
+        disableCertificateVerification = c["disable-certificate-verification"]?.unwrapped()?.toString()?.toBoolean()
+            ?: false,
+        useTls = c["use-tls"]?.unwrapped()?.toString()?.toBoolean() ?: true,
+        name = name,
+        conferenceService = JidCreate.domainBareFrom(conferenceService)
+    )
 }
 
 class XmppServiceConnectionConfig : XmppConnectionConfig {
@@ -88,6 +150,12 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
             Resourcepart.from(it)
         }
         "jicofo.xmpp.service.username".from(newConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
+    }
+
+    override val resource: Resourcepart by config {
+        "jicofo.xmpp.service.resource".from(newConfig).convertFrom<String> {
             Resourcepart.from(it)
         }
     }
@@ -148,6 +216,12 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
             Resourcepart.from(it)
         }
         "jicofo.xmpp.client.username".from(newConfig).convertFrom<String> {
+            Resourcepart.from(it)
+        }
+    }
+
+    override val resource: Resourcepart by config {
+        "jicofo.xmpp.client.resource".from(newConfig).convertFrom<String> {
             Resourcepart.from(it)
         }
     }

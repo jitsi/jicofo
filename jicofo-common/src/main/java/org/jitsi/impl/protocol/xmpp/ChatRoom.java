@@ -154,6 +154,7 @@ public interface ChatRoom
      * Removes a [ChatRoomListener] from the list of listeners to be notified of events from this [ChatRoom].
      */
     void removeListener(@NotNull ChatRoomListener listener);
+    void removeAllListeners();
 
     void setPresenceExtension(ExtensionElement extension, boolean remove);
 
