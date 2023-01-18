@@ -24,6 +24,7 @@ import io.mockk.mockk
 import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
+import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
@@ -142,7 +143,7 @@ class JibriChatRoomMember(
     override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
     override val region: String? get() = TODO("Not yet implemented")
     override val statsId: String? get() = TODO("Not yet implemented")
-    override val features: List<String> get() = TODO("Not yet implemented")
+    override val features: Set<Features> get() = TODO("Not yet implemented")
     override val debugState: OrderedJsonObject get() = TODO("Not yet implemented")
 
     var idle: Boolean = true

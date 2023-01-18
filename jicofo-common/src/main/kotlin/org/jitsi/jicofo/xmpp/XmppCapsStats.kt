@@ -40,7 +40,7 @@ class XmppCapsStats {
                 }
             }
 
-        fun update(nodeVer: String, features: List<String>) {
+        fun update(nodeVer: String, features: Set<Features>) {
             synchronized(map) {
                 if (map.size < MAX_ENTRIES) {
                     map.computeIfAbsent(nodeVer) { FeaturesAndCount(features) }.count++
@@ -53,12 +53,12 @@ class XmppCapsStats {
         }
     }
 
-    private class FeaturesAndCount(val features: List<String>) {
+    private class FeaturesAndCount(val features: Set<Features>) {
         /** The number of participants seen with this set of features. */
         var count = 0
         fun json() = OrderedJsonObject().apply {
             this["count"] = count
-            this["features"] = features
+            this["features"] = features.map { it.name }
         }
     }
 }

@@ -23,7 +23,6 @@ import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.impl.protocol.xmpp.log.PacketDebugger
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
-import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.xmpp.XmppProvider.RoomExistsException
 import org.jitsi.retry.RetryStrategy
 import org.jitsi.retry.SimpleRetryTask
@@ -213,7 +212,29 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name)
     fun findOrCreateRoom(name: EntityBareJid): ChatRoom = muc.findOrCreateRoom(name)
 
-    fun discoverFeatures(jid: EntityFullJid): List<String> = DiscoveryUtil.discoverParticipantFeatures(this, jid)
+    fun discoverFeatures(jid: EntityFullJid): Set<Features> {
+        if (!xmppConnection.isConnected) {
+            logger.error("Can not discover features, not connected.")
+            return Features.defaultFeatures
+        }
+        val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection)
+        if (discoveryManager == null) {
+            logger.error("Can not discover features, no ServiceDiscoveryManager")
+            return Features.defaultFeatures
+        }
+
+        val start = System.currentTimeMillis()
+        val participantFeatures: List<String> = try {
+            discoveryManager.discoverInfo(jid)?.features?.map { it.`var` }?.toList() ?: emptyList()
+        } catch (e: Exception) {
+            logger.warn("Failed to discover features for $jid: ${e.message}, assuming default feature set.", e)
+            return Features.defaultFeatures
+        }
+
+        logger.info("Discovered features for $jid in ${System.currentTimeMillis() - start} ms.")
+        return participantFeatures.mapNotNull { Features.parseString(it) }.toSet()
+    }
+
     fun discoverInfo(jid: Jid): DiscoverInfo? {
         val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection)
         if (discoveryManager == null) {

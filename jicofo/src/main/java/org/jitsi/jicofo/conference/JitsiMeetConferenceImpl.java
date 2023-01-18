@@ -693,7 +693,7 @@ public class JitsiMeetConferenceImpl
             // with the correct values. Note that this operation will block waiting for a disco#info response when
             // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
-            List<String> features = chatRoomMember.getFeatures();
+            Set<Features> features = chatRoomMember.getFeatures();
             final Participant participant = new Participant(
                     chatRoomMember,
                     this,
