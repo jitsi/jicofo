@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.*;
  * @author Pawel Domas
  */
 public class XmppProviderImpl
-    extends AbstractXmppProvider
+    extends XmppProvider
 {
     static
     {
@@ -78,8 +78,6 @@ public class XmppProviderImpl
      */
     @NotNull private final XmppReConnectionListener reConnListener = new XmppReConnectionListener();
 
-    @NotNull private final XmppConnectionConfig config;
-
     /**
      * Creates new instance of {@link XmppProviderImpl} with the given configuration.
      */
@@ -87,7 +85,8 @@ public class XmppProviderImpl
             @NotNull XmppConnectionConfig config,
             @NotNull Logger parentLogger)
     {
-        this.config = config;
+        super(config, parentLogger);
+
         this.logger = parentLogger.createChildLogger(XmppProviderImpl.class.getName());
         logger.addContext("xmpp_connection", config.getName());
 
@@ -101,7 +100,7 @@ public class XmppProviderImpl
     @Override
     public String toString()
     {
-        return "XmppProviderImpl " + config;
+        return "XmppProviderImpl " + getConfig();
     }
 
     @Override
@@ -124,17 +123,17 @@ public class XmppProviderImpl
     {
         XMPPTCPConnectionConfiguration.Builder connConfig
                 = XMPPTCPConnectionConfiguration.builder()
-                .setHost(config.getHostname())
-                .setPort(config.getPort())
-                .setXmppDomain(config.getDomain());
+                .setHost(getConfig().getHostname())
+                .setPort(getConfig().getPort())
+                .setXmppDomain(getConfig().getDomain());
 
         if (PacketDebugger.isEnabled())
         {
             // If XMPP debug logging is enabled, insert our debugger.
-            connConfig.setDebuggerFactory((connection) -> new PacketDebugger(connection, config.getName()));
+            connConfig.setDebuggerFactory((connection) -> new PacketDebugger(connection, getConfig().getName()));
         }
 
-        if (!config.getUseTls())
+        if (!getConfig().getUseTls())
         {
             connConfig.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
         }
@@ -151,12 +150,12 @@ public class XmppProviderImpl
         // Disable GSSAPI.
         SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism");
 
-        if (config.getPassword() == null)
+        if (getConfig().getPassword() == null)
         {
             connConfig.performSaslAnonymousAuthentication();
         }
 
-        if (config.getDisableCertificateVerification())
+        if (getConfig().getDisableCertificateVerification())
         {
             logger.warn("Disabling TLS certificate verification!");
             connConfig.setCustomX509TrustManager(new TrustAllX509TrustManager());
@@ -201,11 +200,11 @@ public class XmppProviderImpl
                 connection.addConnectionListener(connListener);
                 ReconnectionManager.getInstanceFor(connection).addReconnectionListener(reConnListener);
 
-                if (config.getPassword() != null)
+                if (getConfig().getPassword() != null)
                 {
-                    String login = config.getUsername().toString();
-                    String pass = config.getPassword();
-                    Resourcepart resource = config.getResource();
+                    String login = getConfig().getUsername().toString();
+                    String pass = getConfig().getPassword();
+                    Resourcepart resource = getConfig().getResource();
                     connection.login(login, pass, resource);
                 }
 
@@ -260,12 +259,7 @@ public class XmppProviderImpl
     }
 
     @Override
-    public @NotNull XmppConnectionConfig getConfig()
-    {
-        return config;
-    }
-
-    @Override
+    @NotNull
     public AbstractXMPPConnection getXmppConnection()
     {
         return connection;
@@ -291,8 +285,8 @@ public class XmppProviderImpl
         if (registered)
         {
             XMPPConnection xmppConnection = getXmppConnection();
-            xmppConnection.setReplyTimeout(config.getReplyTimeout().toMillis());
-            logger.info("Set replyTimeout=" + config.getReplyTimeout());
+            xmppConnection.setReplyTimeout(getConfig().getReplyTimeout().toMillis());
+            logger.info("Set replyTimeout=" + getConfig().getReplyTimeout());
         }
 
     }

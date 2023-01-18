@@ -19,6 +19,9 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.RegistrationListener
+import org.jitsi.jicofo.TaskPools.Companion.ioPool
+import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.logging2.createChildLogger
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smackx.disco.packet.DiscoverInfo
 import org.jxmpp.jid.EntityBareJid
@@ -28,37 +31,64 @@ import org.jxmpp.jid.Jid
 /**
  * Based on Jitsi's `ProtocolProviderService`, simplified for the needs of jicofo.
  */
-interface XmppProvider {
-    fun start()
-    fun shutdown()
+abstract class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
+    abstract fun start()
+    abstract fun shutdown()
 
-    /**
-     * @return true if the provider is currently registered and false otherwise.
-     */
-    val isRegistered: Boolean
+    private val logger: Logger = createChildLogger(parentLogger)
+
+    /** A list of all listeners registered with this instance. */
+    private val registrationListeners: MutableList<RegistrationListener> = mutableListOf()
+
+    var registered = false
+        private set
 
     /**
      * Registers the specified listener with this provider so that it would receive notifications on changes of its
      * state.
      */
-    fun addRegistrationListener(listener: RegistrationListener)
+    fun addRegistrationListener(listener: RegistrationListener) = synchronized(registrationListeners) {
+        if (!registrationListeners.contains(listener)) {
+            registrationListeners.add(listener)
+        }
+    }
 
-    /**
-     * Removes the specified listener.
-     * @param listener the listener to remove.
-     */
-    fun removeRegistrationListener(listener: RegistrationListener)
+    /** Removes the specified listener. */
+    fun removeRegistrationListener(listener: RegistrationListener) = synchronized(registrationListeners) {
+        registrationListeners.remove(listener)
+    }
 
-    val config: XmppConnectionConfig
-    val xmppConnection: AbstractXMPPConnection
+    protected open fun fireRegistrationStateChanged(registered: Boolean) {
+        val listeners: List<RegistrationListener> = synchronized(registrationListeners) {
+            registrationListeners.toList()
+        }
+        listeners.forEach {
+            ioPool.submit {
+                try {
+                    it.registrationChanged(registered)
+                } catch (throwable: Throwable) {
+                    logger.error("An error occurred while executing registrationStateChanged() on $it", throwable)
+                }
+            }
+        }
+    }
+
+    protected fun setRegistered(registered: Boolean) {
+        if (this.registered != registered) {
+            this.registered = registered
+            fireRegistrationStateChanged(registered)
+        }
+    }
+
+    abstract val xmppConnection: AbstractXMPPConnection
 
     @Throws(RoomExistsException::class)
-    fun createRoom(name: EntityBareJid): ChatRoom
+    abstract fun createRoom(name: EntityBareJid): ChatRoom
 
-    fun findOrCreateRoom(name: EntityBareJid): ChatRoom
+    abstract fun findOrCreateRoom(name: EntityBareJid): ChatRoom
 
-    fun discoverFeatures(jid: EntityFullJid): List<String>
-    fun discoverInfo(jid: Jid): DiscoverInfo?
+    abstract fun discoverFeatures(jid: EntityFullJid): List<String>
+    abstract fun discoverInfo(jid: Jid): DiscoverInfo?
 
     class RoomExistsException(message: String) : Exception(message)
 }

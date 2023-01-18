@@ -126,7 +126,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private void maybeStart()
     {
-        if (chatRoom == null && xmppProvider.isRegistered())
+        if (chatRoom == null && xmppProvider.getRegistered())
         {
             start();
         }

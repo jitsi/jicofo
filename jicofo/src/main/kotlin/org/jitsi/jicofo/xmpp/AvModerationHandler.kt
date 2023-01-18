@@ -47,7 +47,7 @@ class AvModerationHandler(
     init {
         xmppProvider.xmppConnection.addSyncStanzaListener(this, MessageTypeFilter.NORMAL)
         xmppProvider.addRegistrationListener(this)
-        registrationChanged(xmppProvider.isRegistered)
+        registrationChanged(xmppProvider.registered)
     }
 
     override fun processStanza(stanza: Stanza) {

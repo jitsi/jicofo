@@ -315,7 +315,7 @@ public class JitsiMeetConferenceImpl
             BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
-            if (clientXmppProvider.isRegistered())
+            if (clientXmppProvider.getRegistered())
             {
                 joinTheRoom();
             }
