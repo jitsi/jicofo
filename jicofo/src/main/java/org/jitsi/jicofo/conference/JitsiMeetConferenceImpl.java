@@ -99,7 +99,7 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
-     * Maps a visitor node ID (one of the values from {@link XmppConfig#getVisitors()}'s keys ) to the {@link ChatRoom}
+     * Maps a visitor node ID (one of the values from {@link XmppConfig#getVisitors()}'s keys) to the {@link ChatRoom}
      * on that node.
      */
     private final Map<String, ChatRoom> visitorChatRooms = new ConcurrentHashMap<>();
