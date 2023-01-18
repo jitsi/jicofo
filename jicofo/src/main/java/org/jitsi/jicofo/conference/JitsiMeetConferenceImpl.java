@@ -99,7 +99,8 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
-     * Maps a visitor node ID (one of ) to the {@link ChatRoom} on that node.
+     * Maps a visitor node ID (one of the values from {@link XmppConfig#getVisitors()}'s keys ) to the {@link ChatRoom}
+     * on that node.
      */
     private final Map<String, ChatRoom> visitorChatRooms = new ConcurrentHashMap<>();
 
@@ -1859,7 +1860,7 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Handle events from members is one of the visitor MUCs.
+     * Handle events from members in one of the visitor MUCs.
      */
     private class VisitorChatRoomListenerImpl extends DefaultChatRoomListener
     {
@@ -1870,7 +1871,7 @@ public class JitsiMeetConferenceImpl
         private VisitorChatRoomListenerImpl(ChatRoom chatRoom)
         {
             this.chatRoom = chatRoom;
-            logger.addContext("visitor_mus", chatRoom.getRoomJid().toString());
+            logger.addContext("visitor_muc", chatRoom.getRoomJid().toString());
         }
 
         @Override
@@ -1913,7 +1914,7 @@ public class JitsiMeetConferenceImpl
         {
             if (member.getRole() != MemberRole.VISITOR)
             {
-                logger.warn("Ignore non-visitor member of visitor room: " + member);
+                logger.debug("Ignoring non-visitor member of visitor room: " + member);
                 return;
             }
             onMemberJoined(member);
@@ -1924,7 +1925,7 @@ public class JitsiMeetConferenceImpl
         {
             if (member.getRole() != MemberRole.VISITOR)
             {
-                logger.warn("Member kicked for non-visitor member of visitor room: " + member);
+                logger.debug("Member kicked for non-visitor member of visitor room: " + member);
             }
             onMemberKicked(member);
         }
@@ -1934,7 +1935,7 @@ public class JitsiMeetConferenceImpl
         {
             if (member.getRole() != MemberRole.VISITOR)
             {
-                logger.warn("Member left for non-visitor member of visitor room: " + member);
+                logger.debug("Member left for non-visitor member of visitor room: " + member);
             }
             onMemberLeft(member);
         }
