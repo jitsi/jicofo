@@ -17,7 +17,9 @@ package org.jitsi.jicofo.xmpp
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.maps.shouldBeEmpty
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.jitsi.config.withLegacyConfig
 import org.jitsi.config.withNewConfig
 import org.jitsi.metaconfig.ConfigException
@@ -130,6 +132,56 @@ class XmppConfigTest : ShouldSpec() {
                     config.domain shouldBe JidCreate.domainBareFrom("domain2")
                     config.username shouldBe Resourcepart.from("user2")
                     config.password shouldBe "pass2"
+                }
+            }
+        }
+        context("Visitor connections config") {
+            context("Default") {
+                XmppConfig.visitors.shouldBeEmpty()
+            }
+            context("With visitors configured") {
+                withNewConfig(
+                    """
+                    jicofo.xmpp.visitors {
+                        v1 {
+                            hostname = "hostname1"
+                            port = 5223
+                            domain = "domain1"
+                            username = "user1"
+                            password = "pass1"
+                            conference-service = conference.v1.example.com
+                        }
+                        v2 {
+                            hostname = "hostname2"
+                            port = 5224
+                            domain = "domain2"
+                            username = "user2"
+                            password = "pass2"
+                            conference-service = conference.v2.example.com
+                        }
+                    }
+                """
+                ) {
+                    XmppConfig.visitors.size shouldBe 2
+                    XmppConfig.visitors.keys shouldBe setOf("v1", "v2")
+                    XmppConfig.visitors["v1"].let {
+                        it shouldNotBe null
+                        it!!.hostname shouldBe "hostname1"
+                        it.port shouldBe 5223
+                        it.domain shouldBe "domain1"
+                        it.username shouldBe Resourcepart.from("user1")
+                        it.password shouldBe "pass1"
+                        it.conferenceService shouldBe JidCreate.domainBareFrom("conference.v1.example.com")
+                    }
+                    XmppConfig.visitors["v2"].let {
+                        it shouldNotBe null
+                        it!!.hostname shouldBe "hostname2"
+                        it.port shouldBe 5224
+                        it.domain shouldBe "domain2"
+                        it.username shouldBe Resourcepart.from("user2")
+                        it.password shouldBe "pass2"
+                        it.conferenceService shouldBe JidCreate.domainBareFrom("conference.v2.example.com")
+                    }
                 }
             }
         }
