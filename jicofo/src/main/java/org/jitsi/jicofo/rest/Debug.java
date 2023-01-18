@@ -81,4 +81,19 @@ public class Debug
         }
         return conferencesJson.toJSONString();
     }
+
+    @GET
+    @Path("/conferences-full")
+    @Produces(MediaType.APPLICATION_JSON)
+    @NotNull
+    @SuppressWarnings("unchecked")
+    public String conferencesFull()
+    {
+        JSONObject conferencesJson = new JSONObject();
+        for (JitsiMeetConference c : jicofoServices.getFocusManager().getAllConferences())
+        {
+            conferencesJson.put(c.getRoomName().toString(), c.getDebugState());
+        }
+        return conferencesJson.toJSONString();
+    }
 }
