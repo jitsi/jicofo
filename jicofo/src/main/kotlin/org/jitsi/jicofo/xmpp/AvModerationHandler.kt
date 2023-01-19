@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType
@@ -40,13 +39,13 @@ import kotlin.jvm.Throws
 class AvModerationHandler(
     private val xmppProvider: XmppProvider,
     private val conferenceStore: ConferenceStore
-) : RegistrationListener, StanzaListener {
+) : XmppProvider.Listener, StanzaListener {
     private var avModerationAddress: DomainBareJid? = null
     private val logger = createLogger()
 
     init {
         xmppProvider.xmppConnection.addSyncStanzaListener(this, MessageTypeFilter.NORMAL)
-        xmppProvider.addRegistrationListener(this)
+        xmppProvider.addListener(this)
         registrationChanged(xmppProvider.registered)
     }
 

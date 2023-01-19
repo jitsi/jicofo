@@ -41,7 +41,7 @@ import java.util.function.*;
  * @author Damian Minkov
  */
 public abstract class BaseBrewery<T extends ExtensionElement>
-    implements RegistrationListener
+    implements XmppProvider.Listener
 {
     /**
      * The logger
@@ -116,7 +116,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void init()
     {
-        xmppProvider.addRegistrationListener(this);
+        xmppProvider.addListener(this);
 
         maybeStart();
     }
@@ -137,7 +137,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     public void shutdown()
     {
-        xmppProvider.removeRegistrationListener(this);
+        xmppProvider.removeListener(this);
 
         stop();
     }

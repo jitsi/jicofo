@@ -74,7 +74,7 @@ class JicofoServices {
         focusManager = focusManager, // TODO do not use FocusManager directly
         authenticationAuthority = authenticationAuthority
     ).also {
-        it.clientConnection.addRegistrationListener(focusManager)
+        it.clientConnection.addListener(focusManager)
     }
 
     val bridgeSelector = BridgeSelector()
@@ -159,7 +159,7 @@ class JicofoServices {
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()
-        xmppServices.clientConnection.removeRegistrationListener(focusManager)
+        xmppServices.clientConnection.removeListener(focusManager)
         focusManager.stop()
         xmppServices.shutdown()
     }

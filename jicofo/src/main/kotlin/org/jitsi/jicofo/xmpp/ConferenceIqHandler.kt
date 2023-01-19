@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
@@ -43,7 +42,7 @@ class ConferenceIqHandler(
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
     val jigasiEnabled: Boolean
-) : RegistrationListener, AbstractIqRequestHandler(
+) : XmppProvider.Listener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
     IQ.Type.set,
@@ -54,7 +53,7 @@ class ConferenceIqHandler(
     private val logger = createLogger()
 
     init {
-        xmppProvider.addRegistrationListener(this)
+        xmppProvider.addListener(this)
         registrationChanged(xmppProvider.registered)
     }
 

@@ -19,7 +19,6 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.impl.protocol.xmpp.log.PacketDebugger
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
@@ -60,7 +59,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     private val connectRetry = RetryStrategy(TaskPools.scheduledPool)
 
     /** A list of all listeners registered with this instance. */
-    private val registrationListeners = mutableListOf<RegistrationListener>()
+    private val listeners = mutableListOf<Listener>()
 
     /** The Smack [XMPPConnection] used by this instance. */
     val xmppConnection = createXmppConnection(config, logger)
@@ -133,15 +132,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
      * Registers the specified listener with this provider so that it would receive notifications on changes of its
      * state.
      */
-    fun addRegistrationListener(listener: RegistrationListener) = synchronized(registrationListeners) {
-        if (!registrationListeners.contains(listener)) {
-            registrationListeners.add(listener)
+    fun addListener(listener: Listener) = synchronized(listeners) {
+        if (!listeners.contains(listener)) {
+            listeners.add(listener)
         }
     }
 
     /** Removes the specified listener. */
-    fun removeRegistrationListener(listener: RegistrationListener) = synchronized(registrationListeners) {
-        registrationListeners.remove(listener)
+    fun removeListener(listener: Listener) = synchronized(listeners) {
+        listeners.remove(listener)
     }
 
     /**
@@ -189,8 +188,8 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     }
 
     private fun fireRegistrationStateChanged(registered: Boolean) {
-        val listeners: List<RegistrationListener> = synchronized(registrationListeners) {
-            registrationListeners.toList()
+        val listeners: List<Listener> = synchronized(listeners) {
+            listeners.toList()
         }
         listeners.forEach {
             ioPool.submit {
@@ -267,6 +266,9 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     }
 
     class RoomExistsException(message: String) : Exception(message)
+    interface Listener {
+        fun registrationChanged(registered: Boolean)
+    }
 }
 
 /** Create the Smack [AbstractXMPPConnection] based on the specified config. */

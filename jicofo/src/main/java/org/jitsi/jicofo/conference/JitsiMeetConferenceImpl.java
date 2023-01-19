@@ -68,7 +68,7 @@ import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
  * @author Boris Grozev
  */
 public class JitsiMeetConferenceImpl
-    implements JitsiMeetConference, RegistrationListener
+    implements JitsiMeetConference, XmppProvider.Listener
 {
     /**
      * Name of MUC room that is hosting Jitsi Meet conference.
