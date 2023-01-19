@@ -72,6 +72,7 @@ interface XmppConnectionConfig {
     val disableCertificateVerification: Boolean
     val useTls: Boolean
     val name: String
+    val xmppDomain: DomainBareJid?
     val jid
         get() = "$username@$domain"
 }
@@ -88,6 +89,7 @@ class XmppVisitorConnectionConfig(
     override val disableCertificateVerification: Boolean,
     override val useTls: Boolean,
     override val name: String,
+    override val xmppDomain: DomainBareJid?,
     val conferenceService: DomainBareJid
 ) : XmppConnectionConfig
 
@@ -97,6 +99,7 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
     val hostname = c["hostname"]?.unwrapped()?.toString()
         ?: throw NotFound("hostname required for visitors config $name")
     val domain = c["domain"]?.unwrapped()?.toString() ?: hostname
+    val xmppDomain = c["xmpp-domain"]?.unwrapped()?.toString()
     val username = c["username"]?.unwrapped()?.toString() ?: "focus"
     val conferenceService = c["conference-service"]?.unwrapped()?.toString()
         ?: throw NotFound("conference-service required for visitors config $name")
@@ -115,7 +118,8 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
             ?: false,
         useTls = c["use-tls"]?.unwrapped()?.toString()?.toBoolean() ?: true,
         name = name,
-        conferenceService = JidCreate.domainBareFrom(conferenceService)
+        conferenceService = JidCreate.domainBareFrom(conferenceService),
+        xmppDomain = if (xmppDomain != null) JidCreate.domainBareFrom(xmppDomain) else null
     )
 }
 
@@ -143,6 +147,10 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
         "jicofo.xmpp.service.domain".from(newConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
+    }
+
+    override val xmppDomain: DomainBareJid? by optionalconfig() {
+        "jicofo.xmpp.service.xmpp-domain".from(newConfig)
     }
 
     override val username: Resourcepart by config {
@@ -234,7 +242,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     /**
      * This is the top-level domain hosted by the XMPP server (not necessarily the one used for login).
      */
-    val xmppDomain: DomainBareJid by config {
+    override val xmppDomain: DomainBareJid by config {
         legacyXmppDomainPropertyName.from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }

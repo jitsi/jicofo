@@ -893,6 +893,11 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
+    public void componentsChanged(Set<XmppProvider.Component> components)
+    {
+    }
+
+    @Override
     public void registrationChanged(boolean registered)
     {
         if (registered)

@@ -21,7 +21,6 @@ import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.impl.protocol.xmpp.log.PacketDebugger
 import org.jitsi.jicofo.TaskPools
-import org.jitsi.jicofo.TaskPools.Companion.ioPool
 import org.jitsi.jicofo.xmpp.XmppProvider.RoomExistsException
 import org.jitsi.retry.RetryStrategy
 import org.jitsi.retry.SimpleRetryTask
@@ -35,18 +34,16 @@ import org.jivesoftware.smack.ConnectionListener
 import org.jivesoftware.smack.ReconnectionListener
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
-import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
-import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 import org.jivesoftware.smackx.caps.EntityCapsManager
 import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
-import org.jivesoftware.smackx.disco.packet.DiscoverInfo
+import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
-import org.jxmpp.jid.Jid
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Wraps a Smack [XMPPConnection]. */
@@ -59,7 +56,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     private val connectRetry = RetryStrategy(TaskPools.scheduledPool)
 
     /** A list of all listeners registered with this instance. */
-    private val listeners = mutableListOf<Listener>()
+    private val listeners = CopyOnWriteArrayList<Listener>()
 
     /** The Smack [XMPPConnection] used by this instance. */
     val xmppConnection = createXmppConnection(config, logger)
@@ -70,6 +67,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             if (value != field) {
                 field = value
                 fireRegistrationStateChanged(value)
+            }
+        }
+
+    var components: Set<Component> = emptySet()
+        private set(value) {
+            if (value != field) {
+                field = value
+                logger.warn("Discovered components: $field")
+                fireComponentsChanged(value)
             }
         }
 
@@ -87,7 +93,16 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     }
 
     private val connectionListener = object : ConnectionListener {
-        override fun authenticated(connection: XMPPConnection?, resumed: Boolean) { registered = true }
+        override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
+            registered = true
+            logger.info("Registered.")
+            config.xmppDomain?.let {
+                logger.info("Will discover components for $it")
+                TaskPools.ioPool.submit { discoverComponents(it) }
+            } ?: run {
+                logger.info("No xmpp-domain configured, will not discover components.")
+            }
+        }
 
         override fun connectionClosed() {
             logger.info("XMPP connection closed")
@@ -132,16 +147,9 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
      * Registers the specified listener with this provider so that it would receive notifications on changes of its
      * state.
      */
-    fun addListener(listener: Listener) = synchronized(listeners) {
-        if (!listeners.contains(listener)) {
-            listeners.add(listener)
-        }
-    }
-
+    fun addListener(listener: Listener) = listeners.add(listener)
     /** Removes the specified listener. */
-    fun removeListener(listener: Listener) = synchronized(listeners) {
-        listeners.remove(listener)
-    }
+    fun removeListener(listener: Listener) = listeners.remove(listener)
 
     /**
      * Method tries to establish the connection to XMPP server and return
@@ -161,8 +169,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
 
                 // XXX Is there a reason we add listeners *after* we call connect()?
                 xmppConnection.addConnectionListener(connectionListener)
-                ReconnectionManager.getInstanceFor(xmppConnection)
-                    .addReconnectionListener(reconnectionListener)
+                ReconnectionManager.getInstanceFor(xmppConnection)?.addReconnectionListener(reconnectionListener)
                 if (config.password != null) {
                     val login = config.username.toString()
                     val pass = config.password
@@ -176,9 +183,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
                 // rely on Smack's built-in retries, as it will be handled by
                 // the RetryStrategy
                 xmppConnection.removeConnectionListener(connectionListener)
-                val reconnectionManager =
-                    ReconnectionManager.getInstanceFor(xmppConnection)
-                reconnectionManager?.removeReconnectionListener(reconnectionListener)
+                ReconnectionManager.getInstanceFor(xmppConnection)?.removeReconnectionListener(reconnectionListener)
                 if (xmppConnection.isConnected) {
                     xmppConnection.disconnect()
                 }
@@ -187,12 +192,19 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
     }
 
-    private fun fireRegistrationStateChanged(registered: Boolean) {
-        val listeners: List<Listener> = synchronized(listeners) {
-            listeners.toList()
+    private fun fireComponentsChanged(components: Set<Component>) = listeners.forEach {
+        TaskPools.ioPool.submit {
+            try {
+                it.componentsChanged(components)
+            } catch (throwable: Throwable) {
+                logger.error("An error occurred while executing componentsChanged() on $it", throwable)
+            }
         }
+    }
+
+    private fun fireRegistrationStateChanged(registered: Boolean) {
         listeners.forEach {
-            ioPool.submit {
+            TaskPools.ioPool.submit {
                 try {
                     it.registrationChanged(registered)
                 } catch (throwable: Throwable) {
@@ -234,23 +246,22 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         return participantFeatures.mapNotNull { Features.parseString(it) }.toSet()
     }
 
-    fun discoverInfo(jid: Jid): DiscoverInfo? {
+    private fun discoverComponents(domain: DomainBareJid) {
         val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection)
-        if (discoveryManager == null) {
-            logger.info("Can not discover info, no ServiceDiscoveryManager")
-            return null
-        }
-        return try {
-            discoveryManager.discoverInfo(jid)
+
+        val components: Set<Component> = if (discoveryManager == null) {
+            logger.info("Can not discover components, no ServiceDiscoveryManager")
+            emptySet()
+        } else try {
+            discoveryManager.discoverInfo(domain)?.identities
+                ?.filter { it.category == "component" }
+                ?.map { Component(it.type, it.name) }?.toSet() ?: emptySet()
         } catch (e: Exception) {
-            when (e) {
-                is XMPPException.XMPPErrorException, is SmackException.NotConnectedException,
-                is SmackException.NoResponseException, is InterruptedException ->
-                    logger.warn("Failed to discover info", e)
-                else -> throw e
-            }
-            null
+            logger.warn("Failed to discover info", e)
+            emptySet()
         }
+
+        this.components = components
     }
 
     companion object {
@@ -267,8 +278,10 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
 
     class RoomExistsException(message: String) : Exception(message)
     interface Listener {
-        fun registrationChanged(registered: Boolean)
+        fun registrationChanged(registered: Boolean) { }
+        fun componentsChanged(components: Set<Component>) { }
     }
+    data class Component(val type: String, val address: String)
 }
 
 /** Create the Smack [AbstractXMPPConnection] based on the specified config. */
