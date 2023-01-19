@@ -38,7 +38,7 @@ import java.util.*;
  *
  * @author Pawel Domas
  */
-public interface JitsiMeetConference extends RegistrationListener
+public interface JitsiMeetConference extends XmppProvider.Listener
 {
     /**
      * Checks how many {@link Participant}s are in the conference.

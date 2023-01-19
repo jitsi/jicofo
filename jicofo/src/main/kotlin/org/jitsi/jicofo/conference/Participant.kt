@@ -26,9 +26,9 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.source.VideoType
-import org.jitsi.jicofo.discovery.DiscoveryUtil
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
+import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
@@ -67,7 +67,7 @@ open class Participant @JvmOverloads constructor(
     private val jingleIqRequestHandler: JingleIqRequestHandler,
     parentLogger: Logger? = null,
     /** The list of XMPP features supported by this participant. */
-    private val supportedFeatures: List<String> = DiscoveryUtil.getDefaultParticipantFeatureSet(),
+    private val supportedFeatures: Set<Features> = Features.defaultFeatures,
     /** The [Clock] used by this participant. */
     clock: Clock = Clock.systemUTC()
 ) {
@@ -204,31 +204,30 @@ open class Participant @JvmOverloads constructor(
     }
 
     /** Return `true` if this participant supports source name signaling. */
-    fun hasSourceNameSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_SOURCE_NAMES)
+    fun hasSourceNameSupport() = supportedFeatures.contains(Features.SOURCE_NAMES)
     /** Return `true` if this participant supports SSRC rewriting functionality. */
-    fun hasSsrcRewritingSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_SSRC_REWRITING)
+    fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING)
     /** Return `true` if SSRC rewriting should be used for this participant. */
     fun useSsrcRewriting() = ConferenceConfig.config.useSsrcRewriting && hasSsrcRewritingSupport()
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
-    fun supportsJsonEncodedSources() = supportedFeatures.contains(DiscoveryUtil.FEATURE_JSON_SOURCES)
-    fun supportsReceivingMultipleVideoStreams() =
-        supportedFeatures.contains(DiscoveryUtil.FEATURE_RECEIVE_MULTIPLE_STREAMS)
+    fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
+    fun supportsReceivingMultipleVideoStreams() = supportedFeatures.contains(Features.RECEIVE_MULTIPLE_STREAMS)
     /** Returns `true` iff this participant supports REMB. */
-    fun hasRembSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_REMB)
+    fun hasRembSupport() = supportedFeatures.contains(Features.REMB)
     /** Returns `true` iff this participant supports TCC. */
-    fun hasTccSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_TCC)
+    fun hasTccSupport() = supportedFeatures.contains(Features.TCC)
     /** Returns `true` iff this participant supports RTX. */
-    fun hasRtxSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_RTX)
+    fun hasRtxSupport() = supportedFeatures.contains(Features.RTX)
     /** Returns `true` iff this participant supports RED for opus. */
-    fun hasOpusRedSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_OPUS_RED)
+    fun hasOpusRedSupport() = supportedFeatures.contains(Features.OPUS_RED)
     /** Returns true if RTP audio is supported by this peer. */
-    fun hasAudioSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_AUDIO)
+    fun hasAudioSupport() = supportedFeatures.contains(Features.AUDIO)
     /** Returns true if RTP video is supported by this peer. */
-    fun hasVideoSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_VIDEO)
+    fun hasVideoSupport() = supportedFeatures.contains(Features.VIDEO)
     /** Returns true if RTP audio can be muted for this peer. */
-    fun hasAudioMuteSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_AUDIO_MUTE)
+    fun hasAudioMuteSupport() = supportedFeatures.contains(Features.AUDIO_MUTE)
     /** Returns <tt>true</tt> if this peer supports DTLS/SCTP. */
-    fun hasSctpSupport() = supportedFeatures.contains(DiscoveryUtil.FEATURE_SCTP)
+    fun hasSctpSupport() = supportedFeatures.contains(Features.SCTP)
 
     /** Return true if a restart request should be accepted and false otherwise. */
     fun acceptRestartRequest(): Boolean = restartRequestsRateLimit.accept()

@@ -31,9 +31,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.SsrcGroup
 import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
-import org.jitsi.jicofo.discovery.DiscoveryUtil
-import org.jitsi.jicofo.discovery.DiscoveryUtil.FEATURE_SCTP
-import org.jitsi.jicofo.discovery.DiscoveryUtil.FEATURE_VIDEO
+import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
@@ -100,9 +98,9 @@ class ParticipantInviteRunnableTest : ShouldSpec({
             every { getSourcesForParticipant(any()) } returns EndpointSourceSet.EMPTY
         }
         listOf(true, false).forEach { supportsVideo ->
-            val features = DiscoveryUtil.getDefaultParticipantFeatureSet().toMutableList().apply {
-                remove(FEATURE_SCTP)
-                if (!supportsVideo) remove(FEATURE_VIDEO)
+            val features = Features.defaultFeatures.toMutableSet().apply {
+                remove(Features.SCTP)
+                if (!supportsVideo) remove(Features.VIDEO)
             }
 
             val participant = object : Participant(

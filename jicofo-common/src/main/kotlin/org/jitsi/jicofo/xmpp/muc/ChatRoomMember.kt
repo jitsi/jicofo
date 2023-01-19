@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
+import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.Presence
 import org.jxmpp.jid.EntityFullJid
@@ -68,7 +69,7 @@ interface ChatRoomMember {
      * The list of features advertised as XMPP capabilities. Note that although the features are cached (XEP-0115),
      * the first time [features] is accessed it may block waiting for a disco#info response!
      */
-    val features: List<String>
+    val features: Set<Features>
 
     val debugState: OrderedJsonObject
 }

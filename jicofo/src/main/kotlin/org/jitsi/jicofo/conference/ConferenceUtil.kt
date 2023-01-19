@@ -18,8 +18,8 @@
 package org.jitsi.jicofo.conference
 
 import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.visitors.VisitorsConfig
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -66,5 +66,5 @@ internal fun selectVisitorNode(
     }
 
     val unusedNodes = allNodes.filterNot { existingNodes.keys.contains(it.config.name) }
-    return unusedNodes.firstOrNull { it.isRegistered }?.config?.name ?: min?.key
+    return unusedNodes.firstOrNull { it.registered }?.config?.name ?: min?.key
 }

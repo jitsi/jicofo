@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType
@@ -41,14 +39,14 @@ import kotlin.jvm.Throws
 class AvModerationHandler(
     private val xmppProvider: XmppProvider,
     private val conferenceStore: ConferenceStore
-) : RegistrationListener, StanzaListener {
+) : XmppProvider.Listener, StanzaListener {
     private var avModerationAddress: DomainBareJid? = null
     private val logger = createLogger()
 
     init {
         xmppProvider.xmppConnection.addSyncStanzaListener(this, MessageTypeFilter.NORMAL)
-        xmppProvider.addRegistrationListener(this)
-        registrationChanged(xmppProvider.isRegistered)
+        xmppProvider.addListener(this)
+        registrationChanged(xmppProvider.registered)
     }
 
     override fun processStanza(stanza: Stanza) {
@@ -98,31 +96,15 @@ class AvModerationHandler(
         }
     }
 
-    /**
-     * When the connection is registered we do disco-info query to check for 'av_moderation' component
-     * and we use that address to verify incoming messages.
-     * We do that only once for the life of jicofo and skip it on reconnections.
-     */
-    override fun registrationChanged(registered: Boolean) {
-        if (!registered) {
-            avModerationAddress = null
-            return
-        }
+    override fun componentsChanged(components: Set<XmppProvider.Component>) {
+        val address = components.find { it.type == "av_moderation" }?.address
 
-        try {
-            val info = xmppProvider.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
-            val avModIdentities = info?.getIdentities("component", "av_moderation")
-
-            if (avModIdentities != null && avModIdentities.size > 0) {
-                avModerationAddress = JidCreate.domainBareFrom(avModIdentities[0].name)
-                logger.info("Discovered av_moderation component at $avModerationAddress.")
-            } else {
-                avModerationAddress = null
-                logger.info("Did not discover av_moderation component.")
-            }
-        } catch (e: Exception) {
-            avModerationAddress = null
-            logger.error("Error checking for av_moderation component", e)
+        avModerationAddress = if (address == null) {
+            logger.info("No av_moderation component discovered.")
+            null
+        } else {
+            logger.info("Using av_moderation component at $address.")
+            JidCreate.domainBareFrom(address)
         }
     }
 

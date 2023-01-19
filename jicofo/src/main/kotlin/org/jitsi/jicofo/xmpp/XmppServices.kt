@@ -18,8 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.impl.protocol.xmpp.XmppProvider
-import org.jitsi.impl.protocol.xmpp.XmppProviderImpl
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -36,13 +34,13 @@ class XmppServices(
 ) {
     private val logger = createLogger()
 
-    val clientConnection: XmppProvider = XmppProviderImpl(XmppConfig.client, logger).apply {
+    val clientConnection: XmppProvider = XmppProvider(XmppConfig.client, logger).apply {
         start()
     }
 
     val serviceConnection: XmppProvider = if (XmppConfig.service.enabled) {
         logger.info("Using a dedicated Service XMPP connection.")
-        XmppProviderImpl(XmppConfig.service, logger).apply { start() }
+        XmppProvider(XmppConfig.service, logger).apply { start() }
     } else {
         logger.info("No dedicated Service XMPP connection configured, re-using the client XMPP connection.")
         clientConnection
@@ -51,7 +49,7 @@ class XmppServices(
     val visitorConnections: List<XmppProvider> = XmppConfig.visitors.values.mapNotNull { config ->
         if (config.enabled) {
             logger.info("Using XMPP visitor connection ${config.name}")
-            XmppProviderImpl(config, logger).apply { start() }
+            XmppProvider(config, logger).apply { start() }
         } else {
             logger.info("Visitor connection ${config.name} is disabled.")
             null

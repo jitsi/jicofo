@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.jigasi
 
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.xmpp.BaseBrewery
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension

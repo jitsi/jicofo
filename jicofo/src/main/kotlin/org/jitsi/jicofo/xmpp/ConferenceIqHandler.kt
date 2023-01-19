@@ -17,8 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
-import org.jitsi.impl.protocol.xmpp.XmppProvider
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
@@ -44,7 +42,7 @@ class ConferenceIqHandler(
     val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
     val jigasiEnabled: Boolean
-) : RegistrationListener, AbstractIqRequestHandler(
+) : XmppProvider.Listener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
     IQ.Type.set,
@@ -55,8 +53,8 @@ class ConferenceIqHandler(
     private val logger = createLogger()
 
     init {
-        xmppProvider.addRegistrationListener(this)
-        registrationChanged(xmppProvider.isRegistered)
+        xmppProvider.addListener(this)
+        registrationChanged(xmppProvider.registered)
     }
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
@@ -187,25 +185,15 @@ class ConferenceIqHandler(
         return null
     }
 
-    override fun registrationChanged(registered: Boolean) {
-        if (!registered) {
-            breakoutAddress = null
-            return
-        }
+    override fun componentsChanged(components: Set<XmppProvider.Component>) {
+        val address = components.find { it.type == "breakout_rooms" }?.address
 
-        try {
-            val info = xmppProvider.discoverInfo(JidCreate.bareFrom(XmppConfig.client.xmppDomain))
-            val breakoutAddressStr = info?.getIdentities("component", "breakout_rooms")?.firstOrNull()?.name
-
-            if (breakoutAddressStr == null) {
-                breakoutAddress = null
-                logger.info("No breakout room component address configured.")
-            } else {
-                breakoutAddress = JidCreate.domainBareFrom(breakoutAddressStr)
-                logger.info("Using breakout room component address: $breakoutAddress")
-            }
-        } catch (e: Exception) {
-            logger.error("Could not discover breakout rooms component address.", e)
+        breakoutAddress = if (address == null) {
+            logger.info("No breakout room component discovered.")
+            null
+        } else {
+            logger.info("Using breakout room component at $address.")
+            JidCreate.domainBareFrom(address)
         }
     }
 }

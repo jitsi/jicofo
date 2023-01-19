@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2020 - present 8x8, Inc
+ * Copyright @ 2015-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp;
+package org.jitsi.jicofo.xmpp
 
-public interface RegistrationListener
-{
-    void registrationChanged(boolean registered);
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.shouldBe
+
+class FeaturesTest : ShouldSpec() {
+    init {
+        context("Parsing") {
+            Features.parseString(Features.AUDIO.value) shouldBe Features.AUDIO
+            Features.parseString("something else") shouldBe null
+        }
+    }
 }

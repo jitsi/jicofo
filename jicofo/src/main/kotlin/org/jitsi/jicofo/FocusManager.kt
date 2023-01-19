@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo
 
-import org.jitsi.impl.protocol.xmpp.RegistrationListener
 import org.jitsi.jicofo.conference.ConferenceMetrics
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -25,6 +24,7 @@ import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
 import org.jitsi.jicofo.jibri.JibriSession
 import org.jitsi.jicofo.jibri.JibriStats
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance
+import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.QueueStatistics.Companion.getStatistics
@@ -51,7 +51,7 @@ class FocusManager(
     private val jicofoServices: JicofoServices,
     /** Clock to use for pin timeouts. */
     private val clock: Clock = Clock.systemUTC(),
-) : ConferenceListener, ConferenceStore, RegistrationListener {
+) : ConferenceListener, ConferenceStore, XmppProvider.Listener {
 
     val logger = createLogger()
 

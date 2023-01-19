@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
+import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
@@ -212,7 +213,7 @@ class ChatRoomMemberImpl(
      */
     override fun toString() = "ChatMember[id=$name role=$role]"
 
-    override val features: List<String> by lazy {
+    override val features: Set<Features> by lazy {
         val features = chatRoom.xmppProvider.discoverFeatures(occupantJid)
         // Update the stats once when the features are discovered.
         capsNodeVer?.let {
@@ -234,7 +235,7 @@ class ChatRoomMemberImpl(
             this["stats_id"] = statsId.toString()
             this["is_audio_muted"] = isAudioMuted
             this["is_video_muted"] = isVideoMuted
-            this["features"] = features
+            this["features"] = features.map { it.name }
             this["capsNodeVer"] = capsNodeVer.toString()
         }
 }
