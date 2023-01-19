@@ -42,7 +42,6 @@ import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
-import java.util.Locale
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -324,26 +323,24 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
 
 private class Muc(val xmppProvider: XmppProvider) {
     /** The active chat rooms mapped by their name. */
-    private val rooms: MutableMap<String, ChatRoomImpl> = HashMap()
+    private val rooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
 
     @Throws(RoomExistsException::class)
     fun createChatRoom(roomJid: EntityBareJid): ChatRoom {
-        val roomName = roomJid.toString().lowercase(Locale.getDefault())
         synchronized(rooms) {
-            if (rooms.containsKey(roomName)) {
-                throw RoomExistsException("Room '$roomName' exists")
+            if (rooms.containsKey(roomJid)) {
+                throw RoomExistsException("Room '$roomJid' exists")
             }
             return ChatRoomImpl(xmppProvider, roomJid) { removeRoom(it) }.also {
-                rooms[roomName] = it
+                rooms[roomJid] = it
             }
         }
     }
 
     fun findOrCreateRoom(roomJid: EntityBareJid): ChatRoom {
-        val roomName = roomJid.toString().lowercase(Locale.getDefault())
         synchronized(rooms) {
             try {
-                return rooms[roomName] ?: createChatRoom(roomJid)
+                return rooms[roomJid] ?: createChatRoom(roomJid)
             } catch (e: RoomExistsException) {
                 throw RuntimeException("Unexpected RoomExistsException.")
             }
@@ -351,6 +348,6 @@ private class Muc(val xmppProvider: XmppProvider) {
     }
 
     fun removeRoom(chatRoom: ChatRoomImpl) = synchronized(rooms) {
-        rooms.remove(chatRoom.roomJid.toString().lowercase(Locale.getDefault()))
+        rooms.remove(chatRoom.roomJid)
     }
 }
