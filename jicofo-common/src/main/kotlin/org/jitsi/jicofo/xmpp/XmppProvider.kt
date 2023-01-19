@@ -43,7 +43,7 @@ import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import java.util.Locale
-import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Wraps a Smack [XMPPConnection]. */
@@ -56,7 +56,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     private val connectRetry = RetryStrategy(TaskPools.scheduledPool)
 
     /** A list of all listeners registered with this instance. */
-    private val listeners = CopyOnWriteArrayList<Listener>()
+    private val listeners = CopyOnWriteArraySet<Listener>()
 
     /** The Smack [XMPPConnection] used by this instance. */
     val xmppConnection = createXmppConnection(config, logger)
@@ -152,11 +152,10 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     fun removeListener(listener: Listener) = listeners.remove(listener)
 
     /**
-     * Method tries to establish the connection to XMPP server and return
-     * <tt>false</tt> in case we have failed want to retry connection attempt.
-     * <tt>true</tt> is returned when we either connect successfully or when we
-     * detect that there is no chance to get connected any any future retries
-     * should be canceled.
+     * Tries to establish the XMPP connection.
+     *
+     * @return `true` if another attempt should be performed, and `false` otherwise. Returns `false` (i.e. success) if
+     * either the connection was successful or the provider hasn't been started.
      */
     private fun doConnect(): Boolean {
         if (!started.get()) {
@@ -165,7 +164,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         synchronized(this) {
             return try {
                 xmppConnection.connect()
-                logger.info("Connected, JID=" + xmppConnection.user)
+                logger.info("Connected, JID=${xmppConnection.user}")
 
                 // XXX Is there a reason we add listeners *after* we call connect()?
                 xmppConnection.addConnectionListener(connectionListener)
@@ -178,7 +177,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
                 }
                 false
             } catch (e: java.lang.Exception) {
-                logger.error("Failed to connect/login: " + e.message, e)
+                logger.error("Failed to connect/login: ${e.message}", e)
                 // If the connect part succeeded, but login failed we don't want to
                 // rely on Smack's built-in retries, as it will be handled by
                 // the RetryStrategy
@@ -235,7 +234,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
 
         val start = System.currentTimeMillis()
-        val participantFeatures: List<String> = try {
+        val featureStrings: List<String> = try {
             discoveryManager.discoverInfo(jid)?.features?.map { it.`var` }?.toList() ?: emptyList()
         } catch (e: Exception) {
             logger.warn("Failed to discover features for $jid: ${e.message}, assuming default feature set.", e)
@@ -243,7 +242,12 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
 
         logger.info("Discovered features for $jid in ${System.currentTimeMillis() - start} ms.")
-        return participantFeatures.mapNotNull { Features.parseString(it) }.toSet()
+        val features = featureStrings.mapNotNull { Features.parseString(it) }.toSet()
+        if (features.size != featureStrings.size) {
+            val unrecognizedFeatures = featureStrings - features.map { it.value }.toSet()
+            logger.info("Unrecognized features for $jid: $unrecognizedFeatures")
+        }
+        return features
     }
 
     private fun discoverComponents(domain: DomainBareJid) {
@@ -297,7 +301,7 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
         if (!config.useTls) {
             setSecurityMode(ConnectionConfiguration.SecurityMode.disabled)
         } else {
-            /* TODO - make the required except on localhost. */
+            /* TODO - make this required except on localhost. */
             setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
         }
         if (config.password == null) {
@@ -329,7 +333,7 @@ private class Muc(val xmppProvider: XmppProvider) {
             if (rooms.containsKey(roomName)) {
                 throw RoomExistsException("Room '$roomName' exists")
             }
-            return ChatRoomImpl(xmppProvider, roomJid) { chatRoom: ChatRoomImpl -> removeRoom(chatRoom) }.also {
+            return ChatRoomImpl(xmppProvider, roomJid) { removeRoom(it) }.also {
                 rooms[roomName] = it
             }
         }
