@@ -30,7 +30,7 @@ enum class Features(val value: String) {
     TCC("http://jitsi.org/tcc"),
     /** Source name signalling. */
     SOURCE_NAMES("http://jitsi.org/source-name"),
-    SSRC_REWRITING("http://jitsi.org/ssrc-rewriting"),
+    SSRC_REWRITING_V1("http://jitsi.org/ssrc-rewriting-1"),
     RECEIVE_MULTIPLE_STREAMS("http://jitsi.org/receive-multiple-video-streams"),
     /** Jingle sources encoded as JSON. */
     JSON_SOURCES("http://jitsi.org/json-encoded-sources"),

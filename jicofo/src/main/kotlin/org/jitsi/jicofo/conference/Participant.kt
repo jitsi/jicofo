@@ -206,7 +206,7 @@ open class Participant @JvmOverloads constructor(
     /** Return `true` if this participant supports source name signaling. */
     fun hasSourceNameSupport() = supportedFeatures.contains(Features.SOURCE_NAMES)
     /** Return `true` if this participant supports SSRC rewriting functionality. */
-    fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING)
+    fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING_V1)
     /** Return `true` if SSRC rewriting should be used for this participant. */
     fun useSsrcRewriting() = ConferenceConfig.config.useSsrcRewriting && hasSsrcRewritingSupport()
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
