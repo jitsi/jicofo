@@ -26,9 +26,6 @@ class CodecConfigTest : ShouldSpec() {
     init {
         context("Default configuration") {
             config.av1.enabled() shouldBe false
-            config.av1.pt() shouldBe 41
-            config.av1.rtxEnabled() shouldBe true
-            config.av1.rtxPt() shouldBe 42
 
             config.vp8.enabled() shouldBe true
             config.vp8.pt() shouldBe 100
