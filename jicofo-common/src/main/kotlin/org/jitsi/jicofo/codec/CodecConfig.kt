@@ -159,6 +159,9 @@ class Config {
     @JvmField
     val framemarking: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_FRAMEMARKING", "jicofo.codec.rtp-extensions.framemarking")
+    val extmapAllowMixed: Boolean by config {
+        "jicofo.codec.rtp-extensions.extmap-allow-mixed".from(JitsiConfig.newConfig)
+    }
 
     companion object {
         const val LEGACY_BASE = "org.jitsi.jicofo"

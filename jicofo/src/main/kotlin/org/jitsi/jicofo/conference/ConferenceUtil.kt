@@ -41,6 +41,7 @@ internal fun ContentPacketExtension.toMedia(): Media? {
         it.extmapList.forEach { rtpHdrExtPacketExtension ->
             media.addRtpHdrExt(rtpHdrExtPacketExtension)
         }
+        it.extmapAllowMixed?.let { allowMixed -> media.setExtmapAllowMixed(allowMixed) }
     }
     return media.build()
 }
