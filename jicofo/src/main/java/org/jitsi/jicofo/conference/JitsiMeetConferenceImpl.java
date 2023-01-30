@@ -531,6 +531,7 @@ public class JitsiMeetConferenceImpl
     private void setConferenceProperty(@NotNull String key, @NotNull String value, boolean updatePresence)
     {
         String oldValue = conferenceProperties.put(key, value);
+        ChatRoom chatRoom = this.chatRoom;
         if (updatePresence && chatRoom != null && !value.equals(oldValue))
         {
             chatRoom.setPresenceExtension(createConferenceProperties(), false);
