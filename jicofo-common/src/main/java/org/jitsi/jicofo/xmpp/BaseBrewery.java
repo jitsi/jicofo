@@ -158,6 +158,11 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         }
     }
 
+    @Override
+    public void componentsChanged(@NotNull Set<XmppProvider.Component> components)
+    {
+    }
+
     /**
      * Starts the detector by joining it to the brewery room.
      */
