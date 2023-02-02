@@ -215,10 +215,12 @@ class JingleSession(
         jingleIqRequestHandler.registerSession(this)
         JingleStats.stanzaSent(sessionInitiate.action)
         val response = connection.sendIqAndGetResponse(sessionInitiate)
-        return if (response?.type == IQ.Type.result) {
+        // We treat a timeout (null) as success. This prevents failures in case the client delays processing, observed
+        // when joining a large conference. The session will be pending until we receive session-accept.
+        return if (response == null || response.type == IQ.Type.result) {
             true
         } else {
-            logger.error("Unexpected response to session-initiate: ${response?.toXML()}")
+            logger.error("Unexpected response to session-initiate: $response")
             false
         }
     }
