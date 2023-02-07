@@ -35,7 +35,21 @@ enum class Features(val value: String) {
     /** Jingle sources encoded as JSON. */
     JSON_SOURCES("http://jitsi.org/json-encoded-sources"),
     OPUS_RED("http://jitsi.org/opus-red"),
-    AUDIO_MUTE("http://jitsi.org/protocol/audio-mute");
+    AUDIO_MUTE("http://jitsi.org/protocol/audio-mute"),
+    // The ones below are not used in jicofo, but are defined here to improve the xmpp-caps statistics and avoid logs
+    // about unknown features.
+    JIBRI("http://jitsi.org/protocol/jibri"),
+    JIGASI("http://jitsi.org/protocol/jigasi"),
+    LIPSYNC("http://jitsi.org/meet/lipsync"),
+    E2EE("https://jitsi.org/meet/e2ee"),
+    XMPP_CAPS("http://jabber.org/protocol/caps"),
+    JINGLE("urn:xmpp:jingle:1"),
+    JINGLE_RTP("urn:xmpp:jingle:apps:rtp:1"),
+    JINGLE_ICE("urn:xmpp:jingle:transports:ice-udp:1"),
+    DTLS("urn:xmpp:jingle:apps:dtls:0"),
+    RTCPMUX("urn:ietf:rfc:5761"),
+    BUNDLE("urn:ietf:rfc:5888"),
+    RAYO("urn:xmpp:rayo:client:1");
 
     companion object {
         val defaultFeatures = setOf(AUDIO, VIDEO, SCTP)
