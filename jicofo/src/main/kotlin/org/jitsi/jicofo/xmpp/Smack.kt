@@ -18,8 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
-import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIQ
-import org.jitsi.xmpp.extensions.colibri.ColibriConferenceIqProvider
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsIqProvider
 import org.jitsi.xmpp.extensions.colibri.ForcefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
@@ -78,7 +76,6 @@ fun registerXmppExtensions() {
     ConferenceIqProvider()
     LoginUrlIqProvider()
     LogoutIqProvider()
-    ColibriConferenceIqProvider()
     GracefulShutdownIqProvider.registerIQProvider()
     ForcefulShutdownIqProvider.registerIQProvider()
     ColibriStatsIqProvider()
@@ -129,12 +126,6 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
     )
 
-    // Register Colibri
-    ProviderManager.addIQProvider(
-        ColibriConferenceIQ.ELEMENT,
-        ColibriConferenceIQ.NAMESPACE,
-        ColibriConferenceIqProvider()
-    )
     // register Jingle
     ProviderManager.addIQProvider(
         JingleIQ.ELEMENT,
