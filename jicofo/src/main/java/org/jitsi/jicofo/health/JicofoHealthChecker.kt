@@ -17,11 +17,13 @@ package org.jitsi.jicofo.health
 
 import org.jitsi.health.HealthCheckService
 import org.jitsi.health.HealthChecker
+import org.jitsi.health.Result
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.logging2.createLogger
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smackx.ping.packet.Ping
@@ -73,20 +75,19 @@ class JicofoHealthChecker(
         }
     }
 
-    private fun performCheck() {
-        Objects.requireNonNull(focusManager, "FocusManager is not set.")
+    private fun performCheck(): Result {
         val start = System.currentTimeMillis()
-        check()
-        val duration = System.currentTimeMillis() - start
-        if (duration > HealthConfig.config.maxCheckDuration.toMillis()) {
-            logger.error("Health check took too long: " + duration + "ms")
-            totalSlowHealthChecks++
+        return check().also {
+            val duration = System.currentTimeMillis() - start
+            if (duration > HealthConfig.config.maxCheckDuration.toMillis()) {
+                logger.error("Health check took too long: " + duration + "ms")
+                totalSlowHealthChecks++
+            }
         }
     }
 
-    override fun getResult(): Exception? {
-        return healthChecker.result
-    }
+    override val result: Result
+        get() = healthChecker.result
 
     /**
      * Checks the health (status) of a specific [FocusManager].
@@ -95,11 +96,13 @@ class JicofoHealthChecker(
      * of `focusManager` or the check determines that `focusManager`
      * is not healthy
      */
-    private fun check() {
+    private fun check(): Result {
         if (bridgeSelector.operationalBridgeCount <= 0) {
-            throw RuntimeException(
-                    "No operational bridges available (total bridge count: "
-                            + BridgeSelector.bridgeCount.get() + ")")
+            return Result(
+                success = false,
+                hardFailure = true,
+                message = "No operational bridges available (total bridge count: ${BridgeSelector.bridgeCount.get()})"
+            )
         }
 
         // Generate a pseudo-random room name. Minimize the risk of clashing with existing conferences.
@@ -114,20 +117,29 @@ class JicofoHealthChecker(
         // Create a conference with the generated room name.
         try {
             if (!focusManager.conferenceRequest(
-                            roomName,
-                            emptyMap(),
-                            Level.WARNING /* conference logging level */,
-                            false /* don't include in statistics */)) {
-                throw RuntimeException("Failed to create conference with room name $roomName")
+                    roomName,
+                    emptyMap(),
+                    Level.WARNING /* conference logging level */,
+                    false /* don't include in statistics */
+                )
+            ) {
+                return Result(success = false, hardFailure = true, message = "Test conference failed to start.")
             }
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to create conference with room name " + roomName + ":" + e.message)
+        } catch (e: SmackException.NoResponseException) {
+            // Treat timeouts as "soft" as they could be just due to load.
+            return Result(
+                success = false,
+                hardFailure = false,
+                message = "Test conference failed to start due to timeout.")
         }
+
         try {
             xmppProviders.forEach { pingXmppProvider(it) }
         } catch (e: Exception) {
-            throw RuntimeException("XMPP ping failed: ${e.message}")
+            return Result(success = false, hardFailure = false, message = "XMPP ping failed: ${e.message}")
         }
+
+        return Result(success = true)
     }
 
     /**
