@@ -117,7 +117,12 @@ class JicofoServices {
     }
 
     private val healthChecker: JicofoHealthChecker? = if (HealthConfig.config.enabled) {
-        JicofoHealthChecker(HealthConfig.config, focusManager).apply {
+        JicofoHealthChecker(
+            HealthConfig.config,
+            focusManager,
+            bridgeSelector,
+            setOf(xmppServices.clientConnection)
+        ).apply {
             start()
         }
     } else null
