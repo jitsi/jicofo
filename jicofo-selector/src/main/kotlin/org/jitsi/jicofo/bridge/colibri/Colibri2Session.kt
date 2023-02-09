@@ -21,6 +21,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
 import org.jitsi.jicofo.codec.CodecUtil
+import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
@@ -37,6 +38,7 @@ import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Sctp
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
+import org.jitsi.xmpp.extensions.jingle.ExtmapAllowMixedPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
@@ -456,6 +458,9 @@ class Colibri2Session(
                     setType(MediaType.AUDIO)
                     CodecUtil.createAudioPayloadTypeExtensions().forEach { addPayloadType(it) }
                     CodecUtil.createAudioRtpHdrExtExtensions().forEach { addRtpHdrExt(it) }
+                    if (Config.Companion.config.extmapAllowMixed) {
+                        setExtmapAllowMixed(ExtmapAllowMixedPacketExtension())
+                    }
                 }.build()
             )
             relay.addMedia(
@@ -463,6 +468,9 @@ class Colibri2Session(
                     setType(MediaType.VIDEO)
                     CodecUtil.createVideoPayloadTypeExtensions().forEach { addPayloadType(it) }
                     CodecUtil.createVideoRtpHdrExtExtensions().forEach { addRtpHdrExt(it) }
+                    if (Config.Companion.config.extmapAllowMixed) {
+                        setExtmapAllowMixed(ExtmapAllowMixedPacketExtension())
+                    }
                 }.build()
             )
 
