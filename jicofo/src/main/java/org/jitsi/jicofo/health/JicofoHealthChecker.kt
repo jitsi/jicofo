@@ -30,13 +30,12 @@ import org.jivesoftware.smackx.ping.packet.Ping
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Localpart
-import org.jxmpp.stringprep.XmppStringprepException
 import java.time.Clock
 import java.time.Duration
-import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
+import kotlin.random.Random
 
 /**
  * Checks the health of Jicofo.
@@ -80,7 +79,7 @@ class JicofoHealthChecker(
         return check().also {
             val duration = System.currentTimeMillis() - start
             if (duration > HealthConfig.config.maxCheckDuration.toMillis()) {
-                logger.error("Health check took too long: " + duration + "ms")
+                logger.error("Health check took too long: $duration ms")
                 totalSlowHealthChecks++
             }
         }
@@ -168,35 +167,12 @@ class JicofoHealthChecker(
 
             // Wait for 5 seconds to receive a response.
             if (!pingResponseWait.await(5, TimeUnit.SECONDS)) {
-                throw RuntimeException("did not receive xmpp ping response for (${xmppProvider.config.name})")
+                throw RuntimeException("did not receive xmpp ping response for ${xmppProvider.config.name}")
             }
         } finally {
             xmppProvider.xmppConnection.removeSyncStanzaListener(listener)
         }
     }
-
-    companion object {
-        /**
-         * The pseudo-random generator used to generate random input for
-         * [FocusManager] such as room names.
-         */
-        private val RANDOM = Random()
-
-
-        /**
-         * Generates a pseudo-random room name which is not guaranteed to be unique.
-         *
-         * @return a pseudo-random room name which is not guaranteed to be unique
-         */
-        private fun generateRoomName(): Localpart? {
-            return try {
-                Localpart.from(HealthConfig.config.roomNamePrefix
-                        + "-"
-                        + java.lang.Long.toHexString(System.currentTimeMillis() + RANDOM.nextLong()))
-            } catch (e: XmppStringprepException) {
-                // ignore, cannot happen
-                null
-            }
-        }
-    }
 }
+
+private fun generateRoomName(): Localpart = Localpart.from("${HealthConfig.config.roomNamePrefix}-${Random.nextLong()}")
