@@ -39,7 +39,6 @@ class ConferenceIqHandler(
     val xmppProvider: XmppProvider,
     val focusManager: FocusManager,
     val focusAuthJid: String,
-    val isFocusAnonymous: Boolean,
     val authAuthority: AuthenticationAuthority?,
     val jigasiEnabled: Boolean
 ) : XmppProvider.Listener, AbstractIqRequestHandler(

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.apache.commons.lang3.StringUtils
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -99,7 +98,6 @@ class XmppServices(
         xmppProvider = clientConnection,
         focusManager = focusManager,
         focusAuthJid = XmppConfig.client.jid,
-        isFocusAnonymous = StringUtils.isBlank(XmppConfig.client.password),
         authAuthority = authenticationAuthority,
         jigasiEnabled = jigasiDetector != null
     ).apply {
