@@ -93,12 +93,7 @@ class ConferenceIqHandler(
             logger.error("No XmppConnectionConfig for vnode=$vnode")
         }
 
-        var ready: Boolean = focusManager.conferenceRequest(room, query.propertiesMap)
-        if (!isFocusAnonymous && authAuthority == null) {
-            // Focus is authenticated system admin, so we let them in immediately. Focus will get OWNER anyway.
-            ready = true
-        }
-        response.isReady = ready
+        response.isReady = focusManager.conferenceRequest(room, query.propertiesMap)
 
         // Authentication module enabled?
         if (authAuthority != null) {
