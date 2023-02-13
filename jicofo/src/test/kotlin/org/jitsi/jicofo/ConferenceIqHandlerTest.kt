@@ -34,7 +34,6 @@ class ConferenceIqHandlerTest : ShouldSpec() {
             every { conferenceRequest(any(), any()) } returns true
         },
         focusAuthJid = "",
-        isFocusAnonymous = true,
         authAuthority = null,
         jigasiEnabled = false
     )

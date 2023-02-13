@@ -30,7 +30,6 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         xmppProvider = mockk(relaxed = true),
         focusManager = focusManager,
         focusAuthJid = "",
-        isFocusAnonymous = true,
         authAuthority = authAuthority,
         jigasiEnabled = false
     )

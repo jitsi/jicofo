@@ -55,7 +55,6 @@ class ShibbolethAuthenticationAuthorityTest : ShouldSpec() {
         xmppProvider = mockk(relaxed = true),
         focusManager = focusManager,
         focusAuthJid = "",
-        isFocusAnonymous = true,
         authAuthority = shibbolethAuth,
         jigasiEnabled = false
     )
