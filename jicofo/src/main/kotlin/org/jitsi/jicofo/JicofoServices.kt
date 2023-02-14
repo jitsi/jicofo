@@ -210,8 +210,19 @@ class JicofoServices {
         put("threads", ManagementFactory.getThreadMXBean().threadCount)
         put("jingle", JingleStats.toJson())
         healthChecker?.let {
+            val result = it.result
             put("slow_health_check", it.totalSlowHealthChecks)
-            put("healthy", it.result == null)
+            put("healthy", result.success)
+            put(
+                "health",
+                JSONObject().apply {
+                    put("success", result.success)
+                    put("hardFailure", result.hardFailure)
+                    put("responseCode", result.responseCode)
+                    put("sticky", result.sticky)
+                    put("message", result.message)
+                }
+            )
         }
     }
 
