@@ -82,6 +82,9 @@ interface ColibriSessionManager {
             /** The list of participant IDs which were on the removed bridge. **/
             participantIds: List<String>
         )
+
+        /** Endpoint removed due to a failure e.g. unknown endpoint */
+        fun endpointRemoved(endpointId: String)
     }
 }
 
