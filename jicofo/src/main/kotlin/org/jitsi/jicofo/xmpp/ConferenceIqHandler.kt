@@ -88,8 +88,9 @@ class ConferenceIqHandler(
             response.vnode = vnode
             response.focusJid = it
         } ?: run {
-            // This shouldn't happen. But if it does go on without redirection.
-            logger.error("No XmppConnectionConfig for vnode=$vnode")
+            if (vnode != null) {
+                logger.error("No XmppConnectionConfig for vnode=$vnode")
+            }
         }
 
         response.isReady = focusManager.conferenceRequest(room, query.propertiesMap)
