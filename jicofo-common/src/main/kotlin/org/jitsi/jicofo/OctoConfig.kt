@@ -29,6 +29,10 @@ class OctoConfig {
         "jicofo.octo.allow-mixed-versions".from(newConfig)
     }
 
+    val sctpChannels: Boolean by config {
+        "jicofo.octo.sctp-channels".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = OctoConfig()
