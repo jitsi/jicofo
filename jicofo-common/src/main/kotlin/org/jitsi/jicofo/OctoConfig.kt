@@ -29,8 +29,8 @@ class OctoConfig {
         "jicofo.octo.allow-mixed-versions".from(newConfig)
     }
 
-    val sctpChannels: Boolean by config {
-        "jicofo.octo.sctp-channels".from(newConfig)
+    val sctpDatachannels: Boolean by config {
+        "jicofo.octo.sctp-datachannels".from(newConfig)
     }
 
     companion object {

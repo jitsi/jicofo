@@ -328,7 +328,7 @@ class Colibri2Session(
         private val iceControlling = initiator
         private val dtlsSetup = if (initiator) "active" else "passive"
         private val bridgeChannelActive = initiator
-        private val sctpBridgeChannel = OctoConfig.config.sctpChannels
+        private val sctpBridgeChannel = OctoConfig.config.sctpDatachannels
 
         private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", relayId) }
 
