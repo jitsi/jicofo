@@ -40,6 +40,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
+import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
@@ -518,6 +519,7 @@ class ColibriV2SessionManager(
         participantId: String,
         transport: IceUdpTransportPacketExtension?,
         sources: EndpointSourceSet?,
+        initialLastN: InitialLastN?,
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
         logger.info("Updating $participantId with transport=$transport, sources=$sources")
@@ -530,7 +532,7 @@ class ColibriV2SessionManager(
                 return
             }
         if (!suppressLocalBridgeUpdate) {
-            participantInfo.session.updateParticipant(participantInfo, transport, sources)
+            participantInfo.session.updateParticipant(participantInfo, transport, sources, initialLastN)
         }
         if (sources != null) {
             participantInfo.sources = sources

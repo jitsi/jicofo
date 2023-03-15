@@ -39,6 +39,7 @@ import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
@@ -205,27 +206,38 @@ open class Participant @JvmOverloads constructor(
 
     /** Return `true` if this participant supports source name signaling. */
     fun hasSourceNameSupport() = supportedFeatures.contains(Features.SOURCE_NAMES)
+
     /** Return `true` if this participant supports SSRC rewriting functionality. */
     fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING_V1)
+
     /** Return `true` if SSRC rewriting should be used for this participant. */
     fun useSsrcRewriting() = ConferenceConfig.config.useSsrcRewriting && hasSsrcRewritingSupport()
+
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
     fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
     fun supportsReceivingMultipleVideoStreams() = supportedFeatures.contains(Features.RECEIVE_MULTIPLE_STREAMS)
+
     /** Returns `true` iff this participant supports REMB. */
     fun hasRembSupport() = supportedFeatures.contains(Features.REMB)
+
     /** Returns `true` iff this participant supports TCC. */
     fun hasTccSupport() = supportedFeatures.contains(Features.TCC)
+
     /** Returns `true` iff this participant supports RTX. */
     fun hasRtxSupport() = supportedFeatures.contains(Features.RTX)
+
     /** Returns `true` iff this participant supports RED for opus. */
     fun hasOpusRedSupport() = supportedFeatures.contains(Features.OPUS_RED)
+
     /** Returns true if RTP audio is supported by this peer. */
     fun hasAudioSupport() = supportedFeatures.contains(Features.AUDIO)
+
     /** Returns true if RTP video is supported by this peer. */
     fun hasVideoSupport() = supportedFeatures.contains(Features.VIDEO)
+
     /** Returns true if RTP audio can be muted for this peer. */
     fun hasAudioMuteSupport() = supportedFeatures.contains(Features.AUDIO_MUTE)
+
     /** Returns <tt>true</tt> if this peer supports DTLS/SCTP. */
     fun hasSctpSupport() = supportedFeatures.contains(Features.SCTP)
 
@@ -339,6 +351,7 @@ open class Participant @JvmOverloads constructor(
      * support unmuting).
      */
     fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri
+
     /** Checks whether this [Participant]'s role has moderator rights. */
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
@@ -447,9 +460,11 @@ open class Participant @JvmOverloads constructor(
             if (!sourcesAdvertised.isEmpty() && this@Participant.chatMember.role == MemberRole.VISITOR) {
                 return StanzaError.from(StanzaError.Condition.forbidden, "sources not allowed for visitors").build()
             }
+            val initialLastN: InitialLastN? =
+                contents.find { it.name == "video" }?.getChildExtension(InitialLastN::class.java)
 
             try {
-                conference.acceptSession(this@Participant, sourcesAdvertised, contents.getTransport())
+                conference.acceptSession(this@Participant, sourcesAdvertised, contents.getTransport(), initialLastN)
             } catch (e: ValidationFailedException) {
                 return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
             }
