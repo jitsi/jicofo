@@ -180,9 +180,10 @@ public interface ChatRoom
 
     /**
      * Updates the list of members that are allowed to unmute audio or video.
-     * @param whitelists a map with string keys (MediaType.AUDIO or MediaType.VIDEO).
+     * @param mediaType audio or video.
+     * @param whitelist the list of JIDs that are allowed to "unmute" the specified mediaType.
      */
-    void updateAvModerationWhitelists(Map<String, List<String>> whitelists);
+    void setAvModerationWhitelist(@NotNull MediaType mediaType, @NotNull List<String> whitelist);
 
     /**
      * Checks the whitelists whether the supplied jid is allowed from a moderator to unmute.

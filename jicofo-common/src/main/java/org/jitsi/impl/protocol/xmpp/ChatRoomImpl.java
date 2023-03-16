@@ -129,12 +129,7 @@ public class ChatRoomImpl
      */
     private String mainRoom = null;
 
-    /**
-     * Indicates whether A/V Moderation is enabled for this room.
-     */
-    private final Map<MediaType, Boolean> avModerationEnabled = Collections.synchronizedMap(new HashMap<>());
-
-    private Map<String, List<String>> whitelists = new HashMap<>();
+    private final @NotNull ChatRoomAvModeration avModeration;
 
     /**
      * The emitter used to fire events.
@@ -171,6 +166,7 @@ public class ChatRoomImpl
     {
         logger = new LoggerImpl(getClass().getName());
         logger.addContext("room", roomJid.toString());
+        this.avModeration = new ChatRoomAvModeration(logger);
         this.xmppProvider = xmppProvider;
         this.roomJid = roomJid;
         this.leaveCallback = leaveCallback;
@@ -271,8 +267,7 @@ public class ChatRoomImpl
             logger.addContext("meeting_id", "");
             isBreakoutRoom = false;
             mainRoom = null;
-            avModerationEnabled.clear();
-            whitelists.clear();
+            avModeration.reset();
         }
     }
 
@@ -915,10 +910,7 @@ public class ChatRoomImpl
      */
     public boolean isAvModerationEnabled(MediaType mediaType)
     {
-        Boolean value = this.avModerationEnabled.get(mediaType);
-
-        // must be non null and true
-        return value != null && value;
+        return avModeration.isEnabled(mediaType);
     }
 
     /**
@@ -926,29 +918,23 @@ public class ChatRoomImpl
      */
     public void setAvModerationEnabled(MediaType mediaType, boolean value)
     {
-        this.avModerationEnabled.put(mediaType, value);
+        avModeration.setEnabled(mediaType, value);
     }
 
     /**
      * {@inheritDoc}
      */
-    public void updateAvModerationWhitelists(@NotNull Map<String, List<String>> whitelists)
+    public void setAvModerationWhitelist(@NotNull MediaType mediaType, @NotNull List<String> whitelist)
     {
-        this.whitelists = whitelists;
+        avModeration.setWhitelist(mediaType, whitelist);
     }
 
     /**
      * {@inheritDoc}
      */
-    public boolean isMemberAllowedToUnmute(Jid jid, MediaType mediaType)
+    public boolean isMemberAllowedToUnmute(@NotNull Jid jid, @NotNull MediaType mediaType)
     {
-        if (!this.isAvModerationEnabled(mediaType))
-        {
-            return true;
-        }
-
-        List<String> whitelist = this.whitelists.get(mediaType.toString());
-        return whitelist != null && whitelist.contains(jid.toString());
+        return avModeration.isAllowedToUnmute(mediaType, jid.toString());
     }
 
     @Override
@@ -961,7 +947,7 @@ public class ChatRoomImpl
         OrderedJsonObject membersJson = new OrderedJsonObject();
         for (ChatRoomMemberImpl m : members.values())
         {
-            membersJson.put(m.getJid(), m.getDebugState());
+            membersJson.put(m.getName(), m.getDebugState());
         }
         o.put("members", membersJson);
         o.put("role", String.valueOf(role));
