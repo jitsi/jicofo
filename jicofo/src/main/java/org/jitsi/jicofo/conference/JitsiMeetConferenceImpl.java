@@ -472,9 +472,10 @@ public class JitsiMeetConferenceImpl
             logger);
 
         chatRoom.join();
-        if (chatRoom.getMeetingId() != null)
+        String meetingId = chatRoom.getMeetingId();
+        if (meetingId != null)
         {
-            logger.addContext("meeting_id", chatRoom.getMeetingId());
+            logger.addContext("meeting_id", meetingId);
         }
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
@@ -796,7 +797,7 @@ public class JitsiMeetConferenceImpl
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         ChatRoom chatRoom = getChatRoom();
-        return chatRoom != null && chatRoom.getMembersCount() >= minParticipants;
+        return chatRoom != null && chatRoom.getMembers().size() >= minParticipants;
     }
 
     /**
@@ -862,7 +863,7 @@ public class JitsiMeetConferenceImpl
             visitorRemoved();
         }
 
-        if (chatRoom == null || chatRoom.getMembersCount() == 0)
+        if (chatRoom == null || chatRoom.getMembers().isEmpty())
         {
             stop();
         }

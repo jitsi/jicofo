@@ -65,8 +65,8 @@ import javax.xml.namespace.QName
     justification = "We intentionally synchronize on [members] (a ConcurrentHashMap)."
 )
 class ChatRoomImpl(
-    private val xmppProvider: XmppProvider,
-    private val roomJid: EntityBareJid,
+    override val xmppProvider: XmppProvider,
+    override val roomJid: EntityBareJid,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
@@ -92,7 +92,7 @@ class ChatRoomImpl(
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
-    private val members: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
+    private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
 
     /** Local user role. */
     private var role: MemberRole? = null
@@ -101,13 +101,16 @@ class ChatRoomImpl(
     private var lastPresenceSent: PresenceBuilder? = null
 
     /** The value of the "meetingId" field from the MUC form, if present. */
-    private var meetingId: String? = null
+    override var meetingId: String? = null
+        private set
 
     /** The value of the "isbreakout" field from the MUC form, if present. */
-    private var isBreakoutRoom = false
+    override var isBreakoutRoom = false
+        private set
 
     /** The value of "breakout_main_room" field from the MUC form, if present. */
-    private var mainRoom: String? = null
+    override var mainRoom: String? = null
+        private set
 
     private val avModeration = ChatRoomAvModeration(logger)
 
@@ -127,17 +130,13 @@ class ChatRoomImpl(
     /** The number of members that currently have their video sources unmuted. */
     private var numVideoSenders = 0
 
-    override fun getRoomJid() = roomJid
-    override fun getXmppProvider() = xmppProvider
-    override fun isBreakoutRoom() = isBreakoutRoom
-    override fun getMainRoom() = mainRoom
-    override fun getMeetingId(): String? = meetingId
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
-    override fun isJoined() = muc.isJoined
-    override fun getMembers(): List<ChatRoomMember> = synchronized(members) { return members.values.toList() }
-    override fun getChatMember(occupantJid: EntityFullJid) = members[occupantJid]
-    override fun getMembersCount() = members.size
+    override val isJoined
+        get() = muc.isJoined
+    override val members: List<ChatRoomMember>
+        get() = synchronized(membersMap) { return membersMap.values.toList() }
+    override fun getChatMember(occupantJid: EntityFullJid) = membersMap[occupantJid]
     override fun isAvModerationEnabled(mediaType: MediaType) = avModeration.isEnabled(mediaType)
     override fun setAvModerationEnabled(mediaType: MediaType, value: Boolean) =
         avModeration.setEnabled(mediaType, value)
@@ -165,10 +164,10 @@ class ChatRoomImpl(
      * the MUC. Resets any state that might have been set the previous time the MUC was joined.
      */
     private fun resetState() {
-        synchronized(members) {
-            if (members.isNotEmpty()) {
-                logger.warn("Removing " + members.size + " stale members.")
-                members.clear()
+        synchronized(membersMap) {
+            if (membersMap.isNotEmpty()) {
+                logger.warn("Removing " + membersMap.size + " stale members.")
+                membersMap.clear()
             }
         }
         synchronized(this) {
@@ -267,17 +266,18 @@ class ChatRoomImpl(
         }
     }
 
-    override fun getUserRole(): MemberRole? {
-        if (role == null) {
-            val o = muc.getOccupant(myOccupantJid)
-            if (o == null) {
-                return null
-            } else {
-                role = fromSmack(o.role, o.affiliation)
+    override val userRole: MemberRole?
+        get() {
+            if (role == null) {
+                val o = muc.getOccupant(myOccupantJid)
+                if (o == null) {
+                    return null
+                } else {
+                    role = fromSmack(o.role, o.affiliation)
+                }
             }
+            return role
         }
-        return role
-    }
 
     /** Resets cached role instance so that it will be refreshed when [ ][.getUserRole] is called. */
     private fun resetCachedUserRole() {
@@ -293,7 +293,7 @@ class ChatRoomImpl(
         if (occupantJid.resourcepart == myOccupantJid!!.resourcepart) {
             resetCachedUserRole()
         } else {
-            val member = members[occupantJid]
+            val member = membersMap[occupantJid]
             if (member != null) {
                 member.resetCachedRole()
             } else {
@@ -393,10 +393,9 @@ class ChatRoomImpl(
     /**
      * {@inheritDoc}
      */
-    @Synchronized
-    override fun getPresenceExtensions(): Collection<ExtensionElement> {
-        return if (lastPresenceSent != null) ArrayList(lastPresenceSent!!.extensions) else emptyList()
-    }
+    override val presenceExtensions
+        @Synchronized
+        get() = lastPresenceSent?.extensions?.toList() ?: emptyList()
 
     /**
      * {@inheritDoc}
@@ -437,13 +436,11 @@ class ChatRoomImpl(
         xmppProvider.xmppConnection.tryToSendStanza(presence)
     }
 
-    override fun getAudioSendersCount(): Int {
-        return numAudioSenders
-    }
+    override val audioSendersCount
+        get() = numAudioSenders
 
-    override fun getVideoSendersCount(): Int {
-        return numVideoSenders
-    }
+    override val videoSendersCount
+        get() = numVideoSenders
 
     fun addAudioSender() {
         ++numAudioSenders
@@ -477,12 +474,12 @@ class ChatRoomImpl(
      * @return the [ChatRoomMemberImpl] for the member with the given JID.
      */
     private fun addMember(jid: EntityFullJid): ChatRoomMemberImpl? {
-        synchronized(members) {
-            if (members.containsKey(jid)) {
-                return members[jid]
+        synchronized(membersMap) {
+            if (membersMap.containsKey(jid)) {
+                return membersMap[jid]
             }
             val newMember = ChatRoomMemberImpl(jid, this@ChatRoomImpl, logger)
-            members[jid] = newMember
+            membersMap[jid] = newMember
             if (!newMember.isAudioMuted) addAudioSender()
             if (!newMember.isVideoMuted) addVideoSender()
             return newMember
@@ -547,7 +544,7 @@ class ChatRoomImpl(
 
         var memberJoined = false
         var memberLeft = false
-        val member: ChatRoomMemberImpl? = synchronized(members) {
+        val member: ChatRoomMemberImpl? = synchronized(membersMap) {
             val m = getChatMember(jid)
             if (m == null) {
                 if (presence.type == Presence.Type.available) {
@@ -609,22 +606,20 @@ class ChatRoomImpl(
         }
     }
 
-    override fun getDebugState(): OrderedJsonObject {
-        val o = OrderedJsonObject()
-        o["room_jid"] = roomJid.toString()
-        o["my_occupant_jid"] = myOccupantJid.toString()
+    override val debugState = OrderedJsonObject().apply {
+        this["room_jid"] = roomJid.toString()
+        this["my_occupant_jid"] = myOccupantJid.toString()
         val membersJson = OrderedJsonObject()
-        for (m in members.values) {
+        for (m in membersMap.values) {
             membersJson[m.name] = m.debugState
         }
-        o["members"] = membersJson
-        o["role"] = role.toString()
-        o["meeting_id"] = meetingId.toString()
-        o["is_breakout_room"] = isBreakoutRoom
-        o["main_room"] = mainRoom.toString()
-        o["num_audio_senders"] = numAudioSenders
-        o["num_video_senders"] = numVideoSenders
-        return o
+        this["members"] = membersJson
+        this["role"] = role.toString()
+        this["meeting_id"] = meetingId.toString()
+        this["is_breakout_room"] = isBreakoutRoom
+        this["main_room"] = mainRoom.toString()
+        this["num_audio_senders"] = numAudioSenders
+        this["num_video_senders"] = numVideoSenders
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
@@ -645,8 +640,8 @@ class ChatRoomImpl(
         }
 
         private fun removeMember(occupantJid: EntityFullJid): ChatRoomMemberImpl? {
-            synchronized(members) {
-                val removed = members.remove(occupantJid)
+            synchronized(membersMap) {
+                val removed = membersMap.remove(occupantJid)
                 if (removed == null) {
                     logger.error("$occupantJid not in $roomJid")
                 } else {
@@ -663,7 +658,7 @@ class ChatRoomImpl(
         override fun left(occupantJid: EntityFullJid) {
             logger.debug { "Left $occupantJid room: $roomJid" }
 
-            val member = synchronized(members) { removeMember(occupantJid) }
+            val member = synchronized(membersMap) { removeMember(occupantJid) }
             member?.let { eventEmitter.fireEvent { memberLeft(it) } }
                 ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
@@ -671,7 +666,7 @@ class ChatRoomImpl(
         override fun kicked(occupantJid: EntityFullJid, actor: Jid, reason: String) {
             logger.debug { "Kicked: $occupantJid, $actor, $reason" }
 
-            val member = synchronized(members) { removeMember(occupantJid) }
+            val member = synchronized(membersMap) { removeMember(occupantJid) }
             member?.let { eventEmitter.fireEvent { memberKicked(it) } }
                 ?: logger.error("Kicked member does not exist: $occupantJid")
         }

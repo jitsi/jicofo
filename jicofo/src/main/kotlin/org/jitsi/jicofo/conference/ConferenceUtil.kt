@@ -61,8 +61,8 @@ internal fun selectVisitorNode(
     allNodes: List<XmppProvider>
 ): String? {
 
-    val min = existingNodes.minByOrNull { it.value.membersCount }
-    if (min != null && min.value.membersCount < VisitorsConfig.config.maxVisitorsPerNode) {
+    val min = existingNodes.minByOrNull { it.value.members.size }
+    if (min != null && min.value.members.size < VisitorsConfig.config.maxVisitorsPerNode) {
         return min.key
     }
 

@@ -31,7 +31,6 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
     val chatRoom = mockk<ChatRoom>(relaxed = true) {
         every { addListener(capture(chatRoomListeners)) } returns Unit
         every { members } returns memberList
-        every { membersCount } answers { memberList.size }
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
         every { debugState } returns OrderedJsonObject()
     }
