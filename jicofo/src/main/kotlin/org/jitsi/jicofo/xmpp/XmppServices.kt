@@ -87,7 +87,7 @@ class XmppServices(
     val jigasiStats: OrderedJsonObject
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
-    private val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
+    val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     val jingleHandler = JingleIqRequestHandler(
