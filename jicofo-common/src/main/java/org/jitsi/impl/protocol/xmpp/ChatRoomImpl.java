@@ -971,6 +971,16 @@ public class ChatRoomImpl
         o.put("num_audio_senders", numAudioSenders);
         o.put("num_video_senders", numVideoSenders);
 
+        o.put("av_moderation_enabled_audio", isAvModerationEnabled(MediaType.AUDIO));
+        List<String> audioWhitelist = whitelists.get("audio");
+        if (audioWhitelist == null) audioWhitelist = Collections.emptyList();
+        o.put("av_moderation_whitelist_audio", audioWhitelist);
+
+        o.put("av_moderation_enabled_video", isAvModerationEnabled(MediaType.VIDEO));
+        List<String> videoWhitelist = whitelists.get("video");
+        if (videoWhitelist == null) videoWhitelist = Collections.emptyList();
+        o.put("av_moderation_whitelist_video", videoWhitelist);
+
         return o;
     }
 

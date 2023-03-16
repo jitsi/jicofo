@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.MediaType
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
@@ -49,6 +50,11 @@ class AvModerationHandler(
         registrationChanged(xmppProvider.registered)
         componentsChanged(xmppProvider.components)
     }
+
+    val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["address"] = avModerationAddress.toString()
+        }
 
     override fun processStanza(stanza: Stanza) {
         if (stanza.from != avModerationAddress) {

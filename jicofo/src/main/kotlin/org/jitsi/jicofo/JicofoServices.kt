@@ -232,6 +232,8 @@ class JicofoServices {
         put("jibri_detector", jibriDetector?.debugState ?: "null")
         put("sip_jibri_detector", sipJibriDetector?.debugState ?: "null")
         put("jigasi_detector", xmppServices.jigasiDetector?.debugState ?: "null")
+        put("av_moderation", xmppServices.avModerationHandler.debugState)
+        put("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
     }
 
     fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
