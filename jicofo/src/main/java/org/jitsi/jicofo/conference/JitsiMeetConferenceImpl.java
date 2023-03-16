@@ -505,7 +505,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoom.modifyPresence(null, presenceExtensions);
+        chatRoom.modifyPresence(Collections.emptyList(), presenceExtensions);
     }
 
     /**
@@ -1541,7 +1541,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoomToJoin.modifyPresence(null, presenceExtensions);
+        chatRoomToJoin.modifyPresence(Collections.emptyList(), presenceExtensions);
 
         return node;
     }

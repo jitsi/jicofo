@@ -69,7 +69,7 @@ public interface ChatRoom
      * @return the role currently being used by the local user in the context of
      * the chat room.
      */
-    MemberRole getUserRole();
+    @Nullable MemberRole getUserRole();
 
     /**
      * Returns a <tt>List</tt> of <tt>ChatRoomMember</tt>s corresponding to all
@@ -121,7 +121,7 @@ public interface ChatRoom
      * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
      *         <tt>null</tt> if not found.
      */
-    ChatRoomMember getChatMember(@NotNull EntityFullJid mucJid);
+    @Nullable ChatRoomMember getChatMember(@NotNull EntityFullJid mucJid);
 
     /**
      * @return the list of all our presence {@link ExtensionElement}s.
@@ -144,7 +144,7 @@ public interface ChatRoom
      * @param toRemove the list of extensions to be removed.
      * @param toAdd the list of extension to be added.
      */
-    void modifyPresence(Collection<ExtensionElement> toRemove, Collection<ExtensionElement> toAdd);
+    void modifyPresence(@NotNull Collection<ExtensionElement> toRemove, @NotNull Collection<ExtensionElement> toAdd);
 
     /**
      * Add a [ChatRoomListener] to the list of listeners to be notified of events from this [ChatRoom].
@@ -162,7 +162,7 @@ public interface ChatRoom
     /**
      * Get the unique meeting ID associated by this room (set by the MUC service).
      */
-    String getMeetingId();
+    @Nullable String getMeetingId();
 
     /**
      * Whether A/V moderation is enabled.
@@ -203,7 +203,7 @@ public interface ChatRoom
      * Gets the main room name (JID) when in a breakout room.
      * @return The main room JID as a string.
      */
-    String getMainRoom();
+    @Nullable String getMainRoom();
 
     @NotNull
     OrderedJsonObject getDebugState();
