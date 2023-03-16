@@ -34,6 +34,7 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
+import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Sctp
 import org.jitsi.xmpp.extensions.colibri2.Transport
@@ -117,9 +118,10 @@ class Colibri2Session(
         /** The transport info to set for the colibri2 endpoint, or null if it is not to be modified. */
         transport: IceUdpTransportPacketExtension?,
         /** The sources to set for the colibri2 endpoint, or null if the sources are not to be modified. */
-        sources: EndpointSourceSet?
+        sources: EndpointSourceSet?,
+        initialLastN: InitialLastN?
     ) {
-        if (transport == null && sources == null) {
+        if (transport == null && sources == null && initialLastN == null) {
             logger.info("Nothing to update.")
             return
         }
@@ -136,6 +138,10 @@ class Colibri2Session(
 
         if (sources != null) {
             endpoint.setSources(sources.toColibriMediaSources(participant.id))
+        }
+
+        initialLastN?.let {
+            endpoint.setInitialLastN(it)
         }
 
         request.addEndpoint(endpoint.build())
