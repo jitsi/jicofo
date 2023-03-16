@@ -54,6 +54,7 @@ class ConferenceIqHandler(
     init {
         xmppProvider.addListener(this)
         registrationChanged(xmppProvider.registered)
+        componentsChanged(xmppProvider.components)
     }
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
