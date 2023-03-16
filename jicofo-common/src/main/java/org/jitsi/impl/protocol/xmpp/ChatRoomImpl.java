@@ -471,13 +471,8 @@ public class ChatRoomImpl
     }
 
     @Override
-    public ChatRoomMemberImpl getChatMember(EntityFullJid occupantJid)
+    public ChatRoomMemberImpl getChatMember(@NotNull EntityFullJid occupantJid)
     {
-        if (occupantJid == null)
-        {
-            return null;
-        }
-
         return members.get(occupantJid);
     }
 

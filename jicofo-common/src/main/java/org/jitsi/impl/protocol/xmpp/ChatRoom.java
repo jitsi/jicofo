@@ -121,7 +121,7 @@ public interface ChatRoom
      * @return an instance of <tt>XmppChatMember</tt> for given MUC jid or
      *         <tt>null</tt> if not found.
      */
-    ChatRoomMember getChatMember(EntityFullJid mucJid);
+    ChatRoomMember getChatMember(@NotNull EntityFullJid mucJid);
 
     /**
      * @return the list of all our presence {@link ExtensionElement}s.
