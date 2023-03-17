@@ -531,6 +531,9 @@ class ChatRoomImpl(
         this["main_room"] = mainRoom.toString()
         this["audio_senders_count"] = audioSendersCount
         this["video_senders_count"] = videoSendersCount
+        this["av_moderation"] = OrderedJsonObject().apply {
+            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
+        }
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
@@ -618,5 +621,11 @@ class ChatRoomImpl(
             enabled = false
             whitelist = emptyList()
         }
+
+        val debugState: OrderedJsonObject
+            get() = OrderedJsonObject().apply {
+                this["enabled"] = enabled
+                this["whitelist"] = whitelist
+            }
     }
 }
