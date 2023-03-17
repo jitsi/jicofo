@@ -169,7 +169,7 @@ class ChatRoomImpl(
     private fun resetState() {
         synchronized(membersMap) {
             if (membersMap.isNotEmpty()) {
-                logger.warn("Removing " + membersMap.size + " stale members.")
+                logger.warn("Removing ${membersMap.size} stale members.")
                 membersMap.clear()
             }
         }
@@ -219,11 +219,6 @@ class ChatRoomImpl(
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
         muc.sendConfigurationForm(answer)
-    }
-
-    private fun leave(reason: String, jid: EntityBareJid) {
-        logger.info("Leave, reason: $reason alt-jid: $jid")
-        leave()
     }
 
     override fun leave() {
@@ -315,7 +310,7 @@ class ChatRoomImpl(
             val reply = connection.sendIqAndGetResponse(admin)
             if (reply == null || reply.type != IQ.Type.result) {
                 // XXX FIXME throw a declared exception.
-                throw RuntimeException("Failed to grant owner: " + if (reply == null) "" else reply.toXML())
+                throw RuntimeException("Failed to grant owner: ${reply?.toXML()}")
             }
         } catch (e: SmackException.NotConnectedException) {
             // XXX FIXME throw a declared exception.
@@ -324,17 +319,6 @@ class ChatRoomImpl(
     }
 
     fun getOccupant(chatMember: ChatRoomMemberImpl): Occupant? = muc.getOccupant(chatMember.occupantJid)
-
-    /**
-     * Returns the MUCUser packet extension included in the packet or
-     * <tt>null</tt> if none.
-     *
-     * @param packet the packet that may include the MUCUser extension.
-     * @return the MUCUser found in the packet.
-     */
-    private fun getMUCUserExtension(packet: Presence?): MUCUser? {
-        return packet?.getExtension(MUCUser::class.java)
-    }
 
     override fun setPresenceExtension(extension: ExtensionElement) {
         val presenceToSend: Presence? = synchronized(this) {
@@ -401,11 +385,9 @@ class ChatRoomImpl(
      * @param jid the JID of the member.
      * @return the [ChatRoomMemberImpl] for the member with the given JID.
      */
-    private fun addMember(jid: EntityFullJid): ChatRoomMemberImpl? {
+    private fun addMember(jid: EntityFullJid): ChatRoomMemberImpl {
         synchronized(membersMap) {
-            if (membersMap.containsKey(jid)) {
-                return membersMap[jid]
-            }
+            membersMap[jid]?.let { return it }
             val newMember = ChatRoomMemberImpl(jid, this@ChatRoomImpl, logger)
             membersMap[jid] = newMember
             if (!newMember.isAudioMuted) audioSendersCount++
@@ -420,13 +402,9 @@ class ChatRoomImpl(
      * @param occupantJid the occupant JID.
      * @return the "real" JID of the occupant, or `null`.
      */
-    fun getJid(occupantJid: EntityFullJid): Jid? {
-        val occupant = muc.getOccupant(occupantJid)
-        if (occupant == null) {
-            logger.error("Unable to get occupant for $occupantJid")
-            return null
-        }
-        return occupant.jid
+    fun getJid(occupantJid: EntityFullJid): Jid? = muc.getOccupant(occupantJid)?.jid ?: run {
+        logger.error("Unable to get occupant for $occupantJid")
+        null
     }
 
     /**
@@ -435,7 +413,7 @@ class ChatRoomImpl(
      * @param presence the packet to process.
      */
     private fun processOwnPresence(presence: Presence) {
-        val mucUser = getMUCUserExtension(presence)
+        val mucUser = presence.getExtension(MUCUser::class.java)
         if (mucUser != null) {
             val affiliation = mucUser.item.affiliation
             val role = mucUser.item.role
@@ -451,7 +429,8 @@ class ChatRoomImpl(
                     // message we will just leave
                     leave()
                 } else {
-                    leave(destroy.reason, destroy.jid)
+                    logger.info("Leave, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
+                    leave()
                 }
             } else {
                 setLocalUserRole(jitsiRole)
@@ -466,7 +445,7 @@ class ChatRoomImpl(
      */
     private fun processOtherPresence(presence: Presence) {
         val jid = presence.from.asEntityFullJidIfPossible() ?: run {
-            logger.warn("Presence without a valid jid: " + presence.from)
+            logger.warn("Presence without a valid jid: ${presence.from}")
             return
         }
 
@@ -516,18 +495,17 @@ class ChatRoomImpl(
      */
     override fun processPresence(presence: Presence?) {
         if (presence == null || presence.error != null) {
-            logger.warn("Unable to handle packet: " + if (presence == null) "null" else presence.toXML())
+            logger.warn("Unable to handle packet: ${presence?.toXML()}")
             return
         }
-        if (logger.isTraceEnabled) {
-            logger.trace("Presence received " + presence.toXML())
-        }
+        logger.trace { "Presence received ${presence.toXML()}" }
 
         // Should never happen, but log if something is broken
+        val myOccupantJid = this.myOccupantJid
         if (myOccupantJid == null) {
-            logger.error("Processing presence when we're not aware of our address")
+            logger.error("Processing presence when myOccupantJid is not set: ${presence.toXML()}")
         }
-        if (myOccupantJid != null && myOccupantJid!!.equals(presence.from)) {
+        if (myOccupantJid != null && myOccupantJid.equals(presence.from)) {
             processOwnPresence(presence)
         } else {
             processOtherPresence(presence)
@@ -538,8 +516,8 @@ class ChatRoomImpl(
         this["room_jid"] = roomJid.toString()
         this["my_occupant_jid"] = myOccupantJid.toString()
         val membersJson = OrderedJsonObject()
-        for (m in membersMap.values) {
-            membersJson[m.name] = m.debugState
+        membersMap.values.forEach {
+            membersJson[it.name] = it.debugState
         }
         this["members"] = membersJson
         this["role"] = role.toString()
@@ -552,26 +530,21 @@ class ChatRoomImpl(
 
     internal inner class MemberListener : ParticipantStatusListener {
         override fun joined(mucJid: EntityFullJid) {
-            // When a new member joins, Smack seems to fire
-            // ParticipantStatusListener#joined and
+            // When a new member joins, Smack seems to fire ParticipantStatusListener#joined and
             // PresenceListener#processPresence in a non-deterministic order.
 
-            // In order to ensure that we have all the information contained
-            // in presence at the time that we create a new ChatMemberImpl,
-            // we completely ignore this joined event. Instead, we rely on
-            // processPresence to detect when a new member has joined and
-            // trigger the creation of a ChatMemberImpl by calling
+            // In order to ensure that we have all the information contained in presence at the time that we create a
+            // new ChatMemberImpl, we completely ignore this joined event. Instead, we rely on processPresence to detect
+            // when a new member has joined and trigger the creation of a ChatMemberImpl by calling
             // ChatRoomImpl#memberJoined()
-            if (logger.isDebugEnabled) {
-                logger.debug("Ignore a member joined event for $mucJid")
-            }
+            logger.debug { "Ignore a member joined event for $mucJid" }
         }
 
         private fun removeMember(occupantJid: EntityFullJid): ChatRoomMemberImpl? {
             synchronized(membersMap) {
                 val removed = membersMap.remove(occupantJid)
                 if (removed == null) {
-                    logger.error("$occupantJid not in $roomJid")
+                    logger.error("$occupantJid not in room")
                 } else {
                     if (!removed.isAudioMuted) audioSendersCount--
                     if (!removed.isVideoMuted) videoSendersCount--
@@ -599,82 +572,17 @@ class ChatRoomImpl(
                 ?: logger.error("Kicked member does not exist: $occupantJid")
         }
 
-        override fun voiceGranted(s: EntityFullJid) {
-            logger.trace { "Voice granted: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun voiceRevoked(s: EntityFullJid) {
-            logger.trace { "Voice revoked: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun banned(s: EntityFullJid, actor: Jid, reason: String) {
-            logger.trace { "Banned: $s, $actor, $reason" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun membershipGranted(s: EntityFullJid) {
-            logger.trace { "Membership granted: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun membershipRevoked(s: EntityFullJid) {
-            logger.trace { "Membership revoked: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun moderatorGranted(s: EntityFullJid) {
-            logger.trace { "Moderator granted: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun moderatorRevoked(s: EntityFullJid) {
-            logger.trace { "Moderator revoked: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun ownershipGranted(s: EntityFullJid) {
-            logger.trace { "Ownership granted: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun ownershipRevoked(s: EntityFullJid) {
-            logger.trace { "Ownership revoked: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun adminGranted(s: EntityFullJid) {
-            logger.trace { "Admin granted: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
-
-        override fun adminRevoked(s: EntityFullJid) {
-            logger.trace { "Admin revoked: $s" }
-
-            // We do not fire events - not required for now
-            resetRoleForOccupant(s)
-        }
+        override fun voiceGranted(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun voiceRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun banned(s: EntityFullJid, actor: Jid, reason: String) = resetRoleForOccupant(s)
+        override fun membershipGranted(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun membershipRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun moderatorGranted(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun moderatorRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun ownershipGranted(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun ownershipRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun adminGranted(s: EntityFullJid) = resetRoleForOccupant(s)
+        override fun adminRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
 
         override fun nicknameChanged(oldNickname: EntityFullJid, newNickname: Resourcepart) {
             logger.error("nicknameChanged - NOT IMPLEMENTED")
