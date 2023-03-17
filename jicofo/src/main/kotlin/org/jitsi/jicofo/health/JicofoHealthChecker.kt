@@ -44,10 +44,10 @@ import kotlin.random.Random
  * @author Pawel Domas
  */
 class JicofoHealthChecker(
-        config: HealthConfig,
-        private val focusManager: FocusManager,
-        private val bridgeSelector: BridgeSelector,
-        private val xmppProviders: Collection<XmppProvider>
+    config: HealthConfig,
+    private val focusManager: FocusManager,
+    private val bridgeSelector: BridgeSelector,
+    private val xmppProviders: Collection<XmppProvider>
 ) : HealthCheckService {
     private val logger = createLogger()
 
@@ -62,7 +62,8 @@ class JicofoHealthChecker(
         false,
         Duration.ofMinutes(5),
         { performCheck() },
-        Clock.systemUTC())
+        Clock.systemUTC()
+    )
 
     fun start() = healthChecker.start()
 
@@ -108,8 +109,8 @@ class JicofoHealthChecker(
         var roomName: EntityBareJid
         do {
             roomName = JidCreate.entityBareFrom(
-                    generateRoomName(),
-                    XmppConfig.client.conferenceMucJid
+                generateRoomName(),
+                XmppConfig.client.conferenceMucJid
             )
         } while (focusManager.getConference(roomName) != null)
 
@@ -129,7 +130,8 @@ class JicofoHealthChecker(
             return Result(
                 success = false,
                 hardFailure = false,
-                message = "Test conference failed to start due to timeout.")
+                message = "Test conference failed to start due to timeout."
+            )
         }
 
         try {
@@ -160,8 +162,8 @@ class JicofoHealthChecker(
         val p = Ping(JidCreate.bareFrom(xmppDomain))
         val listener = StanzaListener { packet: Stanza? -> pingResponseWait.countDown() }
         try {
-            xmppProvider.xmppConnection.addSyncStanzaListener(listener) {
-                stanza: Stanza -> stanza.stanzaId != null && stanza.stanzaId == p.stanzaId
+            xmppProvider.xmppConnection.addSyncStanzaListener(listener) { stanza: Stanza ->
+                stanza.stanzaId != null && stanza.stanzaId == p.stanzaId
             }
             xmppProvider.xmppConnection.sendStanza(p)
 
