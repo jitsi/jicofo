@@ -190,7 +190,7 @@ class ChatRoomMemberImpl(
         isAudioMuted = presence.getExtension(AudioMutedExtension::class.java)?.isAudioMuted ?: true
         if (isAudioMuted != wasAudioMuted) {
             logger.debug { "isAudioMuted = $isAudioMuted" }
-            if (isAudioMuted) chatRoom.removeAudioSender() else chatRoom.addAudioSender()
+            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
         }
 
         val wasVideoMuted = isVideoMuted
@@ -198,7 +198,7 @@ class ChatRoomMemberImpl(
         isVideoMuted = presence.getExtension(VideoMutedExtension::class.java)?.isVideoMuted ?: true
         if (isVideoMuted != wasVideoMuted) {
             logger.debug { "isVideoMuted = $isVideoMuted" }
-            if (isVideoMuted) chatRoom.removeVideoSender() else chatRoom.addVideoSender()
+            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
         }
     }
 

@@ -57,10 +57,10 @@ interface ChatRoom {
     val members: List<ChatRoomMember>
 
     /** Returns the number of members that currently have their audio sources unmuted. */
-    val audioSendersCount: Int
+    var audioSendersCount: Int
 
     /** Returns the number of members that currently have their video sources unmuted. */
-    val videoSendersCount: Int
+    var videoSendersCount: Int
 
     /**
      * Grants ownership privileges to another user. Room owners may grant

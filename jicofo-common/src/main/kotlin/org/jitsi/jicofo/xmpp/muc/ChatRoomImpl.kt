@@ -28,6 +28,7 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.utils.observableWhenChanged
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -131,12 +132,6 @@ class ChatRoomImpl(
         const val MEETING_ID = "muc#roominfo_meetingId"
         const val WHOIS = "muc#roomconfig_whois"
     }
-
-    /** The number of members that currently have their audio sources unmuted. */
-    private var numAudioSenders = 0
-
-    /** The number of members that currently have their video sources unmuted. */
-    private var numVideoSenders = 0
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
@@ -387,34 +382,16 @@ class ChatRoomImpl(
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
-    override val audioSendersCount
-        get() = numAudioSenders
-
-    override val videoSendersCount
-        get() = numVideoSenders
-
-    fun addAudioSender() {
-        ++numAudioSenders
-        logger.debug { "The number of audio senders has increased to $numAudioSenders." }
-        eventEmitter.fireEvent { numAudioSendersChanged(numAudioSenders) }
+    /** The number of members that currently have their audio sources unmuted. */
+    override var audioSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of audio senders has changed to $newValue." }
+        eventEmitter.fireEvent { numAudioSendersChanged(newValue) }
     }
 
-    fun removeAudioSender() {
-        --numAudioSenders
-        logger.debug { "The number of audio senders has decreased to $numAudioSenders." }
-        eventEmitter.fireEvent { numAudioSendersChanged(numAudioSenders) }
-    }
-
-    fun addVideoSender() {
-        ++numVideoSenders
-        logger.debug { "The number of video senders has increased to $numVideoSenders." }
-        eventEmitter.fireEvent { numVideoSendersChanged(numVideoSenders) }
-    }
-
-    fun removeVideoSender() {
-        --numVideoSenders
-        logger.debug { "The number of video senders has decreased to $numVideoSenders." }
-        eventEmitter.fireEvent { numVideoSendersChanged(numVideoSenders) }
+    /** The number of members that currently have their video sources unmuted. */
+    override var videoSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of video senders has changed to $newValue." }
+        eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
     /**
@@ -431,8 +408,8 @@ class ChatRoomImpl(
             }
             val newMember = ChatRoomMemberImpl(jid, this@ChatRoomImpl, logger)
             membersMap[jid] = newMember
-            if (!newMember.isAudioMuted) addAudioSender()
-            if (!newMember.isVideoMuted) addVideoSender()
+            if (!newMember.isAudioMuted) audioSendersCount++
+            if (!newMember.isVideoMuted) videoSendersCount++
             return newMember
         }
     }
@@ -569,8 +546,8 @@ class ChatRoomImpl(
         this["meeting_id"] = meetingId.toString()
         this["is_breakout_room"] = isBreakoutRoom
         this["main_room"] = mainRoom.toString()
-        this["num_audio_senders"] = numAudioSenders
-        this["num_video_senders"] = numVideoSenders
+        this["audio_senders_count"] = audioSendersCount
+        this["video_senders_count"] = videoSendersCount
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
@@ -596,8 +573,8 @@ class ChatRoomImpl(
                 if (removed == null) {
                     logger.error("$occupantJid not in $roomJid")
                 } else {
-                    if (!removed.isAudioMuted) removeAudioSender()
-                    if (!removed.isVideoMuted) removeVideoSender()
+                    if (!removed.isAudioMuted) audioSendersCount--
+                    if (!removed.isVideoMuted) videoSendersCount--
                 }
                 return removed
             }
