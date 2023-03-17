@@ -121,7 +121,10 @@ class ChatRoomImpl(
     override var mainRoom: String? = null
         private set
 
-    private val avModeration = ChatRoomAvModeration(logger)
+    private val avModerationByMediaType = mutableMapOf<MediaType, AvModerationForMediaType>()
+    /** In practice we only use AUDIO and VIDEO, so polluting the map is not a problem. */
+    private fun avModeration(mediaType: MediaType): AvModerationForMediaType =
+        avModerationByMediaType.computeIfAbsent(mediaType) { AvModerationForMediaType(mediaType) }
 
     /** The emitter used to fire events. */
     private val eventEmitter: EventEmitter<ChatRoomListener> = SyncEventEmitter()
@@ -140,13 +143,15 @@ class ChatRoomImpl(
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override fun getChatMember(occupantJid: EntityFullJid) = membersMap[occupantJid]
-    override fun isAvModerationEnabled(mediaType: MediaType) = avModeration.isEnabled(mediaType)
-    override fun setAvModerationEnabled(mediaType: MediaType, value: Boolean) =
-        avModeration.setEnabled(mediaType, value)
-    override fun setAvModerationWhitelist(mediaType: MediaType, whitelist: List<String>) =
-        avModeration.setWhitelist(mediaType, whitelist)
+    override fun isAvModerationEnabled(mediaType: MediaType) = avModeration(mediaType).enabled
+    override fun setAvModerationEnabled(mediaType: MediaType, value: Boolean) {
+        avModeration(mediaType).enabled = value
+    }
+    override fun setAvModerationWhitelist(mediaType: MediaType, whitelist: List<String>) {
+        avModeration(mediaType).whitelist = whitelist
+    }
     override fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean =
-        avModeration.isAllowedToUnmute(mediaType, jid.toString())
+        avModeration(mediaType).isAllowedToUnmute(jid)
 
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
@@ -180,7 +185,7 @@ class ChatRoomImpl(
             logger.addContext("meeting_id", "")
             isBreakoutRoom = false
             mainRoom = null
-            avModeration.reset()
+            avModerationByMediaType.values.forEach { it.reset() }
         }
     }
 
@@ -592,9 +597,26 @@ class ChatRoomImpl(
     /**
      * Listens for room destroyed and pass it to the conference.
      */
-    internal inner class LocalUserStatusListener : UserStatusListener {
+    private inner class LocalUserStatusListener : UserStatusListener {
         override fun roomDestroyed(alternateMUC: MultiUserChat, reason: String) {
             eventEmitter.fireEvent { roomDestroyed(reason) }
+        }
+    }
+
+    @SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
+    private inner class AvModerationForMediaType(mediaType: MediaType) {
+        var enabled: Boolean by observableWhenChanged(false) { _, _, newValue ->
+            logger.info("Setting enabled=$newValue for $mediaType")
+        }
+        var whitelist: List<String> by observableWhenChanged(emptyList()) { _, _, newValue ->
+            logger.info("Setting whitelist for $mediaType: $newValue")
+        }
+
+        fun isAllowedToUnmute(jid: Jid) = !enabled || whitelist.contains(jid.toString())
+
+        fun reset() {
+            enabled = false
+            whitelist = emptyList()
         }
     }
 }
