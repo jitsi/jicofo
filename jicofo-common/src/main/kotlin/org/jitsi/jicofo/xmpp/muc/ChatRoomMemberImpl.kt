@@ -173,11 +173,9 @@ class ChatRoomMemberImpl(
         }
 
         presence.getExtension(StartMutedPacketExtension::class.java)?.let {
-            val startMuted = booleanArrayOf(it.audioMuted, it.videoMuted)
-
             // XXX Is this intended to be allowed for moderators or not?
             if (role.hasAdministratorRights()) {
-                chatRoom.setStartMuted(startMuted)
+                chatRoom.setStartMuted(it.audioMuted, it.videoMuted)
             }
         }
 

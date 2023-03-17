@@ -151,8 +151,8 @@ class ChatRoomImpl(
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
 
-    fun setStartMuted(startMuted: BooleanArray) = eventEmitter.fireEvent {
-        startMutedChanged(startMuted[0], startMuted[1])
+    fun setStartMuted(startAudioMuted: Boolean, startVideoMuted: Boolean) = eventEmitter.fireEvent {
+        startMutedChanged(startAudioMuted, startVideoMuted)
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
