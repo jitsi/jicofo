@@ -53,7 +53,6 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.util.concurrent.ConcurrentHashMap
-import javax.xml.namespace.QName
 
 @SuppressFBWarnings(
     value = ["JLM_JSR166_UTILCONCURRENT_MONITORENTER"],
@@ -74,7 +73,21 @@ class ChatRoomImpl(
     private val userListener = LocalUserStatusListener()
 
     /** Listener for presence that smack sends on our behalf. */
-    private var presenceInterceptor: org.jivesoftware.smack.util.Consumer<PresenceBuilder>? = null
+    private var presenceInterceptor = org.jivesoftware.smack.util.Consumer { presenceBuilder: PresenceBuilder ->
+        // The initial presence sent by smack contains an empty "x"
+        // extension. If this extension is included in a subsequent stanza,
+        // it indicates that the client lost its synchronization and causes
+        // the MUC service to re-send the presence of each occupant in the
+        // room.
+        synchronized(this@ChatRoomImpl) {
+            val p = presenceBuilder.build()
+            p.removeExtension(
+                MUCInitialPresence.ELEMENT,
+                MUCInitialPresence.NAMESPACE
+            )
+            lastPresenceSent = p.asBuilder()
+        }
+    }
 
     /** Smack multi user chat backend instance. */
     private val muc: MultiUserChat =
@@ -179,22 +192,7 @@ class ChatRoomImpl(
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     private fun joinAs(nickname: Resourcepart) {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
-        presenceInterceptor = org.jivesoftware.smack.util.Consumer { presenceBuilder: PresenceBuilder ->
-            // The initial presence sent by smack contains an empty "x"
-            // extension. If this extension is included in a subsequent stanza,
-            // it indicates that the client lost its synchronization and causes
-            // the MUC service to re-send the presence of each occupant in the
-            // room.
-            synchronized(this@ChatRoomImpl) {
-                val p = presenceBuilder.build()
-                p.removeExtension(
-                    MUCInitialPresence.ELEMENT,
-                    MUCInitialPresence.NAMESPACE
-                )
-                lastPresenceSent = p.asBuilder()
-            }
-        }
-        if (muc!!.isJoined) {
+        if (muc.isJoined) {
             muc.leave()
         }
         muc.addPresenceInterceptor(presenceInterceptor)
@@ -234,9 +232,7 @@ class ChatRoomImpl(
     }
 
     override fun leave() {
-        if (presenceInterceptor != null) {
-            muc.removePresenceInterceptor(presenceInterceptor)
-        }
+        muc.removePresenceInterceptor(presenceInterceptor)
         muc.removeParticipantStatusListener(memberListener)
         muc.removeUserStatusListener(userListener)
         muc.removeParticipantListener(this)
@@ -308,10 +304,6 @@ class ChatRoomImpl(
         }
     }
 
-    override fun containsPresenceExtension(elementName: String, namespace: String): Boolean = synchronized(this) {
-        return lastPresenceSent?.getExtension(QName(namespace, elementName)) != null
-    }
-
     override fun grantOwnership(member: ChatRoomMember) {
         logger.debug("Grant owner to $member")
 
@@ -349,21 +341,15 @@ class ChatRoomImpl(
         return packet?.getExtension(MUCUser::class.java)
     }
 
-    override fun setPresenceExtension(extension: ExtensionElement, remove: Boolean) {
+    override fun setPresenceExtension(extension: ExtensionElement) {
         val presenceToSend: Presence? = synchronized(this) {
             lastPresenceSent?.let { presence ->
-                var presenceUpdated = false
-
-                presence.getExtension(extension.qName)?.let { old ->
-                    presence.removeExtension(old)
-                    presenceUpdated = true
+                presence.getExtensions(extension.qName).forEach { existingExtension ->
+                    presence.removeExtension(existingExtension)
                 }
-                if (!remove) {
-                    presence.addExtension(extension)
-                    presenceUpdated = true
-                }
+                presence.addExtension(extension)
 
-                if (presenceUpdated) presence.build() else null
+                presence.build()
             } ?: run {
                 logger.error("No presence packet obtained yet")
                 null
@@ -375,15 +361,23 @@ class ChatRoomImpl(
     override val presenceExtensions
         get() = synchronized(this) { lastPresenceSent?.extensions?.toList() ?: emptyList() }
 
-    override fun modifyPresence(
+    override fun modifyPresenceExtensions(
         toRemove: Collection<ExtensionElement>,
         toAdd: Collection<ExtensionElement>
     ) {
         val presenceToSend: Presence? = synchronized(this) {
             lastPresenceSent?.let { presence ->
-                toRemove.forEach { presence.removeExtension(it) }
-                toAdd.forEach { presence.addExtension(it) }
-                presence.build()
+                var changed = false
+                toRemove.forEach {
+                    presence.removeExtension(it)
+                    // We don't have a good way to check if it was actually removed.
+                    changed = true
+                }
+                toAdd.forEach {
+                    presence.addExtension(it)
+                    changed = true
+                }
+                if (changed) presence.build() else null
             } ?: run {
                 logger.error("No presence packet obtained yet")
                 null

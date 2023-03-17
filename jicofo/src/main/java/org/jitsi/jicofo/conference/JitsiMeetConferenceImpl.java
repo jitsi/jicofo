@@ -505,7 +505,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoom.modifyPresence(Collections.emptyList(), presenceExtensions);
+        chatRoom.addPresenceExtensions(presenceExtensions);
     }
 
     /**
@@ -535,7 +535,7 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (updatePresence && chatRoom != null && !value.equals(oldValue))
         {
-            chatRoom.setPresenceExtension(createConferenceProperties(), false);
+            chatRoom.setPresenceExtension(createConferenceProperties());
         }
     }
 
@@ -1541,7 +1541,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoomToJoin.modifyPresence(Collections.emptyList(), presenceExtensions);
+        chatRoomToJoin.addPresenceExtensions(presenceExtensions);
 
         return node;
     }
@@ -2055,11 +2055,11 @@ public class JitsiMeetConferenceImpl
         {
             ChatRoom chatRoom = getChatRoom();
             if (chatRoom != null
-                    && !chatRoom.containsPresenceExtension(
-                    BridgeNotAvailablePacketExt.ELEMENT,
-                    BridgeNotAvailablePacketExt.NAMESPACE))
+                    && chatRoom.getPresenceExtensions().stream().noneMatch(e ->
+                            BridgeNotAvailablePacketExt.ELEMENT.equals(e.getElementName())
+                                    && BridgeNotAvailablePacketExt.NAMESPACE.equals(e.getNamespace())))
             {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt());
             }
         }
 
@@ -2073,7 +2073,11 @@ public class JitsiMeetConferenceImpl
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
             if (chatRoom != null)
             {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
+                // Remove any "bridge not available" extensions.
+                List<ExtensionElement> bridgeNotAvailablePacketExts
+                        = chatRoom.getPresenceExtensions().stream()
+                            .filter(e -> e instanceof BridgeNotAvailablePacketExt).collect(Collectors.toList());
+                chatRoom.removePresenceExtensions(bridgeNotAvailablePacketExts);
             }
         }
 

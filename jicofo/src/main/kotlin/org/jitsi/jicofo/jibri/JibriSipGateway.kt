@@ -148,7 +148,7 @@ class JibriSipGateway(
             val toRemove = chatRoom.presenceExtensions.filter {
                 it is SipCallState && it.sipAddress == session.sipAddress
             }
-            chatRoom.modifyPresence(toRemove, listOf(sipCallState))
+            chatRoom.modifyPresenceExtensions(toRemove, listOf(sipCallState))
         }
     }
 }
