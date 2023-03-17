@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;

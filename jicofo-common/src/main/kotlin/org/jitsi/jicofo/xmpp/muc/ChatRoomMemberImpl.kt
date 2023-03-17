@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
-import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig

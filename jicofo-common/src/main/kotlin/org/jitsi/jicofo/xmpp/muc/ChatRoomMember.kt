@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.Presence

@@ -17,11 +17,11 @@
  */
 package org.jitsi.jicofo.xmpp
 
-import org.jitsi.impl.protocol.xmpp.ChatRoom
-import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.impl.protocol.xmpp.log.PacketDebugger
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.xmpp.XmppProvider.RoomExistsException
+import org.jitsi.jicofo.xmpp.muc.ChatRoom
+import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jitsi.retry.RetryStrategy
 import org.jitsi.retry.SimpleRetryTask
 import org.jitsi.utils.logging2.Logger

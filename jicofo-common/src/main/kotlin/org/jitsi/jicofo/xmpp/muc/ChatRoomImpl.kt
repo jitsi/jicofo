@@ -15,16 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.impl.protocol.xmpp
+package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.jicofo.xmpp.muc.ChatRoomAvModeration
-import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
-import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
-import org.jitsi.jicofo.xmpp.muc.ChatRoomMemberImpl
-import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
@@ -313,15 +308,8 @@ class ChatRoomImpl(
         }
     }
 
-
-    /**
-     * {@inheritDoc}
-     */
-    @Synchronized
-    override fun containsPresenceExtension(elementName: String, namespace: String): Boolean {
-        return (lastPresenceSent != null
-                && lastPresenceSent!!.getExtension(QName(namespace, elementName))
-                != null)
+    override fun containsPresenceExtension(elementName: String, namespace: String): Boolean = synchronized(this) {
+        return lastPresenceSent?.getExtension(QName(namespace, elementName)) != null
     }
 
     override fun grantOwnership(member: ChatRoomMember) {
@@ -362,78 +350,47 @@ class ChatRoomImpl(
     }
 
     override fun setPresenceExtension(extension: ExtensionElement, remove: Boolean) {
-        var presenceToSend: Presence? = null
-        synchronized(this) {
-            if (lastPresenceSent == null) {
-                logger.error("No presence packet obtained yet")
-                return
-            }
-            var presenceUpdated = false
+        val presenceToSend: Presence? = synchronized(this) {
+            lastPresenceSent?.let { presence ->
+                var presenceUpdated = false
 
-            // Remove old
-            val old = lastPresenceSent!!.getExtension(extension.qName)
-            if (old != null) {
-                lastPresenceSent!!.removeExtension(old)
-                presenceUpdated = true
-            }
-            if (!remove) {
-                // Add new
-                lastPresenceSent!!.addExtension(extension)
-                presenceUpdated = true
-            }
-            if (presenceUpdated) {
-                presenceToSend = lastPresenceSent!!.build()
+                presence.getExtension(extension.qName)?.let { old ->
+                    presence.removeExtension(old)
+                    presenceUpdated = true
+                }
+                if (!remove) {
+                    presence.addExtension(extension)
+                    presenceUpdated = true
+                }
+
+                if (presenceUpdated) presence.build() else null
+            } ?: run {
+                logger.error("No presence packet obtained yet")
+                null
             }
         }
-        if (presenceToSend != null) {
-            sendPresence(presenceToSend!!)
-        }
+        presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     override val presenceExtensions
-        @Synchronized
-        get() = lastPresenceSent?.extensions?.toList() ?: emptyList()
+        get() = synchronized(this) { lastPresenceSent?.extensions?.toList() ?: emptyList() }
 
-    /**
-     * {@inheritDoc}
-     */
     override fun modifyPresence(
         toRemove: Collection<ExtensionElement>,
         toAdd: Collection<ExtensionElement>
     ) {
-        var presenceToSend: Presence
-        synchronized(this) {
-            if (lastPresenceSent == null) {
+        val presenceToSend: Presence? = synchronized(this) {
+            lastPresenceSent?.let { presence ->
+                toRemove.forEach { presence.removeExtension(it) }
+                toAdd.forEach { presence.addExtension(it) }
+                presence.build()
+            } ?: run {
                 logger.error("No presence packet obtained yet")
-                return
+                null
             }
-
-            // Remove old
-            toRemove.forEach(java.util.function.Consumer { extension: ExtensionElement? ->
-                lastPresenceSent!!.removeExtension(
-                    extension
-                )
-            })
-
-            // Add new
-            toAdd.forEach(java.util.function.Consumer { extensionElement: ExtensionElement? ->
-                lastPresenceSent!!.addExtension(
-                    extensionElement
-                )
-            })
-            presenceToSend = lastPresenceSent!!.build()
         }
-        sendPresence(presenceToSend)
-    }
 
-    /**
-     * Sends a presence.
-     */
-    private fun sendPresence(presence: Presence) {
-        xmppProvider.xmppConnection.tryToSendStanza(presence)
+        presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
     override val audioSendersCount

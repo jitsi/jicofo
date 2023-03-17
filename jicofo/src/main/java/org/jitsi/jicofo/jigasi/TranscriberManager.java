@@ -19,7 +19,6 @@
 package org.jitsi.jicofo.jigasi;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.conference.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;

@@ -18,14 +18,11 @@
 package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
-import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
-import org.json.simple.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
