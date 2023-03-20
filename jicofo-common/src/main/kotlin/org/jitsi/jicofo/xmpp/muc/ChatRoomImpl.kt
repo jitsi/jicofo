@@ -37,6 +37,7 @@ import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.PresenceBuilder
+import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
@@ -74,7 +75,7 @@ class ChatRoomImpl(
     private val userListener = LocalUserStatusListener()
 
     /** Listener for presence that smack sends on our behalf. */
-    private var presenceInterceptor = org.jivesoftware.smack.util.Consumer { presenceBuilder: PresenceBuilder ->
+    private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
         // it indicates that the client lost its synchronization and causes
@@ -202,12 +203,9 @@ class ChatRoomImpl(
         // Read breakout rooms options
         val isBreakoutRoomField = config.getField(MucConfigFields.IS_BREAKOUT_ROOM)
         if (isBreakoutRoomField != null) {
-            isBreakoutRoom = java.lang.Boolean.parseBoolean(isBreakoutRoomField.firstValue)
+            isBreakoutRoom = isBreakoutRoomField.firstValue.toBoolean()
             if (isBreakoutRoom) {
-                val mainRoomField = config.getField(MucConfigFields.MAIN_ROOM)
-                if (mainRoomField != null) {
-                    mainRoom = mainRoomField.firstValue
-                }
+                mainRoom = config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
             }
         }
 
@@ -295,7 +293,7 @@ class ChatRoomImpl(
         val oldRole = role
         role = newRole
         if (oldRole !== newRole) {
-            eventEmitter.fireEvent { localRoleChanged(newRole, role) }
+            eventEmitter.fireEvent { localRoleChanged(newRole) }
         }
     }
 
@@ -423,10 +421,7 @@ class ChatRoomImpl(
             val affiliation = mucUser.item.affiliation
             val role = mucUser.item.role
 
-            // this is the presence for our member initial role and
-            // affiliation, as smack do not fire any initial
-            // events lets check it and fire events
-            val jitsiRole = fromSmack(role, affiliation)
+            // This is our initial role and affiliation, as smack does not fire any initial events.
             if (!presence.isAvailable && MUCAffiliation.none == affiliation && MUCRole.none == role) {
                 val destroy = mucUser.destroy
                 if (destroy == null) {
@@ -438,7 +433,7 @@ class ChatRoomImpl(
                     leave()
                 }
             } else {
-                setLocalUserRole(jitsiRole)
+                setLocalUserRole(fromSmack(role, affiliation))
             }
         }
     }
@@ -525,7 +520,7 @@ class ChatRoomImpl(
             membersJson[it.name] = it.debugState
         }
         this["members"] = membersJson
-        this["role"] = role.toString()
+        this["user_role"] = userRole.toString()
         this["meeting_id"] = meetingId.toString()
         this["is_breakout_room"] = isBreakoutRoom
         this["main_room"] = mainRoom.toString()

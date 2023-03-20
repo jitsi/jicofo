@@ -1999,7 +1999,7 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
-        public void localRoleChanged(@NotNull MemberRole newRole, @Nullable MemberRole oldRole)
+        public void localRoleChanged(@NotNull MemberRole newRole)
         {
             if (newRole != MemberRole.OWNER)
             {

@@ -75,7 +75,7 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
         }
     }
 
-    override fun localRoleChanged(newRole: MemberRole, oldRole: MemberRole?) {
+    override fun localRoleChanged(newRole: MemberRole) {
         if (!newRole.hasOwnerRights()) {
             logger.error("Local role has no owner rights, can not manage roles.")
             return
@@ -137,7 +137,7 @@ class AuthenticationRoleManager(
         }
     }
 
-    override fun localRoleChanged(newRole: MemberRole, oldRole: MemberRole?) {
+    override fun localRoleChanged(newRole: MemberRole) {
         if (!newRole.hasOwnerRights()) {
             logger.error("Local role has no owner rights, can not manage roles.")
             return
