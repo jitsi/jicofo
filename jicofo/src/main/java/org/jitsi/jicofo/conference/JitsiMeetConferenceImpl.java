@@ -796,7 +796,7 @@ public class JitsiMeetConferenceImpl
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         ChatRoom chatRoom = getChatRoom();
-        return chatRoom != null && chatRoom.getMembers().size() >= minParticipants;
+        return chatRoom != null && chatRoom.getMemberCount() >= minParticipants;
     }
 
     /**
@@ -862,7 +862,7 @@ public class JitsiMeetConferenceImpl
             visitorRemoved();
         }
 
-        if (chatRoom == null || chatRoom.getMembers().isEmpty())
+        if (chatRoom == null || chatRoom.getMemberCount() == 0)
         {
             stop();
         }

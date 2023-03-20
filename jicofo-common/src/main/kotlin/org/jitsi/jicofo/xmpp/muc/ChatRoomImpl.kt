@@ -140,6 +140,8 @@ class ChatRoomImpl(
         get() = muc.isJoined
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
+    override val memberCount
+        get() = membersMap.size
     override fun getChatMember(occupantJid: EntityFullJid) = membersMap[occupantJid]
     override fun isAvModerationEnabled(mediaType: MediaType) = avModeration(mediaType).enabled
     override fun setAvModerationEnabled(mediaType: MediaType, value: Boolean) {
@@ -276,7 +278,7 @@ class ChatRoomImpl(
     fun getOccupant(chatMember: ChatRoomMemberImpl): Occupant? = muc.getOccupant(chatMember.occupantJid)
 
     override fun setPresenceExtension(extension: ExtensionElement) {
-        val presenceToSend: Presence? = synchronized(this) {
+        val presenceToSend = synchronized(this) {
             lastPresenceSent?.let { presence ->
                 presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
                     presence.removeExtension(existingExtension)

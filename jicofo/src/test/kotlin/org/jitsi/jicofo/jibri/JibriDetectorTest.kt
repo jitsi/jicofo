@@ -131,9 +131,9 @@ class JibriChatRoomMember(
     override val occupantJid: EntityFullJid,
     val detector: JibriDetector
 ) : ChatRoomMember {
+    override val role: MemberRole get() = TODO("Not yet implemented")
     override val chatRoom: ChatRoom get() = TODO("Not yet implemented")
     override val name: String get() = TODO("Not yet implemented")
-    override val role: MemberRole? get() = TODO("Not yet implemented")
     override val jid: Jid? get() = TODO("Not yet implemented")
     override val sourceInfos: Set<SourceInfo> get() = TODO("Not yet implemented")
     override val isRobot: Boolean get() = TODO("Not yet implemented")

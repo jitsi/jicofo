@@ -53,6 +53,9 @@ interface ChatRoom {
      */
     val members: List<ChatRoomMember>
 
+    /** The size of [members], exposed separately for performance (avoid creating a new list just to get the count) */
+    val memberCount: Int
+
     /** Returns the number of members that currently have their audio sources unmuted. */
     var audioSendersCount: Int
 

@@ -25,7 +25,6 @@ import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.logging2.createLogger
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.StanzaListener
-import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smackx.ping.packet.Ping
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
@@ -160,11 +159,9 @@ class JicofoHealthChecker(
         }
 
         val p = Ping(JidCreate.bareFrom(xmppDomain))
-        val listener = StanzaListener { packet: Stanza? -> pingResponseWait.countDown() }
+        val listener = StanzaListener { _ -> pingResponseWait.countDown() }
         try {
-            xmppProvider.xmppConnection.addSyncStanzaListener(listener) { stanza: Stanza ->
-                stanza.stanzaId != null && stanza.stanzaId == p.stanzaId
-            }
+            xmppProvider.xmppConnection.addSyncStanzaListener(listener) { it.stanzaId == p.stanzaId }
             xmppProvider.xmppConnection.sendStanza(p)
 
             // Wait for 5 seconds to receive a response.
