@@ -403,7 +403,7 @@ class ChatRoomImpl(
 
         var memberJoined = false
         var memberLeft = false
-        val member: ChatRoomMemberImpl? = synchronized(membersMap) {
+        val member = synchronized(membersMap) {
             val m = getChatMember(jid)
             if (m == null) {
                 if (presence.type == Presence.Type.available) {
