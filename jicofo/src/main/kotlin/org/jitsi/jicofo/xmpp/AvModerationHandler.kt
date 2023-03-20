@@ -78,11 +78,10 @@ class AvModerationHandler(
                     val chatRoom = conference.chatRoom
                         ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
-                    val enabled = incomingJson["enabled"] as Boolean?
-
-                    // The message either updates the "enabled" state (if "enabled" is present), or the whitelists (if
-                    // "enabled" is not present).
-                    if (enabled != null) {
+                    incomingJson["enabled"]?.let { enabled ->
+                        if (enabled !is Boolean) {
+                            throw IllegalArgumentException("Invalid value for the 'enabled' attribute: $enabled")
+                        }
                         val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
                         val oldEnabledValue = chatRoom.isAvModerationEnabled(mediaType)
                         chatRoom.setAvModerationEnabled(mediaType, enabled)
@@ -93,11 +92,10 @@ class AvModerationHandler(
                             // let's mute everyone
                             conference.muteAllParticipants(mediaType)
                         }
-                    } else {
-                        incomingJson["whitelists"]?.let {
-                            parseWhitelists(it).forEach { mediaType, whitelist ->
-                                chatRoom.setAvModerationWhitelist(mediaType, whitelist)
-                            }
+                    }
+                    incomingJson["whitelists"]?.let {
+                        parseWhitelists(it).forEach { (mediaType, whitelist) ->
+                            chatRoom.setAvModerationWhitelist(mediaType, whitelist)
                         }
                     }
                 }
