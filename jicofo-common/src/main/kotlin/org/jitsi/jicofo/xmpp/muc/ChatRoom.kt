@@ -47,9 +47,6 @@ interface ChatRoom {
     /** Whether the local user is currently in the multi user chat (after calling one of the [.join] methods). */
     val isJoined: Boolean
 
-    /** The local user's role in the chat room or <tt>null</tt> if not currently joined. */
-    val userRole: MemberRole?
-
     /**
      * Returns the list of members of this [ChatRoom]. Note that this does not include a representation of the local
      * user as an occupant of the MUC.

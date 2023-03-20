@@ -74,24 +74,12 @@ class ChatRoomMemberImpl(
     /** The node#ver advertised in a Caps extension. */
     private var capsNodeVer: String? = null
 
-    override var role: MemberRole? = null
-        private set
+    override val role: MemberRole
         get() {
-            if (field == null) {
-                val o = chatRoom.getOccupant(this)
-                if (o == null) {
-                    return MemberRole.VISITOR // ??
-                } else {
-                    field = fromSmack(o.role, o.affiliation)
-                }
-            }
-            return field
+            return chatRoom.getOccupant(this)?.let {
+                return fromSmack(it.role, it.affiliation)
+            } ?: MemberRole.VISITOR
         }
-
-    /**
-     * Reset cached user role so that it will be refreshed when [.getRole] is called.
-     */
-    fun resetCachedRole() { role = null }
 
     /**
      * Caches user JID of the participant if we're able to see it.

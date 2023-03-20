@@ -38,7 +38,7 @@ interface ChatRoomMember {
     val name: String
 
     /** The role of this chat room member in its containing room. */
-    val role: MemberRole?
+    val role: MemberRole
 
     /** Returns the JID of the user (outside the MUC), i.e. the "real" JID. It may not always be known. */
     val jid: Jid?

@@ -31,19 +31,12 @@ sealed class ChatRoomRoleManager(
     protected val logger = createLogger()
 
     /** Grants ownership to [member], blocks for a response from the MUC service. */
-    protected fun grantOwner(member: ChatRoomMember): Boolean {
-        if (!chatRoom.userRole.hasOwnerRights()) {
-            logger.warn("Can not grant owner, lacking privileges.")
-            return false
-        }
-
-        return try {
-            chatRoom.grantOwnership(member)
-            true
-        } catch (e: RuntimeException) {
-            logger.error("Failed to grant owner status to ${member.jid}", e)
-            false
-        }
+    protected fun grantOwner(member: ChatRoomMember): Boolean = try {
+        chatRoom.grantOwnership(member)
+        true
+    } catch (e: RuntimeException) {
+        logger.error("Failed to grant owner status to ${member.jid}", e)
+        false
     }
 
     override fun memberLeft(member: ChatRoomMember) = memberLeftOrKicked(member)

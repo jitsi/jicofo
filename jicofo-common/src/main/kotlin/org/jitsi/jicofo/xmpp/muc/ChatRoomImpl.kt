@@ -104,9 +104,6 @@ class ChatRoomImpl(
 
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
 
-    /** Local user role. */
-    private var role: MemberRole? = null
-
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
 
@@ -180,7 +177,6 @@ class ChatRoomImpl(
             }
         }
         synchronized(this) {
-            role = null
             lastPresenceSent = null
             meetingId = null
             logger.addContext("meeting_id", "")
@@ -247,53 +243,6 @@ class ChatRoomImpl(
                     logger.error("Failed to properly leave $muc", e)
                 }
             }
-        }
-    }
-
-    override val userRole: MemberRole?
-        get() {
-            if (role == null) {
-                val o = muc.getOccupant(myOccupantJid)
-                if (o == null) {
-                    return null
-                } else {
-                    role = fromSmack(o.role, o.affiliation)
-                }
-            }
-            return role
-        }
-
-    /** Resets cached role instance so that it will be refreshed when [ ][.getUserRole] is called. */
-    private fun resetCachedUserRole() {
-        role = null
-    }
-
-    /**
-     * Resets cached role instance for given occupantJid.
-     * @param occupantJid full mucJID of the occupant for whom we want to
-     * reset the cached role instance.
-     */
-    private fun resetRoleForOccupant(occupantJid: EntityFullJid) {
-        if (occupantJid.resourcepart == myOccupantJid!!.resourcepart) {
-            resetCachedUserRole()
-        } else {
-            val member = membersMap[occupantJid]
-            if (member != null) {
-                member.resetCachedRole()
-            } else {
-                logger.error("Role reset for: $occupantJid who does not exist")
-            }
-        }
-    }
-
-    /**
-     * Sets the new role for the local user in the context of this chat room.
-     */
-    private fun setLocalUserRole(newRole: MemberRole) {
-        val oldRole = role
-        role = newRole
-        if (oldRole !== newRole) {
-            eventEmitter.fireEvent { localRoleChanged(newRole) }
         }
     }
 
@@ -433,7 +382,7 @@ class ChatRoomImpl(
                     leave()
                 }
             } else {
-                setLocalUserRole(fromSmack(role, affiliation))
+                eventEmitter.fireEvent { localRoleChanged(fromSmack(role, affiliation)) }
             }
         }
     }
@@ -520,7 +469,6 @@ class ChatRoomImpl(
             membersJson[it.name] = it.debugState
         }
         this["members"] = membersJson
-        this["user_role"] = userRole.toString()
         this["meeting_id"] = meetingId.toString()
         this["is_breakout_room"] = isBreakoutRoom
         this["main_room"] = mainRoom.toString()
@@ -574,18 +522,6 @@ class ChatRoomImpl(
             member?.let { eventEmitter.fireEvent { memberKicked(it) } }
                 ?: logger.error("Kicked member does not exist: $occupantJid")
         }
-
-        override fun voiceGranted(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun voiceRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun banned(s: EntityFullJid, actor: Jid, reason: String) = resetRoleForOccupant(s)
-        override fun membershipGranted(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun membershipRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun moderatorGranted(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun moderatorRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun ownershipGranted(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun ownershipRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun adminGranted(s: EntityFullJid) = resetRoleForOccupant(s)
-        override fun adminRevoked(s: EntityFullJid) = resetRoleForOccupant(s)
 
         override fun nicknameChanged(oldNickname: EntityFullJid, newNickname: Resourcepart) {
             logger.error("nicknameChanged - NOT IMPLEMENTED")
