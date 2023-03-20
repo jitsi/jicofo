@@ -252,21 +252,24 @@ class ChatRoomImpl(
         // Have to construct the IQ manually as Smack version used here seems
         // to be using wrong namespace(muc#owner instead of muc#admin)
         // which does not work with the Prosody.
-        val admin = MUCAdmin()
-        admin.type = IQ.Type.set
-        admin.to = roomJid
-        val item = MUCItem(MUCAffiliation.owner, member.jid!!.asBareJid())
-        admin.addItem(item)
-        val connection = xmppProvider.xmppConnection
+        val jid = member.jid?.asBareJid() ?: run {
+            logger.warn("Can not grant ownership to ${member.name}, real JID unknown")
+            return
+        }
+        val item = MUCItem(MUCAffiliation.owner, jid)
+
+        val admin = MUCAdmin().apply {
+            type = IQ.Type.set
+            to = roomJid
+            addItem(item)
+        }
         try {
-            val reply = connection.sendIqAndGetResponse(admin)
+            val reply = xmppProvider.xmppConnection.sendIqAndGetResponse(admin)
             if (reply == null || reply.type != IQ.Type.result) {
-                // XXX FIXME throw a declared exception.
-                throw RuntimeException("Failed to grant owner: ${reply?.toXML()}")
+                logger.warn("Failed to grant ownership: ${reply?.toXML() ?: "timeout"}")
             }
         } catch (e: SmackException.NotConnectedException) {
-            // XXX FIXME throw a declared exception.
-            throw RuntimeException("Failed to grant owner - XMPP disconnected", e)
+            logger.warn("Failed to grant ownership: XMPP disconnected")
         }
     }
 

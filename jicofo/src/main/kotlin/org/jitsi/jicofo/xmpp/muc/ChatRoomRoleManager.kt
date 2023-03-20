@@ -30,15 +30,6 @@ sealed class ChatRoomRoleManager(
 ) : ChatRoomListener {
     protected val logger = createLogger()
 
-    /** Grants ownership to [member], blocks for a response from the MUC service. */
-    protected fun grantOwner(member: ChatRoomMember): Boolean = try {
-        chatRoom.grantOwnership(member)
-        true
-    } catch (e: RuntimeException) {
-        logger.error("Failed to grant owner status to ${member.jid}", e)
-        false
-    }
-
     override fun memberLeft(member: ChatRoomMember) = memberLeftOrKicked(member)
     override fun memberKicked(member: ChatRoomMember) = memberLeftOrKicked(member)
 
@@ -95,7 +86,7 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
         val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
         if (newOwner != null) {
             logger.info("Electing new owner: $newOwner")
-            grantOwner(newOwner)
+            chatRoom.grantOwnership(newOwner)
             owner = newOwner
         }
     }
@@ -115,7 +106,7 @@ class AuthenticationRoleManager(
 ) : ChatRoomRoleManager(chatRoom) {
 
     private val authenticationListener = AuthenticationListener { userJid, _, _ ->
-        chatRoom.members.find { it.jid == userJid }?.let { grantOwner(it) }
+        chatRoom.members.find { it.jid == userJid }?.let { chatRoom.grantOwnership(it) }
     }
 
     init {
@@ -126,7 +117,7 @@ class AuthenticationRoleManager(
         chatRoom.members.filter {
             !it.role.hasOwnerRights() && authenticationAuthority.getSessionForJid(it.jid) != null
         }.forEach {
-            grantOwner(it)
+            chatRoom.grantOwnership(it)
         }
     }
 
@@ -144,7 +135,7 @@ class AuthenticationRoleManager(
      */
     override fun memberJoined(member: ChatRoomMember) {
         if (member.role != MemberRole.OWNER && authenticationAuthority.getSessionForJid(member.jid) != null) {
-            grantOwner(member)
+            chatRoom.grantOwnership(member)
         }
     }
 
