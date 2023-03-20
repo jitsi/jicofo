@@ -328,7 +328,7 @@ class ChatRoomImpl(
     override fun setPresenceExtension(extension: ExtensionElement) {
         val presenceToSend: Presence? = synchronized(this) {
             lastPresenceSent?.let { presence ->
-                presence.getExtensions(extension.qName).forEach { existingExtension ->
+                presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
                     presence.removeExtension(existingExtension)
                 }
                 presence.addExtension(extension)
