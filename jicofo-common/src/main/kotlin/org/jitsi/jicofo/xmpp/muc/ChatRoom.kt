@@ -34,13 +34,6 @@ interface ChatRoom {
     /** The JID of the chat room. */
     val roomJid: EntityBareJid
 
-    /** Joins this chat room with the preconfigured nickname. */
-    @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join()
-
-    /** Leave the chat room. */
-    fun leave()
-
     /** Whether the local user is currently in the multi user chat (after calling one of the [.join] methods). */
     val isJoined: Boolean
 
@@ -53,11 +46,29 @@ interface ChatRoom {
     /** The size of [members], exposed separately for performance (avoid creating a new list just to get the count) */
     val memberCount: Int
 
+    /** Whether this [ChatRoom] is a breakout room. */
+    val isBreakoutRoom: Boolean
+
+    /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
+    val mainRoom: String?
+
+    /** Get the unique meeting ID associated by this room (set by the MUC service). */
+    val meetingId: String?
+
+    val debugState: OrderedJsonObject
+
     /** Returns the number of members that currently have their audio sources unmuted. */
     var audioSendersCount: Int
 
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
+
+    /** Joins this chat room with the preconfigured nickname. */
+    @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
+    fun join()
+
+    /** Leave the chat room. */
+    fun leave()
 
     /**
      * Grants ownership privileges to another user. Room owners may grant
@@ -112,15 +123,4 @@ interface ChatRoom {
 
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
-
-    /** Whether this [ChatRoom] is a breakout room. */
-    val isBreakoutRoom: Boolean
-
-    /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
-    val mainRoom: String?
-
-    /** Get the unique meeting ID associated by this room (set by the MUC service). */
-    val meetingId: String?
-
-    val debugState: OrderedJsonObject
 }

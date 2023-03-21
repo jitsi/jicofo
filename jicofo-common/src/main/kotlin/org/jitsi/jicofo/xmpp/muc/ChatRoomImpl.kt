@@ -70,10 +70,13 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    override val members: List<ChatRoomMember>
+        get() = synchronized(membersMap) { return membersMap.values.toList() }
+    override val memberCount
+        get() = membersMap.size
+
     private val memberListener: MemberListener = MemberListener()
-
     private val userListener = LocalUserStatusListener()
-
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
         // The initial presence sent by smack contains an empty "x"
@@ -99,6 +102,9 @@ class ChatRoomImpl(
             addParticipantListener(this@ChatRoomImpl)
         }
 
+    override val isJoined
+        get() = muc.isJoined
+
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
@@ -120,29 +126,48 @@ class ChatRoomImpl(
         private set
 
     private val avModerationByMediaType = mutableMapOf<MediaType, AvModerationForMediaType>()
-    /** In practice we only use AUDIO and VIDEO, so polluting the map is not a problem. */
-    private fun avModeration(mediaType: MediaType): AvModerationForMediaType =
-        avModerationByMediaType.computeIfAbsent(mediaType) { AvModerationForMediaType(mediaType) }
 
     /** The emitter used to fire events. */
     private val eventEmitter: EventEmitter<ChatRoomListener> = SyncEventEmitter()
 
-    private object MucConfigFields {
-        const val IS_BREAKOUT_ROOM = "muc#roominfo_isbreakout"
-        const val MAIN_ROOM = "muc#roominfo_breakout_main_room"
-        const val MEETING_ID = "muc#roominfo_meetingId"
-        const val WHOIS = "muc#roomconfig_whois"
+    override val debugState = OrderedJsonObject().apply {
+        this["room_jid"] = roomJid.toString()
+        this["my_occupant_jid"] = myOccupantJid.toString()
+        val membersJson = OrderedJsonObject()
+        membersMap.values.forEach {
+            membersJson[it.name] = it.debugState
+        }
+        this["members"] = membersJson
+        this["meeting_id"] = meetingId.toString()
+        this["is_breakout_room"] = isBreakoutRoom
+        this["main_room"] = mainRoom.toString()
+        this["audio_senders_count"] = audioSendersCount
+        this["video_senders_count"] = videoSendersCount
+        this["av_moderation"] = OrderedJsonObject().apply {
+            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
+        }
+    }
+
+    /** The number of members that currently have their audio sources unmuted. */
+    override var audioSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of audio senders has changed to $newValue." }
+        eventEmitter.fireEvent { numAudioSendersChanged(newValue) }
+    }
+
+    /** The number of members that currently have their video sources unmuted. */
+    override var videoSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of video senders has changed to $newValue." }
+        eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
-    override val isJoined
-        get() = muc.isJoined
-    override val members: List<ChatRoomMember>
-        get() = synchronized(membersMap) { return membersMap.values.toList() }
-    override val memberCount
-        get() = membersMap.size
-    override fun getChatMember(occupantJid: EntityFullJid) = membersMap[occupantJid]
+    // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
+    override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
+
+    /** In practice we only use AUDIO and VIDEO, so polluting the map is not a problem. */
+    private fun avModeration(mediaType: MediaType): AvModerationForMediaType =
+        avModerationByMediaType.computeIfAbsent(mediaType) { AvModerationForMediaType(mediaType) }
     override fun isAvModerationEnabled(mediaType: MediaType) = avModeration(mediaType).enabled
     override fun setAvModerationEnabled(mediaType: MediaType, value: Boolean) {
         avModeration(mediaType).enabled = value
@@ -150,13 +175,12 @@ class ChatRoomImpl(
     override fun setAvModerationWhitelist(mediaType: MediaType, whitelist: List<String>) {
         avModeration(mediaType).whitelist = whitelist
     }
+
+    override fun getChatMember(occupantJid: EntityFullJid) = membersMap[occupantJid]
     override fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean =
         avModeration(mediaType).isAllowedToUnmute(jid)
 
-    // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
-    override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
-
-    fun setStartMuted(startAudioMuted: Boolean, startVideoMuted: Boolean) = eventEmitter.fireEvent {
+    internal fun setStartMuted(startAudioMuted: Boolean, startVideoMuted: Boolean) = eventEmitter.fireEvent {
         startMutedChanged(startAudioMuted, startVideoMuted)
     }
 
@@ -346,18 +370,6 @@ class ChatRoomImpl(
         }
     }
 
-    /** The number of members that currently have their audio sources unmuted. */
-    override var audioSendersCount by observableWhenChanged(0) { _, _, newValue ->
-        logger.debug { "The number of audio senders has changed to $newValue." }
-        eventEmitter.fireEvent { numAudioSendersChanged(newValue) }
-    }
-
-    /** The number of members that currently have their video sources unmuted. */
-    override var videoSendersCount by observableWhenChanged(0) { _, _, newValue ->
-        logger.debug { "The number of video senders has changed to $newValue." }
-        eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
-    }
-
     /**
      * Adds a new [ChatRoomMemberImpl] with the given JID to [.members].
      * If a member with the given JID already exists, it returns the existing
@@ -487,22 +499,11 @@ class ChatRoomImpl(
         }
     }
 
-    override val debugState = OrderedJsonObject().apply {
-        this["room_jid"] = roomJid.toString()
-        this["my_occupant_jid"] = myOccupantJid.toString()
-        val membersJson = OrderedJsonObject()
-        membersMap.values.forEach {
-            membersJson[it.name] = it.debugState
-        }
-        this["members"] = membersJson
-        this["meeting_id"] = meetingId.toString()
-        this["is_breakout_room"] = isBreakoutRoom
-        this["main_room"] = mainRoom.toString()
-        this["audio_senders_count"] = audioSendersCount
-        this["video_senders_count"] = videoSendersCount
-        this["av_moderation"] = OrderedJsonObject().apply {
-            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
-        }
+    private object MucConfigFields {
+        const val IS_BREAKOUT_ROOM = "muc#roominfo_isbreakout"
+        const val MAIN_ROOM = "muc#roominfo_breakout_main_room"
+        const val MEETING_ID = "muc#roominfo_meetingId"
+        const val WHOIS = "muc#roomconfig_whois"
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
@@ -572,17 +573,17 @@ class ChatRoomImpl(
             logger.info("Setting whitelist for $mediaType: $newValue")
         }
 
+        val debugState: OrderedJsonObject
+            get() = OrderedJsonObject().apply {
+                this["enabled"] = enabled
+                this["whitelist"] = whitelist
+            }
+
         fun isAllowedToUnmute(jid: Jid) = !enabled || whitelist.contains(jid.toString())
 
         fun reset() {
             enabled = false
             whitelist = emptyList()
         }
-
-        val debugState: OrderedJsonObject
-            get() = OrderedJsonObject().apply {
-                this["enabled"] = enabled
-                this["whitelist"] = whitelist
-            }
     }
 }
