@@ -168,8 +168,8 @@ class ChatRoomImpl(
     }
 
     /**
-     * Prepare this [ChatRoomImpl] for a call to [.joinAs], which send initial presence to
-     * the MUC. Resets any state that might have been set the previous time the MUC was joined.
+     * Prepare this [ChatRoomImpl] for a call to [.joinAs], which sends initial presence to the MUC. Resets any state
+     * that might have been set the previous time the MUC was joined.
      */
     private fun resetState() {
         synchronized(membersMap) {

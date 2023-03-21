@@ -77,7 +77,7 @@ class ChatRoomMemberImpl(
     override val role: MemberRole
         get() {
             return chatRoom.getOccupant(this)?.let {
-                return fromSmack(it.role, it.affiliation)
+                fromSmack(it.role, it.affiliation)
             } ?: MemberRole.VISITOR
         }
 

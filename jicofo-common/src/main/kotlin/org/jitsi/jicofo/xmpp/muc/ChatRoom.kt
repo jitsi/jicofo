@@ -34,10 +34,7 @@ interface ChatRoom {
     /** The JID of the chat room. */
     val roomJid: EntityBareJid
 
-    /**
-     * Joins this chat room with the nickname of the local user so that the
-     * user would start receiving events and messages for it.
-     */
+    /** Joins this chat room with the preconfigured nickname. */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     fun join()
 
