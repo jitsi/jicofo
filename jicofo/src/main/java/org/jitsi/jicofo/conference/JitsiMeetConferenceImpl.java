@@ -34,6 +34,7 @@ import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
+import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 
@@ -1049,7 +1050,9 @@ public class JitsiMeetConferenceImpl
         getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
                 transport,
-                null /* no change in sources, just transport */);
+                null /* no change in sources, just transport */,
+                null,
+                false);
     }
 
     /**
@@ -1094,7 +1097,12 @@ public class JitsiMeetConferenceImpl
         // Updates source groups on the bridge
         // We may miss the notification, but the state will be synced up after conference has been relocated to the new
         // bridge
-        getColibriSessionManager().updateParticipant(participant.getEndpointId(), null, participant.getSources());
+        getColibriSessionManager().updateParticipant(
+                participant.getEndpointId(),
+                null,
+                participant.getSources(),
+                null,
+                false);
         propagateNewSources(participant, sourcesAccepted);
     }
 
@@ -1128,6 +1136,7 @@ public class JitsiMeetConferenceImpl
                 participant.getEndpointId(),
                 null,
                 participant.getSources(),
+                null,
                 false);
 
         sendSourceRemove(new ConferenceSourceMap(participantId, sourcesAcceptedToBeRemoved), participant);
@@ -1139,7 +1148,8 @@ public class JitsiMeetConferenceImpl
     void acceptSession(
             @NotNull Participant participant,
             @NotNull EndpointSourceSet sourcesAdvertised,
-            IceUdpTransportPacketExtension transport)
+            IceUdpTransportPacketExtension transport,
+            @Nullable InitialLastN initialLastN)
     throws ValidationFailedException
     {
         String participantId = participant.getEndpointId();
@@ -1150,7 +1160,12 @@ public class JitsiMeetConferenceImpl
             sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
         }
 
-        getColibriSessionManager().updateParticipant(participantId, transport, getSourcesForParticipant(participant));
+        getColibriSessionManager().updateParticipant(
+                participantId,
+                transport,
+                getSourcesForParticipant(participant),
+                initialLastN,
+                false);
 
         if (!sourcesAccepted.isEmpty())
         {
@@ -1187,6 +1202,7 @@ public class JitsiMeetConferenceImpl
                 participant.getEndpointId(),
                 null,
                 participant.getSources(),
+                null,
                 true);
 
             if (sendSourceRemove)

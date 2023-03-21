@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
@@ -35,6 +36,7 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
+import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Sctp
 import org.jitsi.xmpp.extensions.colibri2.Transport
@@ -119,9 +121,10 @@ class Colibri2Session(
         /** The transport info to set for the colibri2 endpoint, or null if it is not to be modified. */
         transport: IceUdpTransportPacketExtension?,
         /** The sources to set for the colibri2 endpoint, or null if the sources are not to be modified. */
-        sources: EndpointSourceSet?
+        sources: EndpointSourceSet?,
+        initialLastN: InitialLastN?
     ) {
-        if (transport == null && sources == null) {
+        if (transport == null && sources == null && initialLastN == null) {
             logger.info("Nothing to update.")
             return
         }
@@ -138,6 +141,10 @@ class Colibri2Session(
 
         if (sources != null) {
             endpoint.setSources(sources.toColibriMediaSources(participant.id))
+        }
+
+        initialLastN?.let {
+            endpoint.setInitialLastN(it)
         }
 
         request.addEndpoint(endpoint.build())
@@ -350,7 +357,8 @@ class Colibri2Session(
         private val useUniquePort = initiator
         private val iceControlling = initiator
         private val dtlsSetup = if (initiator) "active" else "passive"
-        private val websocketActive = initiator
+        private val bridgeChannelActive = initiator
+        private val sctpBridgeChannel = OctoConfig.config.sctpDatachannels
 
         private val logger = createChildLogger(this@Colibri2Session.logger).apply { addContext("relay", relayId) }
 
@@ -406,10 +414,11 @@ class Colibri2Session(
                 logger.info("Setting setup=$dtlsSetup for $relayId")
                 it.setup = dtlsSetup
             }
-            // We always expect the bridge to advertise a websocket, but we want only one side to act as a client.
+            // The bridge always advertises a websocket if we're not using SCTP, but we want only one side to act as a
+            // client.
             // The bridge will always act as a client if the signaled transport includes a websocket, so here we make
             // sure it is only included to one of the sides.
-            if (!websocketActive) {
+            if (sctpBridgeChannel || !bridgeChannelActive) {
                 transport.getChildExtensionsOfType(WebSocketPacketExtension::class.java).forEach {
                     transport.removeChildExtension(it)
                 }
@@ -431,7 +440,8 @@ class Colibri2Session(
             put("use_unique_port", useUniquePort)
             put("ice_controlling", iceControlling)
             put("dtls_setup", dtlsSetup)
-            put("websocket_active", websocketActive)
+            put("bridge_channel_active", bridgeChannelActive)
+            put("sctp_bridge_channel", sctpBridgeChannel)
             meshId?.let { put("mesh_id", it) }
         }
 
@@ -508,6 +518,11 @@ class Colibri2Session(
                 Transport.getBuilder().apply {
                     setUseUniquePort(useUniquePort)
                     setIceControlling(iceControlling)
+                    if (sctpBridgeChannel) {
+                        val sctp = Sctp.Builder()
+                        sctp.setRole(if (bridgeChannelActive) Sctp.Role.CLIENT else Sctp.Role.SERVER)
+                        setSctp(sctp.build())
+                    }
                 }.build()
             )
 

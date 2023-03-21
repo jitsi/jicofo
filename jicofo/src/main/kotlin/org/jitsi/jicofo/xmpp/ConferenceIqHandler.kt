@@ -22,6 +22,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.visitors.VisitorsConfig
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -54,7 +55,16 @@ class ConferenceIqHandler(
     init {
         xmppProvider.addListener(this)
         registrationChanged(xmppProvider.registered)
+        componentsChanged(xmppProvider.components)
     }
+
+    val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["breakout_address"] = breakoutAddress.toString()
+            this["focus_auth_jid"] = focusAuthJid
+            this["jigasi_enabled"] = jigasiEnabled
+            this["auth_authority"] = authAuthority?.javaClass?.simpleName ?: "null"
+        }
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
     fun handleConferenceIq(query: ConferenceIq): IQ {
@@ -88,8 +98,9 @@ class ConferenceIqHandler(
             response.vnode = vnode
             response.focusJid = it
         } ?: run {
-            // This shouldn't happen. But if it does go on without redirection.
-            logger.error("No XmppConnectionConfig for vnode=$vnode")
+            if (vnode != null) {
+                logger.error("No XmppConnectionConfig for vnode=$vnode")
+            }
         }
 
         response.isReady = focusManager.conferenceRequest(room, query.propertiesMap)

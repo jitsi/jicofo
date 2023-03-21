@@ -21,6 +21,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 
@@ -42,19 +43,14 @@ interface ColibriSessionManager {
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(participant: ParticipantAllocationParameters): ColibriAllocation
 
-    /** For use in java because @JvmOverloads is not available for interfaces. */
     fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension? = null,
         sources: EndpointSourceSet? = null,
-    ) = updateParticipant(participantId, transport, sources, false)
-
-    fun updateParticipant(
-        participantId: String,
-        transport: IceUdpTransportPacketExtension? = null,
-        sources: EndpointSourceSet? = null,
+        initialLastN: InitialLastN? = null,
         suppressLocalBridgeUpdate: Boolean = false
     )
+
     fun getBridgeSessionId(participantId: String): String?
 
     /**

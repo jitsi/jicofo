@@ -184,6 +184,11 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
         {
             Set<Media> medias = new HashSet<>();
             offer.getContents().forEach(content -> {
+                // Ignore the "data" content here (SCTP).
+                if (!"audio".equals(content.getName()) && !"video".equals(content.getName()))
+                {
+                    return;
+                }
                 Media media = ConferenceUtilKt.toMedia(content);
                 if (media != null)
                 {
