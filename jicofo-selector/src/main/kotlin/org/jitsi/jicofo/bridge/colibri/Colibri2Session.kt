@@ -308,7 +308,7 @@ class Colibri2Session(
                         // If colibri2 error extension is present then the message came from
                         // a jitsi-videobridge instance. Otherwise, it might come from another component
                         // (e.g. the XMPP server or MUC component).
-                        val reInvite = reason == UNKNOWN_ENDPOINT && endpointId != null
+                        val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
                         if (reInvite) {
                             logger.warn(
                                 "Endpoint [$endpointId] is not found, session failed: ${it.toXML()}, " +

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.conference;
 
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.*;
 import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
@@ -53,7 +52,6 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
-import static java.util.Collections.singletonList;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -887,7 +885,7 @@ public class JitsiMeetConferenceImpl
         {
             participant.terminateJingleSession(reason, message, sendSessionTerminate);
 
-            removeParticipantSources(participant, sendSourceRemove, true);
+            removeParticipantSources(participant, sendSourceRemove);
 
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
@@ -1188,15 +1186,12 @@ public class JitsiMeetConferenceImpl
      * @param participant the participant whose sources are to be removed.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    private void removeParticipantSources(
-            @NotNull Participant participant,
-            boolean sendSourceRemove,
-            boolean updateParticipant)
+    private void removeParticipantSources(@NotNull Participant participant, boolean sendSourceRemove)
     {
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantId);
 
-        if (updateParticipant && sourcesRemoved != null && !sourcesRemoved.isEmpty())
+        if (sourcesRemoved != null && !sourcesRemoved.isEmpty())
         {
             getColibriSessionManager().updateParticipant(
                 participant.getEndpointId(),
@@ -1574,25 +1569,6 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    public void reInviteParticipantByIdWithoutUpdate(@NotNull String participantIdToReinvite)
-    {
-        if (StringUtils.isNotEmpty(participantIdToReinvite))
-        {
-            ConferenceMetrics.participantsMoved.addAndGet(1);
-            synchronized (participantLock)
-            {
-                for (Participant participant : participants.values())
-                {
-                    if (participantIdToReinvite.equals(participant.getEndpointId()))
-                    {
-                        reInviteParticipants(singletonList(participant), false);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
     {
         if (!participantIdsToReinvite.isEmpty())
@@ -1682,16 +1658,6 @@ public class JitsiMeetConferenceImpl
      */
     private void reInviteParticipants(Collection<Participant> participants)
     {
-        reInviteParticipants(participants, true);
-    }
-    /**
-     * Re-invites {@link Participant}s into the conference.
-     *
-     * @param participants the list of {@link Participant}s to be re-invited.
-     * @param updateParticipant flag to check if update participant call should be called.
-     */
-    private void reInviteParticipants(Collection<Participant> participants, boolean updateParticipant)
-    {
         synchronized (participantLock)
         {
             for (Participant participant : participants)
@@ -1701,7 +1667,7 @@ public class JitsiMeetConferenceImpl
 
                 if (restartJingle)
                 {
-                    removeParticipantSources(participant, true, updateParticipant);
+                    removeParticipantSources(participant, true);
                     participant.terminateJingleSession(Reason.SUCCESS, "moving", true);
                 }
 
@@ -2123,7 +2089,7 @@ public class JitsiMeetConferenceImpl
         public void endpointRemoved(@NotNull String endpointId)
         {
             logger.info("Endpoint " + endpointId + " was removed from the conference. Re-inviting participant.");
-            reInviteParticipantByIdWithoutUpdate(endpointId);
+            reInviteParticipantsById(Collections.singletonList(endpointId));
         }
     }
 
