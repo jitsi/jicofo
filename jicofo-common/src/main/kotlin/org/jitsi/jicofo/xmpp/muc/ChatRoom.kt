@@ -80,28 +80,18 @@ interface ChatRoom {
      */
     fun getChatMember(occupantJid: EntityFullJid): ChatRoomMember?
 
-    /** @return the list of all our presence [ExtensionElement]s. */
-    val presenceExtensions: Collection<ExtensionElement>
-
-    /**
-     * Modifies our current MUC presence by adding and/or removing specified extensions. The extensions are compared by
-     * instance equality.
-     * The goal of this API is to provide a way to add and remove extensions without sending intermediate presence
-     * stanzas.
-     * @param toRemove the list of extensions to be removed.
-     * @param toAdd the list of extension to be added.
-     */
-    fun modifyPresenceExtensions(toRemove: Collection<ExtensionElement>, toAdd: Collection<ExtensionElement>)
-    fun addPresenceExtensions(extensions: Collection<ExtensionElement>) =
-        modifyPresenceExtensions(toRemove = emptyList(), toAdd = extensions)
-    fun removePresenceExtensions(extensions: Collection<ExtensionElement>) =
-        modifyPresenceExtensions(toRemove = extensions, toAdd = emptyList())
+    /** Add all of [extensions] to our presence. */
+    fun addPresenceExtensions(extensions: Collection<ExtensionElement>)
+    /** Add [extension] to our presence, no-op if we already have an extension with the same QName. */
+    fun addPresenceExtensionIfMissing(extension: ExtensionElement)
+    /** Remove presence extensions matching the predicate [pred]. */
+    fun removePresenceExtensions(pred: (ExtensionElement) -> Boolean)
 
     /**
      * Add [extension] to presence and remove any previous extensions with the same QName.
      *
      * Note that this always sends a presence stanza. If the intention is to only send a packet if the extension was
-     * modified use [presenceExtensions] and [modifyPresenceExtensions].
+     * modified use [addPresenceExtensionIfMissing].
      */
     fun setPresenceExtension(extension: ExtensionElement)
 

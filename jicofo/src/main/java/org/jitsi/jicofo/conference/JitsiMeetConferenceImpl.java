@@ -2054,12 +2054,9 @@ public class JitsiMeetConferenceImpl
         public void bridgeSelectionFailed()
         {
             ChatRoom chatRoom = getChatRoom();
-            if (chatRoom != null
-                    && chatRoom.getPresenceExtensions().stream().noneMatch(e ->
-                            BridgeNotAvailablePacketExt.ELEMENT.equals(e.getElementName())
-                                    && BridgeNotAvailablePacketExt.NAMESPACE.equals(e.getNamespace())))
+            if (chatRoom != null)
             {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt());
+                chatRoom.addPresenceExtensionIfMissing(new BridgeNotAvailablePacketExt());
             }
         }
 
@@ -2074,10 +2071,7 @@ public class JitsiMeetConferenceImpl
             if (chatRoom != null)
             {
                 // Remove any "bridge not available" extensions.
-                List<ExtensionElement> bridgeNotAvailablePacketExts
-                        = chatRoom.getPresenceExtensions().stream()
-                            .filter(e -> e instanceof BridgeNotAvailablePacketExt).collect(Collectors.toList());
-                chatRoom.removePresenceExtensions(bridgeNotAvailablePacketExts);
+                chatRoom.removePresenceExtensions(e -> e instanceof BridgeNotAvailablePacketExt);
             }
         }
 

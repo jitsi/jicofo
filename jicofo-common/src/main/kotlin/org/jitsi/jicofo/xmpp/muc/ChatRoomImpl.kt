@@ -294,33 +294,56 @@ class ChatRoomImpl(
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
-    override val presenceExtensions
-        get() = synchronized(this) { lastPresenceSent?.extensions?.toList() ?: emptyList() }
-
-    override fun modifyPresenceExtensions(
-        toRemove: Collection<ExtensionElement>,
-        toAdd: Collection<ExtensionElement>
-    ) {
-        val presenceToSend: Presence? = synchronized(this) {
+    override fun addPresenceExtensionIfMissing(extension: ExtensionElement) {
+        val presenceToSend = synchronized(this) {
             lastPresenceSent?.let { presence ->
-                var changed = false
-                toRemove.forEach {
-                    presence.removeExtension(it)
-                    // We don't have a good way to check if it was actually removed.
-                    changed = true
+                if (presence.extensions?.any { it.qName == extension.qName } == true) {
+                    null
+                } else {
+                    presence.addExtension(extension).build()
                 }
-                toAdd.forEach {
-                    presence.addExtension(it)
-                    changed = true
-                }
-                if (changed) presence.build() else null
-            } ?: run {
-                logger.error("No presence packet obtained yet")
-                null
             }
         }
-
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
+    }
+
+    override fun removePresenceExtensions(pred: (ExtensionElement) -> Boolean) {
+        val presenceToSend = synchronized(this) {
+            lastPresenceSent?.extensions?.filter { pred(it) }?.let {
+                modifyPresenceExtensions(toRemove = it)
+            }
+        }
+        presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
+    }
+
+    override fun addPresenceExtensions(extensions: Collection<ExtensionElement>) {
+        val presenceToSend = synchronized(this) {
+            modifyPresenceExtensions(toAdd = extensions)
+        }
+        presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
+    }
+
+    /** Add/remove extensions to/from our presence and return the updated presence or null if it wasn't modified. */
+    private fun modifyPresenceExtensions(
+        toRemove: Collection<ExtensionElement> = emptyList(),
+        toAdd: Collection<ExtensionElement> = emptyList()
+    ): Presence? = synchronized(this) {
+        lastPresenceSent?.let { presence ->
+            var changed = false
+            toRemove.forEach {
+                presence.removeExtension(it)
+                // We don't have a good way to check if it was actually removed.
+                changed = true
+            }
+            toAdd.forEach {
+                presence.addExtension(it)
+                changed = true
+            }
+            if (changed) presence.build() else null
+        } ?: run {
+            logger.error("No presence packet obtained yet")
+            null
+        }
     }
 
     /** The number of members that currently have their audio sources unmuted. */
