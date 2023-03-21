@@ -419,11 +419,9 @@ class ChatRoomImpl(
                     // Ignore it. The member might have been just removed via left(), which is fine.
                     null
                 }
-            } else if (presence.type == Presence.Type.unavailable) {
-                memberLeft = true
-                m
             } else {
-                null
+                memberLeft = presence.type == Presence.Type.unavailable
+                m
             }
         }
         if (member != null) {
