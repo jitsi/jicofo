@@ -70,11 +70,14 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
 
+    /** Stores our last MUC presence packet for future update. */
+    private var lastPresenceSent: PresenceBuilder? = null
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
     /** Listener for presence that smack sends on our behalf. */
@@ -108,11 +111,6 @@ class ChatRoomImpl(
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
-    private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
-
-    /** Stores our last MUC presence packet for future update. */
-    private var lastPresenceSent: PresenceBuilder? = null
-
     /** The value of the "meetingId" field from the MUC form, if present. */
     override var meetingId: String? = null
         private set
@@ -130,6 +128,18 @@ class ChatRoomImpl(
     /** The emitter used to fire events. */
     private val eventEmitter: EventEmitter<ChatRoomListener> = SyncEventEmitter()
 
+    /** The number of members that currently have their audio sources unmuted. */
+    override var audioSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of audio senders has changed to $newValue." }
+        eventEmitter.fireEvent { numAudioSendersChanged(newValue) }
+    }
+
+    /** The number of members that currently have their video sources unmuted. */
+    override var videoSendersCount by observableWhenChanged(0) { _, _, newValue ->
+        logger.debug { "The number of video senders has changed to $newValue." }
+        eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
+    }
+
     override val debugState = OrderedJsonObject().apply {
         this["room_jid"] = roomJid.toString()
         this["my_occupant_jid"] = myOccupantJid.toString()
@@ -146,18 +156,6 @@ class ChatRoomImpl(
         this["av_moderation"] = OrderedJsonObject().apply {
             avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
         }
-    }
-
-    /** The number of members that currently have their audio sources unmuted. */
-    override var audioSendersCount by observableWhenChanged(0) { _, _, newValue ->
-        logger.debug { "The number of audio senders has changed to $newValue." }
-        eventEmitter.fireEvent { numAudioSendersChanged(newValue) }
-    }
-
-    /** The number of members that currently have their video sources unmuted. */
-    override var videoSendersCount by observableWhenChanged(0) { _, _, newValue ->
-        logger.debug { "The number of video senders has changed to $newValue." }
-        eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
