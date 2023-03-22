@@ -72,6 +72,7 @@ class JicofoMetricsContainer private constructor() : MetricsContainer(namespace 
     fun stop() = synchronized(this) {
         updateTask?.cancel(false)
         updateTask = null
+        subtasks.clear()
     }
 
     companion object {
