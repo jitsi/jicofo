@@ -2078,6 +2078,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeRemoved(@NotNull Bridge bridge, @NotNull List<String> participantIds)
         {
+            ConferenceMetrics.bridgesRemoved.inc();
             logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
                     + participantIds);
             reInviteParticipantsById(participantIds);

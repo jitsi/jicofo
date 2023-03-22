@@ -261,6 +261,7 @@ class FocusManager(
             stats["conferences"] = conferenceCount.get()
             val bridgeFailures = JSONObject()
             bridgeFailures["participants_moved"] = ConferenceMetrics.participantsMoved.get()
+            bridgeFailures["bridges_removed"] = ConferenceMetrics.bridgesRemoved.get()
             stats["bridge_failures"] = bridgeFailures
             val participantNotifications = JSONObject()
             participantNotifications["ice_failed"] = ConferenceMetrics.participantsIceFailed.get()
