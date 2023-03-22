@@ -20,6 +20,7 @@ import org.jitsi.health.HealthChecker
 import org.jitsi.health.Result
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.logging2.createLogger
@@ -82,6 +83,7 @@ class JicofoHealthChecker(
                 logger.error("Health check took too long: $duration ms")
                 totalSlowHealthChecks++
             }
+            healthyMetric.set(it.success)
         }
     }
 
@@ -171,6 +173,12 @@ class JicofoHealthChecker(
         } finally {
             xmppProvider.xmppConnection.removeSyncStanzaListener(listener)
         }
+    }
+
+    companion object {
+        val healthyMetric = JicofoMetricsContainer.instance.registerBooleanMetric(
+            "healthy", "Whether jicofo is healthy or not.", true
+        )
     }
 }
 
