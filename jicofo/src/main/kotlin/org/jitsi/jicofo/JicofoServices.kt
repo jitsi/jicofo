@@ -34,6 +34,7 @@ import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
@@ -156,6 +157,7 @@ class JicofoServices {
             it.shutdown()
         }
         healthChecker?.shutdown()
+        JicofoMetricsContainer.instance.stop()
         jettyServer?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)

@@ -17,11 +17,67 @@
  */
 package org.jitsi.jicofo.metrics
 
+import org.jitsi.config.JitsiConfig
+import org.jitsi.jicofo.TaskPools
+import org.jitsi.metaconfig.config
 import org.jitsi.metrics.MetricsContainer
+import org.jitsi.utils.logging2.createLogger
+import java.time.Duration
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 
 class JicofoMetricsContainer private constructor() : MetricsContainer(namespace = "jitsi_jicofo") {
+    private val logger = createLogger()
+    private val subtasks: MutableList<() -> Unit> = CopyOnWriteArrayList()
+
+    private var updateTask: ScheduledFuture<*>? = null
+
+    // Allow updates to be disabled for tests
+    var disablePeriodicUpdates = false
+
+    fun addUpdateTask(subtask: () -> Unit) {
+        if (disablePeriodicUpdates) {
+            logger.warn("Periodic updates are disabled, will not execute update task.")
+            return
+        }
+
+        subtasks.add(subtask)
+        synchronized(this) {
+            if (updateTask == null) {
+                logger.info("Scheduling metrics update task with interval $updateInterval.")
+                updateTask = TaskPools.scheduledPool.scheduleAtFixedRate(
+                    { runSubtasks() },
+                    0,
+                    updateInterval.toMillis(),
+                    TimeUnit.MILLISECONDS
+                )
+            }
+        }
+    }
+
+    private fun runSubtasks() {
+        logger.debug("Running ${subtasks.size} subtasks.")
+        subtasks.forEach {
+            try {
+                it.invoke()
+            } catch (e: Exception) {
+                logger.warn("Exception while running subtask", e)
+            }
+        }
+    }
+
+    fun stop() = synchronized(this) {
+        updateTask?.cancel(false)
+        updateTask = null
+    }
+
     companion object {
         @JvmStatic
         val instance = JicofoMetricsContainer()
+
+        val updateInterval: Duration by config {
+            "jicofo.metrics.update-interval".from(JitsiConfig.newConfig)
+        }
     }
 }
