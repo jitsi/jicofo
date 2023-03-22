@@ -19,6 +19,8 @@ import org.jitsi.jicofo.*;
 
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import org.jitsi.jicofo.metrics.*;
+
 import java.util.*;
 
 /**
@@ -38,6 +40,8 @@ public class Statistics
     {
         JicofoServices jicofoServices
                 = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton(), "jicofoServices");
+        // Update the metrics that are usually updated periodically so we read the current values.
+        JicofoMetricsContainer.getInstance().updateMetrics();
         return jicofoServices.getStats().toJSONString();
     }
 }

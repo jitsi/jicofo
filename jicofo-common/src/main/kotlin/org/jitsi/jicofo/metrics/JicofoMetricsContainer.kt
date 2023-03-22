@@ -47,7 +47,7 @@ class JicofoMetricsContainer private constructor() : MetricsContainer(namespace 
             if (updateTask == null) {
                 logger.info("Scheduling metrics update task with interval $updateInterval.")
                 updateTask = TaskPools.scheduledPool.scheduleAtFixedRate(
-                    { runSubtasks() },
+                    { updateMetrics() },
                     0,
                     updateInterval.toMillis(),
                     TimeUnit.MILLISECONDS
@@ -56,13 +56,15 @@ class JicofoMetricsContainer private constructor() : MetricsContainer(namespace 
         }
     }
 
-    private fun runSubtasks() {
-        logger.debug("Running ${subtasks.size} subtasks.")
-        subtasks.forEach {
-            try {
-                it.invoke()
-            } catch (e: Exception) {
-                logger.warn("Exception while running subtask", e)
+    fun updateMetrics() {
+        synchronized(this) {
+            logger.debug("Running ${subtasks.size} subtasks.")
+            subtasks.forEach {
+                try {
+                    it.invoke()
+                } catch (e: Exception) {
+                    logger.warn("Exception while running subtask", e)
+                }
             }
         }
     }
