@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;

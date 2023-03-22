@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.Presence
@@ -39,7 +38,7 @@ interface ChatRoomMember {
     val name: String
 
     /** The role of this chat room member in its containing room. */
-    val role: MemberRole?
+    val role: MemberRole
 
     /** Returns the JID of the user (outside the MUC), i.e. the "real" JID. It may not always be known. */
     val jid: Jid?

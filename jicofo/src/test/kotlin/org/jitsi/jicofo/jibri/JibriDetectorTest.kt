@@ -21,11 +21,11 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.FAILURE_TIMEOUT
 import org.jitsi.jicofo.jibri.JibriDetector.Companion.SELECT_TIMEOUT
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
@@ -131,9 +131,9 @@ class JibriChatRoomMember(
     override val occupantJid: EntityFullJid,
     val detector: JibriDetector
 ) : ChatRoomMember {
+    override val role: MemberRole get() = TODO("Not yet implemented")
     override val chatRoom: ChatRoom get() = TODO("Not yet implemented")
     override val name: String get() = TODO("Not yet implemented")
-    override val role: MemberRole? get() = TODO("Not yet implemented")
     override val jid: Jid? get() = TODO("Not yet implemented")
     override val sourceInfos: Set<SourceInfo> get() = TODO("Not yet implemented")
     override val isRobot: Boolean get() = TODO("Not yet implemented")

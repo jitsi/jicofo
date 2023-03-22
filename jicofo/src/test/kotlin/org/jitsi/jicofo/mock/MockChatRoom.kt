@@ -17,9 +17,9 @@ package org.jitsi.jicofo.mock
 
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.utils.OrderedJsonObject
@@ -31,7 +31,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
     val chatRoom = mockk<ChatRoom>(relaxed = true) {
         every { addListener(capture(chatRoomListeners)) } returns Unit
         every { members } returns memberList
-        every { membersCount } answers { memberList.size }
+        every { memberCount } answers { memberList.size }
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
         every { debugState } returns OrderedJsonObject()
     }

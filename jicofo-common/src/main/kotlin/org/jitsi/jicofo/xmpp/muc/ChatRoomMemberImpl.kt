@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
-import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
@@ -75,24 +74,12 @@ class ChatRoomMemberImpl(
     /** The node#ver advertised in a Caps extension. */
     private var capsNodeVer: String? = null
 
-    override var role: MemberRole? = null
-        private set
+    override val role: MemberRole
         get() {
-            if (field == null) {
-                val o = chatRoom.getOccupant(this)
-                if (o == null) {
-                    return MemberRole.VISITOR // ??
-                } else {
-                    field = fromSmack(o.role, o.affiliation)
-                }
-            }
-            return field
+            return chatRoom.getOccupant(this)?.let {
+                fromSmack(it.role, it.affiliation)
+            } ?: MemberRole.VISITOR
         }
-
-    /**
-     * Reset cached user role so that it will be refreshed when [.getRole] is called.
-     */
-    fun resetCachedRole() { role = null }
 
     /**
      * Caches user JID of the participant if we're able to see it.
@@ -174,11 +161,9 @@ class ChatRoomMemberImpl(
         }
 
         presence.getExtension(StartMutedPacketExtension::class.java)?.let {
-            val startMuted = booleanArrayOf(it.audioMuted, it.videoMuted)
-
             // XXX Is this intended to be allowed for moderators or not?
             if (role.hasAdministratorRights()) {
-                chatRoom.setStartMuted(startMuted)
+                chatRoom.setStartMuted(it.audioMuted, it.videoMuted)
             }
         }
 
@@ -191,7 +176,7 @@ class ChatRoomMemberImpl(
         isAudioMuted = presence.getExtension(AudioMutedExtension::class.java)?.isAudioMuted ?: true
         if (isAudioMuted != wasAudioMuted) {
             logger.debug { "isAudioMuted = $isAudioMuted" }
-            if (isAudioMuted) chatRoom.removeAudioSender() else chatRoom.addAudioSender()
+            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
         }
 
         val wasVideoMuted = isVideoMuted
@@ -199,7 +184,7 @@ class ChatRoomMemberImpl(
         isVideoMuted = presence.getExtension(VideoMutedExtension::class.java)?.isVideoMuted ?: true
         if (isVideoMuted != wasVideoMuted) {
             logger.debug { "isVideoMuted = $isVideoMuted" }
-            if (isVideoMuted) chatRoom.removeVideoSender() else chatRoom.addVideoSender()
+            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
         }
     }
 

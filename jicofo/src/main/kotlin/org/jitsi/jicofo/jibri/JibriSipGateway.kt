@@ -141,14 +141,8 @@ class JibriSipGateway(
             sessionId = session.sessionId
         }
         logger.info("Publishing new state: ${session.sipAddress} ${sipCallState.toXML()}")
-        val chatRoom = conference.chatRoom
 
         // Publish that in the presence
-        if (chatRoom != null) {
-            val toRemove = chatRoom.presenceExtensions.filter {
-                it is SipCallState && it.sipAddress == session.sipAddress
-            }
-            chatRoom.modifyPresence(toRemove, listOf(sipCallState))
-        }
+        conference.chatRoom?.setPresenceExtension(sipCallState) ?: logger.warn("chatRoom is null")
     }
 }

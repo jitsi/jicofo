@@ -78,9 +78,10 @@ class AvModerationHandler(
                     val chatRoom = conference.chatRoom
                         ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
-                    val enabled = incomingJson["enabled"] as Boolean?
-
-                    if (enabled != null) {
+                    incomingJson["enabled"]?.let { enabled ->
+                        if (enabled !is Boolean) {
+                            throw IllegalArgumentException("Invalid value for the 'enabled' attribute: $enabled")
+                        }
                         val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
                         val oldEnabledValue = chatRoom.isAvModerationEnabled(mediaType)
                         chatRoom.setAvModerationEnabled(mediaType, enabled)
@@ -91,9 +92,10 @@ class AvModerationHandler(
                             // let's mute everyone
                             conference.muteAllParticipants(mediaType)
                         }
-                    } else {
-                        incomingJson["whitelists"]?.let {
-                            chatRoom.updateAvModerationWhitelists(parseAsMapOfStringToListOfString(it))
+                    }
+                    incomingJson["whitelists"]?.let {
+                        parseWhitelists(it).forEach { (mediaType, whitelist) ->
+                            chatRoom.setAvModerationWhitelist(mediaType, whitelist)
                         }
                     }
                 }
@@ -121,18 +123,22 @@ class AvModerationHandler(
 }
 
 /**
- * Parses the given object (expected to be a [JSONObject]) as a Map<String, List<String>>. Throws
+ * Parses the given object (expected to be a [JSONObject]) as a Map<MediaType, List<String>>. Throws
  * [IllegalArgumentException] if [o] is not of the expected type.
- * @return a map that is guaranteed to have a runtime type of Map<String, List<String>>.
+ * @return a map that is guaranteed to have a runtime type of Map<MediaType, List<String>>.
  */
 @Throws(IllegalArgumentException::class)
-private fun parseAsMapOfStringToListOfString(o: Any): Map<String, List<String>> {
+private fun parseWhitelists(o: Any): Map<MediaType, List<String>> {
     val jsonObject: JSONObject = o as? JSONObject ?: throw IllegalArgumentException("Not a JSONObject")
-    val map = mutableMapOf<String, List<String>>()
+    val map = mutableMapOf<MediaType, List<String>>()
     jsonObject.forEach { (k, v) ->
         k as? String ?: throw IllegalArgumentException("Key is not a string")
         v as? List<*> ?: throw IllegalArgumentException("Value is not a list")
-        map[k] = v.map { it.toString() }
+        val mediaType = MediaType.parseString(k)
+        if (mediaType != MediaType.AUDIO && mediaType != MediaType.VIDEO) {
+            throw IllegalArgumentException("Invalid mediaType: $k")
+        }
+        map[mediaType] = v.map { it.toString() }
     }
     return map
 }

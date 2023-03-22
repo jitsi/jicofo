@@ -16,12 +16,12 @@
 import io.kotest.core.spec.style.ShouldSpec
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.impl.protocol.xmpp.ChatRoomImpl
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.jibri.JibriChatRoomMember
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMemberImpl
 import org.jitsi.utils.OrderedJsonObject

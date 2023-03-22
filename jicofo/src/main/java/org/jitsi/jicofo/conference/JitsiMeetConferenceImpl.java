@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
-import org.jitsi.impl.protocol.xmpp.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
@@ -472,9 +471,10 @@ public class JitsiMeetConferenceImpl
             logger);
 
         chatRoom.join();
-        if (chatRoom.getMeetingId() != null)
+        String meetingId = chatRoom.getMeetingId();
+        if (meetingId != null)
         {
-            logger.addContext("meeting_id", chatRoom.getMeetingId());
+            logger.addContext("meeting_id", meetingId);
         }
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
@@ -505,7 +505,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoom.modifyPresence(null, presenceExtensions);
+        chatRoom.addPresenceExtensions(presenceExtensions);
     }
 
     /**
@@ -535,7 +535,7 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (updatePresence && chatRoom != null && !value.equals(oldValue))
         {
-            chatRoom.setPresenceExtension(createConferenceProperties(), false);
+            chatRoom.setPresenceExtension(createConferenceProperties());
         }
     }
 
@@ -796,7 +796,7 @@ public class JitsiMeetConferenceImpl
     {
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         ChatRoom chatRoom = getChatRoom();
-        return chatRoom != null && chatRoom.getMembersCount() >= minParticipants;
+        return chatRoom != null && chatRoom.getMemberCount() >= minParticipants;
     }
 
     /**
@@ -862,7 +862,7 @@ public class JitsiMeetConferenceImpl
             visitorRemoved();
         }
 
-        if (chatRoom == null || chatRoom.getMembersCount() == 0)
+        if (chatRoom == null || chatRoom.getMemberCount() == 0)
         {
             stop();
         }
@@ -1541,7 +1541,7 @@ public class JitsiMeetConferenceImpl
         presenceExtensions.add(createConferenceProperties());
 
         // updates presence with presenceExtensions and sends it
-        chatRoomToJoin.modifyPresence(null, presenceExtensions);
+        chatRoomToJoin.addPresenceExtensions(presenceExtensions);
 
         return node;
     }
@@ -1999,7 +1999,7 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
-        public void localRoleChanged(@NotNull MemberRole newRole, @Nullable MemberRole oldRole)
+        public void localRoleChanged(@NotNull MemberRole newRole)
         {
             if (newRole != MemberRole.OWNER)
             {
@@ -2054,12 +2054,9 @@ public class JitsiMeetConferenceImpl
         public void bridgeSelectionFailed()
         {
             ChatRoom chatRoom = getChatRoom();
-            if (chatRoom != null
-                    && !chatRoom.containsPresenceExtension(
-                    BridgeNotAvailablePacketExt.ELEMENT,
-                    BridgeNotAvailablePacketExt.NAMESPACE))
+            if (chatRoom != null)
             {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), false);
+                chatRoom.addPresenceExtensionIfMissing(new BridgeNotAvailablePacketExt());
             }
         }
 
@@ -2073,7 +2070,8 @@ public class JitsiMeetConferenceImpl
             ChatRoom chatRoom = JitsiMeetConferenceImpl.this.chatRoom;
             if (chatRoom != null)
             {
-                chatRoom.setPresenceExtension(new BridgeNotAvailablePacketExt(), true);
+                // Remove any "bridge not available" extensions.
+                chatRoom.removePresenceExtensions(e -> e instanceof BridgeNotAvailablePacketExt);
             }
         }
 

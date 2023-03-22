@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.conference
 
-import org.jitsi.impl.protocol.xmpp.ChatRoom
 import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -61,8 +61,8 @@ internal fun selectVisitorNode(
     allNodes: List<XmppProvider>
 ): String? {
 
-    val min = existingNodes.minByOrNull { it.value.membersCount }
-    if (min != null && min.value.membersCount < VisitorsConfig.config.maxVisitorsPerNode) {
+    val min = existingNodes.minByOrNull { it.value.memberCount }
+    if (min != null && min.value.memberCount < VisitorsConfig.config.maxVisitorsPerNode) {
         return min.key
     }
 
