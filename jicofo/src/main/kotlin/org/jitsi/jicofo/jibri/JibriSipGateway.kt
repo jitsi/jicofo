@@ -28,6 +28,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.SipCallState
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
+import java.util.UUID
 import kotlin.collections.HashMap
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
@@ -72,7 +73,7 @@ class JibriSipGateway(
 
     override fun handleStartRequest(iq: JibriIq): IQ =
         if (StringUtils.isNotBlank(iq.sipAddress)) {
-            val sessionId = generateSessionId()
+            val sessionId = UUID.randomUUID().toString()
             val jibriSession = JibriSession(
                 this,
                 conference.roomName,

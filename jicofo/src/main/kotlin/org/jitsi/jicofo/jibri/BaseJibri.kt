@@ -192,15 +192,6 @@ abstract class BaseJibri internal constructor(
             else -> StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
         }
     }
-
-    protected fun generateSessionId(): String = Utils.generateSessionId(SESSION_ID_LENGTH)
-
-    companion object {
-        /**
-         * The length of the session id field we generate to uniquely identify a Jibri session.
-         */
-        const val SESSION_ID_LENGTH = 16
-    }
 }
 
 typealias JibriRequest = IqRequest<JibriIq>

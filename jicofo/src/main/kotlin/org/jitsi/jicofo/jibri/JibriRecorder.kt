@@ -31,6 +31,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq.Status
 import org.jitsi.xmpp.extensions.jibri.RecordingStatus
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
+import java.util.*
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
 /**
@@ -100,7 +101,7 @@ class JibriRecorder(
             // Stream ID should not be provided with requests to record to a file.
             error(iq, StanzaError.Condition.bad_request, "Stream ID is provided for a FILE recording.")
         } else {
-            val sessionId = generateSessionId()
+            val sessionId = UUID.randomUUID().toString()
             try {
                 val jibriSession = JibriSession(
                     this,
