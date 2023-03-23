@@ -505,7 +505,7 @@ class ChatRoomImpl(
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
-        override fun joined(mucJid: EntityFullJid) {
+        override fun joined(mucJid: EntityFullJid?) {
             // When a new member joins, Smack seems to fire ParticipantStatusListener#joined and
             // PresenceListener#processPresence in a non-deterministic order.
 
@@ -516,7 +516,7 @@ class ChatRoomImpl(
             logger.debug { "Ignore a member joined event for $mucJid" }
         }
 
-        private fun removeMember(occupantJid: EntityFullJid): ChatRoomMemberImpl? {
+        private fun removeMember(occupantJid: EntityFullJid?): ChatRoomMemberImpl? {
             synchronized(membersMap) {
                 val removed = membersMap.remove(occupantJid)
                 if (removed == null) {
@@ -532,7 +532,7 @@ class ChatRoomImpl(
         /**
          * This needs to be prepared to run twice for the same member.
          */
-        override fun left(occupantJid: EntityFullJid) {
+        override fun left(occupantJid: EntityFullJid?) {
             logger.debug { "Left $occupantJid room: $roomJid" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
@@ -540,7 +540,7 @@ class ChatRoomImpl(
                 ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
 
-        override fun kicked(occupantJid: EntityFullJid, actor: Jid, reason: String) {
+        override fun kicked(occupantJid: EntityFullJid?, actor: Jid?, reason: String?) {
             logger.debug { "Kicked: $occupantJid, $actor, $reason" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
@@ -548,7 +548,7 @@ class ChatRoomImpl(
                 ?: logger.error("Kicked member does not exist: $occupantJid")
         }
 
-        override fun nicknameChanged(oldNickname: EntityFullJid, newNickname: Resourcepart) {
+        override fun nicknameChanged(oldNickname: EntityFullJid?, newNickname: Resourcepart?) {
             logger.error("nicknameChanged - NOT IMPLEMENTED")
         }
     }
@@ -557,7 +557,7 @@ class ChatRoomImpl(
      * Listens for room destroyed and pass it to the conference.
      */
     private inner class LocalUserStatusListener : UserStatusListener {
-        override fun roomDestroyed(alternateMUC: MultiUserChat, reason: String) {
+        override fun roomDestroyed(alternateMUC: MultiUserChat?, reason: String?) {
             eventEmitter.fireEvent { roomDestroyed(reason) }
         }
     }
