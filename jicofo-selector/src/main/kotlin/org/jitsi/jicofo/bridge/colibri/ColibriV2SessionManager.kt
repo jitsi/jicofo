@@ -515,6 +515,16 @@ class ColibriV2SessionManager(
         }
     }
 
+    internal fun endpointFailed(endpointId: String) {
+        val participantInfo = participants[endpointId]
+        if (participantInfo != null) {
+            remove(participantInfo)
+            eventEmitter.fireEvent { endpointRemoved(participantInfo.id) }
+        } else {
+            logger.error("Cannot find endpointFailed by $endpointId.")
+        }
+    }
+
     override fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension?,
