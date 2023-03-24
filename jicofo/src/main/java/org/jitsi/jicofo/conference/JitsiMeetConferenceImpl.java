@@ -885,7 +885,7 @@ public class JitsiMeetConferenceImpl
         {
             participant.terminateJingleSession(reason, message, sendSessionTerminate);
 
-            removeParticipantSources(participant, sendSourceRemove);
+            removeParticipantSources(participant, sendSourceRemove, true);
 
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
@@ -1186,19 +1186,25 @@ public class JitsiMeetConferenceImpl
      * @param participant the participant whose sources are to be removed.
      * @param sendSourceRemove Whether to send source-remove IQs to the remaining participants.
      */
-    private void removeParticipantSources(@NotNull Participant participant, boolean sendSourceRemove)
+    private void removeParticipantSources(
+            @NotNull Participant participant,
+            boolean sendSourceRemove,
+            boolean updateParticipant)
     {
         String participantId = participant.getEndpointId();
         EndpointSourceSet sourcesRemoved = conferenceSources.remove(participantId);
 
         if (sourcesRemoved != null && !sourcesRemoved.isEmpty())
         {
-            getColibriSessionManager().updateParticipant(
-                participant.getEndpointId(),
-                null,
-                participant.getSources(),
-                null,
-                true);
+            if (updateParticipant)
+            {
+                getColibriSessionManager().updateParticipant(
+                        participant.getEndpointId(),
+                        null,
+                        participant.getSources(),
+                        null,
+                        true);
+            }
 
             if (sendSourceRemove)
             {
@@ -1571,6 +1577,11 @@ public class JitsiMeetConferenceImpl
 
     private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
     {
+        reInviteParticipantsById(participantIdsToReinvite, true);
+    }
+
+    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
+    {
         if (!participantIdsToReinvite.isEmpty())
         {
             ConferenceMetrics.participantsMoved.addAndGet(participantIdsToReinvite.size());
@@ -1588,7 +1599,7 @@ public class JitsiMeetConferenceImpl
                 {
                     logger.error("Can not re-invite all participants, no Participant object for some of them.");
                 }
-                reInviteParticipants(participantsToReinvite);
+                reInviteParticipants(participantsToReinvite, updateParticipant);
             }
         }
     }
@@ -1658,6 +1669,17 @@ public class JitsiMeetConferenceImpl
      */
     private void reInviteParticipants(Collection<Participant> participants)
     {
+        reInviteParticipants(participants, true);
+    }
+
+    /**
+     * Re-invites {@link Participant}s into the conference.
+     *
+     * @param participants the list of {@link Participant}s to be re-invited.
+     * @param updateParticipant flag to check if update participant call should be called.
+     */
+    private void reInviteParticipants(Collection<Participant> participants, boolean updateParticipant)
+    {
         synchronized (participantLock)
         {
             for (Participant participant : participants)
@@ -1667,7 +1689,7 @@ public class JitsiMeetConferenceImpl
 
                 if (restartJingle)
                 {
-                    removeParticipantSources(participant, true);
+                    removeParticipantSources(participant, true, updateParticipant);
                     participant.terminateJingleSession(Reason.SUCCESS, "moving", true);
                 }
 
@@ -2089,7 +2111,7 @@ public class JitsiMeetConferenceImpl
         public void endpointRemoved(@NotNull String endpointId)
         {
             logger.info("Endpoint " + endpointId + " was removed from the conference. Re-inviting participant.");
-            reInviteParticipantsById(Collections.singletonList(endpointId));
+            reInviteParticipantsById(Collections.singletonList(endpointId), false);
         }
     }
 
