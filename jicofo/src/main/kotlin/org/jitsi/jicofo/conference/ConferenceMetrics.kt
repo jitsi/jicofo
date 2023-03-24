@@ -55,6 +55,12 @@ class ConferenceMetrics {
         )
 
         @JvmField
+        val bridgesRemoved = metricsContainer.registerCounter(
+            "bridges_removed",
+            "Number of times a bridge was removed from a conference due to a failure"
+        )
+
+        @JvmField
         val participantsIceFailed = metricsContainer.registerCounter(
             "participants_ice_failed",
             "Number of participants that reported an ICE failure"

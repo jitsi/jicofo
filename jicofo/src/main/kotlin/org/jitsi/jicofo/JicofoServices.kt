@@ -34,6 +34,8 @@ import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
+import org.jitsi.jicofo.metrics.GlobalMetrics
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
@@ -48,7 +50,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
-import java.lang.management.ManagementFactory
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
 /**
@@ -150,12 +151,18 @@ class JicofoServices {
         } else null
     }
 
+    init {
+        logger.info("Registering GlobalMetrics periodic updates.")
+        JicofoMetricsContainer.instance.addUpdateTask { GlobalMetrics.update() }
+    }
+
     fun shutdown() {
         authenticationAuthority?.let {
             focusManager.removeListener(it)
             it.shutdown()
         }
         healthChecker?.shutdown()
+        JicofoMetricsContainer.instance.stop()
         jettyServer?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)
@@ -207,7 +214,7 @@ class JicofoServices {
         sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
-        put("threads", ManagementFactory.getThreadMXBean().threadCount)
+        put("threads", GlobalMetrics.threadsMetrics.get())
         put("jingle", JingleStats.toJson())
         healthChecker?.let {
             val result = it.result

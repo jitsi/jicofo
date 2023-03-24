@@ -23,7 +23,6 @@ import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
 import org.jitsi.jicofo.jibri.JibriSession
 import org.jitsi.jicofo.jibri.JibriStats
-import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -40,6 +39,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Level
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
 
 /**
  * Manages the set of [JitsiMeetConference]s in this instance.
@@ -69,7 +69,7 @@ class FocusManager(
     private val conferences: MutableMap<EntityBareJid, JitsiMeetConferenceImpl> = ConcurrentHashMap()
 
     /** TODO: move to companion object */
-    private val conferenceCount = instance.registerLongGauge(
+    private val conferenceCount = metricsContainer.registerLongGauge(
         "conferences",
         "Running count of conferences (excluding internal conferences created for health checks)."
     )
@@ -84,7 +84,11 @@ class FocusManager(
     /** Holds the conferences that are currently pinned to a specific bridge version. */
     private val pinnedConferences: MutableMap<EntityBareJid, PinnedConference> = HashMap()
 
-    fun start() = expireThread.start()
+    fun start() {
+        expireThread.start()
+        metricsContainer.addUpdateTask { updateMetrics() }
+    }
+
     fun stop() = expireThread.stop()
 
     /**
@@ -247,8 +251,6 @@ class FocusManager(
     // so we'll merge stats from different "child" objects here.
     val stats: JSONObject
         get() {
-            updateMetrics()
-
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
             val stats = JSONObject()
@@ -259,6 +261,7 @@ class FocusManager(
             stats["conferences"] = conferenceCount.get()
             val bridgeFailures = JSONObject()
             bridgeFailures["participants_moved"] = ConferenceMetrics.participantsMoved.get()
+            bridgeFailures["bridges_removed"] = ConferenceMetrics.bridgesRemoved.get()
             stats["bridge_failures"] = bridgeFailures
             val participantNotifications = JSONObject()
             participantNotifications["ice_failed"] = ConferenceMetrics.participantsIceFailed.get()

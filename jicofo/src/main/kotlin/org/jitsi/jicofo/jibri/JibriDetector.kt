@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
@@ -57,6 +58,11 @@ class JibriDetector(
     val logger = createLogger()
 
     val xmppConnection = xmppProvider.xmppConnection
+
+    init {
+        JicofoMetricsContainer.instance.addUpdateTask { updateMetrics() }
+    }
+
     /**
      * Selects a Jibri to be used for a recording session.
      *
@@ -97,6 +103,7 @@ class JibriDetector(
         if (!jibriInstances.containsKey(jid)) {
             logger.info("Creating a new instance for $jid, available = ${presenceExt.isAvailable}")
             jibriInstances[jid] = JibriInstance(jid, presenceExt.isAvailable)
+            jibriInstanceCount.inc()
         }
 
         val jibriInstance = jibriInstances[jid] ?: let {
@@ -129,8 +136,8 @@ class JibriDetector(
 
     val stats: JSONObject
         get() = JSONObject().apply {
-            this["count"] = instanceCount
-            this["available"] = getInstanceCount { it.status.isAvailable }
+            this["count"] = jibriInstanceCount.get()
+            this["available"] = jibriInstanceAvailableCount.get()
         }
 
     val debugState: OrderedJsonObject
@@ -155,6 +162,10 @@ class JibriDetector(
         fun instanceOffline(jid: Jid) {}
     }
 
+    private fun updateMetrics() {
+        jibriInstanceAvailableCount.set(getInstanceCount { it.status.isAvailable }.toLong())
+    }
+
     /**
      * The companion object is necessary for the implicit call to this.createLogger() in the super constructor!
      */
@@ -177,6 +188,13 @@ class JibriDetector(
          * The length of the select timeout. See [selectJibri].
          */
         val SELECT_TIMEOUT: Duration = Duration.ofMillis(200)
+
+        val jibriInstanceCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "jibri_instances", "Current number of jibri instances", 0
+        )
+        val jibriInstanceAvailableCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "jibri_instances_available", "Current number of available (not in use) jibri instances", 0
+        )
     }
 
     /**
