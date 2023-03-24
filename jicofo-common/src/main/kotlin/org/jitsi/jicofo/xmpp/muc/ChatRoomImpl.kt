@@ -123,7 +123,7 @@ class ChatRoomImpl(
     override var mainRoom: String? = null
         private set
 
-    private val avModerationByMediaType = mutableMapOf<MediaType, AvModerationForMediaType>()
+    private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
     private val eventEmitter: EventEmitter<ChatRoomListener> = SyncEventEmitter()
