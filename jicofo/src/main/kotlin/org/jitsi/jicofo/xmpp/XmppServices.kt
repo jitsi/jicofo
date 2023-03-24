@@ -22,6 +22,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -66,7 +67,10 @@ class XmppServices(
         JigasiDetector(
             getXmppConnectionByName(JigasiConfig.config.xmppConnectionName),
             breweryJid
-        ).apply { init() }
+        ).apply {
+            init()
+            JicofoMetricsContainer.instance.addUpdateTask { updateMetrics() }
+        }
     } ?: run {
         logger.info("No Jigasi detector configured.")
         null
