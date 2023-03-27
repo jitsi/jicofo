@@ -249,11 +249,11 @@ class FocusManager(
 
     // We want to avoid exposing unnecessary hierarchy levels in the stats,
     // so we'll merge stats from different "child" objects here.
-    val stats: JSONObject
+    val stats: OrderedJsonObject
         get() {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            val stats = JSONObject()
+            val stats = OrderedJsonObject()
             stats["total_participants"] = ConferenceMetrics.participants.get()
             stats["total_participants_no_multi_stream"] = ConferenceMetrics.participantsNoMultiStream.get()
             stats["total_participants_no_source_name"] = ConferenceMetrics.participantsNoSourceName.get()

@@ -17,7 +17,6 @@
  */
 package org.jitsi.jicofo.jibri
 
-import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
@@ -25,7 +24,6 @@ import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
-import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -58,10 +56,6 @@ class JibriDetector(
     val logger = createLogger()
 
     val xmppConnection = xmppProvider.xmppConnection
-
-    init {
-        JicofoMetricsContainer.instance.addUpdateTask { updateMetrics() }
-    }
 
     /**
      * Selects a Jibri to be used for a recording session.
@@ -103,7 +97,6 @@ class JibriDetector(
         if (!jibriInstances.containsKey(jid)) {
             logger.info("Creating a new instance for $jid, available = ${presenceExt.isAvailable}")
             jibriInstances[jid] = JibriInstance(jid, presenceExt.isAvailable)
-            jibriInstanceCount.inc()
         }
 
         val jibriInstance = jibriInstances[jid] ?: let {
@@ -134,12 +127,6 @@ class JibriDetector(
     fun addHandler(eventHandler: EventHandler) = eventEmitter.addHandler(eventHandler)
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
 
-    val stats: JSONObject
-        get() = JSONObject().apply {
-            this["count"] = jibriInstanceCount.get()
-            this["available"] = jibriInstanceAvailableCount.get()
-        }
-
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().also { debugState ->
             debugState["is_sip"] = isSip
@@ -160,10 +147,6 @@ class JibriDetector(
 
     interface EventHandler {
         fun instanceOffline(jid: Jid) {}
-    }
-
-    private fun updateMetrics() {
-        jibriInstanceAvailableCount.set(getInstanceCount { it.status.isAvailable }.toLong())
     }
 
     /**
@@ -188,13 +171,6 @@ class JibriDetector(
          * The length of the select timeout. See [selectJibri].
          */
         val SELECT_TIMEOUT: Duration = Duration.ofMillis(200)
-
-        val jibriInstanceCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jibri_instances", "Current number of jibri instances", 0
-        )
-        val jibriInstanceAvailableCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jibri_instances_available", "Current number of available (not in use) jibri instances", 0
-        )
     }
 
     /**

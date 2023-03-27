@@ -34,6 +34,7 @@ import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
+import org.jitsi.jicofo.jibri.JibriDetectorMetrics
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
@@ -115,6 +116,14 @@ class JicofoServices {
     } ?: run {
         logger.info("No SIP Jibri detector configured.")
         null
+    }
+
+    init {
+        if (jibriDetector != null || sipJibriDetector != null) {
+            JicofoMetricsContainer.instance.addUpdateTask {
+                JibriDetectorMetrics.updateMetrics(jibriDetector = jibriDetector, sipJibriDetector = sipJibriDetector)
+            }
+        }
     }
 
     private val healthChecker: JicofoHealthChecker? = if (HealthConfig.config.enabled) {
@@ -204,14 +213,13 @@ class JicofoServices {
         }
     }
 
-    fun getStats(): JSONObject = JSONObject().apply {
+    fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
 
         put("bridge_selector", bridgeSelector.stats)
-        jibriDetector?.let { put("jibri_detector", it.stats) }
-        sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
+        JibriDetectorMetrics.appendStats(this)
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
         put("threads", GlobalMetrics.threadsMetrics.get())
