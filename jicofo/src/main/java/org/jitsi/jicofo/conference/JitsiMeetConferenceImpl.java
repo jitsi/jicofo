@@ -40,6 +40,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.jibri.*;
 
+import org.jitsi.xmpp.extensions.visitors.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 import org.jxmpp.jid.impl.*;
@@ -231,6 +232,12 @@ public class JitsiMeetConferenceImpl
      * Requested bridge version from a pin. null if not pinned.
      */
     private final String jvbVersion;
+
+    /**
+     * Whether broadcasting to visitors is currently enabled.
+     * TODO: support changing it.
+     */
+    private boolean visitorsBroadcastEnabled = VisitorsConfig.config.getAutoEnableBroadcast();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -599,20 +606,29 @@ public class JitsiMeetConferenceImpl
         chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
 
+        List<ExtensionElement> disconnectVnodeExtensions = new ArrayList<>();
         synchronized (visitorChatRooms)
         {
-            visitorChatRooms.values().forEach(c -> {
-              try
-              {
-                  c.removeAllListeners();
-                  c.leave();
-              }
-              catch (Exception e)
-              {
-                  logger.error("Failed to leave visitor room", e);
-              }
+            visitorChatRooms.forEach((vnode, visitorChatRoom) ->
+            {
+                disconnectVnodeExtensions.add(new DisconnectVnodePacketExtension(vnode));
+                try
+                {
+                    visitorChatRoom.removeAllListeners();
+                    visitorChatRoom.leave();
+                }
+                catch (Exception e)
+                {
+                    logger.error("Failed to leave visitor room", e);
+                }
             });
             visitorChatRooms.clear();
+        }
+
+        if (!disconnectVnodeExtensions.isEmpty())
+        {
+            jicofoServices.getXmppServices().getVisitorsManager()
+                    .sendIqToComponent(roomName, disconnectVnodeExtensions);
         }
     }
 
@@ -1549,6 +1565,17 @@ public class JitsiMeetConferenceImpl
         // updates presence with presenceExtensions and sends it
         chatRoomToJoin.addPresenceExtensions(presenceExtensions);
 
+        if (this.visitorsBroadcastEnabled)
+        {
+            VisitorsManager visitorsManager = jicofoServices.getXmppServices().getVisitorsManager();
+            visitorsManager.sendIqToComponent(
+                    roomName,
+                    Collections.singletonList(new ConnectVnodePacketExtension(node)));
+        }
+        else
+        {
+            logger.info("Redirected visitor, broadcast not enabled yet.");
+        }
         return node;
     }
 
@@ -1924,6 +1951,7 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Visitor room destroyed with reason=" + reason);
             ChatRoom chatRoomToLeave = null;
+            String vnode = null;
             synchronized (visitorChatRooms)
             {
                 Map.Entry<String, ChatRoom> entry
@@ -1932,7 +1960,8 @@ public class JitsiMeetConferenceImpl
                 if (entry != null)
                 {
                     chatRoomToLeave = entry.getValue();
-                    visitorChatRooms.remove(entry.getKey());
+                    vnode = entry.getKey();
+                    visitorChatRooms.remove(vnode);
                 }
             }
 
@@ -1951,6 +1980,12 @@ public class JitsiMeetConferenceImpl
                         logger.warn("Error while leaving chat room.", e);
                     }
                 });
+
+                if (vnode != null)
+                {
+                    jicofoServices.getXmppServices().getVisitorsManager().sendIqToComponent(
+                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
+                }
             }
         }
 

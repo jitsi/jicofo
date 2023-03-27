@@ -35,7 +35,8 @@ class ConferenceIqHandlerTest : ShouldSpec() {
         },
         focusAuthJid = "",
         authAuthority = null,
-        jigasiEnabled = false
+        jigasiEnabled = false,
+        visitorsManager = mockk(relaxed = true)
     )
 
     init {

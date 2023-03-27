@@ -31,7 +31,8 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         focusManager = focusManager,
         focusAuthJid = "",
         authAuthority = authAuthority,
-        jigasiEnabled = false
+        jigasiEnabled = false,
+        visitorsManager = mockk(relaxed = true)
     )
 
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
