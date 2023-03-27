@@ -92,8 +92,17 @@ class ConferenceIqHandler(
             return error
         }
 
+        val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        val vnode = if (visitorsManager.enabled) conference?.redirectVisitor(visitorRequested) else null
+        val vnode = if (visitorSupported && visitorsManager.enabled) {
+            conference?.redirectVisitor(visitorRequested)
+        } else {
+            null
+        }
+        if (visitorsManager.enabled && !visitorSupported) {
+            logger.info("Endpoint with no visitor support.")
+        }
+
         XmppConfig.visitors[vnode]?.jid?.let {
             response.vnode = vnode
             response.focusJid = it
