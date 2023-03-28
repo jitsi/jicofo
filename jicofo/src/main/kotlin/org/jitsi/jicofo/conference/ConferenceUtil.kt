@@ -26,6 +26,9 @@ import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jxmpp.jid.EntityBareJid
+import org.jxmpp.jid.impl.JidCreate
+import kotlin.IllegalStateException
 
 internal fun ContentPacketExtension.toMedia(): Media? {
     val media = when (name.lowercase()) {
@@ -68,4 +71,23 @@ internal fun selectVisitorNode(
 
     val unusedNodes = allNodes.filterNot { existingNodes.keys.contains(it.config.name) }
     return unusedNodes.firstOrNull { it.registered }?.config?.name ?: min?.key
+}
+
+/**
+ * Get the JID of the visitor MUC for a given [mainRoom]. Handles "tenants", i.e. the jitsi-meet URL
+ * https://example.com/tenant/room would use a main room JID of room@conference.tenant.example.com and
+ * a visitor MUC ID room@conference.tenant.meet.jitsi (where meet.jitsi is the xmpp-domain configured
+ * for the [visitorXmppProvider]).
+ */
+internal fun getVisitorMucJid(
+    mainRoom: EntityBareJid,
+    mainXmppProvider: XmppProvider,
+    visitorXmppProvider: XmppProvider
+): EntityBareJid {
+    val mainDomain = mainXmppProvider.config.xmppDomain?.toString() ?:
+        throw IllegalStateException("main domain not configured")
+    val visitorDomain = visitorXmppProvider.config.xmppDomain?.toString() ?:
+        throw IllegalStateException("visitor domain not configured for ${visitorXmppProvider.config.name}")
+
+    return JidCreate.entityBareFrom(mainRoom.toString().replace(mainDomain, visitorDomain))
 }

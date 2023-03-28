@@ -43,7 +43,6 @@ import org.jitsi.jicofo.jibri.*;
 import org.jitsi.xmpp.extensions.visitors.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
-import org.jxmpp.jid.impl.*;
 
 import java.time.*;
 import java.util.*;
@@ -52,6 +51,7 @@ import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 import java.util.stream.*;
 
+import static org.jitsi.jicofo.conference.ConferenceUtilKt.getVisitorMucJid;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
 
 /**
@@ -1540,8 +1540,10 @@ public class JitsiMeetConferenceImpl
                 return null;
             }
 
-            EntityBareJid visitorMucJid
-                    = JidCreate.entityBareFrom(roomName.getLocalpart(), config.getConferenceService());
+            EntityBareJid visitorMucJid = getVisitorMucJid(
+                    roomName,
+                    jicofoServices.getXmppServices().getClientConnection(),
+                    xmppProvider);
 
             // Will call join after releasing the lock
             chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
