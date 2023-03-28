@@ -1479,9 +1479,14 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public int getVisitorCount()
+    public long getVisitorCount()
     {
-        return visitorChatRooms.values().stream().mapToInt(ChatRoom::getVisitorCount).sum();
+        synchronized (participantLock)
+        {
+            return participants.values().stream()
+                    .filter(p -> p.getChatMember().getRole() == MemberRole.VISITOR)
+                    .count();
+        }
     }
 
     /**

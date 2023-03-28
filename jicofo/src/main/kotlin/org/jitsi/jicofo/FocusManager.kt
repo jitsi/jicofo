@@ -202,7 +202,7 @@ class FocusManager(
         var endpointPairs = 0
         val jibriSessions: MutableSet<JibriSession> = HashSet()
         var conferencesWithVisitors = 0
-        var visitors = 0
+        var visitors = 0L
 
         for (conference in getConferences()) {
             if (!conference.includeInStatistics()) {

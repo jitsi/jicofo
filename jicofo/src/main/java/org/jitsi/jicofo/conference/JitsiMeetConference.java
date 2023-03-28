@@ -44,7 +44,7 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     int getParticipantCount();
 
     /** Return the number of visitors in the conference */
-    int getVisitorCount();
+    long getVisitorCount();
 
     /**
      * Find {@link Participant} for given MUC JID.
