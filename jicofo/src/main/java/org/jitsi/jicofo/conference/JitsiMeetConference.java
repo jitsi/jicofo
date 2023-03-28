@@ -38,10 +38,13 @@ import java.util.*;
 public interface JitsiMeetConference extends XmppProvider.Listener
 {
     /**
-     * Checks how many {@link Participant}s are in the conference.
-     * @return an integer greater than 0.
+     * Checks how many {@link Participant}s are in the conference. This includes visitors.
+     * @return an integer equal to or greater than 0.
      */
     int getParticipantCount();
+
+    /** Return the number of visitors in the conference */
+    int getVisitorCount();
 
     /**
      * Find {@link Participant} for given MUC JID.

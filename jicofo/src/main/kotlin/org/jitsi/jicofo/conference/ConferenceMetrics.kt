@@ -81,7 +81,25 @@ class ConferenceMetrics {
         @JvmField
         val currentParticipants = metricsContainer.registerLongGauge(
             "participants_current",
-            "The current number of participants."
+            "The current number of participants. This includes visitors."
+        )
+
+        @JvmField
+        val currentVisitors = metricsContainer.registerLongGauge(
+            "visitors_current",
+            "The current number of visitors."
+        )
+
+        @JvmField
+        val conferenceCount = metricsContainer.registerLongGauge(
+            "conferences",
+            "Running count of conferences (excluding internal conferences created for health checks)."
+        )
+
+        @JvmField
+        val conferencesWithVisitors = metricsContainer.registerLongGauge(
+            "conferences_with_visitors",
+            "Running count of conferences which have at least 1 visitor."
         )
 
         /**

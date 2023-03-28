@@ -1472,9 +1472,16 @@ public class JitsiMeetConferenceImpl
      * For example chat member which belongs to the focus never becomes
      * a participant.
      */
+    @Override
     public int getParticipantCount()
     {
         return participants.size();
+    }
+
+    @Override
+    public int getVisitorCount()
+    {
+        return visitorChatRooms.values().stream().mapToInt(ChatRoom::getVisitorCount).sum();
     }
 
     /**
