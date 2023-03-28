@@ -64,13 +64,15 @@ internal fun selectVisitorNode(
     allNodes: List<XmppProvider>
 ): String? {
 
-    val min = existingNodes.minByOrNull { it.value.memberCount }
-    if (min != null && min.value.memberCount < VisitorsConfig.config.maxVisitorsPerNode) {
+    val min = existingNodes.minByOrNull { it.value.visitorCount }
+    if (min != null && min.value.visitorCount < VisitorsConfig.config.maxVisitorsPerNode) {
         return min.key
     }
 
-    val unusedNodes = allNodes.filterNot { existingNodes.keys.contains(it.config.name) }
-    return unusedNodes.firstOrNull { it.registered }?.config?.name ?: min?.key
+    return allNodes
+        .filterNot { existingNodes.keys.contains(it.config.name) }
+        .filter { it.registered }
+        .randomOrNull()?.config?.name
 }
 
 /**

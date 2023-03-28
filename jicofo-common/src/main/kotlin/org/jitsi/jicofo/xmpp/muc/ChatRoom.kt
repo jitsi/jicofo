@@ -46,6 +46,11 @@ interface ChatRoom {
     /** The size of [members], exposed separately for performance (avoid creating a new list just to get the count) */
     val memberCount: Int
 
+    /**
+     *  The number of [members] with role VISITOR. Exposed separately for performance (avoid creating a new list
+     *  just to get the count) */
+    val visitorCount: Int
+
     /** Whether this [ChatRoom] is a breakout room. */
     val isBreakoutRoom: Boolean
 
