@@ -66,7 +66,6 @@ class VisitorsManager(
         }.build()
 
         TaskPools.ioPool.submit {
-            logger.warn("XXX sending ${iq.toXML()}")
             val response = xmppProvider.xmppConnection.sendIqAndGetResponse(iq)
             when {
                 response == null -> logger.warn("Timeout waiting for VisitorsIq response.")
