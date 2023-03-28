@@ -68,9 +68,6 @@ class FocusManager(
      * [.conferencesSyncRoot] in `#getConferenceCount()` is safe.
      */
     private val conferences: MutableMap<EntityBareJid, JitsiMeetConferenceImpl> = ConcurrentHashMap()
-
-
-    /** TODO: move to companion object */
     private val conferencesCache: MutableList<JitsiMeetConference> = CopyOnWriteArrayList()
 
     /** The object used to synchronize access to [.conferences]. */

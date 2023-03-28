@@ -86,10 +86,10 @@ internal fun getVisitorMucJid(
     mainXmppProvider: XmppProvider,
     visitorXmppProvider: XmppProvider
 ): EntityBareJid {
-    val mainDomain = mainXmppProvider.config.xmppDomain?.toString() ?:
-        throw IllegalStateException("main domain not configured")
-    val visitorDomain = visitorXmppProvider.config.xmppDomain?.toString() ?:
-        throw IllegalStateException("visitor domain not configured for ${visitorXmppProvider.config.name}")
+    val mainDomain = mainXmppProvider.config.xmppDomain?.toString()
+        ?: throw IllegalStateException("main domain not configured")
+    val visitorDomain = visitorXmppProvider.config.xmppDomain?.toString()
+        ?: throw IllegalStateException("visitor domain not configured for ${visitorXmppProvider.config.name}")
 
     return JidCreate.entityBareFrom(mainRoom.toString().replace(mainDomain, visitorDomain))
 }
