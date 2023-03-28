@@ -78,7 +78,7 @@ internal fun selectVisitorNode(
 /**
  * Get the JID of the visitor MUC for a given [mainRoom]. Handles "tenants", i.e. the jitsi-meet URL
  * https://example.com/tenant/room would use a main room JID of room@conference.tenant.example.com and
- * a visitor MUC ID room@conference.tenant.meet.jitsi (where meet.jitsi is the xmpp-domain configured
+ * a visitor MUC ID room@conference.tenant.v1.meet.jitsi (where v1.meet.jitsi is the xmpp-domain configured
  * for the [visitorXmppProvider]).
  */
 internal fun getVisitorMucJid(

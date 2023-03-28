@@ -49,7 +49,8 @@ enum class Features(val value: String) {
     DTLS("urn:xmpp:jingle:apps:dtls:0"),
     RTCPMUX("urn:ietf:rfc:5761"),
     BUNDLE("urn:ietf:rfc:5888"),
-    RAYO("urn:xmpp:rayo:client:1");
+    RAYO("urn:xmpp:rayo:client:1"),
+    VISITORS_V1("http://jitsi.org/visitors-1");
 
     companion object {
         val defaultFeatures = setOf(AUDIO, VIDEO, SCTP)
