@@ -21,7 +21,6 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
-import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -41,7 +40,8 @@ class ConferenceIqHandler(
     val focusManager: FocusManager,
     val focusAuthJid: String,
     val authAuthority: AuthenticationAuthority?,
-    val jigasiEnabled: Boolean
+    val jigasiEnabled: Boolean,
+    val visitorsManager: VisitorsManager
 ) : XmppProvider.Listener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
@@ -92,8 +92,17 @@ class ConferenceIqHandler(
             return error
         }
 
+        val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(visitorRequested) else null
+        val vnode = if (visitorSupported && visitorsManager.enabled) {
+            conference?.redirectVisitor(visitorRequested)
+        } else {
+            null
+        }
+        if (visitorsManager.enabled && !visitorSupported) {
+            logger.info("Endpoint with no visitor support.")
+        }
+
         XmppConfig.visitors[vnode]?.jid?.let {
             response.vnode = vnode
             response.focusJid = it

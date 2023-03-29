@@ -18,6 +18,7 @@
 package org.jitsi.jicofo
 
 import org.jitsi.jicofo.conference.ConferenceMetrics
+import org.jitsi.jicofo.conference.ConferenceMetrics.Companion.conferenceCount
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
@@ -67,14 +68,6 @@ class FocusManager(
      * [.conferencesSyncRoot] in `#getConferenceCount()` is safe.
      */
     private val conferences: MutableMap<EntityBareJid, JitsiMeetConferenceImpl> = ConcurrentHashMap()
-
-    /** TODO: move to companion object */
-    private val conferenceCount = metricsContainer.registerLongGauge(
-        "conferences",
-        "Running count of conferences (excluding internal conferences created for health checks)."
-    )
-
-    /** TODO: move to companion object */
     private val conferencesCache: MutableList<JitsiMeetConference> = CopyOnWriteArrayList()
 
     /** The object used to synchronize access to [.conferences]. */
@@ -208,11 +201,19 @@ class FocusManager(
         // The sum of squares of conference sizes.
         var endpointPairs = 0
         val jibriSessions: MutableSet<JibriSession> = HashSet()
+        var conferencesWithVisitors = 0
+        var visitors = 0L
+
         for (conference in getConferences()) {
             if (!conference.includeInStatistics()) {
                 continue
             }
             var confSize = conference.participantCount
+            val conferenceVisitors = conference.visitorCount
+            visitors += conferenceVisitors
+            if (conferenceVisitors > 0) {
+                conferencesWithVisitors++
+            }
             // getParticipantCount only includes endpoints with allocated media
             // channels, so if a single participant is waiting in a meeting
             // they wouldn't be counted.  In stats, calling this a conference
@@ -235,6 +236,8 @@ class FocusManager(
         ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
         ConferenceMetrics.conferenceSizes = conferenceSizes
         ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
+        ConferenceMetrics.conferencesWithVisitors.set(conferencesWithVisitors.toLong())
+        ConferenceMetrics.currentVisitors.set(visitors.toLong())
 
         JibriStats.liveStreamingActive.set(
             jibriSessions.count { it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive }.toLong()

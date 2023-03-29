@@ -75,6 +75,8 @@ class ChatRoomImpl(
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+    override val visitorCount: Int
+        get() = membersMap.count { it.value.role == MemberRole.VISITOR }
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null

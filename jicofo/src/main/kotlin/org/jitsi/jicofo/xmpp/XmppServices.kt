@@ -97,13 +97,15 @@ class XmppServices(
     val jingleHandler = JingleIqRequestHandler(
         visitorConnections.map { it.xmppConnection }.toSet() + clientConnection.xmppConnection
     )
+    val visitorsManager = VisitorsManager(clientConnection, focusManager)
 
     val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
         focusManager = focusManager,
         focusAuthJid = XmppConfig.client.jid,
         authAuthority = authenticationAuthority,
-        jigasiEnabled = jigasiDetector != null
+        jigasiEnabled = jigasiDetector != null,
+        visitorsManager
     ).apply {
         clientConnection.xmppConnection.registerIQRequestHandler(this)
     }
