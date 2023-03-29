@@ -18,7 +18,6 @@
 package org.jitsi.jicofo
 
 import org.jitsi.jicofo.conference.ConferenceMetrics
-import org.jitsi.jicofo.conference.ConferenceMetrics.Companion.conferenceCount
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
@@ -141,7 +140,7 @@ class FocusManager(
             conferencesCache.add(conference)
         }
         if (includeInStatistics) {
-            conferenceCount.inc()
+            ConferenceMetrics.conferenceCount.inc()
             ConferenceMetrics.conferencesCreated.inc()
         }
         return conference
@@ -154,7 +153,7 @@ class FocusManager(
             conferences.remove(roomName)
             conferencesCache.remove(conference)
             if (conference.includeInStatistics()) {
-                conferenceCount.dec()
+                ConferenceMetrics.conferenceCount.dec()
             }
 
             // It is not clear whether the code below necessarily needs to hold the lock or not.
@@ -261,7 +260,8 @@ class FocusManager(
             stats["total_participants_no_multi_stream"] = ConferenceMetrics.participantsNoMultiStream.get()
             stats["total_participants_no_source_name"] = ConferenceMetrics.participantsNoSourceName.get()
             stats["total_conferences_created"] = ConferenceMetrics.conferencesCreated.get()
-            stats["conferences"] = conferenceCount.get()
+            stats["conferences"] = ConferenceMetrics.conferenceCount.get()
+            stats["conferences_with_visitors"] = ConferenceMetrics.conferencesWithVisitors.get()
             val bridgeFailures = JSONObject()
             bridgeFailures["participants_moved"] = ConferenceMetrics.participantsMoved.get()
             bridgeFailures["bridges_removed"] = ConferenceMetrics.bridgesRemoved.get()
@@ -272,6 +272,7 @@ class FocusManager(
             stats["participant_notifications"] = participantNotifications
             stats["largest_conference"] = ConferenceMetrics.largestConference.get()
             stats["participants"] = ConferenceMetrics.currentParticipants.get()
+            stats["visitors"] = ConferenceMetrics.currentVisitors.get()
             stats["conference_sizes"] = ConferenceMetrics.conferenceSizes.toJson()
             stats["endpoint_pairs"] = ConferenceMetrics.participantPairs.get()
             stats["jibri"] = JSONObject().apply {
