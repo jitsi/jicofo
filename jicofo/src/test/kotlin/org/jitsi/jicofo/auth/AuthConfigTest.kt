@@ -29,11 +29,9 @@ class AuthConfigTest : ShouldSpec() {
     init {
         context("Default values") {
             AuthConfig.config.apply {
-                enabled shouldBe false
                 enableAutoLogin shouldBe true
                 shouldThrow<Exception> { loginUrl }
-                logoutUrl shouldBe null
-                type shouldBe AuthConfig.Type.SHIBBOLETH
+                type shouldBe AuthConfig.Type.NONE
                 authenticationLifetime shouldBe Duration.ofHours(24)
             }
         }
@@ -41,16 +39,13 @@ class AuthConfigTest : ShouldSpec() {
             withLegacyConfig(
                 """
                 org.jitsi.jicofo.auth.URL=XMPP:test@example.com
-                org.jitsi.jicofo.auth.LOGOUT_URL=logout
                 org.jitsi.jicofo.auth.DISABLE_AUTOLOGIN=true
                 org.jitsi.jicofo.auth.AUTH_LIFETIME=60000
                 """
             ) {
                 AuthConfig.config.apply {
-                    enabled shouldBe true
                     enableAutoLogin shouldBe false
                     loginUrl shouldBe "test@example.com"
-                    logoutUrl shouldBe "logout"
                     type shouldBe AuthConfig.Type.XMPP
                     authenticationLifetime shouldBe Duration.ofMillis(60000)
                 }
@@ -60,22 +55,30 @@ class AuthConfigTest : ShouldSpec() {
             withNewConfig(
                 """
                 jicofo.authentication {
-                  enabled = false
+                  enabled = true
                   type = JWT
                   login-url = login
-                  logout-url = logout
                   enable-auto-login = false
                   authentication-lifetime = 5 minutes
                 }
             """
             ) {
                 AuthConfig.config.apply {
-                    enabled shouldBe false
                     enableAutoLogin shouldBe false
                     loginUrl shouldBe "login"
-                    logoutUrl shouldBe "logout"
                     type shouldBe AuthConfig.Type.JWT
                     authenticationLifetime shouldBe Duration.ofMinutes(5)
+                }
+            }
+            withNewConfig(
+                """
+                jicofo.authentication {
+                  enabled = false
+                }
+            """
+            ) {
+                AuthConfig.config.apply {
+                    type shouldBe AuthConfig.Type.NONE
                 }
             }
         }
