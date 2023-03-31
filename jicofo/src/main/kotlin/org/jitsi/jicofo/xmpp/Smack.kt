@@ -151,6 +151,11 @@ fun registerXmppExtensions() {
     MuteIqProvider.registerMuteIqProvider()
     MuteVideoIqProvider.registerMuteVideoIqProvider()
     StartMutedProvider.registerStartMutedProvider()
+    ProviderManager.addExtensionProvider(
+        TranscriptionStatusExtension.ELEMENT,
+        TranscriptionStatusExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
+    )
 
     ProviderManager.addExtensionProvider(
         AudioMutedExtension.ELEMENT,

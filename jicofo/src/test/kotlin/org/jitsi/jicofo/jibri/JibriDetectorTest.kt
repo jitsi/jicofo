@@ -138,6 +138,7 @@ class JibriChatRoomMember(
     override val sourceInfos: Set<SourceInfo> get() = TODO("Not yet implemented")
     override val isRobot: Boolean get() = TODO("Not yet implemented")
     override val isJigasi: Boolean get() = TODO("Not yet implemented")
+    override val isTranscriber: Boolean get() = TODO("Not yet implemented")
     override val isJibri: Boolean get() = TODO("Not yet implemented")
     override val isAudioMuted: Boolean get() = TODO("Not yet implemented")
     override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
