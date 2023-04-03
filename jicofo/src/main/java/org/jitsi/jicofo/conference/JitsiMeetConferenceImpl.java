@@ -646,7 +646,7 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
-            String room = "room=";
+            String room = ", room=";
             if (chatRoomMember.getChatRoom() == chatRoom)
             {
                 room += "main";
