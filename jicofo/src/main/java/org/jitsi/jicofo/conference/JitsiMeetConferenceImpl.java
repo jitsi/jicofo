@@ -1502,12 +1502,29 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
-        if (!visitorRequested && getParticipantCount() < VisitorsConfig.config.getMaxParticipants())
+        long participantCount = getUserParticipantCount();
+
+        if (!visitorRequested && participantCount < VisitorsConfig.config.getMaxParticipants())
         {
             return null;
         }
 
         return selectVisitorNode();
+    }
+
+    /**
+     * Get the number of participants for the purpose of visitor node selection. Exclude participants for jibri and
+     * transcribers, because they shouldn't count towards the max participant limit.
+     */
+    private long getUserParticipantCount()
+    {
+        synchronized (participantLock)
+        {
+            return participants.values().stream().filter(
+                    p -> !p.getChatMember().isJigasi()
+                            && !p.getChatMember().isTranscriber()
+                            && p.getChatMember().getRole() != MemberRole.VISITOR).count();
+        }
     }
 
     /**

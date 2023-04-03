@@ -29,6 +29,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
+import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
@@ -59,6 +60,8 @@ class ChatRoomMemberImpl(
     override var presence: Presence? = null
         private set
     override var isJigasi = false
+        private set
+    override var isTranscriber = false
         private set
     override var isJibri = false
         private set
@@ -155,6 +158,8 @@ class ChatRoomMemberImpl(
             isJigasi = false
             isJibri = false
         }
+
+        isTranscriber = isJigasi && presence.getExtension(TranscriptionStatusExtension::class.java) != null
 
         presence.getExtension(JitsiParticipantRegionPacketExtension::class.java)?.let {
             region = it.regionId

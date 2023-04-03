@@ -54,6 +54,7 @@ interface ChatRoomMember {
 
     val isRobot: Boolean
     val isJigasi: Boolean
+    val isTranscriber: Boolean
     val isJibri: Boolean
     val isAudioMuted: Boolean
     val isVideoMuted: Boolean
