@@ -219,7 +219,7 @@ class Colibri2Session(
             "Creating relay $relayId (initiator=$initiator), initial participants: ${initialParticipants.map { it.id }}"
         )
         if (relays.containsKey(relayId)) {
-            throw IllegalStateException("Relay $relayId already exists")
+            throw IllegalStateException("Relay $relayId already exists (bridge=${this.relayId}")
         }
 
         val relay = Relay(relayId, initiator, meshId)
@@ -240,14 +240,14 @@ class Colibri2Session(
     ) {
         logger.debug { "Updating remote participant ${participantInfo.id} on $relayId" }
         relays[relayId]?.updateParticipant(participantInfo, create)
-            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+            ?: throw IllegalStateException("Relay $relayId doesn't exist (bridge=${this.relayId})")
     }
 
     /** Expires a set of endpoints on a specific relay. */
     internal fun expireRemoteParticipants(participants: List<ParticipantInfo>, relayId: String) {
         logger.debug { "Expiring remote participants on $relayId: ${participants.map { it.id }}" }
         relays[relayId]?.expireParticipants(participants)
-            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+            ?: throw IllegalStateException("Relay $relayId doesn't exist (bridge=${this.relayId})")
     }
 
     /** Sets the remote side transport information for a specific relay. */
@@ -259,7 +259,7 @@ class Colibri2Session(
         logger.info("Setting relay transport for $relayId")
         logger.debug { "Setting relay transport for $relayId: ${transport.toXML()}" }
         relays[relayId]?.setTransport(transport)
-            ?: throw IllegalStateException("Relay $relayId doesn't exist.")
+            ?: throw IllegalStateException("Relay $relayId doesn't exist (bridge=${this.relayId}")
     }
 
     internal fun expireAllRelays() = expireRelays(relays.keys.toList())

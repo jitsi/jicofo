@@ -82,7 +82,7 @@ class ConferenceIqHandler(
             focusJid = focusAuthJid
         }
 
-        logger.info("Focus request for room: $room")
+        logger.info("Conference request for room $room, from ${query.from}")
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
 
@@ -104,6 +104,7 @@ class ConferenceIqHandler(
         }
 
         XmppConfig.visitors[vnode]?.jid?.let {
+            logger.info("Redirecting to $vnode")
             response.vnode = vnode
             response.focusJid = it
         } ?: run {

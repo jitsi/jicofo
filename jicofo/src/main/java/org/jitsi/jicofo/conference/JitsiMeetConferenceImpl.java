@@ -646,6 +646,15 @@ public class JitsiMeetConferenceImpl
                 return;
             }
 
+            String room = ", room=";
+            if (chatRoomMember.getChatRoom() == chatRoom)
+            {
+                room += "main";
+            }
+            else
+            {
+                room += chatRoomMember.getChatRoom().getRoomJid();
+            }
             logger.info(
                     "Member joined:" + chatRoomMember.getName()
                             + " stats-id=" + chatRoomMember.getStatsId()
@@ -654,7 +663,9 @@ public class JitsiMeetConferenceImpl
                             + " videoMuted=" + chatRoomMember.isVideoMuted()
                             + " role=" + chatRoomMember.getRole()
                             + " isJibri=" + chatRoomMember.isJibri()
-                            + " isJigasi=" + chatRoomMember.isJigasi());
+                            + " isJigasi=" + chatRoomMember.isJigasi()
+                            + " isTranscriber=" + chatRoomMember.isTranscriber()
+                            + room);
             hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
