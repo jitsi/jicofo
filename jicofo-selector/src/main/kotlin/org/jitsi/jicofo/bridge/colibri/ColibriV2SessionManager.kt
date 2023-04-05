@@ -376,7 +376,7 @@ class ColibriV2SessionManager(
                 )
             }
             if (!participants.containsValue(participantInfo)) {
-                logger.info("Ignoring response for a participant that's no longer active.")
+                logger.info("Ignoring response for a participant that's no longer active: ${participantInfo.id}")
                 throw ColibriAllocationFailedException(
                     "Participant no longer active: ${participantInfo.id}",
                     removeBridge = false
