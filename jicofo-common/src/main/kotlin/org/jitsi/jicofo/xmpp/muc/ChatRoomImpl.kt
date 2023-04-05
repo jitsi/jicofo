@@ -303,29 +303,32 @@ class ChatRoomImpl(
 
     override fun setPresenceExtension(extension: ExtensionElement) {
         val presenceToSend = synchronized(this) {
-            lastPresenceSent?.let { presence ->
-                presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
-                    presence.removeExtension(existingExtension)
-                }
-                presence.addExtension(extension)
-
-                presence.build()
-            } ?: run {
+            val presence = lastPresenceSent ?: run {
                 logger.error("No presence packet obtained yet")
-                null
+                return
             }
+
+            presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
+                presence.removeExtension(existingExtension)
+            }
+            presence.addExtension(extension)
+
+            presence.build()
         }
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
     override fun addPresenceExtensionIfMissing(extension: ExtensionElement) {
         val presenceToSend = synchronized(this) {
-            lastPresenceSent?.let { presence ->
-                if (presence.extensions?.any { it.qName == extension.qName } == true) {
-                    null
-                } else {
-                    presence.addExtension(extension).build()
-                }
+            val presence = lastPresenceSent ?: run {
+                logger.error("No presence packet obtained yet")
+                return
+            }
+
+            if (presence.extensions?.any { it.qName == extension.qName } == true) {
+                null
+            } else {
+                presence.addExtension(extension).build()
             }
         }
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
@@ -352,22 +355,21 @@ class ChatRoomImpl(
         toRemove: Collection<ExtensionElement> = emptyList(),
         toAdd: Collection<ExtensionElement> = emptyList()
     ): Presence? = synchronized(this) {
-        lastPresenceSent?.let { presence ->
-            var changed = false
-            toRemove.forEach {
-                presence.removeExtension(it)
-                // We don't have a good way to check if it was actually removed.
-                changed = true
-            }
-            toAdd.forEach {
-                presence.addExtension(it)
-                changed = true
-            }
-            if (changed) presence.build() else null
-        } ?: run {
+        val presence = lastPresenceSent ?: run {
             logger.error("No presence packet obtained yet")
-            null
+            return null
         }
+        var changed = false
+        toRemove.forEach {
+            presence.removeExtension(it)
+            // We don't have a good way to check if it was actually removed.
+            changed = true
+        }
+        toAdd.forEach {
+            presence.addExtension(it)
+            changed = true
+        }
+        return if (changed) presence.build() else null
     }
 
     /**
