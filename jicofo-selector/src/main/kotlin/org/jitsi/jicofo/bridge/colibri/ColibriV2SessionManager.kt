@@ -369,12 +369,18 @@ class ColibriV2SessionManager(
             // We may have already removed the session and/or participant, for example due to a previous failure. In
             // that case we shouldn't act on this error (hence removeBridge=false).
             if (!sessions.containsValue(session)) {
-                logger.info("Ignoring response for a session that's no longer active.")
-                throw ColibriAllocationFailedException("Session no-longer active", removeBridge = false)
+                logger.info("Ignoring response for a session that's no longer active (bridge=${session.bridge.jid})")
+                throw ColibriAllocationFailedException(
+                    "Session no longer active (bridge=${session.bridge.jid})",
+                    removeBridge = false
+                )
             }
             if (!participants.containsValue(participantInfo)) {
                 logger.info("Ignoring response for a participant that's no longer active.")
-                throw ColibriAllocationFailedException("Participant no-longer active", removeBridge = false)
+                throw ColibriAllocationFailedException(
+                    "Participant no longer active: ${participantInfo.id}",
+                    removeBridge = false
+                )
             }
             try {
                 return handleResponse(response, session, created, participantInfo)
