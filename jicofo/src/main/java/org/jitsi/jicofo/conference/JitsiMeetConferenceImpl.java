@@ -1532,7 +1532,7 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             return participants.values().stream().filter(
-                    p -> !p.getChatMember().isJigasi()
+                    p -> !p.getChatMember().isJibri()
                             && !p.getChatMember().isTranscriber()
                             && p.getChatMember().getRole() != MemberRole.VISITOR).count();
         }
