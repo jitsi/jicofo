@@ -550,7 +550,7 @@ class ColibriV2SessionManager(
                 getPathsFrom(participantInfo.session) { _, otherSession, from ->
                     if (from != null) {
                         // We make sure that relayId is not null when there are multiple sessions.
-                        otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, false)
                     }
                 }
             }
