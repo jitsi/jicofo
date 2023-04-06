@@ -882,11 +882,11 @@ public class JitsiMeetConferenceImpl
             {
                 expireBridgeSessions();
             }
-        }
 
-        if (chatRoomMember.getRole() == MemberRole.VISITOR)
-        {
-            visitorRemoved();
+            int newVisitorCount = (int) participants.values().stream()
+                    .filter(p -> p.getChatMember().getRole() == MemberRole.VISITOR)
+                    .count();
+            visitorCount.setValue(newVisitorCount);
         }
 
         if (chatRoom == null || chatRoom.getMemberCount() == 0)
@@ -1789,12 +1789,6 @@ public class JitsiMeetConferenceImpl
     private void visitorAdded()
     {
         visitorCount.adjustValue(+1);
-    }
-
-    /** Called when a new visitor has been added to the conference. */
-    private void visitorRemoved()
-    {
-        visitorCount.adjustValue(-1);
     }
 
     /**
