@@ -484,6 +484,7 @@ class Colibri2Session(
             val request = createRequest()
             val relay = Colibri2Relay.getBuilder().apply {
                 setId(relayId)
+                meshId?.let { setMeshId(it) }
                 setCreate(true)
             }
 
