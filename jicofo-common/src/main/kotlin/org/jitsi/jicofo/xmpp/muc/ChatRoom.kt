@@ -70,7 +70,13 @@ interface ChatRoom {
 
     /** Joins this chat room with the preconfigured nickname. */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join()
+    fun join(
+        /**
+         *  Optional meetingId to set in the room after joining. When the value is null the meetingId is read from the
+         *  room and left unmodified.
+         */
+        meetingIdToSet: String? = null
+    )
 
     /** Leave the chat room. */
     fun leave()

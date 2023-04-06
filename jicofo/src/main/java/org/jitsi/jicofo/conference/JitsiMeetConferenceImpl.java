@@ -477,7 +477,7 @@ public class JitsiMeetConferenceImpl
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
 
-        chatRoom.join();
+        chatRoom.join(null);
         String meetingId = chatRoom.getMeetingId();
         if (meetingId != null)
         {
@@ -1591,7 +1591,8 @@ public class JitsiMeetConferenceImpl
             visitorChatRooms.put(node, chatRoomToJoin);
         }
 
-        chatRoomToJoin.join();
+        // Set the meetingId of the visitor room to the meetingId of the main room.
+        chatRoomToJoin.join(chatRoom.getMeetingId());
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
