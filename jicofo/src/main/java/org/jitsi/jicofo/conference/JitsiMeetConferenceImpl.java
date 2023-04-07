@@ -912,7 +912,8 @@ public class JitsiMeetConferenceImpl
         {
             participant.terminateJingleSession(reason, message, sendSessionTerminate);
 
-            removeParticipantSources(participant, sendSourceRemove, true);
+            // We can use updateParticipant=false here, because we'll call removeParticipant below.
+            removeParticipantSources(participant, sendSourceRemove, false);
 
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
