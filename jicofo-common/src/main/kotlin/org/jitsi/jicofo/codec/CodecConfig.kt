@@ -124,10 +124,6 @@ class Config {
     val h264: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.h264", "H264")
 
     @JvmField
-    val isac16 = CodecConfig("jicofo.codec.audio.isac-16000", "isac-16000")
-    @JvmField
-    val isac32 = CodecConfig("jicofo.codec.audio.isac-32000", "isac-32000")
-    @JvmField
     val opus = OpusConfig()
     @JvmField
     val telephoneEvent = CodecConfig("jicofo.codec.audio.telephone-event", "telephone-event")
