@@ -170,14 +170,6 @@ class CodecUtil {
                     opus.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null))
                 }
             }
-            if (config.isac16.enabled()) {
-                // a=rtpmap:103 ISAC/16000
-                add(createPayloadTypeExtension(config.isac16.pt(), "ISAC", 16000))
-            }
-            if (config.isac32.enabled()) {
-                // a=rtpmap:104 ISAC/32000
-                add(createPayloadTypeExtension(config.isac32.pt(), "ISAC", 32000))
-            }
             if (config.telephoneEvent.enabled()) {
                 // rtpmap:126 telephone-event/8000
                 add(createPayloadTypeExtension(config.telephoneEvent.pt(), "telephone-event", 8000))
