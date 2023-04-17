@@ -42,6 +42,8 @@ import org.jitsi.jicofo.jibri.*;
 
 import org.jitsi.xmpp.extensions.visitors.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.caps.*;
+import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -638,8 +640,19 @@ public class JitsiMeetConferenceImpl
      */
     private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
+        // Trigger feature discovery before we acquire the lock. The features will be saved in the ChatRoomMember
+        // instance, and the call might block for a disco#info request.
+        chatRoomMember.getFeatures();
+
         synchronized (participantLock)
         {
+            // Make sure it's still a member of the room.
+            if (chatRoomMember.getChatRoom().getChatMember(chatRoomMember.getOccupantJid()) != chatRoomMember)
+            {
+                logger.warn("ChatRoomMember is no longer a member of its room. Will not invite.");
+                return;
+            }
+
             if (chatRoomMember.getRole() == MemberRole.VISITOR && !VisitorsConfig.config.getEnabled())
             {
                 logger.warn("Ignoring a visitor because visitors are not configured:" + chatRoomMember.getName());
@@ -2035,7 +2048,9 @@ public class JitsiMeetConferenceImpl
                 logger.debug("Ignoring non-visitor member of visitor room: " + member);
                 return;
             }
-            onMemberJoined(member);
+            // Run in the IO pool because feature discovery may send disco#info and block for a response, and shouldn't
+            // run in Smack's thread.
+            TaskPools.getIoPool().submit(() -> onMemberJoined(member));
         }
 
         @Override
@@ -2078,7 +2093,9 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberJoined(@NotNull ChatRoomMember member)
         {
-            onMemberJoined(member);
+            // Run in the IO pool because feature discovery may send disco#info and block for a response, and shouldn't
+            // run in Smack's thread.
+            TaskPools.getIoPool().submit(() -> onMemberJoined(member));
         }
 
         @Override

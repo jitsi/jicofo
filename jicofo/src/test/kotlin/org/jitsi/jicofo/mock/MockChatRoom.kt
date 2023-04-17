@@ -34,6 +34,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
         every { memberCount } answers { memberList.size }
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
         every { debugState } returns OrderedJsonObject()
+        every { getChatMember(any()) } answers { memberList.find { it.occupantJid == arg(0) } }
     }
 
     fun addMember(id: String): ChatRoomMember {
