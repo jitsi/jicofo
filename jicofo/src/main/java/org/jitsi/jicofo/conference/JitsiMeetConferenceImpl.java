@@ -640,6 +640,19 @@ public class JitsiMeetConferenceImpl
      */
     private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
+        // Detect a race condition in which this thread runs before EntityCapsManager's async StanzaListener that
+        // populates the JID to NodeVerHash cache. If that's the case calling getFeatures() would result in an
+        // unnecessary disco#info request being sent. That's not an unrecoverable problem, but just yielding should
+        // avoid sending disco#info in most cases.
+        Presence presence = chatRoomMember.getPresence();
+        CapsExtension caps = presence == null ? null : presence.getExtension(CapsExtension.class);
+        if ((caps != null) && caps.getHash() != null
+                && EntityCapsManager.getNodeVerHashByJid(chatRoomMember.getOccupantJid()) == null)
+        {
+            logger.info("Caps extension present, but JID does not exist in EntityCapsManager.");
+            Thread.yield();
+        }
+
         // Trigger feature discovery before we acquire the lock. The features will be saved in the ChatRoomMember
         // instance, and the call might block for a disco#info request.
         chatRoomMember.getFeatures();

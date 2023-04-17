@@ -23,7 +23,9 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.utils.OrderedJsonObject
+import org.jivesoftware.smack.packet.ExtensionElement
 import java.lang.IllegalArgumentException
+import javax.xml.namespace.QName
 
 class MockChatRoom(val xmppProvider: XmppProvider) {
     val chatRoomListeners = mutableListOf<ChatRoomListener>()
@@ -42,8 +44,12 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
             every { name } returns id
             every { chatRoom } returns this@MockChatRoom.chatRoom
             every { features } returns Features.defaultFeatures
-
             every { debugState } returns OrderedJsonObject()
+            every { presence } returns mockk {
+                every { getExtension(any<String>()) } returns null
+                every { getExtension(any<QName>()) } returns null
+                every { getExtension(any<Class<out ExtensionElement>>()) } returns null
+            }
         }
         memberList.add(member)
         chatRoomListeners.forEach { it.memberJoined(member) }
