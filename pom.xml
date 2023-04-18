@@ -34,7 +34,7 @@
   </licenses>
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>11.0.10</jetty.version>
+    <jetty.version>11.0.14</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <smack.version>4.4.6</smack.version>
     <kotlin.version>1.6.21</kotlin.version>
