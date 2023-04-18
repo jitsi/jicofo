@@ -36,7 +36,7 @@
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>11.0.10</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <smack.version>4.4.6</smack.version>
+    <smack.version>4.4.7-20221005.095442-1</smack.version>
     <kotlin.version>1.6.21</kotlin.version>
     <kotest.version>5.3.0</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
@@ -354,4 +354,12 @@
       </build>
     </profile>
   </profiles>
+      <repositories>
+          <repository>
+               <id>oss.sonatype.org-snapshot</id>
+               <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+               <releases><enabled>false</enabled></releases>
+               <snapshots><enabled>true</enabled></snapshots>
+          </repository>
+      </repositories>
 </project>
