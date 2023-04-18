@@ -42,6 +42,8 @@ import org.jitsi.jicofo.jibri.*;
 
 import org.jitsi.xmpp.extensions.visitors.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smackx.caps.*;
+import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
@@ -638,8 +640,32 @@ public class JitsiMeetConferenceImpl
      */
     private void onMemberJoined(@NotNull ChatRoomMember chatRoomMember)
     {
+        // Detect a race condition in which this thread runs before EntityCapsManager's async StanzaListener that
+        // populates the JID to NodeVerHash cache. If that's the case calling getFeatures() would result in an
+        // unnecessary disco#info request being sent. That's not an unrecoverable problem, but just yielding should
+        // avoid sending disco#info in most cases.
+        Presence presence = chatRoomMember.getPresence();
+        CapsExtension caps = presence == null ? null : presence.getExtension(CapsExtension.class);
+        if ((caps != null) && caps.getHash() != null
+                && EntityCapsManager.getNodeVerHashByJid(chatRoomMember.getOccupantJid()) == null)
+        {
+            logger.info("Caps extension present, but JID does not exist in EntityCapsManager.");
+            Thread.yield();
+        }
+
+        // Trigger feature discovery before we acquire the lock. The features will be saved in the ChatRoomMember
+        // instance, and the call might block for a disco#info request.
+        chatRoomMember.getFeatures();
+
         synchronized (participantLock)
         {
+            // Make sure it's still a member of the room.
+            if (chatRoomMember.getChatRoom().getChatMember(chatRoomMember.getOccupantJid()) != chatRoomMember)
+            {
+                logger.warn("ChatRoomMember is no longer a member of its room. Will not invite.");
+                return;
+            }
+
             if (chatRoomMember.getRole() == MemberRole.VISITOR && !VisitorsConfig.config.getEnabled())
             {
                 logger.warn("Ignoring a visitor because visitors are not configured:" + chatRoomMember.getName());
@@ -2035,7 +2061,9 @@ public class JitsiMeetConferenceImpl
                 logger.debug("Ignoring non-visitor member of visitor room: " + member);
                 return;
             }
-            onMemberJoined(member);
+            // Run in the IO pool because feature discovery may send disco#info and block for a response, and shouldn't
+            // run in Smack's thread.
+            TaskPools.getIoPool().submit(() -> onMemberJoined(member));
         }
 
         @Override
@@ -2078,7 +2106,9 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberJoined(@NotNull ChatRoomMember member)
         {
-            onMemberJoined(member);
+            // Run in the IO pool because feature discovery may send disco#info and block for a response, and shouldn't
+            // run in Smack's thread.
+            TaskPools.getIoPool().submit(() -> onMemberJoined(member));
         }
 
         @Override
