@@ -73,6 +73,7 @@ internal fun selectVisitorNode(
         .filterNot { existingNodes.keys.contains(it.config.name) }
         .filter { it.registered }
         .randomOrNull()?.config?.name
+        ?: allNodes.randomOrNull()?.config?.name
 }
 
 /**
