@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
 import org.jitsi.utils.OrderedJsonObject
@@ -85,8 +86,10 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
 
         val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
         if (newOwner != null) {
-            logger.info("Electing new owner: $newOwner")
-            chatRoom.grantOwnership(newOwner)
+            TaskPools.ioPool.submit {
+                logger.info("Electing new owner: $newOwner")
+                chatRoom.grantOwnership(newOwner)
+            }
             owner = newOwner
         }
     }
@@ -106,7 +109,12 @@ class AuthenticationRoleManager(
 ) : ChatRoomRoleManager(chatRoom) {
 
     private val authenticationListener = AuthenticationListener { userJid, _, _ ->
-        chatRoom.members.find { it.jid == userJid }?.let { chatRoom.grantOwnership(it) }
+        chatRoom.members.find { it.jid == userJid }?.let {
+            TaskPools.ioPool.submit {
+                logger.info("Granting ownership to $it.")
+                chatRoom.grantOwnership(it)
+            }
+        }
     }
 
     init {
@@ -127,7 +135,7 @@ class AuthenticationRoleManager(
             return
         }
 
-        grantOwnerToAuthenticatedUsers()
+        TaskPools.ioPool.submit { grantOwnerToAuthenticatedUsers() }
     }
 
     /**
