@@ -17,7 +17,9 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
+import org.jitsi.jicofo.xmpp.IqProcessingResult
 import org.jitsi.jicofo.xmpp.createSessionInitiate
 import org.jitsi.jicofo.xmpp.createTransportReplace
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -66,40 +68,71 @@ class JingleSession(
 
     private val localJid: Jid = connection.user
 
-    fun processIq(iq: JingleIQ): StanzaError? {
+    fun processIq(iq: JingleIQ): IqProcessingResult {
         val action = iq.action
-            ?: return StanzaError.getBuilder(StanzaError.Condition.bad_request)
-                .setConditionText("Missing 'action'").build()
+            ?: return IqProcessingResult.RejectedWithError(
+                IQ.createErrorResponse(
+                    iq,
+                    StanzaError.getBuilder(StanzaError.Condition.bad_request)
+                        .setConditionText("Missing 'action'").build()
+                )
+            )
         JingleStats.stanzaReceived(action)
 
         if (state == State.ENDED) {
-            return StanzaError.getBuilder(StanzaError.Condition.gone).setConditionText("session ended").build()
+            return IqProcessingResult.RejectedWithError(
+                IQ.createErrorResponse(
+                    iq,
+                    StanzaError.getBuilder(StanzaError.Condition.gone).setConditionText("session ended").build()
+                )
+            )
         }
 
-        return when (action) {
-            JingleAction.SESSION_ACCEPT -> {
-                // The session needs to be marked as active early to allow code executing as part of onSessionAccept
-                // to proceed (e.g. to signal source updates).
-                state = State.ACTIVE
-                val error = requestHandler.onSessionAccept(this, iq.contentList)
-                if (error != null) state = State.ENDED
-                return error
+        TaskPools.ioPool.submit {
+            val error = when (action) {
+                JingleAction.SESSION_ACCEPT -> {
+                    // The session needs to be marked as active early to allow code executing as part of onSessionAccept
+                    // to proceed (e.g. to signal source updates).
+                    state = State.ACTIVE
+                    val error = requestHandler.onSessionAccept(this, iq.contentList)
+                    if (error != null) state = State.ENDED
+                    error
+                }
+
+                JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
+                JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq).also {
+                    state = State.ENDED
+                }
+
+                JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
+                JingleAction.TRANSPORT_INFO -> requestHandler.onTransportInfo(this, iq.contentList)
+                JingleAction.TRANSPORT_REJECT -> {
+                    requestHandler.onTransportReject(this, iq); null
+                }
+
+                JingleAction.ADDSOURCE, JingleAction.SOURCEADD -> requestHandler.onAddSource(this, iq.contentList)
+                JingleAction.REMOVESOURCE, JingleAction.SOURCEREMOVE -> requestHandler.onRemoveSource(
+                    this,
+                    iq.contentList
+                )
+
+                else -> {
+                    logger.warn("unsupported action $action")
+                    StanzaError.getBuilder(StanzaError.Condition.feature_not_implemented)
+                        .setConditionText("Unsupported 'action'").build()
+                }
             }
-            JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
-            JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq).also {
-                state = State.ENDED
+
+            val response = if (error == null) {
+                IQ.createResultIQ(iq)
+            } else {
+                logger.info("Returning error: request=${iq.toXML()}, error=${error.toXML()} ")
+                IQ.createErrorResponse(iq, error)
             }
-            JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
-            JingleAction.TRANSPORT_INFO -> requestHandler.onTransportInfo(this, iq.contentList)
-            JingleAction.TRANSPORT_REJECT -> { requestHandler.onTransportReject(this, iq); null }
-            JingleAction.ADDSOURCE, JingleAction.SOURCEADD -> requestHandler.onAddSource(this, iq.contentList)
-            JingleAction.REMOVESOURCE, JingleAction.SOURCEREMOVE -> requestHandler.onRemoveSource(this, iq.contentList)
-            else -> {
-                logger.warn("unsupported action $action")
-                StanzaError.getBuilder(StanzaError.Condition.feature_not_implemented)
-                    .setConditionText("Unsupported 'action'").build()
-            }
+            connection.tryToSendStanza(response)
         }
+
+        return IqProcessingResult.AcceptedWithNoResponse()
     }
 
     fun terminate(
