@@ -22,7 +22,6 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
-import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.config.withNewConfig
@@ -49,7 +48,6 @@ import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.packet.IQ
-import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import shouldBeValidJson
@@ -320,27 +318,30 @@ class ConferenceTest : ShouldSpec() {
 
             context("Adding sources already signaled") {
                 val sources = remoteParticipant3.sources
-                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources)).let {
-                    it shouldNotBe null
-                    it.shouldBeInstanceOf<StanzaError>()
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources))
+
+                xmppConnection.requests.last().let { lastRequest ->
+                    lastRequest.type shouldBe IQ.Type.error
                 }
             }
             context("Adding sources used by another participant") {
                 val sources = remoteParticipants[1].sources
-                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources)).let {
-                    it shouldNotBe null
-                    it.shouldBeInstanceOf<StanzaError>()
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources))
+
+                xmppConnection.requests.last().let { lastRequest ->
+                    lastRequest.type shouldBe IQ.Type.error
                 }
             }
             context("Adding invalid sources") {
-                jingleSession3.processIq(remoteParticipant3.createSourceAdd(remoteParticipant3.sources)).let {
-                    it shouldNotBe null
-                    it.shouldBeInstanceOf<StanzaError>()
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(remoteParticipant3.sources))
+
+                xmppConnection.requests.last().let { lastRequest ->
+                    lastRequest.type shouldBe IQ.Type.error
                 }
             }
             context("A participant leaving") {
                 val newSource2 = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.AUDIO))
-                participant3.jingleSession!!.processIq(remoteParticipant3.createSourceAdd(newSource2))
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(newSource2))
                 remoteParticipants.forEach {
                     val lastJingleMessageSent = it.requests.last()
                     lastJingleMessageSent.action shouldBe JingleAction.SOURCEADD
@@ -396,6 +397,8 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
     var ssrcs = 1L
     val colibri2Server = TestColibri2Server()
     val remoteParticipants = mutableMapOf<Jid, RemoteParticipant>()
+    // IQs sent by jicofo
+    val requests = mutableListOf<IQ>()
 
     override fun handleIq(iq: IQ): IQ? = when (iq) {
         is ConferenceModifyIQ -> colibri2Server.handleConferenceModifyIq(iq)
@@ -404,6 +407,8 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
             println("Not handling ${iq.toXML()}")
             null
         }
+    }.also {
+        requests.add(iq)
     }
 
     private fun nextSource(mediaType: MediaType) = Source(ssrcs++, mediaType)
