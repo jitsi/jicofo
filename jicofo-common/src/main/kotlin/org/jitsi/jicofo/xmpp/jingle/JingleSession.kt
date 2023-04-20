@@ -72,7 +72,6 @@ class JingleSession(
         true,
         "jingle-iq-queue-$sid",
         {
-            logger.info("Processing ${it.toXML()}")
             doProcessIq(it)
             return@PacketQueue true
         },
@@ -101,14 +100,11 @@ class JingleSession(
             )
         }
 
-        logger.info("Accepted jingle request: ${iq.toXML()}")
         incomingIqQueue.add(iq)
-        logger.info("Added to queue")
         return IqProcessingResult.AcceptedWithNoResponse()
     }
 
     private fun doProcessIq(iq: JingleIQ) {
-        logger.warn("XXX running in q!")
         val error = when (iq.action) {
             JingleAction.SESSION_ACCEPT -> {
                 // The session needs to be marked as active early to allow code executing as part of onSessionAccept
