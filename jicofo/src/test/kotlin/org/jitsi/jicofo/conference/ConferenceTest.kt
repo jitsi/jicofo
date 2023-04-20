@@ -371,9 +371,11 @@ class ConferenceTest : ShouldSpec() {
 
 // Execute tasks in place (in the current thread, blocking)
 val inPlaceExecutor: ExecutorService = mockk {
-    every { submit(any()) } answers {
+    every { submit(any<Runnable>()) } answers {
         firstArg<Runnable>().run()
-        CompletableFuture<Unit>()
+        CompletableFuture<Unit>().apply {
+            complete(Unit)
+        }
     }
     every { execute(any()) } answers {
         firstArg<Runnable>().run()
