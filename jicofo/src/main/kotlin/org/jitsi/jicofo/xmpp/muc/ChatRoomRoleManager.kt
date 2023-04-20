@@ -22,6 +22,7 @@ import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.utils.queue.PacketQueue
 
 /**
  * Manages to XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
@@ -39,6 +40,16 @@ sealed class ChatRoomRoleManager(
     open fun stop() {}
 
     open val debugState: OrderedJsonObject = OrderedJsonObject()
+
+    protected val queue = PacketQueue<Runnable>(
+        Integer.MAX_VALUE,
+        false,
+        "chat-room-role-manager-queue-${chatRoom.roomJid}",
+        {
+            return@PacketQueue true
+        },
+        TaskPools.ioPool
+    )
 }
 
 /**
@@ -70,27 +81,27 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     }
 
     private fun electNewOwner() {
-        if (owner != null) {
-            return
-        }
+        queue.add {
+            if (owner != null) {
+                return@add
+            }
 
-        // Skip if this is a breakout room.
-        if (chatRoom.isBreakoutRoom) {
-            return
-        }
+            // Skip if this is a breakout room.
+            if (chatRoom.isBreakoutRoom) {
+                return@add
+            }
 
-        owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
-        if (owner != null) {
-            return
-        }
+            owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
+            if (owner != null) {
+                return@add
+            }
 
-        val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
-        if (newOwner != null) {
-            TaskPools.ioPool.submit {
+            val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
+            if (newOwner != null) {
                 logger.info("Electing new owner: $newOwner")
                 chatRoom.grantOwnership(newOwner)
+                owner = newOwner
             }
-            owner = newOwner
         }
     }
 
@@ -110,7 +121,7 @@ class AuthenticationRoleManager(
 
     private val authenticationListener = AuthenticationListener { userJid, _, _ ->
         chatRoom.members.find { it.jid == userJid }?.let {
-            TaskPools.ioPool.submit {
+            queue.add {
                 logger.info("Granting ownership to $it.")
                 chatRoom.grantOwnership(it)
             }
@@ -135,7 +146,7 @@ class AuthenticationRoleManager(
             return
         }
 
-        TaskPools.ioPool.submit { grantOwnerToAuthenticatedUsers() }
+        queue.add { grantOwnerToAuthenticatedUsers() }
     }
 
     /**
@@ -143,7 +154,9 @@ class AuthenticationRoleManager(
      */
     override fun memberJoined(member: ChatRoomMember) {
         if (member.role != MemberRole.OWNER && authenticationAuthority.getSessionForJid(member.jid) != null) {
-            chatRoom.grantOwnership(member)
+            queue.add {
+                chatRoom.grantOwnership(member)
+            }
         }
     }
 
