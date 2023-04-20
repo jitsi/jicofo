@@ -320,24 +320,18 @@ class ConferenceTest : ShouldSpec() {
                 val sources = remoteParticipant3.sources
                 jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources))
 
-                xmppConnection.requests.last().let { lastRequest ->
-                    lastRequest.type shouldBe IQ.Type.error
-                }
+                xmppConnection.requests.last().type shouldBe IQ.Type.error
             }
             context("Adding sources used by another participant") {
                 val sources = remoteParticipants[1].sources
                 jingleSession3.processIq(remoteParticipant3.createSourceAdd(sources))
 
-                xmppConnection.requests.last().let { lastRequest ->
-                    lastRequest.type shouldBe IQ.Type.error
-                }
+                xmppConnection.requests.last().type shouldBe IQ.Type.error
             }
             context("Adding invalid sources") {
                 jingleSession3.processIq(remoteParticipant3.createSourceAdd(remoteParticipant3.sources))
 
-                xmppConnection.requests.last().let { lastRequest ->
-                    lastRequest.type shouldBe IQ.Type.error
-                }
+                xmppConnection.requests.last().type shouldBe IQ.Type.error
             }
             context("A participant leaving") {
                 val newSource2 = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.AUDIO))
