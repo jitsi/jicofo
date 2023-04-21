@@ -24,7 +24,6 @@ import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
-import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
@@ -143,7 +142,6 @@ class JicofoServices {
         jettyServer = if (RestConfig.config.enabled) {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
-                authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
                 healthChecker,
                 if (RestConfig.config.enableConferenceRequest) {
@@ -186,7 +184,7 @@ class JicofoServices {
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
-        return if (AuthConfig.config.enabled) {
+        return if (AuthConfig.config.type != AuthConfig.Type.NONE) {
             logger.info("Starting authentication service with config=$authConfig.")
             val authAuthority = when (authConfig.type) {
                 AuthConfig.Type.XMPP -> XMPPDomainAuthAuthority(
@@ -198,13 +196,7 @@ class JicofoServices {
                 AuthConfig.Type.JWT -> ExternalJWTAuthority(
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
-
-                AuthConfig.Type.SHIBBOLETH -> ShibbolethAuthAuthority(
-                    authConfig.enableAutoLogin,
-                    authConfig.authenticationLifetime,
-                    authConfig.loginUrl,
-                    AuthConfig.config.logoutUrl
-                )
+                AuthConfig.Type.NONE -> null
             }
             authAuthority
         } else {
