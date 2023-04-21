@@ -46,6 +46,7 @@ sealed class ChatRoomRoleManager(
         false,
         "chat-room-role-manager-queue-${chatRoom.roomJid}",
         {
+            it.run()
             return@PacketQueue true
         },
         TaskPools.ioPool
