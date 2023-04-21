@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.JicofoServices
 import org.jitsi.jicofo.jibri.BaseJibri
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
@@ -64,6 +65,11 @@ class JibriIqHandler(
 
         // No conference accepted the request.
         logger.warn("Jibri IQ not accepted by any conference: ${request.iq.toXML()}")
+        if (JicofoServices.jicofoServicesSingleton?.jibriDetector == null &&
+            JicofoServices.jicofoServicesSingleton?.sipJibriDetector == null
+        ) {
+            logger.warn("No jibri detectors configured.")
+        }
         return RejectedWithError(request, StanzaError.Condition.item_not_found)
     }
 }
