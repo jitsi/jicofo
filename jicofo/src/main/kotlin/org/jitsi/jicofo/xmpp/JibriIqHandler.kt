@@ -65,8 +65,9 @@ class JibriIqHandler(
 
         // No conference accepted the request.
         logger.warn("Jibri IQ not accepted by any conference: ${request.iq.toXML()}")
-        if (JicofoServices.jicofoServicesSingleton?.jibriDetector == null
-            && JicofoServices.jicofoServicesSingleton?.sipJibriDetector == null) {
+        if (JicofoServices.jicofoServicesSingleton?.jibriDetector == null &&
+            JicofoServices.jicofoServicesSingleton?.sipJibriDetector == null
+        ) {
             logger.warn("No jibri detectors configured.")
         }
         return RejectedWithError(request, StanzaError.Condition.item_not_found)
