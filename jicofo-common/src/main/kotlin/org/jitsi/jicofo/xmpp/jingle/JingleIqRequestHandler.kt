@@ -20,7 +20,6 @@ package org.jitsi.jicofo.xmpp.jingle
 import org.jitsi.jicofo.util.WeakValueMap
 import org.jitsi.jicofo.xmpp.AbstractIqHandler
 import org.jitsi.jicofo.xmpp.IqProcessingResult
-import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.utils.logging2.createLogger
@@ -53,13 +52,7 @@ class JingleIqRequestHandler(
             )
         }
 
-        val error = session.processIq(request.iq)
-        return if (error == null) {
-            AcceptedWithResponse(IQ.createResultIQ(request.iq))
-        } else {
-            logger.info("Returning error: request=${request.iq.toXML()}, error=${error.toXML()} ")
-            RejectedWithError(IQ.createErrorResponse(request.iq, error))
-        }
+        return session.processIq(request.iq)
     }
 
     fun registerSession(session: JingleSession) {

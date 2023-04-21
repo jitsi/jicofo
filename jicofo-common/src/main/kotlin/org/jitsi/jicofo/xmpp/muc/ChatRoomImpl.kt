@@ -215,9 +215,12 @@ class ChatRoomImpl(
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     private fun joinAs(nickname: Resourcepart, meetingIdToSet: String?) {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
-        if (muc.isJoined) {
-            muc.leave()
+        synchronized(muc) {
+            if (muc.isJoined) {
+                muc.leave()
+            }
         }
+
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
         val config = muc.configurationForm
