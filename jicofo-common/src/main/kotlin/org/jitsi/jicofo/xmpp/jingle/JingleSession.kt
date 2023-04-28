@@ -70,7 +70,7 @@ class JingleSession(
     private val incomingIqQueue = PacketQueue<JingleIQ>(
         Integer.MAX_VALUE,
         true,
-        "jingle-iq-queue-$sid",
+        "jingle-iq-queue",
         {
             doProcessIq(it)
             return@PacketQueue true

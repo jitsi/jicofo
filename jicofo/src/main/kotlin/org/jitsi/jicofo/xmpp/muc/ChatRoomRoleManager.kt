@@ -44,7 +44,7 @@ sealed class ChatRoomRoleManager(
     protected val queue = PacketQueue<Runnable>(
         Integer.MAX_VALUE,
         false,
-        "chat-room-role-manager-queue-${chatRoom.roomJid}",
+        "chat-room-role-manager-queue",
         {
             it.run()
             return@PacketQueue true
