@@ -171,7 +171,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         {
             chatRoom = xmppProvider.createRoom(breweryJid);
             chatRoom.addListener(chatRoomListener);
-            chatRoom.join(null);
+            chatRoom.join();
 
             logger.info("Joined the room.");
         }

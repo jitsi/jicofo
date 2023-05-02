@@ -185,10 +185,10 @@ class ChatRoomImpl(
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    override fun join(meetingIdToSet: String?) {
+    override fun join() {
         // TODO: clean-up the way we figure out what nickname to use.
         resetState()
-        joinAs(xmppProvider.config.username, meetingIdToSet)
+        joinAs(xmppProvider.config.username)
     }
 
     /**
@@ -213,7 +213,7 @@ class ChatRoomImpl(
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    private fun joinAs(nickname: Resourcepart, meetingIdToSet: String?) {
+    private fun joinAs(nickname: Resourcepart) {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
         synchronized(muc) {
             if (muc.isJoined) {
@@ -234,33 +234,18 @@ class ChatRoomImpl(
             }
         }
 
-        val answer = config.fillableForm
-
-        // Make the room non-anonymous, so that others can recognize focus JID
-        answer.setAnswer(MucConfigFields.WHOIS, "anyone")
-
+        // Read meetingId
         val meetingIdField = config.getField(MucConfigFields.MEETING_ID)
         if (meetingIdField != null) {
-            if (meetingIdToSet != null) {
-                // Set the provided meetingIdToSet for the MUC.
-                meetingId = meetingIdToSet
-                answer.setAnswer(MucConfigFields.MEETING_ID, meetingIdToSet)
-            } else {
-                // Read meetingId from the form.
-                meetingId = meetingIdField.firstValue
+            meetingId = meetingIdField.firstValue
+            if (meetingId != null) {
+                logger.addContext("meeting_id", meetingId)
             }
-        } else {
-            // If the field is missing we can't read or write it.
-            if (meetingIdToSet != null) {
-                logger.warn("Not able to set meetingId, field not present in the form.")
-            }
-            meetingId = meetingIdToSet
         }
 
-        if (meetingId != null) {
-            logger.addContext("meeting_id", meetingId)
-        }
-
+        // Make the room non-anonymous, so that others can recognize focus JID
+        val answer = config.fillableForm
+        answer.setAnswer(MucConfigFields.WHOIS, "anyone")
         muc.sendConfigurationForm(answer)
     }
 
