@@ -57,8 +57,11 @@ interface ChatRoom {
     /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
     val mainRoom: String?
 
-    /** Get the unique meeting ID associated by this room (set by the MUC service). */
-    val meetingId: String?
+    /**
+     * The unique meeting ID associated by this room. It is updated on join or when the MUC form is read if the
+     * corresponding field is present.
+     */
+    var meetingId: String?
 
     val debugState: OrderedJsonObject
 

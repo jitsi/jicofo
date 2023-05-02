@@ -1614,7 +1614,15 @@ public class JitsiMeetConferenceImpl
 
             // Will call join after releasing the lock
             chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
+
+            ChatRoom mainChatRoom = this.chatRoom;
+            String meetingId = mainChatRoom == null ? null : mainChatRoom.getMeetingId();
+            if (meetingId != null)
+            {
+                chatRoomToJoin.setMeetingId(meetingId);
+            }
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
+
             visitorChatRooms.put(node, chatRoomToJoin);
         }
 

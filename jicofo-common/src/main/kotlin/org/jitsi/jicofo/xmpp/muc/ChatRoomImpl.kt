@@ -115,7 +115,12 @@ class ChatRoomImpl(
 
     /** The value of the "meetingId" field from the MUC form, if present. */
     override var meetingId: String? = null
-        private set
+        set(value) {
+            if (value != null) {
+                logger.addContext("meeting_id", value)
+            }
+            field = value
+        }
 
     /** The value of the "isbreakout" field from the MUC form, if present. */
     override var isBreakoutRoom = false
@@ -238,9 +243,6 @@ class ChatRoomImpl(
         val meetingIdField = config.getField(MucConfigFields.MEETING_ID)
         if (meetingIdField != null) {
             meetingId = meetingIdField.firstValue
-            if (meetingId != null) {
-                logger.addContext("meeting_id", meetingId)
-            }
         }
 
         // Make the room non-anonymous, so that others can recognize focus JID
