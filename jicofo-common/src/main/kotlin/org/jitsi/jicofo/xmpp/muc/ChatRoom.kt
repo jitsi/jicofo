@@ -63,6 +63,9 @@ interface ChatRoom {
      */
     var meetingId: String?
 
+    /** Whether a lobby is enabled for the room. Read from the MUC config form. */
+    val lobbyEnabled: Boolean
+
     val debugState: OrderedJsonObject
 
     /** Returns the number of members that currently have their audio sources unmuted. */
@@ -131,4 +134,7 @@ interface ChatRoom {
 
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
+
+    /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
+    fun reloadConfiguration()
 }

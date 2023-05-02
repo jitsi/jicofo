@@ -921,6 +921,16 @@ public class JitsiMeetConferenceImpl
         }
     }
 
+    @Override
+    public void mucConfigurationChanged()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom != null)
+        {
+            chatRoom.reloadConfiguration();
+        }
+    }
+
     private void terminateParticipant(
             Participant participant,
             @NotNull Reason reason,
@@ -1536,6 +1546,13 @@ public class JitsiMeetConferenceImpl
         throws Exception
     {
         if (!VisitorsConfig.config.getEnabled())
+        {
+            return null;
+        }
+
+        // We don't support both visitors and a lobby. Once a lobby is enabled we don't use visitors anymore.
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom != null && chatRoom.getLobbyEnabled())
         {
             return null;
         }
