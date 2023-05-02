@@ -1556,6 +1556,11 @@ public class JitsiMeetConferenceImpl
         {
             return null;
         }
+        // We don't support visitors in breakout rooms.
+        if (chatRoom != null && chatRoom.isBreakoutRoom())
+        {
+            return null;
+        }
 
         long participantCount = getUserParticipantCount();
 
