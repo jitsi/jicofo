@@ -479,7 +479,7 @@ public class JitsiMeetConferenceImpl
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
 
-        chatRoom.join(null);
+        chatRoom.join();
         String meetingId = chatRoom.getMeetingId();
         if (meetingId != null)
         {
@@ -918,6 +918,16 @@ public class JitsiMeetConferenceImpl
         if (chatRoom == null || chatRoom.getMemberCount() == 0)
         {
             stop();
+        }
+    }
+
+    @Override
+    public void mucConfigurationChanged()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom != null)
+        {
+            chatRoom.reloadConfiguration();
         }
     }
 
@@ -1540,6 +1550,13 @@ public class JitsiMeetConferenceImpl
             return null;
         }
 
+        // We don't support both visitors and a lobby. Once a lobby is enabled we don't use visitors anymore.
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom != null && chatRoom.getLobbyEnabled())
+        {
+            return null;
+        }
+
         long participantCount = getUserParticipantCount();
 
         if (!visitorRequested && participantCount < VisitorsConfig.config.getMaxParticipants())
@@ -1614,12 +1631,19 @@ public class JitsiMeetConferenceImpl
 
             // Will call join after releasing the lock
             chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
+
+            ChatRoom mainChatRoom = this.chatRoom;
+            String meetingId = mainChatRoom == null ? null : mainChatRoom.getMeetingId();
+            if (meetingId != null)
+            {
+                chatRoomToJoin.setMeetingId(meetingId);
+            }
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
+
             visitorChatRooms.put(node, chatRoomToJoin);
         }
 
-        // Set the meetingId of the visitor room to the meetingId of the main room.
-        chatRoomToJoin.join(chatRoom.getMeetingId());
+        chatRoomToJoin.join();
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();

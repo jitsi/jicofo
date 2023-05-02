@@ -46,6 +46,9 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     /** Return the number of visitors in the conference */
     long getVisitorCount();
 
+    /** Notify this conference that the configuration for the main MUC has changed. */
+    void mucConfigurationChanged();
+
     /**
      * Find {@link Participant} for given MUC JID.
      *

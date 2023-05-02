@@ -57,8 +57,14 @@ interface ChatRoom {
     /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
     val mainRoom: String?
 
-    /** Get the unique meeting ID associated by this room (set by the MUC service). */
-    val meetingId: String?
+    /**
+     * The unique meeting ID associated by this room. It is updated on join or when the MUC form is read if the
+     * corresponding field is present.
+     */
+    var meetingId: String?
+
+    /** Whether a lobby is enabled for the room. Read from the MUC config form. */
+    val lobbyEnabled: Boolean
 
     val debugState: OrderedJsonObject
 
@@ -70,13 +76,7 @@ interface ChatRoom {
 
     /** Joins this chat room with the preconfigured nickname. */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join(
-        /**
-         *  Optional meetingId to set in the room after joining. When the value is null the meetingId is read from the
-         *  room and left unmodified.
-         */
-        meetingIdToSet: String? = null
-    )
+    fun join()
 
     /** Leave the chat room. */
     fun leave()
@@ -134,4 +134,7 @@ interface ChatRoom {
 
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
+
+    /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
+    fun reloadConfiguration()
 }
