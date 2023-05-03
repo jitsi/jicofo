@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo;
 
+import edu.umd.cs.findbugs.annotations.*;
 import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.cmd.*;
@@ -32,6 +33,7 @@ import org.jitsi.utils.logging2.*;
  *
  * @author Pawel Domas
  */
+@SuppressFBWarnings("SWL_SLEEP_WITH_LOCK_HELD")
 public class Main
 {
     private static final Logger logger = new LoggerImpl(Main.class.getName());
@@ -48,6 +50,40 @@ public class Main
 
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
                 logger.error("An uncaught exception occurred in thread=" + t, e));
+        Object l1 = new Object();
+        Object l2 = new Object();
+        new Thread(() -> {
+            synchronized (l1)
+            {
+                try
+                {
+                    Thread.sleep(100);
+                }
+                catch (Exception e)
+                {
+                }
+                synchronized (l2)
+                {
+                    logger.info("1");
+                }
+            }
+        }).start();
+        new Thread(() -> {
+            synchronized (l2)
+            {
+                try
+                {
+                    Thread.sleep(100);
+                }
+                catch (Exception e)
+                {
+                }
+                synchronized (l1)
+                {
+                    logger.info("2");
+                }
+            }
+        }).start();
 
         setupMetaconfigLogger();
         JitsiConfig.Companion.reloadNewConfig();
