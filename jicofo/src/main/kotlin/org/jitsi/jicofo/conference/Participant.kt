@@ -356,13 +356,14 @@ open class Participant @JvmOverloads constructor(
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
 
-    val debugState: OrderedJsonObject
-        get() = OrderedJsonObject().apply {
-            this["id"] = endpointId
+    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+        this["id"] = endpointId
+        if (full) {
             this["source_signaling"] = sourceSignaling.debugState
-            this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
-            this["jingle_session"] = jingleSession?.debugState() ?: "null"
         }
+        this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
+        this["jingle_session"] = jingleSession?.debugState() ?: "null"
+    }
 
     /**
      * Create a new [JingleSession] instance for this participant. Defined here and left open for easier testing.

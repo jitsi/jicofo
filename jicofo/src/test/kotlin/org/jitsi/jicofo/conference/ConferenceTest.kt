@@ -357,7 +357,7 @@ class ConferenceTest : ShouldSpec() {
 
             conference.debugState.shouldBeValidJson()
             members.map { it.getParticipant()!! }.forEach {
-                it.debugState.shouldBeValidJson()
+                it.getDebugState(true).shouldBeValidJson()
             }
         }
     }
