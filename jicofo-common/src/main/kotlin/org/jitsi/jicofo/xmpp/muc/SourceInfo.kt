@@ -16,15 +16,31 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.jicofo.conference.source.VideoType
+import org.jitsi.utils.MediaType
+import org.jitsi.utils.logging2.LoggerImpl
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
+
+private val logger = LoggerImpl(SourceInfo::javaClass.name)
 
 /** The information about a source contained in a jitsi-meet SourceInfo extension. */
 data class SourceInfo(
     val name: String,
     val muted: Boolean,
     val videoType: VideoType?
-)
+) {
+    val mediaType: MediaType? = name.indexOf('-').let { indexOfDash ->
+        if (indexOfDash < 0 || indexOfDash == name.length - 1) {
+            null
+        } else {
+            when (name[indexOfDash + 1]) {
+                'a' -> MediaType.AUDIO
+                'v' -> MediaType.VIDEO
+                else -> null
+            }
+        }
+    }
+}
 
 /**
  *  Parse the JSON string encoded in a SourceInfo XML extension as a set of [SourceInfo]s.

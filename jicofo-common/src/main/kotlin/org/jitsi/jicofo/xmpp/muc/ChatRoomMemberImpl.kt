@@ -21,17 +21,16 @@ import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
-import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
 import org.jivesoftware.smackx.caps.packet.CapsExtension
@@ -111,6 +110,20 @@ class ChatRoomMemberImpl(
             return
         }
         this.sourceInfos = sourceInfos
+
+        val wasAudioMuted = isAudioMuted
+        isAudioMuted = sourceInfos.filter { it.mediaType == MediaType.AUDIO }.none { !it.muted }
+        if (isAudioMuted != wasAudioMuted) {
+            logger.debug { "isAudioMuted = $isAudioMuted" }
+            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
+        }
+
+        val wasVideoMuted = isVideoMuted
+        isVideoMuted = sourceInfos.filter { it.mediaType == MediaType.VIDEO }.none { !it.muted }
+        if (isVideoMuted != wasVideoMuted) {
+            logger.debug { "isVideoMuted = $isVideoMuted" }
+            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
+        }
     }
 
     /**
@@ -174,22 +187,6 @@ class ChatRoomMemberImpl(
 
         presence.getExtension(StatsId::class.java)?.let {
             statsId = it.statsId
-        }
-
-        val wasAudioMuted = isAudioMuted
-        // defaults to true
-        isAudioMuted = presence.getExtension(AudioMutedExtension::class.java)?.isAudioMuted ?: true
-        if (isAudioMuted != wasAudioMuted) {
-            logger.debug { "isAudioMuted = $isAudioMuted" }
-            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
-        }
-
-        val wasVideoMuted = isVideoMuted
-        // defaults to true
-        isVideoMuted = presence.getExtension(VideoMutedExtension::class.java)?.isVideoMuted ?: true
-        if (isVideoMuted != wasVideoMuted) {
-            logger.debug { "isVideoMuted = $isVideoMuted" }
-            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
         }
     }
 

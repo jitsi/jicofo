@@ -19,6 +19,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.conference.source.VideoType
+import org.jitsi.utils.MediaType
 import org.json.simple.parser.ParseException
 
 class SourceInfoTest : ShouldSpec() {
@@ -69,6 +70,12 @@ class SourceInfoTest : ShouldSpec() {
                     SourceInfo("3b554cf4-v1", true, VideoType.Desktop),
                 )
             )
+        }
+        context("Parsing media type") {
+            parseSourceInfoJson("""{ "abc-a0": {} }""".trimIndent()).first().mediaType shouldBe MediaType.AUDIO
+            parseSourceInfoJson("""{ "abc-v0": {} }""".trimIndent()).first().mediaType shouldBe MediaType.VIDEO
+            parseSourceInfoJson("""{ "abc-d0": {} }""".trimIndent()).first().mediaType shouldBe null
+            parseSourceInfoJson("""{ "abc0": {} }""".trimIndent()).first().mediaType shouldBe null
         }
     }
 }
