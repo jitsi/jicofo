@@ -160,23 +160,24 @@ class ChatRoomImpl(
         eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
-    override val debugState = OrderedJsonObject().apply {
-        this["room_jid"] = roomJid.toString()
-        this["my_occupant_jid"] = myOccupantJid.toString()
-        val membersJson = OrderedJsonObject()
-        membersMap.values.forEach {
-            membersJson[it.name] = it.debugState
+    override val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["room_jid"] = roomJid.toString()
+            this["my_occupant_jid"] = myOccupantJid.toString()
+            val membersJson = OrderedJsonObject()
+            membersMap.values.forEach {
+                membersJson[it.name] = it.debugState
+            }
+            this["members"] = membersJson
+            this["meeting_id"] = meetingId.toString()
+            this["is_breakout_room"] = isBreakoutRoom
+            this["main_room"] = mainRoom.toString()
+            this["audio_senders_count"] = audioSendersCount
+            this["video_senders_count"] = videoSendersCount
+            this["av_moderation"] = OrderedJsonObject().apply {
+                avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
+            }
         }
-        this["members"] = membersJson
-        this["meeting_id"] = meetingId.toString()
-        this["is_breakout_room"] = isBreakoutRoom
-        this["main_room"] = mainRoom.toString()
-        this["audio_senders_count"] = audioSendersCount
-        this["video_senders_count"] = videoSendersCount
-        this["av_moderation"] = OrderedJsonObject().apply {
-            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
-        }
-    }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
