@@ -242,6 +242,14 @@ public class JitsiMeetConferenceImpl
     private boolean visitorsBroadcastEnabled = VisitorsConfig.config.getAutoEnableBroadcast();
 
     /**
+     * The unique meeting ID for this conference. We expect this to be set by the XMPP server in the MUC config form.
+     * If for some reason it's not present, we'll generate a local UUID. The field is nullable, but always non-null
+     * after the MUC has been joined.
+     */
+    @Nullable
+    private String meetingId;
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -273,6 +281,13 @@ public class JitsiMeetConferenceImpl
         logger.info("Created new conference.");
     }
 
+    @Override
+    @Nullable
+    public String getMeetingId()
+    {
+        return meetingId;
+    }
+
     /**
      * @return the colibri session manager, late init.
      */
@@ -280,13 +295,8 @@ public class JitsiMeetConferenceImpl
     {
         if (colibriSessionManager == null)
         {
-            String meetingId = chatRoom == null ? null : chatRoom.getMeetingId();
-            if (meetingId == null)
-            {
-                logger.warn("No meetingId set for the MUC. Generating one locally.");
-                meetingId = UUID.randomUUID().toString();
-            }
-
+            // We initialize colibriSessionManager only after having joined the room, so meetingId must be set.
+            String meetingId = Objects.requireNonNull(this.meetingId);
             colibriSessionManager = new ColibriV2SessionManager(
                     jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                     jicofoServices.getBridgeSelector(),
@@ -481,10 +491,14 @@ public class JitsiMeetConferenceImpl
 
         chatRoom.join();
         String meetingId = chatRoom.getMeetingId();
-        if (meetingId != null)
+        if (meetingId == null)
         {
-            logger.addContext("meeting_id", meetingId);
+            meetingId = UUID.randomUUID().toString();
+            logger.warn("No meetingId set for the MUC. Generating one locally.");
+            chatRoom.setMeetingId(meetingId);
         }
+        this.meetingId = meetingId;
+        logger.addContext("meeting_id", meetingId);
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
@@ -1416,7 +1430,22 @@ public class JitsiMeetConferenceImpl
 
     @Override
     @NotNull
+    public OrderedJsonObject getRtcstatsState()
+    {
+        return getDebugState(false);
+    }
+
+    @Override
+    @NotNull
     public OrderedJsonObject getDebugState()
+    {
+        return getDebugState(true);
+    }
+
+    /**
+     * @param full when false some high volume fields that aren't needed for rtcstats are suppressed.
+     */
+    private OrderedJsonObject getDebugState(boolean full)
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("name", roomName.toString());
@@ -1426,7 +1455,7 @@ public class JitsiMeetConferenceImpl
         OrderedJsonObject participantsJson = new OrderedJsonObject();
         for (Participant participant : participants.values())
         {
-            participantsJson.put(participant.getEndpointId(), participant.getDebugState());
+            participantsJson.put(participant.getEndpointId(), participant.getDebugState(full));
         }
         o.put("participants", participantsJson);
         //o.put("jibri_recorder", jibriRecorder.getDebugState());
@@ -1450,6 +1479,42 @@ public class JitsiMeetConferenceImpl
         o.put("conference_sources", conferenceSources.toJson());
         o.put("audio_limit_reached", audioLimitReached);
         o.put("video_limit_reached", videoLimitReached);
+
+        int visitorCount = 0;
+        int participantCount = 0;
+        int jibriCount = 0;
+        int jigasiCount = 0;
+        int transcriberCount = 0;
+        synchronized (participantLock)
+        {
+            for (Participant p : participants.values())
+            {
+                participantCount++;
+                ChatRoomMember member = p.getChatMember();
+                if (member.getRole() == MemberRole.VISITOR)
+                {
+                    visitorCount++;
+                }
+                if (member.isJibri())
+                {
+                    jibriCount++;
+                }
+                if (member.isTranscriber())
+                {
+                    transcriberCount++;
+                }
+                // Only count non-transcribing jigasis
+                else if (member.isJigasi())
+                {
+                    jigasiCount++;
+                }
+            }
+        }
+        o.put("visitor_count", visitorCount);
+        o.put("participant_count", participantCount);
+        o.put("jibri_count", jibriCount);
+        o.put("jigasi_count", jigasiCount);
+        o.put("transcriber_count", transcriberCount);
 
         return o;
     }
@@ -1938,6 +2003,12 @@ public class JitsiMeetConferenceImpl
     public String toString()
     {
         return String.format("JitsiMeetConferenceImpl[name=%s]", getRoomName());
+    }
+
+    @Override
+    public boolean isRtcStatsEnabled()
+    {
+        return config.getRtcStatsEnabled();
     }
 
     /**

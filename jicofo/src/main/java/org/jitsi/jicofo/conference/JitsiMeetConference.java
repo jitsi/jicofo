@@ -49,6 +49,13 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     /** Notify this conference that the configuration for the main MUC has changed. */
     void mucConfigurationChanged();
 
+    /** Whether stats for this conference should be exported to rtcstats. */
+    boolean isRtcStatsEnabled();
+
+    /** Get the meeting ID associated with the conference */
+    @Nullable
+    String getMeetingId();
+
     /**
      * Find {@link Participant} for given MUC JID.
      *
@@ -134,4 +141,8 @@ public interface JitsiMeetConference extends XmppProvider.Listener
 
     @NotNull
     OrderedJsonObject getDebugState();
+
+    /** Get the stats for this conference that should be exported to rtcstats. */
+    @NotNull
+    OrderedJsonObject getRtcstatsState();
 }
