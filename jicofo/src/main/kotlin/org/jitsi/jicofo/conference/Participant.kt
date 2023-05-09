@@ -361,6 +361,7 @@ open class Participant @JvmOverloads constructor(
         if (full) {
             this["source_signaling"] = sourceSignaling.debugState
         }
+        statId?.let { this["stats_id"] = it }
         this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
         this["jingle_session"] = jingleSession?.debugState() ?: "null"
     }

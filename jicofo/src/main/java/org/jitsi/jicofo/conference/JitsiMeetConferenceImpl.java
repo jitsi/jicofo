@@ -1449,6 +1449,11 @@ public class JitsiMeetConferenceImpl
     {
         OrderedJsonObject o = new OrderedJsonObject();
         o.put("name", roomName.toString());
+        String meetingId = this.meetingId;
+        if (meetingId != null)
+        {
+            o.put("meeting_id", meetingId);
+        }
         o.put("config", config.getDebugState());
         ChatRoom chatRoom = this.chatRoom;
         o.put("chat_room", chatRoom == null ? "null" : chatRoom.getDebugState());
