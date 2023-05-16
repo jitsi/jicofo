@@ -156,29 +156,35 @@ abstract class BaseJibri internal constructor(
             return session.processJibriIqRequestFromJibri(iq)
         }
 
-        // Coming from a client.
-        if (iq.action == Action.UNDEFINED) {
-            return error(iq, StanzaError.Condition.bad_request, "undefined action")
-        }
-
         verifyModeratorRole(iq)?.let {
             logger.warn("Ignored Jibri request from non-moderator.")
             return IQ.createErrorResponse(iq, it)
         }
 
-        return when {
-            iq.action == Action.START && session == null -> handleStartRequest(iq)
-            iq.action == Action.START && session != null -> {
-                logger.info("Will not start a Jibri session, a session is already active")
-                error(iq, StanzaError.Condition.unexpected_request, "Recording or live streaming is already enabled")
+        return when (iq.action) {
+            Action.START -> when (session) {
+                null -> handleStartRequest(iq)
+                else -> {
+                    logger.info("Will not start a Jibri session, a session is already active")
+                    error(
+                        iq,
+                        StanzaError.Condition.unexpected_request,
+                        "Recording or live streaming is already enabled"
+                    )
+                }
             }
-            iq.action == Action.STOP && session != null -> {
-                session.stop(iq.from)
-                IQ.createResultIQ(iq)
+            Action.STOP -> when (session) {
+                null -> {
+                    logger.warn("Rejecting STOP request for an unknown session.: ${iq.toXML()}")
+                    error(iq, StanzaError.Condition.item_not_found, "Unknown session")
+                }
+                else -> {
+                    session.stop(iq.from)
+                    IQ.createResultIQ(iq)
+                }
             }
-            else -> {
-                logger.warn("Discarded jibri IQ with an unknown action: ${iq.toXML()}")
-                error(iq, StanzaError.Condition.bad_request, "Unable to handle ${iq.action}")
+            Action.UNDEFINED, null -> {
+                return error(iq, StanzaError.Condition.bad_request, "undefined action ${iq.toXML()}")
             }
         }
     }
