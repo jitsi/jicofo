@@ -179,7 +179,6 @@ class JicofoServices {
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()
         xmppServices.clientConnection.removeListener(focusManager)
-        focusManager.stop()
         xmppServices.shutdown()
     }
 

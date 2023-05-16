@@ -46,7 +46,6 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
-import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -154,21 +153,15 @@ public class JitsiMeetConferenceImpl
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
-     * The time at which this conference was created.
-     */
-    private final Instant creationTime = Instant.now();
-
-    /**
-     * Whether at least one participant has joined this conference. This is exposed because to facilitate pruning
-     * conferences without any participants (which uses a separate code path than conferences with participants).
-     */
-    private boolean hasHadAtLeastOneParticipant = false;
-
-    /**
      * A timeout task which will terminate media session of the user who is
      * sitting alone in the room for too long.
      */
     private Future<?> singleParticipantTout;
+
+    /**
+     * A task to stop the conference if no participants join after an initial timeout.
+     */
+    private Future<?> conferenceStartTimeout;
 
     /**
      * Whether participants being invited to the conference as a result of joining (as opposed to having already
@@ -277,6 +270,18 @@ public class JitsiMeetConferenceImpl
 
         this.jicofoServices = jicofoServices;
         this.jvbVersion = jvbVersion;
+
+        conferenceStartTimeout = TaskPools.getScheduledPool().schedule(
+                () ->
+                {
+                    if (includeInStatistics)
+                    {
+                        logger.info("Expiring due to initial timeout.");
+                    }
+                },
+                ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
+                TimeUnit.MILLISECONDS);
+
 
         logger.info("Created new conference.");
     }
@@ -673,6 +678,11 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
+            if (conferenceStartTimeout != null)
+            {
+                conferenceStartTimeout.cancel(true);
+                conferenceStartTimeout = null;
+            }
             // Make sure it's still a member of the room.
             if (chatRoomMember.getChatRoom().getChatMember(chatRoomMember.getOccupantJid()) != chatRoomMember)
             {
@@ -706,7 +716,6 @@ public class JitsiMeetConferenceImpl
                             + " isJigasi=" + chatRoomMember.isJigasi()
                             + " isTranscriber=" + chatRoomMember.isTranscriber()
                             + room);
-            hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
             if (!checkMinParticipants())
@@ -1354,19 +1363,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Return the time this conference was created.
-     */
-    public Instant getCreationTime()
-    {
-        return creationTime;
-    }
-
-    public boolean hasHadAtLeastOneParticipant()
-    {
-        return hasHadAtLeastOneParticipant;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -1469,8 +1465,6 @@ public class JitsiMeetConferenceImpl
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
         o.put("chat_room_role_manager", chatRoomRoleManager == null ? "null" : chatRoomRoleManager.getDebugState());
         o.put("started", started.get());
-        o.put("creation_time", creationTime.toString());
-        o.put("has_had_at_least_one_participant", hasHadAtLeastOneParticipant);
         o.put("start_audio_muted", startAudioMuted);
         o.put("start_video_muted", startVideoMuted);
         if (colibriSessionManager != null)
