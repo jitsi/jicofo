@@ -25,7 +25,7 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.PacketQueue
 
 /**
- * Manages to XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
+ * Manages the XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
  */
 sealed class ChatRoomRoleManager(
     protected val chatRoom: ChatRoom
@@ -38,6 +38,7 @@ sealed class ChatRoomRoleManager(
     protected open fun memberLeftOrKicked(member: ChatRoomMember) {}
 
     open fun stop() {}
+    open fun grantOwnership() {}
 
     open val debugState: OrderedJsonObject = OrderedJsonObject()
 
@@ -60,6 +61,7 @@ sealed class ChatRoomRoleManager(
 class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     private var owner: ChatRoomMember? = null
 
+    override fun grantOwnership() = queue.add { electNewOwner() }
     override fun memberJoined(member: ChatRoomMember) {
         if (owner == null) { electNewOwner() }
     }
@@ -84,11 +86,6 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     private fun electNewOwner() {
         queue.add {
             if (owner != null) {
-                return@add
-            }
-
-            // Skip if this is a breakout room.
-            if (chatRoom.isBreakoutRoom) {
                 return@add
             }
 
@@ -132,6 +129,8 @@ class AuthenticationRoleManager(
     init {
         authenticationAuthority.addAuthenticationListener(authenticationListener)
     }
+
+    override fun grantOwnership() = queue.add { grantOwnerToAuthenticatedUsers() }
 
     private fun grantOwnerToAuthenticatedUsers() {
         chatRoom.members.filter {

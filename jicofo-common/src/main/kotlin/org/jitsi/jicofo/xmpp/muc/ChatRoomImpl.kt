@@ -115,18 +115,6 @@ class ChatRoomImpl(
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
-    /** The value of the "meetingId" field from the MUC form, if present. */
-    override var meetingId: String? = null
-        set(value) {
-            if (field != null && field != value) {
-                logger.warn("Replacing meeting_id $field with $value")
-            }
-            if (value != null) {
-                logger.addContext("meeting_id", value)
-            }
-            field = value
-        }
-
     override var lobbyEnabled: Boolean = false
         private set(value) {
             if (value != field) {
@@ -134,14 +122,6 @@ class ChatRoomImpl(
                 field = value
             }
         }
-
-    /** The value of the "isbreakout" field from the MUC form, if present. */
-    override var isBreakoutRoom = false
-        private set
-
-    /** The value of "breakout_main_room" field from the MUC form, if present. */
-    override var mainRoom: String? = null
-        private set
 
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
@@ -169,9 +149,6 @@ class ChatRoomImpl(
                 membersJson[it.name] = it.debugState
             }
             this["members"] = membersJson
-            this["meeting_id"] = meetingId.toString()
-            this["is_breakout_room"] = isBreakoutRoom
-            this["main_room"] = mainRoom.toString()
             this["audio_senders_count"] = audioSendersCount
             this["video_senders_count"] = videoSendersCount
             this["av_moderation"] = OrderedJsonObject().apply {
@@ -204,10 +181,10 @@ class ChatRoomImpl(
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    override fun join() {
+    override fun join(): ChatRoomInfo {
         // TODO: clean-up the way we figure out what nickname to use.
         resetState()
-        joinAs(xmppProvider.config.username)
+        return joinAs(xmppProvider.config.username)
     }
 
     /**
@@ -223,16 +200,13 @@ class ChatRoomImpl(
         }
         synchronized(this) {
             lastPresenceSent = null
-            meetingId = null
             logger.addContext("meeting_id", "")
-            isBreakoutRoom = false
-            mainRoom = null
             avModerationByMediaType.values.forEach { it.reset() }
         }
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    private fun joinAs(nickname: Resourcepart) {
+    private fun joinAs(nickname: Resourcepart): ChatRoomInfo {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
         synchronized(muc) {
             if (muc.isJoined) {
@@ -249,23 +223,20 @@ class ChatRoomImpl(
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
         muc.sendConfigurationForm(answer)
+
+        // Read the breakout room and meetingId.
+        val mainRoomStr = if (config.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.firstValue?.toBoolean() == true) {
+            config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
+        } else null
+
+        return ChatRoomInfo(
+            meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
+            mainRoomJid = if (mainRoomStr == null) null else JidCreate.entityBareFrom(mainRoomStr)
+        )
     }
 
-    /** Read the fields we care about from [form] and update local state. */
+    /** Read the fields we care about from [configForm] and update local state. */
     private fun parseConfigForm(configForm: Form) {
-        // Read breakout rooms options
-        configForm.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.let {
-            isBreakoutRoom = it.firstValue.toBoolean()
-            if (isBreakoutRoom) {
-                mainRoom = configForm.getField(MucConfigFields.MAIN_ROOM)?.firstValue
-            }
-        }
-
-        // Read meetingId
-        configForm.getField(MucConfigFields.MEETING_ID)?.let {
-            meetingId = it.firstValue
-        }
-
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
     }

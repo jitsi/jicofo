@@ -78,6 +78,11 @@ class FocusManager(
     }
 
     /**
+     * Whether there are any breakout conferences whose main room is [jid].
+     */
+    fun hasBreakoutRooms(jid: EntityBareJid) = conferences.values.any { it.mainRoomJid == jid }
+
+    /**
      * @return <tt>true</tt> if conference focus is in the room and ready to handle session participants.
      * @throws Exception if for any reason we have failed to create the conference.
      */
@@ -148,6 +153,13 @@ class FocusManager(
             conferencesCache.remove(conference)
             if (conference.includeInStatistics()) {
                 ConferenceMetrics.conferenceCount.dec()
+            }
+
+            // If this was a breakout room, tell the main conference that it ended.
+            conference.mainRoomJid?.let { mainRoomJid ->
+                conferences[mainRoomJid]?.let {
+                    TaskPools.ioPool.submit { it.breakoutConferenceEnded() }
+                }
             }
 
             // It is not clear whether the code below necessarily needs to hold the lock or not.

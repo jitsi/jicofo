@@ -51,18 +51,6 @@ interface ChatRoom {
      *  just to get the count) */
     val visitorCount: Int
 
-    /** Whether this [ChatRoom] is a breakout room. */
-    val isBreakoutRoom: Boolean
-
-    /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
-    val mainRoom: String?
-
-    /**
-     * The unique meeting ID associated by this room. It is updated on join or when the MUC form is read if the
-     * corresponding field is present.
-     */
-    var meetingId: String?
-
     /** Whether a lobby is enabled for the room. Read from the MUC config form. */
     val lobbyEnabled: Boolean
 
@@ -74,9 +62,12 @@ interface ChatRoom {
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
 
-    /** Joins this chat room with the preconfigured nickname. */
+    /**
+     * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after
+     * joining.
+     */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join()
+    fun join(): ChatRoomInfo
 
     /** Leave the chat room. */
     fun leave()
@@ -138,3 +129,11 @@ interface ChatRoom {
     /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
     fun reloadConfiguration()
 }
+
+/** Holds fields read from the MUC config form at join time, which never change. */
+data class ChatRoomInfo(
+    /** The meeting ID, or null if none is set. */
+    val meetingId: String?,
+    /** The JID of the main room if this is a breakout room, otherwise null. */
+    val mainRoomJid: EntityBareJid?
+)
