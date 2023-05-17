@@ -43,6 +43,11 @@ public interface JitsiMeetConference extends XmppProvider.Listener
      */
     int getParticipantCount();
 
+    /**
+     * @return the JID of the main room if this is is breakout room, and null otherwise.
+     */
+    EntityBareJid getMainRoomJid();
+
     /** Return the number of visitors in the conference */
     long getVisitorCount();
 

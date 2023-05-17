@@ -46,7 +46,6 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
-import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -102,6 +101,12 @@ public class JitsiMeetConferenceImpl
     private volatile ChatRoom chatRoom;
 
     /**
+     * The JID of the main room if this is a breakout room, and {@code null} otherwise.
+     */
+    @Nullable
+    private EntityBareJid mainRoomJid = null;
+
+    /**
      * Maps a visitor node ID (one of the values from {@link XmppConfig#getVisitors()}'s keys) to the {@link ChatRoom}
      * on that node.
      */
@@ -154,21 +159,15 @@ public class JitsiMeetConferenceImpl
     private final AtomicBoolean started = new AtomicBoolean(false);
 
     /**
-     * The time at which this conference was created.
-     */
-    private final Instant creationTime = Instant.now();
-
-    /**
-     * Whether at least one participant has joined this conference. This is exposed because to facilitate pruning
-     * conferences without any participants (which uses a separate code path than conferences with participants).
-     */
-    private boolean hasHadAtLeastOneParticipant = false;
-
-    /**
      * A timeout task which will terminate media session of the user who is
      * sitting alone in the room for too long.
      */
     private Future<?> singleParticipantTout;
+
+    /**
+     * A task to stop the conference if no participants join after an initial timeout.
+     */
+    private Future<?> conferenceStartTimeout;
 
     /**
      * Whether participants being invited to the conference as a result of joining (as opposed to having already
@@ -278,6 +277,18 @@ public class JitsiMeetConferenceImpl
         this.jicofoServices = jicofoServices;
         this.jvbVersion = jvbVersion;
 
+        conferenceStartTimeout = TaskPools.getScheduledPool().schedule(
+                () ->
+                {
+                    if (includeInStatistics)
+                    {
+                        logger.info("Expiring due to initial timeout.");
+                    }
+                },
+                ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
+                TimeUnit.MILLISECONDS);
+
+
         logger.info("Created new conference.");
     }
 
@@ -286,6 +297,13 @@ public class JitsiMeetConferenceImpl
     public String getMeetingId()
     {
         return meetingId;
+    }
+
+    @Nullable
+    @Override
+    public EntityBareJid getMainRoomJid()
+    {
+        return mainRoomJid;
     }
 
     /**
@@ -468,18 +486,6 @@ public class JitsiMeetConferenceImpl
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
-        AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
-        if (authenticationAuthority != null)
-        {
-            chatRoomRoleManager = new AuthenticationRoleManager(chatRoom, authenticationAuthority);
-            chatRoom.addListener(chatRoomRoleManager);
-        }
-        else if (ConferenceConfig.config.enableAutoOwner())
-        {
-            chatRoomRoleManager = new AutoOwnerRoleManager(chatRoom);
-            chatRoom.addListener(chatRoomRoleManager);
-        }
-
         transcriberManager = new TranscriberManager(
             jicofoServices.getXmppServices().getXmppConnectionByName(
                 JigasiConfig.config.xmppConnectionName()
@@ -489,16 +495,34 @@ public class JitsiMeetConferenceImpl
             jicofoServices.getXmppServices().getJigasiDetector(),
             logger);
 
-        chatRoom.join();
-        String meetingId = chatRoom.getMeetingId();
-        if (meetingId == null)
+        ChatRoomInfo chatRoomInfo = chatRoom.join();
+        if (chatRoomInfo.getMeetingId() == null)
         {
             meetingId = UUID.randomUUID().toString();
             logger.warn("No meetingId set for the MUC. Generating one locally.");
-            chatRoom.setMeetingId(meetingId);
         }
-        this.meetingId = meetingId;
+        else
+        {
+            this.meetingId = chatRoomInfo.getMeetingId();
+        }
         logger.addContext("meeting_id", meetingId);
+
+        mainRoomJid = chatRoomInfo.getMainRoomJid();
+
+        AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
+        if (authenticationAuthority != null)
+        {
+            chatRoomRoleManager = new AuthenticationRoleManager(chatRoom, authenticationAuthority);
+            chatRoom.addListener(chatRoomRoleManager);
+            chatRoomRoleManager.grantOwnership();
+        }
+        // We do not use auto-owner in breakout rooms.
+        else if (ConferenceConfig.config.enableAutoOwner() && mainRoomJid == null)
+        {
+            chatRoomRoleManager = new AutoOwnerRoleManager(chatRoom);
+            chatRoom.addListener(chatRoomRoleManager);
+            chatRoomRoleManager.grantOwnership();
+        }
 
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
@@ -673,6 +697,11 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
+            if (conferenceStartTimeout != null)
+            {
+                conferenceStartTimeout.cancel(true);
+                conferenceStartTimeout = null;
+            }
             // Make sure it's still a member of the room.
             if (chatRoomMember.getChatRoom().getChatMember(chatRoomMember.getOccupantJid()) != chatRoomMember)
             {
@@ -706,7 +735,6 @@ public class JitsiMeetConferenceImpl
                             + " isJigasi=" + chatRoomMember.isJigasi()
                             + " isTranscriber=" + chatRoomMember.isTranscriber()
                             + room);
-            hasHadAtLeastOneParticipant = true;
 
             // Are we ready to start ?
             if (!checkMinParticipants())
@@ -929,10 +957,35 @@ public class JitsiMeetConferenceImpl
             visitorCount.setValue(newVisitorCount);
         }
 
+        maybeStop();
+    }
+
+    /**
+     * Stop the conference if there are no members and there are no associated breakout room.
+     */
+    private void maybeStop()
+    {
+        ChatRoom chatRoom = this.chatRoom;
         if (chatRoom == null || chatRoom.getMemberCount() == 0)
         {
-            stop();
+            if (jicofoServices.getFocusManager().hasBreakoutRooms(roomName))
+            {
+                logger.info("Breakout rooms still present, will not stop.");
+            }
+            else
+            {
+                logger.info("Last member left, stopping.");
+                stop();
+            }
         }
+    }
+
+    /**
+     * Signal to this conference that one of its associated breakout conferences ended.
+     */
+    public void breakoutConferenceEnded()
+    {
+        maybeStop();
     }
 
     @Override
@@ -1354,19 +1407,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Return the time this conference was created.
-     */
-    public Instant getCreationTime()
-    {
-        return creationTime;
-    }
-
-    public boolean hasHadAtLeastOneParticipant()
-    {
-        return hasHadAtLeastOneParticipant;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -1469,8 +1509,6 @@ public class JitsiMeetConferenceImpl
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
         o.put("chat_room_role_manager", chatRoomRoleManager == null ? "null" : chatRoomRoleManager.getDebugState());
         o.put("started", started.get());
-        o.put("creation_time", creationTime.toString());
-        o.put("has_had_at_least_one_participant", hasHadAtLeastOneParticipant);
         o.put("start_audio_muted", startAudioMuted);
         o.put("start_video_muted", startVideoMuted);
         if (colibriSessionManager != null)
@@ -1627,7 +1665,7 @@ public class JitsiMeetConferenceImpl
             return null;
         }
         // We don't support visitors in breakout rooms.
-        if (chatRoom != null && chatRoom.isBreakoutRoom())
+        if (mainRoomJid != null)
         {
             return null;
         }
@@ -1707,12 +1745,6 @@ public class JitsiMeetConferenceImpl
             // Will call join after releasing the lock
             chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
 
-            ChatRoom mainChatRoom = this.chatRoom;
-            String meetingId = mainChatRoom == null ? null : mainChatRoom.getMeetingId();
-            if (meetingId != null)
-            {
-                chatRoomToJoin.setMeetingId(meetingId);
-            }
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 
             visitorChatRooms.put(node, chatRoomToJoin);

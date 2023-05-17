@@ -161,10 +161,7 @@ class ConferenceIqHandler(
             if (!roomExists) {
                 // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                val breakoutRoomExists = focusManager.getConferences().any { conference ->
-                    conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
-                }
-                if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
+                if (!focusManager.hasBreakoutRooms(room) && authAuthority.getUserIdentity(query.from) == null) {
                     // Error not authorized
                     return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
                 }
