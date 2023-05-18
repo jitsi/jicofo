@@ -215,6 +215,7 @@ class JicofoServices {
         put("jigasi", xmppServices.jigasiStats)
         put("threads", GlobalMetrics.threadsMetrics.get())
         put("jingle", JingleStats.toJson())
+        put("version", CurrentVersionImpl.VERSION.toString())
         healthChecker?.let {
             val result = it.result
             put("slow_health_check", it.totalSlowHealthChecks)
@@ -253,5 +254,10 @@ class JicofoServices {
 
         @JvmStatic
         var jicofoServicesSingleton: JicofoServices? by SynchronizedDelegate(null, jicofoServicesSingletonSyncRoot)
+
+        @JvmField
+        val versionMetric = JicofoMetricsContainer.instance.registerInfo(
+            "version", "Application version", CurrentVersionImpl.VERSION.toString()
+        )
     }
 }
