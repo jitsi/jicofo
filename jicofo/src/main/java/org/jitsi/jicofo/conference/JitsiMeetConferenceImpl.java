@@ -284,6 +284,7 @@ public class JitsiMeetConferenceImpl
                     {
                         logger.info("Expiring due to initial timeout.");
                     }
+                    stop();
                 },
                 ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
                 TimeUnit.MILLISECONDS);
