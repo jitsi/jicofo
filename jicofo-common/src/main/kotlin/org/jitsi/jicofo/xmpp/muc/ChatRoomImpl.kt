@@ -58,6 +58,7 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 @SuppressFBWarnings(
@@ -77,12 +78,12 @@ class ChatRoomImpl(
     /**
      * Keep track of the recently added visitors.
      */
-    private val newVisitorsRate = RateTracker(
+    private val pendingVisitorsCounter = PendingVisitorCountTracker(
         JicofoConfig.config.vnodeJoinLatencyInterval
     )
 
-    override fun visitorAdded() {
-        newVisitorsRate.update(1)
+    override fun visitorInvited() {
+        pendingVisitorsCounter.visitorInvited()
     }
 
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
@@ -92,7 +93,7 @@ class ChatRoomImpl(
         get() = membersMap.size
     override val visitorCount: Int
         get() = membersMap.count { it.value.role == MemberRole.VISITOR } +
-            newVisitorsRate.getAccumulatedCount().toInt()
+            pendingVisitorsCounter.getCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
@@ -395,6 +396,9 @@ class ChatRoomImpl(
             membersMap[jid] = newMember
             if (!newMember.isAudioMuted) audioSendersCount++
             if (!newMember.isVideoMuted) videoSendersCount++
+            if (newMember.role == MemberRole.VISITOR) {
+                pendingVisitorsCounter.visitorArrived()
+            }
             return newMember
         }
     }
@@ -604,5 +608,34 @@ class ChatRoomImpl(
             enabled = false
             whitelist = emptyList()
         }
+    }
+}
+
+private class PendingVisitorCountTracker(
+    windowSize: Duration
+) {
+    private var pendingJoins = 0L
+
+    private var tracker = object : RateTracker(windowSize) {
+        override fun bucketExpired(count: Long) {
+            pendingJoins -= count
+        }
+    }
+
+    @Synchronized
+    fun visitorInvited() {
+        tracker.update(1)
+        pendingJoins++
+    }
+
+    @Synchronized
+    fun visitorArrived() {
+        pendingJoins = (pendingJoins - 1).coerceAtLeast(0)
+    }
+
+    @Synchronized
+    fun getCount(): Long {
+        tracker.getAccumulatedCount() // Run bucket expirations
+        return pendingJoins
     }
 }

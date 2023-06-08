@@ -49,7 +49,7 @@ interface ChatRoom {
     /**
      *  The number of [members] with role VISITOR. Exposed separately for performance (avoid creating a new list
      *  just to get the count).  Also includes visitors who have joined within the last vnode-join-latency-interval,
-     *  as reported by [visitorAdded]. */
+     *  as reported by [visitorInvited]. */
     val visitorCount: Int
 
     /** Whether a lobby is enabled for the room. Read from the MUC config form. */
@@ -132,7 +132,7 @@ interface ChatRoom {
 
     /** Notify the chatroom that a visitor has been redirected to this room.
      */
-    fun visitorAdded()
+    fun visitorInvited()
 }
 
 /** Holds fields read from the MUC config form at join time, which never change. */
