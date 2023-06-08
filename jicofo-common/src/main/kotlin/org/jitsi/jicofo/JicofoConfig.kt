@@ -21,6 +21,7 @@ import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
+import java.time.Duration
 
 class JicofoConfig private constructor() {
     val localRegion: String? by optionalconfig {
@@ -35,6 +36,12 @@ class JicofoConfig private constructor() {
     fun enableSctp() = enableSctp
 
     fun localRegion() = localRegion
+
+    // TODO this logically should be in VisitorsConfig, but that's in jicofo and this is needed by ChatRoom
+    // in jicofo-common
+    val vnodeJoinLatencyInterval: Duration by config {
+        "jicofo.visitors.vnode-join-latency-interval".from(newConfig)
+    }
 
     companion object {
         const val BASE = "jicofo"

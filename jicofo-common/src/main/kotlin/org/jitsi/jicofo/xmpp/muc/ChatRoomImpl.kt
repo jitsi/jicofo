@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
@@ -29,6 +30,7 @@ import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.observableWhenChanged
+import org.jitsi.utils.stats.RateTracker
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -72,13 +74,25 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    /**
+     * Keep track of the recently added visitors.
+     */
+    private val newVisitorsRate = RateTracker(
+        JicofoConfig.config.vnodeJoinLatencyInterval
+    )
+
+    override fun visitorAdded() {
+        newVisitorsRate.update(1)
+    }
+
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
     override val visitorCount: Int
-        get() = membersMap.count { it.value.role == MemberRole.VISITOR }
+        get() = membersMap.count { it.value.role == MemberRole.VISITOR } +
+            newVisitorsRate.getAccumulatedCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
