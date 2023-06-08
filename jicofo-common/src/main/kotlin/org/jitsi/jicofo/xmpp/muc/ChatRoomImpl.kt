@@ -20,6 +20,7 @@ package org.jitsi.jicofo.xmpp.muc
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
+import org.jitsi.jicofo.util.PendingCount
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -30,7 +31,6 @@ import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.observableWhenChanged
-import org.jitsi.utils.stats.RateTracker
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -58,7 +58,6 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
-import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 @SuppressFBWarnings(
@@ -78,12 +77,12 @@ class ChatRoomImpl(
     /**
      * Keep track of the recently added visitors.
      */
-    private val pendingVisitorsCounter = PendingVisitorCountTracker(
+    private val pendingVisitorsCounter = PendingCount(
         JicofoConfig.config.vnodeJoinLatencyInterval
     )
 
     override fun visitorInvited() {
-        pendingVisitorsCounter.visitorInvited()
+        pendingVisitorsCounter.eventPending()
     }
 
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
@@ -397,7 +396,7 @@ class ChatRoomImpl(
             if (!newMember.isAudioMuted) audioSendersCount++
             if (!newMember.isVideoMuted) videoSendersCount++
             if (newMember.role == MemberRole.VISITOR) {
-                pendingVisitorsCounter.visitorArrived()
+                pendingVisitorsCounter.eventOccurred()
             }
             return newMember
         }
@@ -608,34 +607,5 @@ class ChatRoomImpl(
             enabled = false
             whitelist = emptyList()
         }
-    }
-}
-
-private class PendingVisitorCountTracker(
-    windowSize: Duration
-) {
-    private var pendingJoins = 0L
-
-    private var tracker = object : RateTracker(windowSize) {
-        override fun bucketExpired(count: Long) {
-            pendingJoins -= count
-        }
-    }
-
-    @Synchronized
-    fun visitorInvited() {
-        tracker.update(1)
-        pendingJoins++
-    }
-
-    @Synchronized
-    fun visitorArrived() {
-        pendingJoins = (pendingJoins - 1).coerceAtLeast(0)
-    }
-
-    @Synchronized
-    fun getCount(): Long {
-        tracker.getAccumulatedCount() // Run bucket expirations
-        return pendingJoins
     }
 }
