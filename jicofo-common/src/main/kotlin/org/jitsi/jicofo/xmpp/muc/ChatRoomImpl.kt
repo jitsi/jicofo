@@ -18,7 +18,9 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
+import org.jitsi.jicofo.util.PendingCount
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -72,13 +74,25 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    /**
+     * Keep track of the recently added visitors.
+     */
+    private val pendingVisitorsCounter = PendingCount(
+        JicofoConfig.config.vnodeJoinLatencyInterval
+    )
+
+    override fun visitorInvited() {
+        pendingVisitorsCounter.eventPending()
+    }
+
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
     override val visitorCount: Int
-        get() = membersMap.count { it.value.role == MemberRole.VISITOR }
+        get() = membersMap.count { it.value.role == MemberRole.VISITOR } +
+            pendingVisitorsCounter.getCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
@@ -381,6 +395,9 @@ class ChatRoomImpl(
             membersMap[jid] = newMember
             if (!newMember.isAudioMuted) audioSendersCount++
             if (!newMember.isVideoMuted) videoSendersCount++
+            if (newMember.role == MemberRole.VISITOR) {
+                pendingVisitorsCounter.eventOccurred()
+            }
             return newMember
         }
     }

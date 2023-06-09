@@ -1719,6 +1719,7 @@ public class JitsiMeetConferenceImpl
             }
             if (visitorChatRooms.containsKey(node))
             {
+                visitorChatRooms.get(node).visitorInvited();
                 // Already joined.
                 return node;
             }
@@ -1749,6 +1750,7 @@ public class JitsiMeetConferenceImpl
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 
             visitorChatRooms.put(node, chatRoomToJoin);
+            chatRoomToJoin.visitorInvited();
         }
 
         chatRoomToJoin.join();
