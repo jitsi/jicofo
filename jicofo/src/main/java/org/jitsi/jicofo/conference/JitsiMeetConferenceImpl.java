@@ -952,10 +952,9 @@ public class JitsiMeetConferenceImpl
                 expireBridgeSessions();
             }
 
-            int newVisitorCount = (int) participants.values().stream()
-                    .filter(p -> p.getChatMember().getRole() == MemberRole.VISITOR)
-                    .count();
-            visitorCount.setValue(newVisitorCount);
+            visitorCount.setValue(() -> (int) participants.values().stream()
+                .filter(p -> p.getChatMember().getRole() == MemberRole.VISITOR)
+                .count());
         }
 
         maybeStop();

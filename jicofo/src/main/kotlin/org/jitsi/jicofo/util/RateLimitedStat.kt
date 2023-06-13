@@ -41,20 +41,10 @@ constructor(
 
     private var updateTask: Future<*>? = null
 
-    var value: Int
+    private var setter: (() -> Int)? = null
+
+    val value: Int
         get() = synchronized(lock) { _value }
-        set(newValue) {
-            val report: Boolean
-            synchronized(lock) {
-                _value = newValue
-
-                report = valueUpdated()
-            }
-
-            if (report) {
-                reportChanged()
-            }
-        }
 
     fun adjustValue(delta: Int) {
         val report: Boolean
@@ -65,12 +55,29 @@ constructor(
         }
 
         if (report) {
-            reportChanged()
+            execute()
         }
     }
 
-    /** Call this inside the synchronization block after the value is updated.  If it returns true,
-     * call [reportChanged] immediately, *outside* the synchronization block.
+    /** Pass a function which will retrieve the value.  This will only be called once the timeout has
+     * expired, thus rate-limiting how often the value will be set.  Use this to rate limit expensive methods
+     * for setting the value.
+     */
+    fun setValue(setter: () -> Int) {
+        val report: Boolean
+        synchronized(lock) {
+            this.setter = setter
+
+            report = valueUpdated()
+        }
+
+        if (report) {
+            execute()
+        }
+    }
+
+    /** Call this inside the synchronization block after the value or its setter is updated.  If it returns true,
+     * call [execute] immediately, *outside* the synchronization block.
      */
     private fun valueUpdated(): Boolean {
         val now = Instant.now()
@@ -83,7 +90,7 @@ constructor(
                 val notificationTime = it.plus(changeInterval)
                 val delay = Duration.between(now, notificationTime)
                 updateTask = scheduledPool.schedule(
-                    { this.reportChanged() },
+                    { this.execute() },
                     delay.toMillis(),
                     TimeUnit.MILLISECONDS
                 )
@@ -93,9 +100,10 @@ constructor(
         return true
     }
 
-    private fun reportChanged() {
+    private fun execute() {
         val value: Int
         synchronized(lock) {
+            setter?.let { this._value = it() }.also { setter = null }
             value = this._value
             lastChanged = clock.instant()
             updateTask = null
