@@ -810,7 +810,8 @@ public class JitsiMeetConferenceImpl
             {
                 userParticipantAdded();
             }
-            if (added && participant.getChatMember().getRole() == MemberRole.VISITOR) {
+            if (added && participant.getChatMember().getRole() == MemberRole.VISITOR)
+            {
                 visitorAdded();
             }
 
@@ -1022,10 +1023,12 @@ public class JitsiMeetConferenceImpl
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
-            if (!willReinvite && removed != null && removed.isUserParticipant()) {
+            if (!willReinvite && removed != null && removed.isUserParticipant())
+            {
                 userParticipantRemoved();
             }
-            if (!willReinvite && removed != null && removed.getChatMember().getRole() == MemberRole.VISITOR) {
+            if (!willReinvite && removed != null && removed.getChatMember().getRole() == MemberRole.VISITOR)
+            {
                 visitorRemoved();
             }
         }
@@ -1690,15 +1693,20 @@ public class JitsiMeetConferenceImpl
 
     private long userParticipantCount = 0;
 
-    private void userParticipantAdded() {
-        synchronized (participantLock) {
+    private void userParticipantAdded()
+    {
+        synchronized (participantLock)
+        {
             userParticipantCount++;
         }
     }
 
-    private void userParticipantRemoved() {
-        synchronized(participantLock) {
-            if (userParticipantCount <= 0) {
+    private void userParticipantRemoved()
+    {
+        synchronized(participantLock)
+        {
+            if (userParticipantCount <= 0)
+            {
                 logger.error("userParticipantCount out of sync - trying to reduce when value is " +
                     userParticipantCount);
             }
