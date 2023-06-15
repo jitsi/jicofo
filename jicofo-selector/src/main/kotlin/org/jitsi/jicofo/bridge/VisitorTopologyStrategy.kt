@@ -58,8 +58,9 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
         node: Colibri2Session
     ): TopologySelectionResult {
         val existingNodes = cascade.sessions.values
-        if (!node.visitor)
+        if (!node.visitor) {
             return TopologySelectionResult(existingNodes.firstOrNull(), coreMesh)
+        }
 
         if (existingNodes.isEmpty()) {
             /* This is the first bridge, the value doesn't matter. */

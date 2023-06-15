@@ -110,11 +110,13 @@ data class IqRequest<T : IQ>(val iq: T, val connection: AbstractXMPPConnection)
 sealed class IqProcessingResult {
     /** The IQ was accepted/handled. The given `response` should be sent as a response. */
     class AcceptedWithResponse(val response: IQ) : IqProcessingResult()
+
     /**
      *  The IQ was accepted/handled, but no response is available (yet). The handler is responsible for eventually
      *  sending a response by other means.
      *  */
     class AcceptedWithNoResponse : IqProcessingResult()
+
     /** The IQ was handled, but it resulted in an error. The given error `response` should be sent as a response. */
     class RejectedWithError(val response: ErrorIQ) : IqProcessingResult() {
         constructor(
@@ -126,6 +128,7 @@ sealed class IqProcessingResult {
             condition: StanzaError.Condition
         ) : this(IQ.createErrorResponse(iq, StanzaError.getBuilder(condition).build()))
     }
+
     /** The IQ was not handled. */
     class NotProcessed : IqProcessingResult()
 }

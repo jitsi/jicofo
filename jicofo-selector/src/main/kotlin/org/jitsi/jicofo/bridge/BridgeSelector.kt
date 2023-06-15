@@ -165,7 +165,6 @@ class BridgeSelector @JvmOverloads constructor(
          * */
         version: String? = null
     ): Bridge? {
-
         var v = conferenceBridges.keys.firstOrNull()?.fullVersion
         if (v == null) {
             v = version
@@ -200,13 +199,15 @@ class BridgeSelector @JvmOverloads constructor(
 
         // If there are active bridges, prefer those.
         val activeBridges = candidateBridges.filter { !it.isDraining }.toList()
-        if (!activeBridges.isEmpty())
+        if (!activeBridges.isEmpty()) {
             candidateBridges = activeBridges
+        }
 
         // If there are bridges not shutting down, prefer those.
         val runningBridges = candidateBridges.filter { !it.isInGracefulShutdown }.toList()
-        if (!runningBridges.isEmpty())
+        if (!runningBridges.isEmpty()) {
             candidateBridges = runningBridges
+        }
 
         return bridgeSelectionStrategy.select(
             candidateBridges,
@@ -249,20 +250,26 @@ class BridgeSelector @JvmOverloads constructor(
     companion object {
         @JvmField
         val lostBridges = JicofoMetricsContainer.instance.registerCounter(
-            "bridge_selector_lost_bridges", "Number of bridges which disconnected unexpectedly."
+            "bridge_selector_lost_bridges",
+            "Number of bridges which disconnected unexpectedly."
         )
+
         @JvmField
         val bridgeCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "bridge_selector_bridge_count", "The current number of bridges"
+            "bridge_selector_bridge_count",
+            "The current number of bridges"
         )
         val operationalBridgeCountMetric = JicofoMetricsContainer.instance.registerLongGauge(
-            "bridge_selector_bridge_count_operational", "The current number of operational bridges"
+            "bridge_selector_bridge_count_operational",
+            "The current number of operational bridges"
         )
         val inShutdownBridgeCountMetric = JicofoMetricsContainer.instance.registerLongGauge(
-            "bridge_selector_bridge_count_in_shutdown", "The current number of bridges in graceful shutdown"
+            "bridge_selector_bridge_count_in_shutdown",
+            "The current number of bridges in graceful shutdown"
         )
         val bridgeVersionCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "bridge_selector_bridge_version_count", "The current number of different bridge versions"
+            "bridge_selector_bridge_version_count",
+            "The current number of different bridge versions"
         )
     }
 

@@ -117,8 +117,9 @@ class BridgePinTest : ShouldSpec() {
 
 fun getNumPins(obj: JSONObject): Int {
     val pins = obj["pins"]
-    if (pins is JSONArray)
+    if (pins is JSONArray) {
         return pins.size
-    else
+    } else {
         return -1
+    }
 }

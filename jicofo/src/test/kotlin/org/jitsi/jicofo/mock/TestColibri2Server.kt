@@ -129,7 +129,8 @@ class TestColibri2Server {
                 newEndpoint
             } else {
                 endpoints[c2endpoint.id] ?: throw IqProcessingException(
-                    item_not_found, "Unknown endpoint ${c2endpoint.id}"
+                    item_not_found,
+                    "Unknown endpoint ${c2endpoint.id}"
                 )
             }
 

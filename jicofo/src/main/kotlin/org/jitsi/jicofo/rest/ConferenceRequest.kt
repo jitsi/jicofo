@@ -42,7 +42,6 @@ class ConferenceRequest(
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest): String {
-
         val response: IQ
         try {
             response = conferenceIqHandler.handleConferenceIq(conferenceRequest.toConferenceIq())

@@ -163,7 +163,6 @@ class ColibriV2SessionManager(
 
                 // Visitors don't have relay endpoints.
                 if (sessionParticipantsToRemove.any { !it.visitor }) {
-
                     // If the session was removed the relays themselves are expired, so there's no need to expire
                     // individual endpoints within a relay.
                     getPathsFrom(session) { _, otherSession, from ->
@@ -183,7 +182,6 @@ class ColibriV2SessionManager(
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
-
         synchronized(syncRoot) {
             val participantsToMuteBySession = mutableMapOf<Colibri2Session, MutableSet<ParticipantInfo>>()
 
@@ -410,7 +408,6 @@ class ColibriV2SessionManager(
         created: Boolean,
         participantInfo: ParticipantInfo
     ): ColibriAllocation {
-
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
         // bridge as non-operational so the caller can do the right thing:
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)

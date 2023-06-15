@@ -37,6 +37,7 @@ import java.util.*
 @Path("/rtcstats")
 class RtcStats {
     private val logger = createLogger()
+
     /**
      * Returns json string with statistics.
      * @return json string with statistics.

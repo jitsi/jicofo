@@ -389,9 +389,11 @@ open class Participant @JvmOverloads constructor(
 
     private inner class JingleRequestHandlerImpl : JingleRequestHandler {
         private fun checkJingleSession(jingleSession: JingleSession): StanzaError? =
-            if (this@Participant.jingleSession != jingleSession)
+            if (this@Participant.jingleSession != jingleSession) {
                 StanzaError.from(StanzaError.Condition.item_not_found, "jingle session no longer active").build()
-            else null
+            } else {
+                null
+            }
 
         override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
@@ -530,10 +532,12 @@ open class Participant @JvmOverloads constructor(
                     // to simply contain the latest session, but until then just log a warning.
                     logger.warn("Accepting transport-info for a different (new?) jingle session")
                 }
-            } else checkJingleSession(jingleSession)?.let {
-                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
-                // we prefer to avoid trickle at all and don't expect to see it.
-                logger.warn("Received an early or stale transport-info from non-jigasi.")
+            } else {
+                checkJingleSession(jingleSession)?.let {
+                    // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
+                    // we prefer to avoid trickle at all and don't expect to see it.
+                    logger.warn("Received an early or stale transport-info from non-jigasi.")
+                }
             }
 
             val transport = contents.getTransport()

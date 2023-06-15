@@ -35,7 +35,8 @@ class TaskPools {
         fun resetIoPool() { ioPool = defaultIoPool }
 
         private val defaultScheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
-            3, CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
+            3,
+            CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
         )
 
         @JvmStatic

@@ -44,7 +44,6 @@ fun parseJidFromClientProxyJid(
      */
     jid: Jid
 ): Jid {
-
     clientProxy ?: return jid
 
     if (clientProxy == jid.asDomainBareJid()) {
