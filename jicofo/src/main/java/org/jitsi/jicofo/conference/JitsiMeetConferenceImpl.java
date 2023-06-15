@@ -810,7 +810,12 @@ public class JitsiMeetConferenceImpl
                 ConferenceMetrics.participantsNoSourceName.inc();
             }
 
-            participants.put(chatRoomMember.getOccupantJid(), participant);
+            boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
+            if (added && participant.isUserParticipant())
+            {
+                addUserParticipant();
+            }
+
             inviteParticipant(participant, false, justJoined);
         }
     }
@@ -1021,6 +1026,9 @@ public class JitsiMeetConferenceImpl
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
+            if (removed != null && removed.isUserParticipant()) {
+                removeUserParticipant();
+            }
         }
 
         getColibriSessionManager().removeParticipant(participant.getEndpointId());
@@ -1680,6 +1688,27 @@ public class JitsiMeetConferenceImpl
         return selectVisitorNode();
     }
 
+    private long userParticipantCount = 0;
+
+    private void addUserParticipant() {
+        synchronized (participantLock) {
+            userParticipantCount++;
+        }
+    }
+
+    private void removeUserParticipant() {
+        synchronized(participantLock) {
+            if (userParticipantCount <= 0) {
+                logger.error("userParticipantCount out of sync - trying to reduce when value is " +
+                    userParticipantCount);
+            }
+            else
+            {
+                userParticipantCount--;
+            }
+        }
+    }
+
     /**
      * Get the number of participants for the purpose of visitor node selection. Exclude participants for jibri and
      * transcribers, because they shouldn't count towards the max participant limit.
@@ -1688,10 +1717,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            return participants.values().stream().filter(
-                    p -> !p.getChatMember().isJibri()
-                            && !p.getChatMember().isTranscriber()
-                            && p.getChatMember().getRole() != MemberRole.VISITOR).count();
+            return userParticipantCount;
         }
     }
 

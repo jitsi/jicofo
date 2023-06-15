@@ -133,6 +133,13 @@ open class Participant @JvmOverloads constructor(
      */
     private var desktopSourceIsMuted = false
 
+    /**
+     * Whether this participant is a "user participant" for the purposes of
+     * [JitsiMeetConferenceImpl.getUserParticipantCount].
+     * Needs to be unchanging so counts don't get out of sync.
+     */
+    val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
+
     init {
         updateDesktopSourceIsMuted(chatMember.sourceInfos)
     }
