@@ -147,6 +147,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
      * state.
      */
     fun addListener(listener: Listener) = listeners.add(listener)
+
     /** Removes the specified listener. */
     fun removeListener(listener: Listener) = listeners.remove(listener)
 
@@ -255,13 +256,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         val components: Set<Component> = if (discoveryManager == null) {
             logger.info("Can not discover components, no ServiceDiscoveryManager")
             emptySet()
-        } else try {
-            discoveryManager.discoverInfo(domain)?.identities
-                ?.filter { it.category == "component" }
-                ?.map { Component(it.type, it.name) }?.toSet() ?: emptySet()
-        } catch (e: Exception) {
-            logger.warn("Failed to discover info", e)
-            emptySet()
+        } else {
+            try {
+                discoveryManager.discoverInfo(domain)?.identities
+                    ?.filter { it.category == "component" }
+                    ?.map { Component(it.type, it.name) }?.toSet() ?: emptySet()
+            } catch (e: Exception) {
+                logger.warn("Failed to discover info", e)
+                emptySet()
+            }
         }
 
         this.components = components

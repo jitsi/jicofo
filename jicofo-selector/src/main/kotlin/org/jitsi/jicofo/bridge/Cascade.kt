@@ -110,7 +110,7 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     repairFn: (C, Set<Set<N>>) -> Set<CascadeRepair<N, L>>
 ) {
     if (!containsNode(node)) {
-        return; /* Or should this be an exception. i.e. `require`? */
+        return; // Or should this be an exception. i.e. `require`?
     }
     check(sessions[node.relayId] === node) {
         "Bridge entry for ${node.relayId} is not $node"

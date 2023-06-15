@@ -155,8 +155,9 @@ class ValidatingConferenceSourceMap(
         }
         val ssrcsAcceptedToRemove = sourcesAcceptedToBeRemoved.map { it.ssrc }
 
-        if (!existingSources.ssrcGroups.containsAll(sourcesToRemove.ssrcGroups))
+        if (!existingSources.ssrcGroups.containsAll(sourcesToRemove.ssrcGroups)) {
             throw SourceGroupDoesNotExistException()
+        }
         val groupsAcceptedToBeRemoved = mutableSetOf(*sourcesToRemove.ssrcGroups.toTypedArray())
 
         // Also automatically remove groups some of whose sources are removed.

@@ -176,8 +176,10 @@ class JigasiIqHandler(
     class Stats {
         /** User requests which failed due to no jigasi instances being available. */
         private val requestsFailedNoInstanceAvailable = AtomicInteger()
+
         /** User requests which failed due to the jigasi XMPP connection not being connected. */
         private val requestsFailedXmppNotConnected = AtomicInteger()
+
         /** User requests which failed because all jigasi instances (up to the max retry count) failed. */
         private val requestsFailedAllInstancesFailed = AtomicInteger()
 

@@ -87,7 +87,9 @@ class XmppServices(
             conferenceStore,
             jigasiDetector
         )
-    } else null
+    } else {
+        null
+    }
     val jigasiStats: OrderedJsonObject
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
@@ -111,7 +113,9 @@ class XmppServices(
         clientConnection.xmppConnection.registerIQRequestHandler(this)
     }
 
-    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) null else {
+    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) {
+        null
+    } else {
         AuthenticationIqHandler(authenticationAuthority).also {
             clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
             clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)

@@ -174,7 +174,8 @@ class ConferenceIqHandler(
     override fun handleIQRequest(iqRequest: IQ?): IQ? {
         if (iqRequest !is ConferenceIq) {
             return IQ.createErrorResponse(
-                iqRequest, StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
+                iqRequest,
+                StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
             ).also {
                 logger.error("Received an unexpected IQ type: $iqRequest")
             }

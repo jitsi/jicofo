@@ -120,8 +120,8 @@ class JicofoHealthChecker(
             if (!focusManager.conferenceRequest(
                     roomName,
                     emptyMap(),
-                    Level.WARNING /* conference logging level */,
-                    false /* don't include in statistics */
+                    loggingLevel = Level.WARNING,
+                    includeInStatistics = false
                 )
             ) {
                 return Result(success = false, hardFailure = true, message = "Test conference failed to start.")
@@ -177,7 +177,9 @@ class JicofoHealthChecker(
 
     companion object {
         val healthyMetric = JicofoMetricsContainer.instance.registerBooleanMetric(
-            "healthy", "Whether jicofo is healthy or not.", true
+            "healthy",
+            "Whether jicofo is healthy or not.",
+            true
         )
     }
 }

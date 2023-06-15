@@ -34,6 +34,7 @@ import org.jxmpp.jid.Jid
  */
 interface ChatRoomMember {
     val chatRoom: ChatRoom
+
     /** The ID of this member. Set to the resource part of the occupant JID. */
     val name: String
 

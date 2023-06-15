@@ -98,6 +98,7 @@ class ChatRoomImpl(
     private var lastPresenceSent: PresenceBuilder? = null
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
+
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
         // The initial presence sent by smack contains an empty "x"
@@ -172,6 +173,7 @@ class ChatRoomImpl(
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
+
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
 
@@ -241,7 +243,9 @@ class ChatRoomImpl(
         // Read the breakout room and meetingId.
         val mainRoomStr = if (config.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.firstValue?.toBoolean() == true) {
             config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
-        } else null
+        } else {
+            null
+        }
 
         return ChatRoomInfo(
             meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,

@@ -69,8 +69,8 @@ class JibriSessionTest : ShouldSpec({
         pendingTimeout,
         maxNumRetries,
         detector,
-        false /* isSIP */,
-        null /* sipAddress */,
+        false, // isSIP
+        null, // sipAddress
         "displayName",
         "streamID",
         "youTubeBroadcastId",

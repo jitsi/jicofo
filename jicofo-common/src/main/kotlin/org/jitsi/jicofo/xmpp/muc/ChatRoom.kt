@@ -93,8 +93,10 @@ interface ChatRoom {
 
     /** Add all of [extensions] to our presence. */
     fun addPresenceExtensions(extensions: Collection<ExtensionElement>)
+
     /** Add [extension] to our presence, no-op if we already have an extension with the same QName. */
     fun addPresenceExtensionIfMissing(extension: ExtensionElement)
+
     /** Remove presence extensions matching the predicate [pred]. */
     fun removePresenceExtensions(pred: (ExtensionElement) -> Boolean)
 

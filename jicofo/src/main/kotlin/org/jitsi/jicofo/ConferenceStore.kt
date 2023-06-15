@@ -23,6 +23,7 @@ import org.jxmpp.jid.EntityBareJid
 interface ConferenceStore {
     /** Get a list of all conferences. */
     fun getAllConferences(): List<JitsiMeetConference>
+
     /** Get a conference for a specific [Jid] (i.e. name). */
     fun getConference(jid: EntityBareJid): JitsiMeetConference?
 

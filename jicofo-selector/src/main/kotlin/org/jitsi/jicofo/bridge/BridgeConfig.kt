@@ -163,6 +163,7 @@ class BridgeConfig private constructor() {
 
     companion object {
         const val BASE = "jicofo.bridge"
+
         @JvmField
         val config = BridgeConfig()
     }
