@@ -211,8 +211,11 @@ class ChatRoomImpl(
     private fun resetState() {
         synchronized(membersMap) {
             if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members.")
+                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
                 membersMap.clear()
+                visitorMemberCount = 0
+                audioSendersCount = 0
+                videoSendersCount = 0
             }
         }
         synchronized(this) {
