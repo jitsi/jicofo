@@ -759,11 +759,6 @@ public class JitsiMeetConferenceImpl
             {
                 inviteChatMember(chatRoomMember, true);
             }
-
-            if (chatRoomMember.getRole() == MemberRole.VISITOR)
-            {
-                visitorAdded();
-            }
         }
     }
 
@@ -813,7 +808,10 @@ public class JitsiMeetConferenceImpl
             boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
             if (added && participant.isUserParticipant())
             {
-                addUserParticipant();
+                userParticipantAdded();
+            }
+            if (added && participant.getChatMember().getRole() == MemberRole.VISITOR) {
+                visitorAdded();
             }
 
             inviteParticipant(participant, false, justJoined);
@@ -940,7 +938,8 @@ public class JitsiMeetConferenceImpl
                         Reason.GONE,
                         null,
                         /* no need to send session-terminate - gone */ false,
-                        /* no need to send source-remove */ false);
+                        /* no need to send source-remove */ false,
+                        /* not reinviting */ false);
             }
             else
             {
@@ -1004,7 +1003,8 @@ public class JitsiMeetConferenceImpl
             @NotNull Reason reason,
             String message,
             boolean sendSessionTerminate,
-            boolean sendSourceRemove)
+            boolean sendSourceRemove,
+            boolean willReinvite)
     {
         logger.info(String.format(
                 "Terminating %s, reason: %s, send session-terminate: %s",
@@ -1022,10 +1022,10 @@ public class JitsiMeetConferenceImpl
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
-            if (removed != null && removed.isUserParticipant()) {
-                removeUserParticipant();
+            if (!willReinvite && removed != null && removed.isUserParticipant()) {
+                userParticipantRemoved();
             }
-            if (removed != null && removed.getChatMember().getRole() == MemberRole.VISITOR) {
+            if (!willReinvite && removed != null && removed.getChatMember().getRole() == MemberRole.VISITOR) {
                 visitorRemoved();
             }
         }
@@ -1144,7 +1144,8 @@ public class JitsiMeetConferenceImpl
                     Reason.SUCCESS,
                     (reinvite) ? "reinvite requested" : null,
                     /* do not send session-terminate */ false,
-                    /* do send source-remove */ true);
+                    /* do send source-remove */ true,
+                    reinvite);
 
             if (reinvite)
             {
@@ -1689,13 +1690,13 @@ public class JitsiMeetConferenceImpl
 
     private long userParticipantCount = 0;
 
-    private void addUserParticipant() {
+    private void userParticipantAdded() {
         synchronized (participantLock) {
             userParticipantCount++;
         }
     }
 
-    private void removeUserParticipant() {
+    private void userParticipantRemoved() {
         synchronized(participantLock) {
             if (userParticipantCount <= 0) {
                 logger.error("userParticipantCount out of sync - trying to reduce when value is " +
@@ -1871,7 +1872,8 @@ public class JitsiMeetConferenceImpl
                 Reason.GENERAL_ERROR,
                 "jingle session failed",
                 /* send session-terminate */ true,
-                /* send source-remove */ true);
+                /* send source-remove */ true,
+                /* not reinviting */ false);
     }
 
     /**
@@ -2117,7 +2119,8 @@ public class JitsiMeetConferenceImpl
                             Reason.EXPIRED,
                             "Idle session timeout",
                             /* send session-terminate */ true,
-                            /* send source-remove */ false);
+                            /* send source-remove */ false,
+                            /* not reinviting */ false);
 
                     expireBridgeSessions();
                 }
