@@ -759,11 +759,6 @@ public class JitsiMeetConferenceImpl
             {
                 inviteChatMember(chatRoomMember, true);
             }
-
-            if (chatRoomMember.getRole() == MemberRole.VISITOR)
-            {
-                visitorAdded();
-            }
         }
     }
 
@@ -810,7 +805,19 @@ public class JitsiMeetConferenceImpl
                 ConferenceMetrics.participantsNoSourceName.inc();
             }
 
-            participants.put(chatRoomMember.getOccupantJid(), participant);
+            boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
+            if (added)
+            {
+                if (participant.isUserParticipant())
+                {
+                    userParticipantAdded();
+                }
+                else if (participant.getChatMember().getRole() == MemberRole.VISITOR)
+                {
+                    visitorAdded();
+                }
+            }
+
             inviteParticipant(participant, false, justJoined);
         }
     }
@@ -935,7 +942,8 @@ public class JitsiMeetConferenceImpl
                         Reason.GONE,
                         null,
                         /* no need to send session-terminate - gone */ false,
-                        /* no need to send source-remove */ false);
+                        /* no need to send source-remove */ false,
+                        /* not reinviting */ false);
             }
             else
             {
@@ -951,10 +959,6 @@ public class JitsiMeetConferenceImpl
             {
                 expireBridgeSessions();
             }
-
-            visitorCount.setValue(() -> (int) participants.values().stream()
-                .filter(p -> p.getChatMember().getRole() == MemberRole.VISITOR)
-                .count());
         }
 
         maybeStop();
@@ -1003,7 +1007,8 @@ public class JitsiMeetConferenceImpl
             @NotNull Reason reason,
             String message,
             boolean sendSessionTerminate,
-            boolean sendSourceRemove)
+            boolean sendSourceRemove,
+            boolean willReinvite)
     {
         logger.info(String.format(
                 "Terminating %s, reason: %s, send session-terminate: %s",
@@ -1021,6 +1026,17 @@ public class JitsiMeetConferenceImpl
             Participant removed = participants.remove(participant.getChatMember().getOccupantJid());
             logger.info(
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
+            if (!willReinvite && removed != null)
+            {
+                if (removed.isUserParticipant())
+                {
+                    userParticipantRemoved();
+                }
+                else if (removed.getChatMember().getRole() == MemberRole.VISITOR)
+                {
+                    visitorRemoved();
+                }
+            }
         }
 
         getColibriSessionManager().removeParticipant(participant.getEndpointId());
@@ -1137,7 +1153,8 @@ public class JitsiMeetConferenceImpl
                     Reason.SUCCESS,
                     (reinvite) ? "reinvite requested" : null,
                     /* do not send session-terminate */ false,
-                    /* do send source-remove */ true);
+                    /* do send source-remove */ true,
+                    reinvite);
 
             if (reinvite)
             {
@@ -1680,6 +1697,32 @@ public class JitsiMeetConferenceImpl
         return selectVisitorNode();
     }
 
+    private long userParticipantCount = 0;
+
+    private void userParticipantAdded()
+    {
+        synchronized (participantLock)
+        {
+            userParticipantCount++;
+        }
+    }
+
+    private void userParticipantRemoved()
+    {
+        synchronized(participantLock)
+        {
+            if (userParticipantCount <= 0)
+            {
+                logger.error("userParticipantCount out of sync - trying to reduce when value is " +
+                    userParticipantCount);
+            }
+            else
+            {
+                userParticipantCount--;
+            }
+        }
+    }
+
     /**
      * Get the number of participants for the purpose of visitor node selection. Exclude participants for jibri and
      * transcribers, because they shouldn't count towards the max participant limit.
@@ -1688,10 +1731,7 @@ public class JitsiMeetConferenceImpl
     {
         synchronized (participantLock)
         {
-            return participants.values().stream().filter(
-                    p -> !p.getChatMember().isJibri()
-                            && !p.getChatMember().isTranscriber()
-                            && p.getChatMember().getRole() != MemberRole.VISITOR).count();
+            return userParticipantCount;
         }
     }
 
@@ -1846,7 +1886,8 @@ public class JitsiMeetConferenceImpl
                 Reason.GENERAL_ERROR,
                 "jingle session failed",
                 /* send session-terminate */ true,
-                /* send source-remove */ true);
+                /* send source-remove */ true,
+                /* not reinviting */ false);
     }
 
     /**
@@ -1949,6 +1990,12 @@ public class JitsiMeetConferenceImpl
     private void visitorAdded()
     {
         visitorCount.adjustValue(+1);
+    }
+
+    /** Called when a new visitor has been added to the conference. */
+    private void visitorRemoved()
+    {
+        visitorCount.adjustValue(-1);
     }
 
     /**
@@ -2086,7 +2133,8 @@ public class JitsiMeetConferenceImpl
                             Reason.EXPIRED,
                             "Idle session timeout",
                             /* send session-terminate */ true,
-                            /* send source-remove */ false);
+                            /* send source-remove */ false,
+                            /* not reinviting */ false);
 
                     expireBridgeSessions();
                 }

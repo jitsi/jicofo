@@ -90,8 +90,9 @@ class ChatRoomImpl(
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+    private var visitorMemberCount: Int = 0
     override val visitorCount: Int
-        get() = membersMap.count { it.value.role == MemberRole.VISITOR } +
+        get() = synchronized(membersMap) { visitorMemberCount } +
             pendingVisitorsCounter.getCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
@@ -210,8 +211,11 @@ class ChatRoomImpl(
     private fun resetState() {
         synchronized(membersMap) {
             if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members.")
+                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
                 membersMap.clear()
+                visitorMemberCount = 0
+                audioSendersCount = 0
+                videoSendersCount = 0
             }
         }
         synchronized(this) {
@@ -401,6 +405,7 @@ class ChatRoomImpl(
             if (!newMember.isVideoMuted) videoSendersCount++
             if (newMember.role == MemberRole.VISITOR) {
                 pendingVisitorsCounter.eventOccurred()
+                visitorMemberCount++
             }
             return newMember
         }
@@ -552,6 +557,9 @@ class ChatRoomImpl(
                 } else {
                     if (!removed.isAudioMuted) audioSendersCount--
                     if (!removed.isVideoMuted) videoSendersCount--
+                    if (removed.role == MemberRole.VISITOR) {
+                        visitorMemberCount--
+                    }
                 }
                 return removed
             }

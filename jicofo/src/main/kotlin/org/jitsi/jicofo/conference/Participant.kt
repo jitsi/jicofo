@@ -133,6 +133,13 @@ open class Participant @JvmOverloads constructor(
      */
     private var desktopSourceIsMuted = false
 
+    /**
+     * Whether this participant is a "user participant" for the purposes of
+     * [JitsiMeetConferenceImpl.getUserParticipantCount].
+     * Needs to be unchanging so counts don't get out of sync.
+     */
+    val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
+
     init {
         updateDesktopSourceIsMuted(chatMember.sourceInfos)
     }
@@ -348,9 +355,10 @@ open class Participant @JvmOverloads constructor(
 
     /**
      * Whether force-muting should be suppressed for this participant (it is a trusted participant and doesn't
-     * support unmuting).
+     * support unmuting, or is a visitor and muting is redundant).
      */
-    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri
+    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri ||
+        chatMember.role == MemberRole.VISITOR
 
     /** Checks whether this [Participant]'s role has moderator rights. */
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
