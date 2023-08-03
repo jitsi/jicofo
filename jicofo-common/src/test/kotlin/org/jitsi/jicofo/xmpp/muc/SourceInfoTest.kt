@@ -60,14 +60,19 @@ class SourceInfoTest : ShouldSpec() {
                   "3b554cf4-v1": {
                     "muted": true,
                     "videoType": "desktop"
+                  },
+                  "3b554cf4-v3": {
+                    "mediaType": "audio"
                   }
                 }
                 """.trimIndent()
             ).shouldBe(
                 setOf(
-                    SourceInfo("3b554cf4-a0", false, null),
-                    SourceInfo("3b554cf4-v0", true, null),
-                    SourceInfo("3b554cf4-v1", true, VideoType.Desktop),
+                    SourceInfo("3b554cf4-a0", false, null, MediaType.AUDIO),
+                    SourceInfo("3b554cf4-v0", true, null, MediaType.VIDEO),
+                    SourceInfo("3b554cf4-v1", true, VideoType.Desktop, MediaType.VIDEO),
+                    // The explicitly signaled "audio" precedes over "video" inferred from "-v3" in the name.
+                    SourceInfo("3b554cf4-v3", true, null, MediaType.AUDIO),
                 )
             )
         }
@@ -76,6 +81,10 @@ class SourceInfoTest : ShouldSpec() {
             parseSourceInfoJson("""{ "abc-v0": {} }""".trimIndent()).first().mediaType shouldBe MediaType.VIDEO
             parseSourceInfoJson("""{ "abc-d0": {} }""".trimIndent()).first().mediaType shouldBe null
             parseSourceInfoJson("""{ "abc0": {} }""".trimIndent()).first().mediaType shouldBe null
+            parseSourceInfoJson("""{ "abc0": { "mediaType": "audio" } }""".trimIndent()).first().mediaType shouldBe
+                MediaType.AUDIO
+            parseSourceInfoJson("""{ "abc0": { "mediaType": "VIDEO" } }""".trimIndent()).first().mediaType shouldBe
+                MediaType.VIDEO
         }
     }
 }

@@ -17,30 +17,16 @@ package org.jitsi.jicofo.xmpp.muc
 
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.logging2.LoggerImpl
 import org.json.simple.JSONObject
 import org.json.simple.parser.JSONParser
-
-private val logger = LoggerImpl(SourceInfo::javaClass.name)
 
 /** The information about a source contained in a jitsi-meet SourceInfo extension. */
 data class SourceInfo(
     val name: String,
     val muted: Boolean,
-    val videoType: VideoType?
-) {
-    val mediaType: MediaType? = name.indexOf('-').let { indexOfDash ->
-        if (indexOfDash < 0 || indexOfDash == name.length - 1) {
-            null
-        } else {
-            when (name[indexOfDash + 1]) {
-                'a' -> MediaType.AUDIO
-                'v' -> MediaType.VIDEO
-                else -> null
-            }
-        }
-    }
-}
+    val videoType: VideoType?,
+    val mediaType: MediaType?
+)
 
 /**
  *  Parse the JSON string encoded in a SourceInfo XML extension as a set of [SourceInfo]s.
@@ -61,6 +47,29 @@ fun parseSourceInfoJson(s: String): Set<SourceInfo> {
             else -> VideoType.parseString(videoTypeValue)
         }
 
-        SourceInfo(name, muted, videoType)
+        val mediaTypeField = sourceJson["mediaType"] as? String
+        val mediaType = when {
+            "audio".equals(mediaTypeField, ignoreCase = true) -> MediaType.AUDIO
+            "video".equals(mediaTypeField, ignoreCase = true) -> MediaType.VIDEO
+            else -> parseMediaTypeFromName(name)
+        }
+
+        SourceInfo(name, muted, videoType, mediaType)
     }.toSet()
+}
+
+/**
+ * If not explicitly signaled the media type is encoded in the name as in `abcd-a0` (an audio source) and `abcd-v5`
+ * (a video source).
+ */
+private fun parseMediaTypeFromName(name: String): MediaType? = name.indexOf('-').let { indexOfDash ->
+    if (indexOfDash < 0 || indexOfDash == name.length - 1) {
+        null
+    } else {
+        when (name[indexOfDash + 1]) {
+            'a' -> MediaType.AUDIO
+            'v' -> MediaType.VIDEO
+            else -> null
+        }
+    }
 }
