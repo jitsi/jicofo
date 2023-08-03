@@ -63,6 +63,7 @@ class Colibri2Session(
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+
     /**
      * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
      * change in the context of a session. We maintain the invariant that whenever a conference has multiple sessions,
@@ -86,7 +87,6 @@ class Colibri2Session(
 
     /** Creates and sends a request to allocate a new endpoint. Returns a [StanzaCollector] for the response. */
     internal fun sendAllocationRequest(participant: ParticipantInfo): StanzaCollector {
-
         val request = createRequest(!created)
         val endpoint = participant.toEndpoint(create = true, expire = false).apply {
             if (participant.audioMuted || participant.videoMuted) {
@@ -171,8 +171,10 @@ class Colibri2Session(
         val request = createRequest().setExpire(true)
         sendRequest(request.build(), "expire")
     }
+
     /** Expire the colibri2 endpoint for a specific participant */
     internal fun expire(participantToExpire: ParticipantInfo) = expire(singletonList(participantToExpire))
+
     /** Expire the colibri2 endpoints for a set of participants. */
     internal fun expire(participantsToExpire: List<ParticipantInfo>) {
         if (participantsToExpire.isEmpty()) {

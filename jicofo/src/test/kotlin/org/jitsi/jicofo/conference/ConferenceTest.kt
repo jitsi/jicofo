@@ -357,7 +357,7 @@ class ConferenceTest : ShouldSpec() {
 
             conference.debugState.shouldBeValidJson()
             members.map { it.getParticipant()!! }.forEach {
-                it.debugState.shouldBeValidJson()
+                it.getDebugState(true).shouldBeValidJson()
             }
         }
     }
@@ -393,6 +393,7 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
     var ssrcs = 1L
     val colibri2Server = TestColibri2Server()
     val remoteParticipants = mutableMapOf<Jid, RemoteParticipant>()
+
     // IQs sent by jicofo
     val requests = mutableListOf<IQ>()
 

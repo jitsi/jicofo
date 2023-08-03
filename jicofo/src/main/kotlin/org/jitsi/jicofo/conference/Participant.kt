@@ -133,6 +133,13 @@ open class Participant @JvmOverloads constructor(
      */
     private var desktopSourceIsMuted = false
 
+    /**
+     * Whether this participant is a "user participant" for the purposes of
+     * [JitsiMeetConferenceImpl.getUserParticipantCount].
+     * Needs to be unchanging so counts don't get out of sync.
+     */
+    val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
+
     init {
         updateDesktopSourceIsMuted(chatMember.sourceInfos)
     }
@@ -348,22 +355,24 @@ open class Participant @JvmOverloads constructor(
 
     /**
      * Whether force-muting should be suppressed for this participant (it is a trusted participant and doesn't
-     * support unmuting).
+     * support unmuting, or is a visitor and muting is redundant).
      */
-    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri
+    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri ||
+        chatMember.role == MemberRole.VISITOR
 
     /** Checks whether this [Participant]'s role has moderator rights. */
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
 
-    val debugState: OrderedJsonObject
-        get() = OrderedJsonObject().apply {
-            this["id"] = endpointId
+    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+        this["id"] = endpointId
+        if (full) {
             this["source_signaling"] = sourceSignaling.debugState
-            this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
-            this["jingle_session"] = jingleSession?.debugState() ?: "null"
-            this["chatMember"] = chatMember.debugState
         }
+        statId?.let { this["stats_id"] = it }
+        this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
+        this["jingle_session"] = jingleSession?.debugState() ?: "null"
+    }
 
     /**
      * Create a new [JingleSession] instance for this participant. Defined here and left open for easier testing.
@@ -388,9 +397,11 @@ open class Participant @JvmOverloads constructor(
 
     private inner class JingleRequestHandlerImpl : JingleRequestHandler {
         private fun checkJingleSession(jingleSession: JingleSession): StanzaError? =
-            if (this@Participant.jingleSession != jingleSession)
+            if (this@Participant.jingleSession != jingleSession) {
                 StanzaError.from(StanzaError.Condition.item_not_found, "jingle session no longer active").build()
-            else null
+            } else {
+                null
+            }
 
         override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
@@ -529,10 +540,12 @@ open class Participant @JvmOverloads constructor(
                     // to simply contain the latest session, but until then just log a warning.
                     logger.warn("Accepting transport-info for a different (new?) jingle session")
                 }
-            } else checkJingleSession(jingleSession)?.let {
-                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
-                // we prefer to avoid trickle at all and don't expect to see it.
-                logger.warn("Received an early or stale transport-info from non-jigasi.")
+            } else {
+                checkJingleSession(jingleSession)?.let {
+                    // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
+                    // we prefer to avoid trickle at all and don't expect to see it.
+                    logger.warn("Received an early or stale transport-info from non-jigasi.")
+                }
             }
 
             val transport = contents.getTransport()

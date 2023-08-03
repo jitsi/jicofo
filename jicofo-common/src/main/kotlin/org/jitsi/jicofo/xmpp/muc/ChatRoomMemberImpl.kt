@@ -76,12 +76,9 @@ class ChatRoomMemberImpl(
     /** The node#ver advertised in a Caps extension. */
     private var capsNodeVer: String? = null
 
-    override val role: MemberRole
-        get() {
-            return chatRoom.getOccupant(this)?.let {
-                fromSmack(it.role, it.affiliation)
-            } ?: MemberRole.VISITOR
-        }
+    override var role: MemberRole =
+        chatRoom.getOccupant(this)?.let { fromSmack(it.role, it.affiliation) } ?: MemberRole.VISITOR
+        private set
 
     /**
      * Caches user JID of the participant if we're able to see it.
@@ -170,6 +167,14 @@ class ChatRoomMemberImpl(
         } else {
             isJigasi = false
             isJibri = false
+        }
+
+        val oldRole = role
+        chatRoom.getOccupant(this)?.let { role = fromSmack(it.role, it.affiliation) }
+        if ((role == MemberRole.VISITOR) != (oldRole == MemberRole.VISITOR)) {
+            // This will mess up various member counts
+            // TODO: Should we try to update them, instead?
+            logger.warn("Member role changed from $oldRole to $role - not supported!")
         }
 
         isTranscriber = isJigasi && presence.getExtension(TranscriptionStatusExtension::class.java) != null

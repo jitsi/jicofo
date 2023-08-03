@@ -18,7 +18,9 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
+import org.jitsi.jicofo.util.PendingCount
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -72,18 +74,32 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    /**
+     * Keep track of the recently added visitors.
+     */
+    private val pendingVisitorsCounter = PendingCount(
+        JicofoConfig.config.vnodeJoinLatencyInterval
+    )
+
+    override fun visitorInvited() {
+        pendingVisitorsCounter.eventPending()
+    }
+
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+    private var visitorMemberCount: Int = 0
     override val visitorCount: Int
-        get() = membersMap.count { it.value.role == MemberRole.VISITOR }
+        get() = synchronized(membersMap) { visitorMemberCount } +
+            pendingVisitorsCounter.getCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
+
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
         // The initial presence sent by smack contains an empty "x"
@@ -115,18 +131,6 @@ class ChatRoomImpl(
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
-    /** The value of the "meetingId" field from the MUC form, if present. */
-    override var meetingId: String? = null
-        set(value) {
-            if (field != null && field != value) {
-                logger.warn("Replacing meeting_id $field with $value")
-            }
-            if (value != null) {
-                logger.addContext("meeting_id", value)
-            }
-            field = value
-        }
-
     override var lobbyEnabled: Boolean = false
         private set(value) {
             if (value != field) {
@@ -134,14 +138,6 @@ class ChatRoomImpl(
                 field = value
             }
         }
-
-    /** The value of the "isbreakout" field from the MUC form, if present. */
-    override var isBreakoutRoom = false
-        private set
-
-    /** The value of "breakout_main_room" field from the MUC form, if present. */
-    override var mainRoom: String? = null
-        private set
 
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
@@ -160,26 +156,25 @@ class ChatRoomImpl(
         eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
-    override val debugState = OrderedJsonObject().apply {
-        this["room_jid"] = roomJid.toString()
-        this["my_occupant_jid"] = myOccupantJid.toString()
-        val membersJson = OrderedJsonObject()
-        membersMap.values.forEach {
-            membersJson[it.name] = it.debugState
+    override val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["room_jid"] = roomJid.toString()
+            this["my_occupant_jid"] = myOccupantJid.toString()
+            val membersJson = OrderedJsonObject()
+            membersMap.values.forEach {
+                membersJson[it.name] = it.debugState
+            }
+            this["members"] = membersJson
+            this["audio_senders_count"] = audioSendersCount
+            this["video_senders_count"] = videoSendersCount
+            this["av_moderation"] = OrderedJsonObject().apply {
+                avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
+            }
         }
-        this["members"] = membersJson
-        this["meeting_id"] = meetingId.toString()
-        this["is_breakout_room"] = isBreakoutRoom
-        this["main_room"] = mainRoom.toString()
-        this["audio_senders_count"] = audioSendersCount
-        this["video_senders_count"] = videoSendersCount
-        this["av_moderation"] = OrderedJsonObject().apply {
-            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
-        }
-    }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
+
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
 
@@ -203,10 +198,10 @@ class ChatRoomImpl(
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    override fun join() {
+    override fun join(): ChatRoomInfo {
         // TODO: clean-up the way we figure out what nickname to use.
         resetState()
-        joinAs(xmppProvider.config.username)
+        return joinAs(xmppProvider.config.username)
     }
 
     /**
@@ -216,22 +211,22 @@ class ChatRoomImpl(
     private fun resetState() {
         synchronized(membersMap) {
             if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members.")
+                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
                 membersMap.clear()
+                visitorMemberCount = 0
+                audioSendersCount = 0
+                videoSendersCount = 0
             }
         }
         synchronized(this) {
             lastPresenceSent = null
-            meetingId = null
             logger.addContext("meeting_id", "")
-            isBreakoutRoom = false
-            mainRoom = null
             avModerationByMediaType.values.forEach { it.reset() }
         }
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    private fun joinAs(nickname: Resourcepart) {
+    private fun joinAs(nickname: Resourcepart): ChatRoomInfo {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
         synchronized(muc) {
             if (muc.isJoined) {
@@ -248,23 +243,22 @@ class ChatRoomImpl(
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
         muc.sendConfigurationForm(answer)
+
+        // Read the breakout room and meetingId.
+        val mainRoomStr = if (config.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.firstValue?.toBoolean() == true) {
+            config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
+        } else {
+            null
+        }
+
+        return ChatRoomInfo(
+            meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
+            mainRoomJid = if (mainRoomStr == null) null else JidCreate.entityBareFrom(mainRoomStr)
+        )
     }
 
-    /** Read the fields we care about from [form] and update local state. */
+    /** Read the fields we care about from [configForm] and update local state. */
     private fun parseConfigForm(configForm: Form) {
-        // Read breakout rooms options
-        configForm.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.let {
-            isBreakoutRoom = it.firstValue.toBoolean()
-            if (isBreakoutRoom) {
-                mainRoom = configForm.getField(MucConfigFields.MAIN_ROOM)?.firstValue
-            }
-        }
-
-        // Read meetingId
-        configForm.getField(MucConfigFields.MEETING_ID)?.let {
-            meetingId = it.firstValue
-        }
-
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
     }
@@ -409,6 +403,10 @@ class ChatRoomImpl(
             membersMap[jid] = newMember
             if (!newMember.isAudioMuted) audioSendersCount++
             if (!newMember.isVideoMuted) videoSendersCount++
+            if (newMember.role == MemberRole.VISITOR) {
+                pendingVisitorsCounter.eventOccurred()
+                visitorMemberCount++
+            }
             return newMember
         }
     }
@@ -559,6 +557,9 @@ class ChatRoomImpl(
                 } else {
                     if (!removed.isAudioMuted) audioSendersCount--
                     if (!removed.isVideoMuted) videoSendersCount--
+                    if (removed.role == MemberRole.VISITOR) {
+                        visitorMemberCount--
+                    }
                 }
                 return removed
             }

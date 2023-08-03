@@ -108,7 +108,6 @@ open class JigasiDetector(
             localRegion: String? = null,
             transcriber: Boolean = false
         ): Jid? {
-
             val availableInstances = instances
                 .filter { !exclude.contains(it.jid) }
                 .filter { !it.isInGracefulShutdown() }
@@ -127,14 +126,16 @@ open class JigasiDetector(
         }
 
         val sipCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jigasi_sip_count", "Number of jigasi instances that support SIP"
+            "jigasi_sip_count",
+            "Number of jigasi instances that support SIP"
         )
         val sipInGracefulShutdownCount = JicofoMetricsContainer.instance.registerLongGauge(
             "jigasi_sip_in_graceful_shutdown_count",
             "Number of jigasi instances that support SIP and are in graceful shutdown"
         )
         val transcriberCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jigasi_transcriber_count", "Number of jigasi instances that support SIP"
+            "jigasi_transcriber_count",
+            "Number of jigasi instances that support SIP"
         )
     }
 }

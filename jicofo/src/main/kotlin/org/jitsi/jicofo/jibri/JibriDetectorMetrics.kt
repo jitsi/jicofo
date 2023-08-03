@@ -23,16 +23,24 @@ import org.jitsi.utils.OrderedJsonObject
 class JibriDetectorMetrics {
     companion object {
         private val jibriInstanceCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jibri_instances", "Current number of jibri instances", 0
+            "jibri_instances",
+            "Current number of jibri instances",
+            0
         )
         private val jibriInstanceAvailableCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "jibri_instances_available", "Current number of available (not in use) jibri instances", 0
+            "jibri_instances_available",
+            "Current number of available (not in use) jibri instances",
+            0
         )
         private val sipJibriInstanceCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "sip_jibri_instances", "Current number of SIP jibri instances", 0
+            "sip_jibri_instances",
+            "Current number of SIP jibri instances",
+            0
         )
         private val sipJibriInstanceAvailableCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "sip_jibri_instances_available", "Current number of available (not in use) SIP jibri instances", 0
+            "sip_jibri_instances_available",
+            "Current number of available (not in use) SIP jibri instances",
+            0
         )
 
         fun updateMetrics(jibriDetector: JibriDetector?, sipJibriDetector: JibriDetector?) {

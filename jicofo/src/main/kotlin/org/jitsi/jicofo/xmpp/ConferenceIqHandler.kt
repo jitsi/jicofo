@@ -94,7 +94,9 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        val vnode = if (visitorSupported && visitorsManager.enabled) {
+        val vnode = if (visitorSupported && visitorsManager.enabled &&
+            !XmppConfig.config.trustedDomains.contains(query.from.asDomainBareJid())
+        ) {
             conference?.redirectVisitor(visitorRequested)
         } else {
             null
@@ -161,10 +163,7 @@ class ConferenceIqHandler(
             if (!roomExists) {
                 // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                val breakoutRoomExists = focusManager.getConferences().any { conference ->
-                    conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
-                }
-                if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
+                if (!focusManager.hasBreakoutRooms(room) && authAuthority.getUserIdentity(query.from) == null) {
                     // Error not authorized
                     return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
                 }
@@ -177,7 +176,8 @@ class ConferenceIqHandler(
     override fun handleIQRequest(iqRequest: IQ?): IQ? {
         if (iqRequest !is ConferenceIq) {
             return IQ.createErrorResponse(
-                iqRequest, StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
+                iqRequest,
+                StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
             ).also {
                 logger.error("Received an unexpected IQ type: $iqRequest")
             }

@@ -48,20 +48,9 @@ interface ChatRoom {
 
     /**
      *  The number of [members] with role VISITOR. Exposed separately for performance (avoid creating a new list
-     *  just to get the count) */
+     *  just to get the count).  Also includes visitors who have joined within the last vnode-join-latency-interval,
+     *  as reported by [visitorInvited]. */
     val visitorCount: Int
-
-    /** Whether this [ChatRoom] is a breakout room. */
-    val isBreakoutRoom: Boolean
-
-    /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
-    val mainRoom: String?
-
-    /**
-     * The unique meeting ID associated by this room. It is updated on join or when the MUC form is read if the
-     * corresponding field is present.
-     */
-    var meetingId: String?
 
     /** Whether a lobby is enabled for the room. Read from the MUC config form. */
     val lobbyEnabled: Boolean
@@ -74,9 +63,12 @@ interface ChatRoom {
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
 
-    /** Joins this chat room with the preconfigured nickname. */
+    /**
+     * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after
+     * joining.
+     */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join()
+    fun join(): ChatRoomInfo
 
     /** Leave the chat room. */
     fun leave()
@@ -101,8 +93,10 @@ interface ChatRoom {
 
     /** Add all of [extensions] to our presence. */
     fun addPresenceExtensions(extensions: Collection<ExtensionElement>)
+
     /** Add [extension] to our presence, no-op if we already have an extension with the same QName. */
     fun addPresenceExtensionIfMissing(extension: ExtensionElement)
+
     /** Remove presence extensions matching the predicate [pred]. */
     fun removePresenceExtensions(pred: (ExtensionElement) -> Boolean)
 
@@ -137,4 +131,16 @@ interface ChatRoom {
 
     /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
     fun reloadConfiguration()
+
+    /** Notify the chatroom that a visitor has been redirected to this room.
+     */
+    fun visitorInvited()
 }
+
+/** Holds fields read from the MUC config form at join time, which never change. */
+data class ChatRoomInfo(
+    /** The meeting ID, or null if none is set. */
+    val meetingId: String?,
+    /** The JID of the main room if this is a breakout room, otherwise null. */
+    val mainRoomJid: EntityBareJid?
+)

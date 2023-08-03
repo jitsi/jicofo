@@ -43,11 +43,23 @@ public interface JitsiMeetConference extends XmppProvider.Listener
      */
     int getParticipantCount();
 
+    /**
+     * @return the JID of the main room if this is is breakout room, and null otherwise.
+     */
+    EntityBareJid getMainRoomJid();
+
     /** Return the number of visitors in the conference */
     long getVisitorCount();
 
     /** Notify this conference that the configuration for the main MUC has changed. */
     void mucConfigurationChanged();
+
+    /** Whether stats for this conference should be exported to rtcstats. */
+    boolean isRtcStatsEnabled();
+
+    /** Get the meeting ID associated with the conference */
+    @Nullable
+    String getMeetingId();
 
     /**
      * Find {@link Participant} for given MUC JID.
@@ -134,4 +146,8 @@ public interface JitsiMeetConference extends XmppProvider.Listener
 
     @NotNull
     OrderedJsonObject getDebugState();
+
+    /** Get the stats for this conference that should be exported to rtcstats. */
+    @NotNull
+    OrderedJsonObject getRtcstatsState();
 }

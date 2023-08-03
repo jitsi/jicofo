@@ -53,7 +53,11 @@ class ConferenceSourceMapTest : ShouldSpec() {
         val endpoint1AdditionalSourceSet = EndpointSourceSet(
             setOf(
                 // The duplicates should be removed
-                s1, s2, s3, s4, s7
+                s1,
+                s2,
+                s3,
+                s4,
+                s7
             ),
             setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4)))
         )

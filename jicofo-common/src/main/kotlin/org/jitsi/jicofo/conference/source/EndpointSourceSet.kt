@@ -208,7 +208,6 @@ fun EndpointSourceSet.toJingle(
     contentMap: MutableMap<MediaType, ContentPacketExtension>,
     owner: String?
 ): List<ContentPacketExtension> {
-
     sources.forEach { source ->
         val content = contentMap.computeIfAbsent(source.mediaType) {
             ContentPacketExtension().apply { name = source.mediaType.toString() }

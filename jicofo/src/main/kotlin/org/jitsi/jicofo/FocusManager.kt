@@ -55,9 +55,6 @@ class FocusManager(
 
     val logger = createLogger()
 
-    /** The thread that expires [JitsiMeetConference]s. */
-    private val expireThread = FocusExpireThread()
-
     /**
      * Jitsi Meet conferences mapped by MUC room names.
      *
@@ -77,11 +74,13 @@ class FocusManager(
     private val pinnedConferences: MutableMap<EntityBareJid, PinnedConference> = HashMap()
 
     fun start() {
-        expireThread.start()
         metricsContainer.addUpdateTask { updateMetrics() }
     }
 
-    fun stop() = expireThread.stop()
+    /**
+     * Whether there are any breakout conferences whose main room is [jid].
+     */
+    fun hasBreakoutRooms(jid: EntityBareJid) = conferences.values.any { it.mainRoomJid == jid }
 
     /**
      * @return <tt>true</tt> if conference focus is in the room and ready to handle session participants.
@@ -154,6 +153,13 @@ class FocusManager(
             conferencesCache.remove(conference)
             if (conference.includeInStatistics()) {
                 ConferenceMetrics.conferenceCount.dec()
+            }
+
+            // If this was a breakout room, tell the main conference that it ended.
+            conference.mainRoomJid?.let { mainRoomJid ->
+                conferences[mainRoomJid]?.let {
+                    TaskPools.ioPool.submit { it.breakoutConferenceEnded() }
+                }
             }
 
             // It is not clear whether the code below necessarily needs to hold the lock or not.
@@ -355,71 +361,6 @@ class FocusManager(
             }
         }
         this["pins"] = pins
-    }
-
-    /**
-     * Takes care of stopping [JitsiMeetConference] if no participant ever joins.
-     *
-     * TODO: this would be cleaner if it maintained a list of conferences to check, with conferences firing a
-     * "participant joined" event.
-     */
-    private inner class FocusExpireThread {
-        private val timeout = ConferenceConfig.config.conferenceStartTimeout
-        private var timeoutThread: Thread? = null
-        private val sleepLock = Object()
-        private var enabled = false
-
-        fun start() {
-            check(this.timeoutThread == null)
-            val timeoutThread = Thread({ expireLoop() }, "FocusExpireThread")
-            enabled = true
-            this.timeoutThread = timeoutThread
-            timeoutThread.start()
-        }
-
-        fun stop() {
-            val timeoutThread = this.timeoutThread ?: return
-            enabled = false
-            synchronized(sleepLock) { sleepLock.notifyAll() }
-            this.timeoutThread = try {
-                if (Thread.currentThread() !== timeoutThread) {
-                    timeoutThread.join()
-                }
-                null
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
-            }
-        }
-
-        private fun expireLoop() {
-            while (enabled) {
-                // Sleep
-                try {
-                    synchronized(sleepLock) { sleepLock.wait(5000) }
-                } catch (e: InterruptedException) {
-                    // Continue to check the enabled flag
-                    // if we're still supposed to run
-                }
-                if (!enabled) {
-                    break
-                }
-                try {
-                    val conferenceCopy = synchronized(conferencesSyncRoot) { ArrayList(conferences.values) }
-
-                    // Loop over conferences
-                    conferenceCopy.filterNot { it.hasHadAtLeastOneParticipant() }.forEach { it ->
-                        if (Duration.between(it.creationTime, Instant.now()) > timeout) {
-                            if (it.includeInStatistics()) {
-                                logger.info("Expiring $it")
-                            }
-                            it.stop()
-                        }
-                    }
-                } catch (ex: Exception) {
-                    logger.warn("Error while checking for timed out conference", ex)
-                }
-            }
-        }
     }
 
     /** Holds pinning information for one conference. */
