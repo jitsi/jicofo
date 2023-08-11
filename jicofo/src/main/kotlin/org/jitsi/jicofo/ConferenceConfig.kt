@@ -84,6 +84,18 @@ class ConferenceConfig private constructor() {
             }
     }
 
+    val restartRequestMinInterval: Duration by config {
+        "jicofo.conference.restart-request-rate-limits.min-interval".from(newConfig)
+    }
+
+    val restartRequestMaxRequests: Int by config {
+        "jicofo.conference.restart-request-rate-limits.max-requests".from(newConfig)
+    }
+
+    val restartRequestInterval: Duration by config {
+        "jicofo.conference.restart-request-rate-limits.interval".from(newConfig)
+    }
+
     /**
      * Get the number of milliseconds to delay signaling of Jingle sources given a certain [conferenceSize].
      */

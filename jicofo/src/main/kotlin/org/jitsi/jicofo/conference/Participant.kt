@@ -107,7 +107,12 @@ open class Participant @JvmOverloads constructor(
      */
     private var inviteRunnable: Cancelable? = null
 
-    private val restartRequestsRateLimit = RateLimit(clock = clock)
+    private val restartRequestsRateLimit = RateLimit(
+        minInterval = ConferenceConfig.config.restartRequestMinInterval,
+        maxRequests = ConferenceConfig.config.restartRequestMaxRequests,
+        interval = ConferenceConfig.config.restartRequestInterval,
+        clock = clock
+    )
 
     /**
      * The Jingle session (if any) established with this peer.
