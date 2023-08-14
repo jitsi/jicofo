@@ -28,6 +28,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
+import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -38,6 +39,8 @@ import org.jxmpp.stringprep.XmppStringprepException
 class ConferenceRequest(
     val conferenceIqHandler: ConferenceIqHandler
 ) {
+    private val logger = createLogger()
+
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -48,6 +51,7 @@ class ConferenceRequest(
         } catch (e: XmppStringprepException) {
             throw BadRequestExceptionWithMessage("Invalid room name: ${e.message}")
         } catch (e: Exception) {
+            logger.error(e.message, e)
             throw BadRequestExceptionWithMessage(e.message)
         }
 
