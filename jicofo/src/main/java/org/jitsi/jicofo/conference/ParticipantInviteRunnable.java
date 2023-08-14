@@ -162,17 +162,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
     private void doRun()
     {
-        Offer offer;
-
-        try
-        {
-            offer = createOffer();
-        }
-        catch (UnsupportedFeatureConfigurationException e)
-        {
-            logger.error("Error creating offer", e);
-            return;
-        }
+        Offer offer = createOffer();
         if (canceled)
         {
             return;
@@ -279,7 +269,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      * {@inheritDoc}
      */
     private Offer createOffer()
-        throws UnsupportedFeatureConfigurationException
     {
         OfferOptions offerOptions = new OfferOptions();
         OfferOptionsUtilKt.applyConstraints(offerOptions, participant);
