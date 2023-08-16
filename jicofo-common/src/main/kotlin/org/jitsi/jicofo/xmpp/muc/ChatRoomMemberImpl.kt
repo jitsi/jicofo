@@ -21,6 +21,7 @@ import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -100,14 +101,43 @@ class ChatRoomMemberImpl(
             return robot || isJigasi || isJibri
         }
 
-    private fun setSourceInfo(sourceInfoString: String) {
-        val sourceInfos: Set<SourceInfo> = try {
-            parseSourceInfoJson(sourceInfoString)
-        } catch (e: Exception) {
-            logger.warn("Ignoring invalid SourceInfo JSON", e)
-            return
+    private fun updateSourceInfo(presence: Presence) {
+        val sourceInfo = presence.getExtension<StandardExtensionElement>("SourceInfo", "jabber:client")
+        if (sourceInfo == null) {
+            sourceInfos = emptySet()
+        } else {
+            val sourceInfos: Set<SourceInfo> = try {
+                parseSourceInfoJson(sourceInfo.text)
+            } catch (e: Exception) {
+                logger.warn("Ignoring invalid SourceInfo JSON", e)
+                return
+            }
+            this.sourceInfos = sourceInfos
         }
-        this.sourceInfos = sourceInfos
+
+        val wasAudioMuted = isAudioMuted
+        isAudioMuted = if (sourceInfo == null) {
+            // Support the old format, still used by jigasi
+            presence.getExtension(AudioMutedExtension::class.java)?.isAudioMuted ?: true
+        } else {
+            sourceInfos.filter { it.mediaType == MediaType.AUDIO }.none { !it.muted }
+        }
+        if (isAudioMuted != wasAudioMuted) {
+            logger.debug { "isAudioMuted = $isAudioMuted" }
+            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
+        }
+
+        val wasVideoMuted = isVideoMuted
+        isVideoMuted = if (sourceInfo == null) {
+            // Support the old format, still used by jigasi
+            presence.getExtension(VideoMutedExtension::class.java)?.isVideoMuted ?: true
+        } else {
+            sourceInfos.filter { it.mediaType == MediaType.VIDEO }.none { !it.muted }
+        }
+        if (isVideoMuted != wasVideoMuted) {
+            logger.debug { "isVideoMuted = $isVideoMuted" }
+            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
+        }
     }
 
     /**
@@ -133,8 +163,7 @@ class ChatRoomMemberImpl(
             capsNodeVer = "${it.node}#${it.ver}"
         }
 
-        val sourceInfo = presence.getExtension<StandardExtensionElement>("SourceInfo", "jabber:client")
-        setSourceInfo(if (sourceInfo == null) "{}" else sourceInfo.text)
+        updateSourceInfo(presence)
 
         // We recognize jigasi by the existence of a "feature" extension in its presence.
         val features = presence.getExtension(FeaturesExtension::class.java)
@@ -179,22 +208,6 @@ class ChatRoomMemberImpl(
 
         presence.getExtension(StatsId::class.java)?.let {
             statsId = it.statsId
-        }
-
-        val wasAudioMuted = isAudioMuted
-        // defaults to true
-        isAudioMuted = presence.getExtension(AudioMutedExtension::class.java)?.isAudioMuted ?: true
-        if (isAudioMuted != wasAudioMuted) {
-            logger.debug { "isAudioMuted = $isAudioMuted" }
-            if (isAudioMuted) chatRoom.audioSendersCount-- else chatRoom.audioSendersCount++
-        }
-
-        val wasVideoMuted = isVideoMuted
-        // defaults to true
-        isVideoMuted = presence.getExtension(VideoMutedExtension::class.java)?.isVideoMuted ?: true
-        if (isVideoMuted != wasVideoMuted) {
-            logger.debug { "isVideoMuted = $isVideoMuted" }
-            if (isVideoMuted) chatRoom.videoSendersCount-- else chatRoom.videoSendersCount++
         }
     }
 
