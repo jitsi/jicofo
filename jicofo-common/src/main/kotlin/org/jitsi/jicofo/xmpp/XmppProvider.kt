@@ -34,6 +34,7 @@ import org.jivesoftware.smack.ConnectionListener
 import org.jivesoftware.smack.ReconnectionListener
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
@@ -236,6 +237,9 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         val start = System.currentTimeMillis()
         val featureStrings: List<String> = try {
             discoveryManager.discoverInfo(jid)?.features?.map { it.`var` }?.toList() ?: emptyList()
+        } catch (e: SmackException.NoResponseException) {
+            logger.info("No response for disco#info, assuming default features.")
+            return Features.defaultFeatures
         } catch (e: Exception) {
             logger.warn("Failed to discover features for $jid: ${e.message}, assuming default feature set.", e)
             return Features.defaultFeatures
