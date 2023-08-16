@@ -178,7 +178,7 @@ private fun mockBridge(r: Regions, s: StressLevels) = mockk<Bridge> {
     every { stress } returns s.stress
     every { isOverloaded } returns (s == High)
     every { lastReportedStressLevel } returns s.stress
-    every { relayId } returns "dummy"
+    every { supportsRelay } returns true
     every { this@mockk.toString() } returns "MockBridge[region=$region, stress=$stress]"
 }
 
