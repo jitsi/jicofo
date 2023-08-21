@@ -622,7 +622,6 @@ class ColibriV2SessionManager(
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
                 return
             }
-            // We make sure relayId is not null when there are multiple sessions.
             sessions.values.find { it.relayId == relayId }?.setRelayTransport(transport, session.relayId)
                 ?: { logger.warn("Response for a relay that is no longer active. Ignoring.") }
         }
