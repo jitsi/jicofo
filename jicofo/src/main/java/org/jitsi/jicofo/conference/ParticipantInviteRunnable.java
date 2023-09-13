@@ -22,8 +22,9 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.util.*;
-import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -192,8 +193,9 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             // This makes the bridge signal its private host candidates. We enable them for backend components, because
             // they may be in the same network as the bridge, and disable them for endpoints to avoid checking
             // unnecessary pairs (unless the endpoints explicitly signal the feature).
-            boolean privateAddresses = participant.getChatMember().isJigasi() || participant.getChatMember().isJibri()
-                    || participant.getSupportedFeatures().contains(Features.PRIVATE_ADDRESS_CONNECTIVITY);
+            boolean privateAddresses =
+                (participant.getChatMember().isJigasi() && JigasiConfig.config.getPrivateAddressConnectivity()) ||
+                    (participant.getChatMember().isJibri() && JibriConfig.config.getPrivateAddressConnectivity());
             ParticipantAllocationParameters participantOptions = new ParticipantAllocationParameters(
                     participant.getEndpointId(),
                     participant.getStatId(),
