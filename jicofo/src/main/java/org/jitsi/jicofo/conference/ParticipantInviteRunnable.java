@@ -23,6 +23,7 @@ import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.util.*;
+import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
@@ -188,6 +189,11 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     logger.warn("Failed to convert ContentPacketExtension to Media: " + content.toXML());
                 }
             });
+            // This makes the bridge signal its private host candidates. We enable them for backend components, because
+            // they may be in the same network as the bridge, and disable them for endpoints to avoid checking
+            // unnecessary pairs (unless the endpoints explicitly signal the feature).
+            boolean privateAddresses = participant.getChatMember().isJigasi() || participant.getChatMember().isJibri()
+                    || participant.getSupportedFeatures().contains(Features.PRIVATE_ADDRESS_CONNECTIVITY);
             ParticipantAllocationParameters participantOptions = new ParticipantAllocationParameters(
                     participant.getEndpointId(),
                     participant.getStatId(),
@@ -199,6 +205,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     forceMuteVideo,
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
                     (participant.getChatMember().getRole() == MemberRole.VISITOR),
+                    privateAddresses,
                     medias);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }

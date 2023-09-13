@@ -57,6 +57,7 @@ enum class Features(val value: String) {
     RTCPMUX("urn:ietf:rfc:5761"),
     BUNDLE("urn:ietf:rfc:5888"),
     RAYO("urn:xmpp:rayo:client:1"),
+    PRIVATE_ADDRESS_CONNECTIVITY("http://jitsi.org/private-address-connectivity"),
     VISITORS_V1("http://jitsi.org/visitors-1");
 
     companion object {
