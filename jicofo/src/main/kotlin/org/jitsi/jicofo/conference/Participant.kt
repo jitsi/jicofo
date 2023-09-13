@@ -68,7 +68,7 @@ open class Participant @JvmOverloads constructor(
     private val jingleIqRequestHandler: JingleIqRequestHandler,
     parentLogger: Logger? = null,
     /** The list of XMPP features supported by this participant. */
-    private val supportedFeatures: Set<Features> = Features.defaultFeatures,
+    val supportedFeatures: Set<Features> = Features.defaultFeatures,
     /** The [Clock] used by this participant. */
     clock: Clock = Clock.systemUTC()
 ) {

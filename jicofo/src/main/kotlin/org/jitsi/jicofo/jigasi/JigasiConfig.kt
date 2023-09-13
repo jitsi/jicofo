@@ -39,6 +39,10 @@ class JigasiConfig private constructor() {
         "jicofo.jigasi.xmpp-connection-name".from(newConfig)
     }
 
+    val privateAddressConnectivity: Boolean by config {
+        "jicofo.jigasi.use-private-address-connectivity".from(newConfig)
+    }
+
     fun xmppConnectionName() = xmppConnectionName
 
     companion object {

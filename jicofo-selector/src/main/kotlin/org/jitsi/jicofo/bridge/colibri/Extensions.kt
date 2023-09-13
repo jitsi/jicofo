@@ -107,6 +107,9 @@ internal fun ParticipantInfo.toEndpoint(
         if (supportsSourceNames) {
             addCapability(Capability.CAP_SOURCE_NAME_SUPPORT)
         }
+        if (supportsPrivateAddresses) {
+            addCapability(Capability.CAP_PRIVATE_ADDRESS_CONNECTIVITY)
+        }
         if (useSsrcRewriting) {
             addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
         }

@@ -112,6 +112,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { statsId } returns "statsId"
                     every { region } returns "region"
                     every { isJibri } returns false
+                    every { isJigasi } returns false
                     every { isTranscriber } returns false
                 },
                 conference,
