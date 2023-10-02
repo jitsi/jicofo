@@ -72,7 +72,8 @@ class JicofoServices {
 
     val xmppServices = XmppServices(
         conferenceStore = focusManager,
-        focusManager = focusManager, // TODO do not use FocusManager directly
+        // TODO do not use FocusManager directly
+        focusManager = focusManager,
         authenticationAuthority = authenticationAuthority
     ).also {
         it.clientConnection.addListener(focusManager)

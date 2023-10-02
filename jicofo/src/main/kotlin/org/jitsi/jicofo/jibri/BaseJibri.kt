@@ -70,14 +70,13 @@ abstract class BaseJibri internal constructor(
 
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
-    fun handleJibriRequest(request: JibriRequest): IqProcessingResult =
-        if (accept(request.iq)) {
-            logger.info("Accepted jibri request: ${request.iq.toXML()}")
-            incomingIqQueue.add(request)
-            AcceptedWithNoResponse()
-        } else {
-            NotProcessed()
-        }
+    fun handleJibriRequest(request: JibriRequest): IqProcessingResult = if (accept(request.iq)) {
+        logger.info("Accepted jibri request: ${request.iq.toXML()}")
+        incomingIqQueue.add(request)
+        AcceptedWithNoResponse()
+    } else {
+        NotProcessed()
+    }
 
     /**
      * Returns the [JibriSession] associated with a specific [JibriIq] coming from a client in the conference.

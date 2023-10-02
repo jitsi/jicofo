@@ -49,10 +49,7 @@ data class SsrcGroup(
          * @throws IllegalArgumentException if the XML extension does not have a valid "semantics" field.
          */
         @Throws(IllegalArgumentException::class)
-        fun fromPacketExtension(
-            sgpe: SourceGroupPacketExtension,
-            mediaType: MediaType = MediaType.VIDEO
-        ): SsrcGroup {
+        fun fromPacketExtension(sgpe: SourceGroupPacketExtension, mediaType: MediaType = MediaType.VIDEO): SsrcGroup {
             val semantics = try {
                 SsrcGroupSemantics.fromString(sgpe.semantics)
             } catch (e: NoSuchElementException) {

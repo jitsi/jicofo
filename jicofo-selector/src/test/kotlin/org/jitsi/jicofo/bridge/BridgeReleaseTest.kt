@@ -44,23 +44,23 @@ class BridgeReleaseTest : ShouldSpec() {
             setNewConfig(
                 """
                 $regionBasedConfig
-                jicofo.bridge.max-bridge-participants=$maxBp
+                jicofo.bridge.max-bridge-participants=$MAX_BP
                 """.trimIndent(),
                 true
             )
 
-            BridgeConfig.config.maxBridgeParticipants shouldBe maxBp
+            BridgeConfig.config.maxBridgeParticipants shouldBe MAX_BP
 
             val selector = BridgeSelector(clock)
             // We start with bridges from a single "old" release.
-            val old1 = selector.createBridge("old1", oldVersion, 0.1)
-            val old2 = selector.createBridge("old2", oldVersion, 0.2)
-            val old3 = selector.createBridge("old3", oldVersion, 0.3)
+            val old1 = selector.createBridge("old1", OLD_VERSION, 0.1)
+            val old2 = selector.createBridge("old2", OLD_VERSION, 0.2)
+            val old3 = selector.createBridge("old3", OLD_VERSION, 0.3)
 
             // Initially we only have bridges from the "old" release. Verify the basics.
             // Select the least loaded bridge
             selector.testSelect() shouldBe old1
-            selector.testSelect(version = oldVersion) shouldBe old1
+            selector.testSelect(version = OLD_VERSION) shouldBe old1
             selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1))) shouldBe old1
             // Select an existing conference bridge
             selector.testSelect(mapOf(old2 to ConferenceBridgeProperties(1))) shouldBe old2
@@ -74,75 +74,75 @@ class BridgeReleaseTest : ShouldSpec() {
             // Fail if the version doesn't match
             selector.testSelect(version = "invalid-version") shouldBe null
             // Fail with inconsistent version pinning
-            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1)), version = newVersion) shouldBe null
+            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1)), version = NEW_VERSION) shouldBe null
             // Honor max-participants-per-bridge
-            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(maxBp))) shouldBe old2
+            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(MAX_BP))) shouldBe old2
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
+                    old1 to ConferenceBridgeProperties(MAX_BP),
                     old3 to ConferenceBridgeProperties(1)
                 )
             ) shouldBe old3
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
-                    old3 to ConferenceBridgeProperties(maxBp)
+                    old1 to ConferenceBridgeProperties(MAX_BP),
+                    old3 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe old2
             // Select the least loaded if all are full
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
-                    old2 to ConferenceBridgeProperties(maxBp),
-                    old3 to ConferenceBridgeProperties(maxBp)
+                    old1 to ConferenceBridgeProperties(MAX_BP),
+                    old2 to ConferenceBridgeProperties(MAX_BP),
+                    old3 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe old1
 
             // We add a new bridge with a new release.
-            val new1 = selector.createBridge("new1", newVersion, 0.0, drain = true)
+            val new1 = selector.createBridge("new1", NEW_VERSION, 0.0, drain = true)
             // An old one should be used even though the new one has stress 0, because the new one is drained.
             selector.testSelect() shouldBe old1
-            selector.testSelect(version = newVersion) shouldBe new1
+            selector.testSelect(version = NEW_VERSION) shouldBe new1
             selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1))) shouldBe new1
             new1.setStats(stress = 0.3, drain = true)
             // And more bridges with a new release.
-            val new2 = selector.createBridge("new2", newVersion, 0.2, drain = true)
-            val new3 = selector.createBridge("new3", newVersion, 0.1, drain = true)
-            selector.testSelect(version = newVersion) shouldBe new3
+            val new2 = selector.createBridge("new2", NEW_VERSION, 0.2, drain = true)
+            val new3 = selector.createBridge("new3", NEW_VERSION, 0.1, drain = true)
+            selector.testSelect(version = NEW_VERSION) shouldBe new3
             selector.testSelect(mapOf(new2 to ConferenceBridgeProperties(1))) shouldBe new2
             selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1))) shouldBe new1
-            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1)), version = newVersion) shouldBe new1
+            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1)), version = NEW_VERSION) shouldBe new1
             selector.testSelect(mapOf(new2 to ConferenceBridgeProperties(1))) shouldBe new2
-            selector.testSelect(mapOf(new2 to ConferenceBridgeProperties(1)), version = newVersion) shouldBe new2
+            selector.testSelect(mapOf(new2 to ConferenceBridgeProperties(1)), version = NEW_VERSION) shouldBe new2
             selector.testSelect(mapOf(new3 to ConferenceBridgeProperties(1))) shouldBe new3
-            selector.testSelect(mapOf(new3 to ConferenceBridgeProperties(1)), version = newVersion) shouldBe new3
-            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1)), version = oldVersion) shouldBe null
+            selector.testSelect(mapOf(new3 to ConferenceBridgeProperties(1)), version = NEW_VERSION) shouldBe new3
+            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(1)), version = OLD_VERSION) shouldBe null
             // Honor max-participants-per-bridge, even though all new bridges are in drain.
-            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(maxBp))) shouldBe new3
+            selector.testSelect(mapOf(new1 to ConferenceBridgeProperties(MAX_BP))) shouldBe new3
             selector.testSelect(
                 mapOf(
-                    new1 to ConferenceBridgeProperties(maxBp),
+                    new1 to ConferenceBridgeProperties(MAX_BP),
                     new2 to ConferenceBridgeProperties(1)
                 )
             ) shouldBe new2
             selector.testSelect(
                 mapOf(
-                    new1 to ConferenceBridgeProperties(maxBp),
-                    new2 to ConferenceBridgeProperties(maxBp)
+                    new1 to ConferenceBridgeProperties(MAX_BP),
+                    new2 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe new3
             selector.testSelect(
                 mapOf(
-                    new1 to ConferenceBridgeProperties(maxBp),
-                    new2 to ConferenceBridgeProperties(maxBp),
-                    new3 to ConferenceBridgeProperties(maxBp)
+                    new1 to ConferenceBridgeProperties(MAX_BP),
+                    new2 to ConferenceBridgeProperties(MAX_BP),
+                    new3 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe new3
 
             // Everything should work the same unless a conference is pinned to the new version.
             // Select the least loaded bridge
             selector.testSelect() shouldBe old1
-            selector.testSelect(version = oldVersion) shouldBe old1
+            selector.testSelect(version = OLD_VERSION) shouldBe old1
             selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1))) shouldBe old1
             // Select an existing conference bridge
             selector.testSelect(mapOf(old2 to ConferenceBridgeProperties(1))) shouldBe old2
@@ -156,26 +156,26 @@ class BridgeReleaseTest : ShouldSpec() {
             // Fail if the version doesn't match
             selector.testSelect(version = "invalid-version") shouldBe null
             // Fail with inconsistent version pinning
-            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1)), version = newVersion) shouldBe null
+            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1)), version = NEW_VERSION) shouldBe null
             // Honor max-participants-per-bridge
-            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(maxBp))) shouldBe old2
+            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(MAX_BP))) shouldBe old2
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
+                    old1 to ConferenceBridgeProperties(MAX_BP),
                     old3 to ConferenceBridgeProperties(1)
                 )
             ) shouldBe old3
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
-                    old3 to ConferenceBridgeProperties(maxBp)
+                    old1 to ConferenceBridgeProperties(MAX_BP),
+                    old3 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe old2
             selector.testSelect(
                 mapOf(
-                    old1 to ConferenceBridgeProperties(maxBp),
-                    old2 to ConferenceBridgeProperties(maxBp),
-                    old3 to ConferenceBridgeProperties(maxBp)
+                    old1 to ConferenceBridgeProperties(MAX_BP),
+                    old2 to ConferenceBridgeProperties(MAX_BP),
+                    old3 to ConferenceBridgeProperties(MAX_BP)
                 )
             ) shouldBe old1
 
@@ -187,12 +187,12 @@ class BridgeReleaseTest : ShouldSpec() {
             old1.setStats(stress = 0.0, drain = true)
             // old1 should not be selected because it is in drain
             selector.testSelect() shouldBe new3
-            selector.testSelect(mapOf(new3 to ConferenceBridgeProperties(maxBp))) shouldBe new2
+            selector.testSelect(mapOf(new3 to ConferenceBridgeProperties(MAX_BP))) shouldBe new2
             // Select the old version for existing conferences or pinned
             selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(1))) shouldBe old1
             // Should select old2 even though all old bridges are in drain.
-            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(maxBp))) shouldBe old2
-            selector.testSelect(version = oldVersion) shouldBe old1
+            selector.testSelect(mapOf(old1 to ConferenceBridgeProperties(MAX_BP))) shouldBe old2
+            selector.testSelect(version = OLD_VERSION) shouldBe old1
         }
     }
 }
@@ -208,9 +208,9 @@ private fun BridgeSelector.createBridge(jid: String, version: String, stress: Do
         )
     }
 
-private val maxBp = 80
-private const val oldVersion = "old"
-private const val newVersion = "new"
+private const val MAX_BP = 80
+private const val OLD_VERSION = "old"
+private const val NEW_VERSION = "new"
 
 private fun BridgeSelector.testSelect(
     conferenceBridges: Map<Bridge, ConferenceBridgeProperties> = emptyMap(),

@@ -53,13 +53,10 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
             ?: existingNodes.first()
     }
 
-    override fun connectNode(
-        cascade: ColibriV2SessionManager,
-        node: Colibri2Session
-    ): TopologySelectionResult {
+    override fun connectNode(cascade: ColibriV2SessionManager, node: Colibri2Session): TopologySelectionResult {
         val existingNodes = cascade.sessions.values
         if (!node.visitor) {
-            return TopologySelectionResult(existingNodes.firstOrNull(), coreMesh)
+            return TopologySelectionResult(existingNodes.firstOrNull(), CORE_MESH)
         }
 
         if (existingNodes.isEmpty()) {
@@ -96,6 +93,6 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
     }
 
     companion object {
-        private const val coreMesh = "0"
+        private const val CORE_MESH = "0"
     }
 }

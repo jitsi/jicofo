@@ -337,7 +337,11 @@ class Bridge @JvmOverloads internal constructor(
         }
 
         private fun getPriority(b: Bridge): Int {
-            return if (b.isOperational) { if (b.isInGracefulShutdown) 2 else 1 } else 3
+            return if (b.isOperational) {
+                if (b.isInGracefulShutdown) 2 else 1
+            } else {
+                3
+            }
         }
     }
 }

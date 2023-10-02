@@ -59,10 +59,7 @@ internal fun List<ContentPacketExtension>.getTransport(): IceUdpTransportPacketE
     return transport
 }
 
-internal fun selectVisitorNode(
-    existingNodes: Map<String, ChatRoom>,
-    allNodes: List<XmppProvider>
-): String? {
+internal fun selectVisitorNode(existingNodes: Map<String, ChatRoom>, allNodes: List<XmppProvider>): String? {
     val min = existingNodes.minByOrNull { it.value.visitorCount }
     if (min != null && min.value.visitorCount < VisitorsConfig.config.maxVisitorsPerNode) {
         return min.key

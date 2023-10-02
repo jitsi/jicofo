@@ -63,7 +63,9 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
 
     override fun grantOwnership() = queue.add { electNewOwner() }
     override fun memberJoined(member: ChatRoomMember) {
-        if (owner == null) { electNewOwner() }
+        if (owner == null) {
+            electNewOwner()
+        }
     }
 
     override fun memberLeftOrKicked(member: ChatRoomMember) {

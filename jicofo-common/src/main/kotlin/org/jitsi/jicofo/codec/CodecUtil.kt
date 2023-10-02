@@ -272,15 +272,12 @@ class CodecUtil {
             }
         }
 
-        private fun createPayloadTypeExtension(
-            id: Int,
-            name: String,
-            clockRate: Int
-        ) = PayloadTypePacketExtension().apply {
-            setId(id)
-            this.name = name
-            clockrate = clockRate
-        }
+        private fun createPayloadTypeExtension(id: Int, name: String, clockRate: Int) =
+            PayloadTypePacketExtension().apply {
+                setId(id)
+                this.name = name
+                clockrate = clockRate
+            }
 
         fun PayloadTypePacketExtension.addVideoExtensions(options: OfferOptions, codecConfig: CodecConfig) {
             // a=rtcp-fb:XXX ccm fir

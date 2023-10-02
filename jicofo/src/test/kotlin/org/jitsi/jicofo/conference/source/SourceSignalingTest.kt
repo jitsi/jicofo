@@ -54,9 +54,9 @@ class SourceSignalingTest : ShouldSpec() {
         val e4v1a = Source(43, MediaType.VIDEO, name = "e4-v1")
         val e4v1b = Source(44, MediaType.VIDEO, name = "e4-v1")
         val e4v1c = Source(45, MediaType.VIDEO, name = "e4-v1")
-        val e4v1a_r = Source(53, MediaType.VIDEO, name = "e4-v1")
-        val e4v1b_r = Source(54, MediaType.VIDEO, name = "e4-v1")
-        val e4v1c_r = Source(55, MediaType.VIDEO, name = "e4-v1")
+        val e4v1aR = Source(53, MediaType.VIDEO, name = "e4-v1")
+        val e4v1bR = Source(54, MediaType.VIDEO, name = "e4-v1")
+        val e4v1cR = Source(55, MediaType.VIDEO, name = "e4-v1")
         val e4vgroups = setOf(
             SsrcGroup(SsrcGroupSemantics.Sim, listOf(43, 44, 45)),
             SsrcGroup(SsrcGroupSemantics.Fid, listOf(43, 53)),
@@ -69,7 +69,7 @@ class SourceSignalingTest : ShouldSpec() {
         val s4audio = ConferenceSourceMap(e4 to EndpointSourceSet(e4a1))
         val s4video = ConferenceSourceMap(
             e4 to EndpointSourceSet(
-                setOf(e4v1a, e4v1b, e4v1c, e4v1a_r, e4v1b_r, e4v1c_r),
+                setOf(e4v1a, e4v1b, e4v1c, e4v1aR, e4v1bR, e4v1cR),
                 e4vgroups
             )
         )

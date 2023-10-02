@@ -43,8 +43,8 @@ class RegionBasedSelectionTest : ShouldSpec() {
 
     init {
         context("Without region groups") {
-            withNewConfig(maxBpConfig) {
-                BridgeConfig.config.maxBridgeParticipants shouldBe maxBp
+            withNewConfig(MAX_BP_CONFIG) {
+                BridgeConfig.config.maxBridgeParticipants shouldBe MAX_BP
 
                 with(RegionBasedBridgeSelectionStrategy()) {
                     context("In a single region") {
@@ -56,11 +56,11 @@ class RegionBasedSelectionTest : ShouldSpec() {
                         ) shouldBe bridges[ApSouth][Medium]
                         select(
                             participantRegion = ApSouth,
-                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to ConferenceBridgeProperties(maxBp))
+                            conferenceBridges = mapOf(bridges[ApSouth][Medium] to ConferenceBridgeProperties(MAX_BP))
                         ) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = ApSouth,
-                            conferenceBridges = mapOf(bridges[ApSouth][Low] to ConferenceBridgeProperties(maxBp))
+                            conferenceBridges = mapOf(bridges[ApSouth][Low] to ConferenceBridgeProperties(MAX_BP))
                         ) shouldBe bridges[ApSouth][Medium]
                         select(
                             participantRegion = ApSouth,
@@ -106,7 +106,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
                                 bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
                                 bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
                                 bridges[EuWest][High] to ConferenceBridgeProperties(1),
-                                bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
+                                bridges[EuCentral][Low] to ConferenceBridgeProperties(MAX_BP)
                             )
                         ) shouldBe bridges[EuCentral][Medium]
                     }
@@ -115,7 +115,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
         }
         context("With region groups") {
             withNewConfig(regionGroupsConfig) {
-                BridgeConfig.config.maxBridgeParticipants shouldBe maxBp
+                BridgeConfig.config.maxBridgeParticipants shouldBe MAX_BP
 
                 with(RegionBasedBridgeSelectionStrategy()) {
                     select(participantRegion = ApSouth) shouldBe bridges[ApSouth][Low]
@@ -140,7 +140,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
                             bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
                             bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
                             bridges[EuWest][High] to ConferenceBridgeProperties(1),
-                            bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
+                            bridges[EuCentral][Low] to ConferenceBridgeProperties(MAX_BP)
                         )
                     ) shouldBe bridges[EuWest][Medium]
                     select(
@@ -149,7 +149,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
                             bridges[ApSouth][Low] to ConferenceBridgeProperties(2),
                             bridges[EuWest][Medium] to ConferenceBridgeProperties(1),
                             bridges[EuWest][High] to ConferenceBridgeProperties(1),
-                            bridges[EuCentral][Low] to ConferenceBridgeProperties(maxBp)
+                            bridges[EuCentral][Low] to ConferenceBridgeProperties(MAX_BP)
                         )
                     ) shouldBe bridges[UsEast][Low]
                     context("Initial selection in the local region group, but not in the local region") {
@@ -161,8 +161,8 @@ class RegionBasedSelectionTest : ShouldSpec() {
     }
 }
 
-private const val maxBp = 10
-const val maxBpConfig = "jicofo.bridge.max-bridge-participants=$maxBp"
+private const val MAX_BP = 10
+const val MAX_BP_CONFIG = "jicofo.bridge.max-bridge-participants=$MAX_BP"
 val regionGroupsConfig = """
     jicofo.local-region = ${UsEast.region}
     jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
@@ -170,7 +170,7 @@ val regionGroupsConfig = """
        [ "${UsEast.region}", "${UsWest.region}" ],
        [ "${EuCentral.region}", "${EuWest.region}" ],
     ]
-    $maxBpConfig
+    $MAX_BP_CONFIG
 """.trimIndent()
 
 private fun mockBridge(r: Regions, s: StressLevels) = mockk<Bridge> {

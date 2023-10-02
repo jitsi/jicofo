@@ -376,7 +376,7 @@ val inPlaceExecutor: ExecutorService = mockk {
     }
 }
 
-val inPlaceScheduledExecutor: ScheduledExecutorService = mockk() {
+val inPlaceScheduledExecutor: ScheduledExecutorService = mockk {
     every { schedule(any(), any(), any()) } answers {
         firstArg<Runnable>().run()
         mockk(relaxed = true) {
@@ -429,14 +429,13 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
             to = sessionInitiate.from
             sources.toJingle().forEach { addContent(it) }
         }
-        fun createSourceRemove(
-            sources: EndpointSourceSet
-        ) = JingleIQ(JingleAction.SOURCEREMOVE, sessionInitiate.sid).apply {
-            from = sessionInitiate.to
-            type = IQ.Type.set
-            to = sessionInitiate.from
-            sources.toJingle().forEach { addContent(it) }
-        }
+        fun createSourceRemove(sources: EndpointSourceSet) =
+            JingleIQ(JingleAction.SOURCEREMOVE, sessionInitiate.sid).apply {
+                from = sessionInitiate.to
+                type = IQ.Type.set
+                to = sessionInitiate.from
+                sources.toJingle().forEach { addContent(it) }
+            }
 
         fun nextSource(mediaType: MediaType) = this@ColibriAndJingleXmppConnection.nextSource(mediaType)
 

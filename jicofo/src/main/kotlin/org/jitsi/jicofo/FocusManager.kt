@@ -304,11 +304,7 @@ class FocusManager(
     }
 
     /** Create or update the pinning for the specified conference. */
-    fun pinConference(
-        roomName: EntityBareJid,
-        jvbVersion: String,
-        duration: Duration
-    ) {
+    fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration) {
         val pc = PinnedConference(jvbVersion, duration)
         synchronized(conferencesSyncRoot) {
             val prev = pinnedConferences.remove(roomName)

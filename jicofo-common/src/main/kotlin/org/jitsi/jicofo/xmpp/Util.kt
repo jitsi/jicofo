@@ -58,14 +58,13 @@ fun parseJidFromClientProxyJid(
     return jid
 }
 
-fun XMPPConnection.tryToSendStanza(stanza: Stanza) =
-    try {
-        sendStanza(stanza)
-    } catch (e: SmackException.NotConnectedException) {
-        logger.error("No connection - unable to send packet: " + stanza.toXML(), e)
-    } catch (e: InterruptedException) {
-        logger.error("Failed to send packet: " + stanza.toXML().toString(), e)
-    }
+fun XMPPConnection.tryToSendStanza(stanza: Stanza) = try {
+    sendStanza(stanza)
+} catch (e: SmackException.NotConnectedException) {
+    logger.error("No connection - unable to send packet: " + stanza.toXML(), e)
+} catch (e: InterruptedException) {
+    logger.error("Failed to send packet: " + stanza.toXML().toString(), e)
+}
 
 @Throws(SmackException.NotConnectedException::class)
 fun AbstractXMPPConnection.sendIqAndGetResponse(iq: IQ): IQ? = createStanzaCollectorAndSend(iq).let {
