@@ -69,7 +69,7 @@ class Colibri2Session(
      * change in the context of a session. We maintain the invariant that whenever a conference has multiple sessions,
      * they all have non-null relay IDs.
      */
-    override val relayId: String? = bridge.relayId
+    override val relayId: String = bridge.jid.toString()
 
     /**
      * Whether the colibri2 conference has been created. It is created with the first endpoint allocation request

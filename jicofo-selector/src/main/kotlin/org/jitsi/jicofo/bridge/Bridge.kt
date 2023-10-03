@@ -149,8 +149,10 @@ class Bridge @JvmOverloads internal constructor(
      * @return the relay ID advertised by the bridge, or `null` if
      * none was advertised.
      */
-    var relayId: String? = null
-        private set
+    private var relayId: String? = null
+
+    val supportsRelay
+        get() = relayId != null
 
     private val logger: Logger = LoggerImpl(Bridge::class.java.name)
 

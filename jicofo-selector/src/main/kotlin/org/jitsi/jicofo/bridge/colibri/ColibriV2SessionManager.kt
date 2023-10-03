@@ -83,7 +83,7 @@ class ColibriV2SessionManager(
     /**
      * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
      */
-    override val sessions = mutableMapOf<String?, Colibri2Session>()
+    override val sessions = mutableMapOf<String, Colibri2Session>()
 
     /**
      * The set of participants that have associated colibri2 endpoints allocated, mapped by their ID. A participant is
@@ -136,9 +136,7 @@ class ColibriV2SessionManager(
         sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
-        session.relayId?.let { removedRelayId ->
-            sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
-        }
+        sessions.values.forEach { otherSession -> otherSession.expireRelay(session.relayId) }
         return participants.toSet()
     }
 
@@ -231,7 +229,7 @@ class ColibriV2SessionManager(
      */
     private fun getOrCreateSession(bridge: Bridge, visitor: Boolean):
         Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
-        var session = sessions[bridge.relayId]
+        var session = sessions[bridge.jid.toString()]
         if (session != null) {
             return Pair(session, false)
         }
@@ -261,14 +259,12 @@ class ColibriV2SessionManager(
             getVisibleSessionParticipants(it)
         }
 
-        session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true, meshId)
-        otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false, meshId)
+        session.createRelay(otherSession.relayId, participantsBehindOtherSession, initiator = true, meshId)
+        otherSession.createRelay(session.relayId, participantsBehindSession, initiator = false, meshId)
     }
 
     override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {
-        otherSession.relayId?.let { removedRelayId ->
-            session.expireRelay(removedRelayId)
-        }
+        session.expireRelay(otherSession.relayId)
     }
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
@@ -308,7 +304,7 @@ class ColibriV2SessionManager(
                     // This is a bridge selection failure, because the selector should not have returned a different
                     // bridge when Octo is not enabled.
                     throw BridgeSelectionFailedException()
-                } else if (sessions.any { it.value.relayId == null } || bridge.relayId == null) {
+                } else if (sessions.any { !it.value.bridge.supportsRelay } || !bridge.supportsRelay) {
                     logger.error("Can not enable Octo: one of the selected bridges does not support Octo.")
                     // This is a bridge selection failure, because the selector should not have returned a different
                     // bridge when one of the bridges doesn't support Octo (does not have a relay ID).
@@ -344,7 +340,7 @@ class ColibriV2SessionManager(
                                     "from ${from.relayId}."
                             }
                             // We already made sure that relayId is not null when there are multiple sessions.
-                            otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
+                            otherSession.updateRemoteParticipant(participantInfo, from.relayId, create = true)
                         }
                     }
                 }
@@ -413,7 +409,7 @@ class ColibriV2SessionManager(
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
         // * Re-invite the participants (possibly on the same bridge) on this bridge
         // * Re-invite the participants on this bridge to a different bridge
-        if (!sessions.containsKey(session.bridge.relayId)) {
+        if (!sessions.containsKey(session.bridge.jid.toString())) {
             val reinvite = participants[participantInfo.id] == null
             logger.warn(
                 "Response for an unknown session, will ${if (reinvite) "" else "not "} reinvite the participant."
@@ -563,7 +559,7 @@ class ColibriV2SessionManager(
                 getPathsFrom(participantInfo.session) { _, otherSession, from ->
                     if (from != null) {
                         // We make sure that relayId is not null when there are multiple sessions.
-                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, false)
+                        otherSession.updateRemoteParticipant(participantInfo, from.relayId, false)
                     }
                 }
             }
@@ -620,12 +616,13 @@ class ColibriV2SessionManager(
         logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
-            if (!sessions.containsKey(session.bridge.relayId) || sessions[session.bridge.relayId] != session) {
+            if (!sessions.containsKey(session.bridge.jid.toString()) ||
+                sessions[session.bridge.jid.toString()] != session
+            ) {
                 logger.info("Received a response for a session that is no longer active. Ignoring.")
                 return
             }
-            // We make sure relayId is not null when there are multiple sessions.
-            sessions.values.find { it.relayId == relayId }?.setRelayTransport(transport, session.relayId!!)
+            sessions.values.find { it.relayId == relayId }?.setRelayTransport(transport, session.relayId)
                 ?: { logger.warn("Response for a relay that is no longer active. Ignoring.") }
         }
     }

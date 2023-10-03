@@ -24,7 +24,7 @@ import kotlin.collections.HashSet
  * A representation of a cascade of bridges.
  */
 interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
-    val sessions: MutableMap<String?, N>
+    val sessions: MutableMap<String, N>
     fun addLinkBetween(session: N, otherSession: N, meshId: String)
     fun removeLinkTo(session: N, otherSession: N)
 }
@@ -33,7 +33,7 @@ interface Cascade<N : CascadeNode<N, L>, L : CascadeLink> {
  * A representation of a single bridge in a cascade
  */
 interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
-    val relayId: String?
+    val relayId: String
     val relays: MutableMap<String, L>
 }
 
@@ -41,7 +41,7 @@ interface CascadeNode<N : CascadeNode<N, L>, L : CascadeLink> {
  * A representation of a link between bridges in a cascade
  */
 interface CascadeLink {
-    val relayId: String?
+    val relayId: String
     val meshId: String?
 }
 
@@ -139,7 +139,7 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
         val disconnected = node.relays.values.groupBy { it.meshId }.values.map {
-            it.flatMap { getNodesBehind(node, it.relayId!!) }.toSet()
+            it.flatMap { getNodesBehind(node, it.relayId) }.toSet()
         }.toSet()
         val newLinks = repairFn(this, disconnected)
         newLinks.forEach { (node, other, mesh) ->

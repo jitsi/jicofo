@@ -26,7 +26,7 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 
 class TestCascade : Cascade<TestCascadeNode, TestCascadeLink> {
-    override val sessions = HashMap<String?, TestCascadeNode>()
+    override val sessions = HashMap<String, TestCascadeNode>()
 
     var linksRemoved = 0
 
