@@ -193,25 +193,25 @@ class JigasiIqHandler(
         }
 
         companion object {
-            private const val prefix = "jigasi_iq_handler"
+            private const val PREFIX = "jigasi_iq_handler"
             val rejectedRequests = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_rejected_requests",
+                "${PREFIX}_rejected_requests",
                 "User requests which were rejected (e.g. not authorized, bad request)."
             )
             val acceptedRequests = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_accepted_requests",
+                "${PREFIX}_accepted_requests",
                 "User requests which were accepted."
             )
             val retries = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_retries",
+                "${PREFIX}_retries",
                 "Requests retried with a different jigasi instance."
             )
             val singleInstanceErrors = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_instance_errors",
+                "${PREFIX}_instance_errors",
                 "Errors received from jigasi instances."
             )
             val singleInstanceTimeouts = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_instance_timeouts",
+                "${PREFIX}_instance_timeouts",
                 "Timeouts for requests sent to jigasi instances."
             )
 

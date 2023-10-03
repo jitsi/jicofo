@@ -70,40 +70,39 @@ class JibriSipGateway(
     override val jibriSessions: List<JibriSession>
         get() = ArrayList(sipSessions.values)
 
-    override fun handleStartRequest(iq: JibriIq): IQ =
-        if (StringUtils.isNotBlank(iq.sipAddress)) {
-            val sessionId = generateSessionId()
-            val jibriSession = JibriSession(
-                this,
-                conference.roomName,
-                iq.from,
-                config.pendingTimeout.seconds,
-                config.numRetries,
-                jibriDetector,
-                false,
-                iq.sipAddress,
-                iq.displayName, null, null, sessionId, null,
-                logger
-            )
-            sipSessions[iq.sipAddress] = jibriSession
-            try {
-                jibriSession.start()
-                logger.info("Started Jibri session")
-                JibriIq.createResult(iq, sessionId)
-            } catch (exc: StartException) {
-                val reason = exc.message
-                logger.warn("Failed to start a Jibri session: $reason", exc)
-                sipSessions.remove(iq.sipAddress)
-                when (exc) {
-                    is AllBusy -> error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
-                    is NotAvailable -> error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
-                    else -> error(iq, StanzaError.Condition.internal_server_error, reason)
-                }
+    override fun handleStartRequest(iq: JibriIq): IQ = if (StringUtils.isNotBlank(iq.sipAddress)) {
+        val sessionId = generateSessionId()
+        val jibriSession = JibriSession(
+            this,
+            conference.roomName,
+            iq.from,
+            config.pendingTimeout.seconds,
+            config.numRetries,
+            jibriDetector,
+            false,
+            iq.sipAddress,
+            iq.displayName, null, null, sessionId, null,
+            logger
+        )
+        sipSessions[iq.sipAddress] = jibriSession
+        try {
+            jibriSession.start()
+            logger.info("Started Jibri session")
+            JibriIq.createResult(iq, sessionId)
+        } catch (exc: StartException) {
+            val reason = exc.message
+            logger.warn("Failed to start a Jibri session: $reason", exc)
+            sipSessions.remove(iq.sipAddress)
+            when (exc) {
+                is AllBusy -> error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
+                is NotAvailable -> error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
+                else -> error(iq, StanzaError.Condition.internal_server_error, reason)
             }
-        } else {
-            // Bad request - no SIP address
-            error(iq, StanzaError.Condition.bad_request, "Stream ID is empty or undefined")
         }
+    } else {
+        // Bad request - no SIP address
+        error(iq, StanzaError.Condition.bad_request, "Stream ID is empty or undefined")
+    }
 
     override fun onSessionStateChanged(
         jibriSession: JibriSession,

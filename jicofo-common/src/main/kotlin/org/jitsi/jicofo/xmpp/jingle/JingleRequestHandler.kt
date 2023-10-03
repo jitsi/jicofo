@@ -78,10 +78,7 @@ interface JingleRequestHandler {
      * @return a [StanzaError] if an error should be returned as response to the original request or null if
      * processing was successful.
      */
-    fun onTransportAccept(
-        jingleSession: JingleSession,
-        contents: List<ContentPacketExtension>
-    ): StanzaError? = null
+    fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? = null
 
     /**
      * A 'transport-reject' IQ was received.

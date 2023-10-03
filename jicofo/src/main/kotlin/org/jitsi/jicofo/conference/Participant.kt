@@ -456,10 +456,8 @@ open class Participant @JvmOverloads constructor(
             return null
         }
 
-        override fun onSessionAccept(
-            jingleSession: JingleSession,
-            contents: List<ContentPacketExtension>
-        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.SESSION_ACCEPT)
+        override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            onSessionOrTransportAccept(jingleSession, contents, JingleAction.SESSION_ACCEPT)
 
         private fun onSessionOrTransportAccept(
             jingleSession: JingleSession,
@@ -560,10 +558,8 @@ open class Participant @JvmOverloads constructor(
             return null
         }
 
-        override fun onTransportAccept(
-            jingleSession: JingleSession,
-            contents: List<ContentPacketExtension>
-        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.TRANSPORT_ACCEPT)
+        override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            onSessionOrTransportAccept(jingleSession, contents, JingleAction.TRANSPORT_ACCEPT)
 
         override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {
             checkJingleSession(jingleSession)?.let { return }

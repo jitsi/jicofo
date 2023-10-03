@@ -23,10 +23,7 @@ import org.jitsi.jicofo.bridge.colibri.ColibriV2SessionManager
  * Represents a strategy for selecting bridge topologies.
  */
 abstract class TopologySelectionStrategy {
-    abstract fun connectNode(
-        cascade: ColibriV2SessionManager,
-        node: Colibri2Session
-    ): TopologySelectionResult
+    abstract fun connectNode(cascade: ColibriV2SessionManager, node: Colibri2Session): TopologySelectionResult
     abstract fun repairMesh(
         cascade: ColibriV2SessionManager,
         disconnected: Set<Set<Colibri2Session>>

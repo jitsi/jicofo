@@ -22,7 +22,8 @@ import org.jitsi.utils.OrderedJsonObject
 
 /** An action -- add or remove. */
 enum class AddOrRemove {
-    Add, Remove
+    Add,
+    Remove
 }
 
 /** Holds a [ConferenceSourceMap] together with an action specifying if the sources are to be added or removed. */

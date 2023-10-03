@@ -399,10 +399,7 @@ abstract class BridgeSelectionStrategy {
      * @param conferenceBridges the bridges in the conference
      * @return `true` if the bridge should be considered overloaded.
      */
-    private fun isOverloaded(
-        bridge: Bridge,
-        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>
-    ): Boolean {
+    private fun isOverloaded(bridge: Bridge, conferenceBridges: Map<Bridge, ConferenceBridgeProperties>): Boolean {
         return bridge.isOverloaded || (
             maxParticipantsPerBridge > 0 &&
                 conferenceBridges.containsKey(bridge) &&

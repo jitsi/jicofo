@@ -89,7 +89,9 @@ class DebugStateTest : ShouldSpec() {
     }
 }
 
-fun OrderedJsonObject.shouldBeValidJson() { JSONParser().parse(this.toJSONString()) }
+fun OrderedJsonObject.shouldBeValidJson() {
+    JSONParser().parse(this.toJSONString())
+}
 
 private fun jigasiChatMember(jid: EntityFullJid) = mockk<ChatRoomMember> {
     every { occupantJid } returns jid

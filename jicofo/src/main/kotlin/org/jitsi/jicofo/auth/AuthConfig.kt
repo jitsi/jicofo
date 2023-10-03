@@ -26,16 +26,16 @@ import java.time.Duration
 class AuthConfig private constructor() {
     private val enabled: Boolean by config {
         // Enabled if the URL is set to anything
-        legacyLoginUrlPropertyName.from(legacyConfig).convertFrom<String> { true }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(legacyConfig).convertFrom<String> { true }
         // Read the legacy key from newConfig in case it was set as a System property.
-        legacyLoginUrlPropertyName.from(newConfig).convertFrom<String> { true }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(newConfig).convertFrom<String> { true }
         "jicofo.authentication.enabled".from(newConfig)
     }
 
     val loginUrl: String by config {
-        legacyLoginUrlPropertyName.from(legacyConfig).convertFrom<String> { it.stripType() }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(legacyConfig).convertFrom<String> { it.stripType() }
         // Read the legacy key from newConfig in case it was set as a System property.
-        legacyLoginUrlPropertyName.from(newConfig).convertFrom<String> { it.stripType() }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(newConfig).convertFrom<String> { it.stripType() }
         "jicofo.authentication.login-url".from(newConfig)
     }
 
@@ -74,7 +74,7 @@ class AuthConfig private constructor() {
         @JvmField
         val config = AuthConfig()
 
-        const val legacyLoginUrlPropertyName = "org.jitsi.jicofo.auth.URL"
+        const val LEGACY_LOGIN_URL_PROPERTY_NAME = "org.jitsi.jicofo.auth.URL"
     }
 
     enum class Type {

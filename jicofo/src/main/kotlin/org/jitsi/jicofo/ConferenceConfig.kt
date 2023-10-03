@@ -99,8 +99,7 @@ class ConferenceConfig private constructor() {
     /**
      * Get the number of milliseconds to delay signaling of Jingle sources given a certain [conferenceSize].
      */
-    fun getSourceSignalingDelayMs(conferenceSize: Int) =
-        sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
+    fun getSourceSignalingDelayMs(conferenceSize: Int) = sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
 
     val reinviteMethod: ReinviteMethod by config {
         "jicofo.conference.reinvite-method".from(newConfig)

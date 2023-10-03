@@ -142,8 +142,9 @@ class ColibriV2SessionManager(
         return participants.toSet()
     }
 
-    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>):
-        Set<ParticipantInfo> {
+    private fun removeParticipantInfosBySession(
+        bySession: Map<Colibri2Session, List<ParticipantInfo>>
+    ): Set<ParticipantInfo> {
         var sessionRemoved = false
         val participantsRemoved = mutableSetOf<ParticipantInfo>()
         bySession.forEach { (session, sessionParticipantsToRemove) ->
@@ -229,16 +230,16 @@ class ColibriV2SessionManager(
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
      * a boolean indicating whether the session was just created (true) or existed (false).
      */
-    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean):
-        Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
-        var session = sessions[bridge.relayId]
-        if (session != null) {
-            return Pair(session, false)
-        }
+    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean): Pair<Colibri2Session, Boolean> =
+        synchronized(syncRoot) {
+            var session = sessions[bridge.relayId]
+            if (session != null) {
+                return Pair(session, false)
+            }
 
-        session = Colibri2Session(this, bridge, visitor, logger)
-        return Pair(session, true)
-    }
+            session = Colibri2Session(this, bridge, visitor, logger)
+            return Pair(session, true)
+        }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {

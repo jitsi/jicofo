@@ -149,7 +149,7 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
         }
     }
 
-    override val xmppDomain: DomainBareJid? by optionalconfig() {
+    override val xmppDomain: DomainBareJid? by optionalconfig {
         "jicofo.xmpp.service.xmpp-domain".from(newConfig)
     }
 
@@ -193,12 +193,12 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
 
 class XmppClientConnectionConfig : XmppConnectionConfig {
     override val enabled: Boolean by config {
-        legacyHostnamePropertyName.from(legacyConfig).convertFrom<String> { true }
+        LEGACY_HOSTNAME_PROPERTY_NAME.from(legacyConfig).convertFrom<String> { true }
         "jicofo.xmpp.client.enabled".from(newConfig)
     }
 
     override val hostname: String by config {
-        legacyHostnamePropertyName.from(legacyConfig)
+        LEGACY_HOSTNAME_PROPERTY_NAME.from(legacyConfig)
         "jicofo.xmpp.client.hostname".from(newConfig)
     }
 
@@ -211,7 +211,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
      * This is the domain used for login. Not necessarily the root XMPP domain.
      */
     override val domain: DomainBareJid by config {
-        legacyDomainPropertyName.from(legacyConfig).convertFrom<String> {
+        LEGACY_DOMAIN_PROPERTY_NAME.from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
         "jicofo.xmpp.client.domain".from(newConfig).convertFrom<String> {
@@ -220,7 +220,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     }
 
     override val username: Resourcepart by config {
-        legacyUsernamePropertyName.from(legacyConfig).convertFrom<String> {
+        LEGACY_USERNAME_PROPERTY_NAME.from(legacyConfig).convertFrom<String> {
             Resourcepart.from(it)
         }
         "jicofo.xmpp.client.username".from(newConfig).convertFrom<String> {
@@ -235,7 +235,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     }
 
     override val password: String? by optionalconfig {
-        legacyPasswordPropertyName.from(legacyConfig)
+        LEGACY_PASSWORD_PROPERTY_NAME.from(legacyConfig)
         "jicofo.xmpp.client.password".from(newConfig)
     }
 
@@ -243,7 +243,7 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
      * This is the top-level domain hosted by the XMPP server (not necessarily the one used for login).
      */
     override val xmppDomain: DomainBareJid by config {
-        legacyXmppDomainPropertyName.from(legacyConfig).convertFrom<String> {
+        LEGACY_XMPP_DOMAIN_PROPERTY_NAME.from(legacyConfig).convertFrom<String> {
             JidCreate.domainBareFrom(it)
         }
         "jicofo.xmpp.client.xmpp-domain".from(newConfig).convertFrom<String> {
@@ -285,10 +285,10 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
     override val name = "client"
 
     companion object {
-        const val legacyHostnamePropertyName = "org.jitsi.jicofo.HOSTNAME"
-        const val legacyDomainPropertyName = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
-        const val legacyUsernamePropertyName = "org.jitsi.jicofo.FOCUS_USER_NAME"
-        const val legacyPasswordPropertyName = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
-        const val legacyXmppDomainPropertyName = "org.jitsi.jicofo.XMPP_DOMAIN"
+        const val LEGACY_HOSTNAME_PROPERTY_NAME = "org.jitsi.jicofo.HOSTNAME"
+        const val LEGACY_DOMAIN_PROPERTY_NAME = "org.jitsi.jicofo.FOCUS_USER_DOMAIN"
+        const val LEGACY_USERNAME_PROPERTY_NAME = "org.jitsi.jicofo.FOCUS_USER_NAME"
+        const val LEGACY_PASSWORD_PROPERTY_NAME = "org.jitsi.jicofo.FOCUS_USER_PASSWORD"
+        const val LEGACY_XMPP_DOMAIN_PROPERTY_NAME = "org.jitsi.jicofo.XMPP_DOMAIN"
     }
 }
