@@ -94,9 +94,7 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        val vnode = if (visitorSupported && visitorsManager.enabled &&
-            (query.from == null || !XmppConfig.config.trustedDomains.contains(query.from.asDomainBareJid()))
-        ) {
+        val vnode = if (visitorSupported && visitorsManager.enabled) {
             conference?.redirectVisitor(visitorRequested)
         } else {
             null
