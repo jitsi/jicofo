@@ -46,6 +46,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import java.time.Clock
@@ -564,7 +565,7 @@ open class Participant @JvmOverloads constructor(
         override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {
             checkJingleSession(jingleSession)?.let { return }
 
-            logger.warn("Received transport-reject: ${iq.toXML()}")
+            logger.warn("Received transport-reject: ${iq.toStringOpt()}")
         }
     }
 }

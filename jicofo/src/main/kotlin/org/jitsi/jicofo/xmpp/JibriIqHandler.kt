@@ -25,6 +25,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
@@ -64,7 +65,7 @@ class JibriIqHandler(
         }
 
         // No conference accepted the request.
-        logger.warn("Jibri IQ not accepted by any conference: ${request.iq.toXML()}")
+        logger.warn("Jibri IQ not accepted by any conference: ${request.iq.toStringOpt()}")
         if (JicofoServices.jicofoServicesSingleton?.jibriDetector == null &&
             JicofoServices.jicofoServicesSingleton?.sipJibriDetector == null
         ) {

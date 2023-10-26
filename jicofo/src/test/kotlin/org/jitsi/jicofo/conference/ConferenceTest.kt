@@ -47,6 +47,7 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
@@ -401,7 +402,7 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
         is ConferenceModifyIQ -> colibri2Server.handleConferenceModifyIq(iq)
         is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
         else -> {
-            println("Not handling ${iq.toXML()}")
+            println("Not handling ${iq.toStringOpt()}")
             null
         }
     }.also {
