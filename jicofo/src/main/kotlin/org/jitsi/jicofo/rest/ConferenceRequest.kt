@@ -59,11 +59,9 @@ class ConferenceRequest(
             if (response is ErrorIQ) {
                 throw when (response.error.condition) {
                     StanzaError.Condition.not_authorized -> {
-                        System.err.println("Not authorised")
                         ForbiddenException()
                     }
                     StanzaError.Condition.not_acceptable -> {
-                        System.err.println("not_acceptable")
                         BadRequestExceptionWithMessage("invalid-session")
                     }
                     else -> BadRequestExceptionWithMessage(response.error.toString())
