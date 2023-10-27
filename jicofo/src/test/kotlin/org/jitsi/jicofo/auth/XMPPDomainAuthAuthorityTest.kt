@@ -86,7 +86,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 3: guest domain, no session-id, room exists") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 to = JidCreate.from("jicofo@example.com")
                 from = user2GuestJid
@@ -120,7 +120,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 5: guest jid, invalid session-id, room exists") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 room = room2
                 to = JidCreate.from("jicofo@example.com")
@@ -141,7 +141,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 6: do not allow to use session-id from different machine") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 room = room2
                 to = JidCreate.from("jicofo@example.com")
@@ -155,7 +155,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 7: auth jid, but stolen session id") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 room = room2
                 to = JidCreate.from("jicofo@example.com")
@@ -169,7 +169,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 8: guest jid, session used without machine UID") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 room = room2
                 to = JidCreate.from("jicofo@example.com")
@@ -183,7 +183,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 9: auth jid, try to create session without machine UID") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 to = JidCreate.from("jicofo@example.com")
                 type = IQ.Type.set
@@ -197,7 +197,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 10: same user, different machine UID - assign separate session") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val user3MachineUID = "user3machineUID"
             val query = ConferenceIq().apply {
                 room = room3

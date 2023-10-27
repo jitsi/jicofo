@@ -249,6 +249,11 @@ public class JitsiMeetConferenceImpl
     private String meetingId;
 
     /**
+     * The time at which the last conference request for this conference was received.
+     */
+    private long lastConferenceRequestReceived = -1;
+
+    /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
      *
      * @param roomName name of MUC room that is hosting the conference.
@@ -961,7 +966,25 @@ public class JitsiMeetConferenceImpl
             }
         }
 
-        maybeStop();
+        long timeSinceLastRequest = System.currentTimeMillis() - lastConferenceRequestReceived;
+        long timeout = ConferenceConfig.config.getConferenceStartTimeout().toMillis();
+        if (timeSinceLastRequest > 0 && timeSinceLastRequest < timeout)
+        {
+            logger.warn("Delaying stopping my " + timeout + " ms because of a recent conference request.");
+            TaskPools.getScheduledPool().schedule(this::maybeStop, timeout, TimeUnit.MILLISECONDS);
+        }
+        else
+        {
+            maybeStop();
+        }
+    }
+
+    /**
+     * Notify this instance that a conference request for it was received.
+     */
+    public void conferenceRequestReceived()
+    {
+        lastConferenceRequestReceived = System.currentTimeMillis();
     }
 
     /**

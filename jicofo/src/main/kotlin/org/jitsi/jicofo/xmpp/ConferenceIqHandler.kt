@@ -85,6 +85,7 @@ class ConferenceIqHandler(
         logger.info("Conference request for room $room, from ${query.from}")
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
+        conference?.conferenceRequestReceived()
 
         // Authentication logic
         val error: IQ? = processExtensions(query, room, response, roomExists)
