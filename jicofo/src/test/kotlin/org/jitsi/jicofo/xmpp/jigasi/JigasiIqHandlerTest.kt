@@ -35,6 +35,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -184,7 +185,7 @@ class JigasiXmppConnection : MockXmppConnection() {
             }
         }
         else -> {
-            println("Not handling ${iq.toXML()}")
+            println("Not handling ${iq.toStringOpt()}")
             null
         }
     }

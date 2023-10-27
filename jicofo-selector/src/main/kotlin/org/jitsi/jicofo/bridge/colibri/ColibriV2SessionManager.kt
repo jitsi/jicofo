@@ -42,6 +42,7 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -359,7 +360,7 @@ class ColibriV2SessionManager(
         val response: IQ?
         try {
             response = stanzaCollector.nextResult()
-            logger.trace { "Received response: ${response?.toXML()}" }
+            logger.trace { "Received response: ${response?.toStringOpt()}" }
         } finally {
             stanzaCollector.cancel()
         }
@@ -435,13 +436,13 @@ class ColibriV2SessionManager(
                 Colibri2Error.ELEMENT,
                 Colibri2Error.NAMESPACE
             )?.reason
-            logger.info("Received error response: ${response.toXML()}")
+            logger.info("Received error response: ${response.toStringOpt()}")
             when (response.error?.condition) {
                 bad_request -> {
                     // Most probably we sent a bad request.
                     // If we flag the bridge as non-operational we may disrupt other conferences.
                     // If we trigger a re-invite we may cause the same error repeating.
-                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toXML()?.toString()}", false)
+                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toStringOpt()}", false)
                 }
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
@@ -460,7 +461,7 @@ class ColibriV2SessionManager(
                     if (reason == null) {
                         // An error NOT coming from the bridge.
                         throw ColibriAllocationFailedException(
-                            "XMPP error: ${response.error?.toXML()}",
+                            "XMPP error: ${response.error?.toStringOpt()}",
                             true
                         )
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
@@ -473,7 +474,7 @@ class ColibriV2SessionManager(
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We remove the bridge from the conference (expiring it) and re-invite the participants.
-                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toXML()}", true)
+                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toStringOpt()}", true)
                     }
                 }
                 service_unavailable -> {
@@ -489,7 +490,7 @@ class ColibriV2SessionManager(
                 }
                 else -> {
                     session.bridge.isOperational = false
-                    throw ColibriAllocationFailedException("Error: ${response.error?.toXML()}", true)
+                    throw ColibriAllocationFailedException("Error: ${response.error?.toStringOpt()}", true)
                 }
             }
         }
@@ -618,7 +619,7 @@ class ColibriV2SessionManager(
         relayId: String
     ) {
         logger.info("Received transport from $session for relay $relayId")
-        logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
+        logger.debug { "Received transport from $session for relay $relayId: ${transport.toStringOpt()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
             if (!sessions.containsKey(session.bridge.relayId) || sessions[session.bridge.relayId] != session) {

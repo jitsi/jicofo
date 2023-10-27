@@ -43,6 +43,7 @@ import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.ExtmapAllowMixedPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -110,7 +111,7 @@ class Colibri2Session(
         participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())
 
-        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toStringOpt()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
@@ -259,7 +260,7 @@ class Colibri2Session(
         relayId: String
     ) {
         logger.info("Setting relay transport for $relayId")
-        logger.debug { "Setting relay transport for $relayId: ${transport.toXML()}" }
+        logger.debug { "Setting relay transport for $relayId: ${transport.toStringOpt()}" }
         relays[relayId]?.setTransport(transport)
             ?: throw IllegalStateException("Relay $relayId doesn't exist (bridge=${this.relayId}")
     }
@@ -292,10 +293,10 @@ class Colibri2Session(
      * failure.
      */
     private fun sendRequest(iq: IQ, name: String) {
-        logger.debug { "Sending $name request: ${iq.toXML()}" }
+        logger.debug { "Sending $name request: ${iq.toStringOpt()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) {
             when (it) {
-                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toXML()}" }
+                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toStringOpt()}" }
                 null -> logger.info("$name request timed out. Ignoring.")
                 else -> {
                     if (it is ErrorIQ) {
@@ -313,14 +314,14 @@ class Colibri2Session(
                         val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
                         if (reInvite) {
                             logger.warn(
-                                "Endpoint [$endpointId] is not found, session failed: ${it.toXML()}, " +
-                                    "request was: ${iq.toXML()}"
+                                "Endpoint [$endpointId] is not found, session failed: ${it.toStringOpt()}, " +
+                                    "request was: ${iq.toStringOpt()}"
                             )
                             colibriSessionManager.endpointFailed(endpointId!!)
                             return@sendIqAndHandleResponseAsync
                         }
                     }
-                    logger.error("Received error response for $name, session failed: ${it.toXML()}")
+                    logger.error("Received error response for $name, session failed: ${it.toStringOpt()}")
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                 }
             }
@@ -367,14 +368,14 @@ class Colibri2Session(
         /** Send a request to allocate a new relay, and submit a task to wait for a response. */
         internal fun start(initialParticipants: List<ParticipantInfo>) {
             val request = buildCreateRelayRequest(initialParticipants)
-            logger.trace { "Sending create relay: ${request.toXML()}" }
+            logger.trace { "Sending create relay: ${request.toStringOpt()}" }
 
             xmppConnection.sendIqAndHandleResponseAsync(request) { response ->
                 // Wait for a response to the relay allocation request. When a response is received, parse the contained
                 // transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
-                logger.trace { "Received response: ${response?.toXML()}" }
+                logger.trace { "Received response: ${response?.toStringOpt()}" }
                 if (response !is ConferenceModifiedIQ) {
-                    logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    logger.error("Received error: ${response?.toStringOpt() ?: "timeout"}")
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                     return@sendIqAndHandleResponseAsync
                 }
@@ -382,7 +383,7 @@ class Colibri2Session(
                 // TODO: We just assume that the response has a single [Colibri2Relay].
                 val transport = response.relays.firstOrNull()?.transport
                     ?: run {
-                        logger.error("No transport in response: ${response.toXML()}")
+                        logger.error("No transport in response: ${response.toStringOpt()}")
                         colibriSessionManager.sessionFailed(this@Colibri2Session)
                         return@sendIqAndHandleResponseAsync
                     }

@@ -26,6 +26,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -73,7 +74,7 @@ class JigasiIqHandler(
             }
         }
 
-        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toXML()}")
+        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toStringOpt()}")
         Stats.acceptedRequests.inc()
 
         TaskPools.ioPool.execute {
@@ -101,7 +102,7 @@ class JigasiIqHandler(
     ) {
         // Check if Jigasi is available
         val jigasiJid = jigasiDetector.selectSipJigasi(exclude, conferenceRegions) ?: run {
-            logger.warn("Request failed, no instances available: ${request.iq.toXML()}")
+            logger.warn("Request failed, no instances available: ${request.iq.toStringOpt()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
                     request.iq,
@@ -122,7 +123,7 @@ class JigasiIqHandler(
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
         } catch (e: SmackException.NotConnectedException) {
-            logger.error("Request failed,  XMPP not connected: ${request.iq.toXML()}")
+            logger.error("Request failed,  XMPP not connected: ${request.iq.toStringOpt()}")
             stats.xmppNotConnected()
             return
         }
@@ -133,7 +134,7 @@ class JigasiIqHandler(
                     logger.warn("Jigasi instance timed out: $jigasiJid")
                     Stats.singleInstanceTimeouts.inc()
                 } else {
-                    logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toXML()}")
+                    logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toStringOpt()}")
                     Stats.singleInstanceErrors.inc()
                 }
 

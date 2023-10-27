@@ -36,6 +36,7 @@ import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ExtensionElement
@@ -143,7 +144,7 @@ class JingleSession(
         val response = if (error == null) {
             IQ.createResultIQ(iq)
         } else {
-            logger.info("Returning error: request=${iq.toXML()}, error=${error.toXML()} ")
+            logger.info("Returning error: request=${iq.toStringOpt()}, error=${error.toStringOpt()} ")
             IQ.createErrorResponse(iq, error)
         }
         connection.tryToSendStanza(response)
@@ -207,7 +208,7 @@ class JingleSession(
         return if (response?.type == IQ.Type.result) {
             true
         } else {
-            logger.error("Unexpected response to transport-replace: ${response?.toXML()}")
+            logger.error("Unexpected response to transport-replace: ${response?.toStringOpt()}")
             false
         }
     }
