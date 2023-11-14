@@ -21,6 +21,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -83,8 +84,10 @@ class ConferenceIqHandler(
         }
 
         logger.info("Conference request for room $room, from ${query.from}")
+        conferenceRequestCounter.inc()
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
+        if (!roomExists) newConferenceRequestCounter.inc()
 
         // Authentication logic
         val error: IQ? = processExtensions(query, room, response, roomExists)
@@ -208,5 +211,16 @@ class ConferenceIqHandler(
             logger.info("Using breakout room component at $address.")
             JidCreate.domainBareFrom(address)
         }
+    }
+
+    companion object {
+        val conferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
+            "conference_requests",
+            "Number of conference requests received."
+        )
+        val newConferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
+            "conference_requests_new",
+            "Number of conference requests received for new conferences."
+        )
     }
 }
