@@ -280,6 +280,14 @@ class ChatRoomImpl(
                 // listeners lingering around
                 if (isJoined) {
                     muc.leave()
+                } else {
+                    // If the join attempt timed out the XMPP server might have processed it and created the MUC, and
+                    // since the XMPP connection is long-lived the MUC will leak.
+                    val leavePresence = connection.stanzaFactory.buildPresenceStanza()
+                        .ofType(Presence.Type.unavailable)
+                        .to(myOccupantJid)
+                        .build()
+                    connection.sendStanza(leavePresence)
                 }
             } catch (e: Exception) {
                 // when the connection is not connected or we get NotConnectedException, this is expected (skip log)
