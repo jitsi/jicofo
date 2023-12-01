@@ -1688,13 +1688,18 @@ public class JitsiMeetConferenceImpl
         }
 
         long participantCount = getUserParticipantCount();
-
-        if (!visitorRequested && participantCount < VisitorsConfig.config.getMaxParticipants())
+        boolean visitorsAlreadyUsed = false;
+        synchronized (visitorChatRooms)
         {
-            return null;
+            visitorsAlreadyUsed = !visitorChatRooms.isEmpty();
         }
 
-        return selectVisitorNode();
+        if (visitorsAlreadyUsed || visitorRequested || participantCount >= VisitorsConfig.config.getMaxParticipants())
+        {
+            return selectVisitorNode();
+        }
+
+        return null;
     }
 
     private long userParticipantCount = 0;
