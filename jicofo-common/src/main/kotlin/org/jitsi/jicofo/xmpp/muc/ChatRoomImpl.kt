@@ -140,6 +140,22 @@ class ChatRoomImpl(
             }
         }
 
+    override var visitorsEnabled: Boolean? = null
+        private set(value) {
+            if (value != field) {
+                logger.info("Visitors is now: $value")
+                field = value
+            }
+        }
+
+    override var participantsSoftLimit: Int? = null
+        private set(value) {
+            if (value != field) {
+                logger.info("ParticipantsSoftLimit is now $value.")
+                field = value
+            }
+        }
+
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
@@ -262,6 +278,10 @@ class ChatRoomImpl(
     private fun parseConfigForm(configForm: Form) {
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
+        visitorsEnabled =
+            configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
+        participantsSoftLimit =
+            configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
     }
 
     override fun leave() {
@@ -544,6 +564,8 @@ class ChatRoomImpl(
         const val MAIN_ROOM = "muc#roominfo_breakout_main_room"
         const val MEETING_ID = "muc#roominfo_meetingId"
         const val WHOIS = "muc#roomconfig_whois"
+        const val PARTICIPANTS_SOFT_LIMIT = "muc#roominfo_participantsSoftLimit"
+        const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
