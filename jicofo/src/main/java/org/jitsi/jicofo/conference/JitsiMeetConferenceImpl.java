@@ -1677,7 +1677,7 @@ public class JitsiMeetConferenceImpl
 
         // We don't support both visitors and a lobby. Once a lobby is enabled we don't use visitors anymore.
         ChatRoom chatRoom = this.chatRoom;
-        if (chatRoom != null && chatRoom.getLobbyEnabled())
+        if (chatRoom != null && (chatRoom.getLobbyEnabled() || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())))
         {
             return null;
         }
@@ -1688,13 +1688,19 @@ public class JitsiMeetConferenceImpl
         }
 
         long participantCount = getUserParticipantCount();
-        boolean visitorsAlreadyUsed = false;
+        boolean visitorsAlreadyUsed;
         synchronized (visitorChatRooms)
         {
             visitorsAlreadyUsed = !visitorChatRooms.isEmpty();
         }
 
-        if (visitorsAlreadyUsed || visitorRequested || participantCount >= VisitorsConfig.config.getMaxParticipants())
+        int participantsSoftLimit = VisitorsConfig.config.getMaxParticipants();
+        if (chatRoom != null && chatRoom.getParticipantsSoftLimit() != null && chatRoom.getParticipantsSoftLimit() > 0)
+        {
+            participantsSoftLimit = chatRoom.getParticipantsSoftLimit();
+        }
+
+        if (visitorsAlreadyUsed || visitorRequested || participantCount >= participantsSoftLimit)
         {
             return selectVisitorNode();
         }

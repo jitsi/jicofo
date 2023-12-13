@@ -55,6 +55,13 @@ interface ChatRoom {
     /** Whether a lobby is enabled for the room. Read from the MUC config form. */
     val lobbyEnabled: Boolean
 
+    /** Whether the visitors feature is enabled for the room. Read from the MUC config form. */
+    val visitorsEnabled: Boolean?
+
+    /** The number of participants in the room after which new endpoints should be redirected to visitors.
+     *  Read from the MUC config form. */
+    val participantsSoftLimit: Int?
+
     val debugState: OrderedJsonObject
 
     /** Returns the number of members that currently have their audio sources unmuted. */
