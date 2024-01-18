@@ -56,6 +56,10 @@
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
     <dependency>
+      <groupId>org.jxmpp</groupId>
+      <artifactId>jxmpp-stringprep-rocksxmppprecis</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
     </dependency>

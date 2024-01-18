@@ -36,6 +36,8 @@
     <assembly.skipAssembly>false</assembly.skipAssembly>
     <jetty.version>11.0.14</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
+    <jxmpp.version>1.0.3</jxmpp.version>
     <smack.version>4.4.6</smack.version>
     <kotlin.version>1.9.10</kotlin.version>
     <kotest.version>5.7.2</kotest.version>
@@ -136,6 +138,11 @@
         <groupId>org.igniterealtime.smack</groupId>
         <artifactId>smack-tcp</artifactId>
         <version>${smack.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jxmpp</groupId>
+        <artifactId>jxmpp-stringprep-rocksxmppprecis</artifactId>
+        <version>${jxmpp.version}</version>
       </dependency>
       <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
       <dependency>

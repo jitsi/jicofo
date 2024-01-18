@@ -34,6 +34,7 @@
       <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
       <!-- False positive with kotlin lazy initialization. -->
       <Bug pattern="BC_IMPOSSIBLE_INSTANCEOF"/>
+      <Bug pattern="MS_EXPOSE_REP"/>
     </Or>
   </And>
 </Match>
