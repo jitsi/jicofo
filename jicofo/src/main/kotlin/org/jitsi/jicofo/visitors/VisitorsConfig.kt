@@ -40,6 +40,9 @@ class VisitorsConfig private constructor() {
         "jicofo.visitors.auto-enable-broadcast".from(newConfig)
     }
 
+    val requireMucConfigFlag: Boolean by config {
+        "jicofo.visitors.require-muc-config-flag".from(newConfig)
+    }
     companion object {
         @JvmField
         val config = VisitorsConfig()
