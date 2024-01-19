@@ -44,8 +44,9 @@ class ConferenceRequest(
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest): String {
+    fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest?): String {
         val response: IQ
+        if (conferenceRequest == null) throw BadRequestExceptionWithMessage("Missing body.")
         try {
             response = conferenceIqHandler.handleConferenceIq(conferenceRequest.toConferenceIq())
         } catch (e: XmppStringprepException) {
