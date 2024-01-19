@@ -1681,6 +1681,13 @@ public class JitsiMeetConferenceImpl
         {
             return null;
         }
+        if (VisitorsConfig.config.getRequireMucConfigFlag())
+        {
+            if (chatRoom == null || !Boolean.TRUE.equals(chatRoom.getVisitorsEnabled()))
+            {
+                return null;
+            }
+        }
         // We don't support visitors in breakout rooms.
         if (mainRoomJid != null)
         {
