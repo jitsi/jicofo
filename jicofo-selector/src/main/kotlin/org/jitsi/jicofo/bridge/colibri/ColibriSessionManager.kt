@@ -90,7 +90,6 @@ data class ParticipantAllocationParameters(
     val statsId: String?,
     val region: String?,
     val sources: EndpointSourceSet,
-    val supportsSourceNames: Boolean,
     val useSsrcRewriting: Boolean,
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,

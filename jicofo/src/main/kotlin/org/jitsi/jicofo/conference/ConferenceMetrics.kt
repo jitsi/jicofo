@@ -43,12 +43,6 @@ class ConferenceMetrics {
         )
 
         @JvmField
-        val participantsNoSourceName = metricsContainer.registerCounter(
-            "participants_no_source_name",
-            "Number of participants with no support for source names."
-        )
-
-        @JvmField
         val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"

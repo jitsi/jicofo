@@ -217,9 +217,6 @@ open class Participant @JvmOverloads constructor(
         }
     }
 
-    /** Return `true` if this participant supports source name signaling. */
-    fun hasSourceNameSupport() = supportedFeatures.contains(Features.SOURCE_NAMES)
-
     /** Return `true` if this participant supports SSRC rewriting functionality. */
     fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING_V1)
 

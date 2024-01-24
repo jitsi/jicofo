@@ -800,10 +800,6 @@ public class JitsiMeetConferenceImpl
             {
                 ConferenceMetrics.participantsNoMultiStream.inc();
             }
-            if (!participant.hasSourceNameSupport() && !participant.getChatMember().isJigasi())
-            {
-                ConferenceMetrics.participantsNoSourceName.inc();
-            }
 
             boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
             if (added)
