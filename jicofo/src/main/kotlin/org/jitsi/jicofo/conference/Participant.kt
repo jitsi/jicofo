@@ -25,7 +25,6 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
-import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.Features
@@ -34,7 +33,6 @@ import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
-import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
@@ -94,8 +92,7 @@ open class Participant @JvmOverloads constructor(
     private val sourceSignaling = SourceSignaling(
         audio = hasAudioSupport(),
         video = hasVideoSupport(),
-        ConferenceConfig.config.stripSimulcast(),
-        supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.multiStreamBackwardCompat
+        ConferenceConfig.config.stripSimulcast()
     )
 
     /**
@@ -133,59 +130,11 @@ open class Participant @JvmOverloads constructor(
     private val signalQueuedSourcesTaskSyncRoot = Any()
 
     /**
-     * Whether the screensharing source of this participant (if it exists) is muted. If a screensharing source doesn't
-     * exists this stays false (though the source and the mute status are communicated separately so they may not
-     * always be in sync)
-     */
-    private var desktopSourceIsMuted = false
-
-    /**
      * Whether this participant is a "user participant" for the purposes of
      * [JitsiMeetConferenceImpl.getUserParticipantCount].
      * Needs to be unchanging so counts don't get out of sync.
      */
     val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
-
-    init {
-        updateDesktopSourceIsMuted(chatMember.sourceInfos)
-    }
-
-    /**
-     * Notify this [Participant] that the underlying [ChatRoomMember]'s presence changed.
-     */
-    fun presenceChanged() {
-        if (updateDesktopSourceIsMuted(chatMember.sourceInfos)) {
-            conference.desktopSourceIsMutedChanged(this, desktopSourceIsMuted)
-        }
-    }
-
-    /**
-     * Update the value of [.desktopSourceIsMuted] based on the advertised [SourceInfo]s.
-     * @return true if the value of [.desktopSourceIsMuted] changed as a result of this call.
-     */
-    private fun updateDesktopSourceIsMuted(sourceInfos: Set<SourceInfo>): Boolean {
-        val newValue = sourceInfos
-            .any { (_, muted, videoType) -> videoType === VideoType.Desktop && muted }
-        if (desktopSourceIsMuted != newValue) {
-            desktopSourceIsMuted = newValue
-            return true
-        }
-        return false
-    }
-
-    /**
-     * Notify this participant that another participant's (identified by `owner`) screensharing source was muted
-     * or unmuted.
-     */
-    fun remoteDesktopSourceIsMutedChanged(owner: String, muted: Boolean) {
-        // This is only needed for backwards compatibility with clients that don't support receiving multiple streams.
-        if (supportsReceivingMultipleVideoStreams()) {
-            return
-        }
-        sourceSignaling.remoteDesktopSourceIsMutedChanged(owner, muted)
-        // Signal updates, if any, immediately.
-        synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
-    }
 
     /**
      * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
@@ -225,7 +174,6 @@ open class Participant @JvmOverloads constructor(
 
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
     fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
-    fun supportsReceivingMultipleVideoStreams() = supportedFeatures.contains(Features.RECEIVE_MULTIPLE_STREAMS)
 
     /** Returns `true` iff this participant supports REMB. */
     fun hasRembSupport() = supportedFeatures.contains(Features.REMB)

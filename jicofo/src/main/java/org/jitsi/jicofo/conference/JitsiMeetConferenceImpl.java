@@ -796,10 +796,6 @@ public class JitsiMeetConferenceImpl
                     features);
 
             ConferenceMetrics.participants.inc();
-            if (!participant.supportsReceivingMultipleVideoStreams() && !participant.getChatMember().isJigasi())
-            {
-                ConferenceMetrics.participantsNoMultiStream.inc();
-            }
 
             boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
             if (added)
@@ -2081,22 +2077,6 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
-     * Notifies this conference that one of the participants' screensharing source has changed its "mute" status.
-     */
-    void desktopSourceIsMutedChanged(Participant participant, boolean desktopSourceIsMuted)
-    {
-        if (!ConferenceConfig.config.getMultiStreamBackwardCompat())
-        {
-            return;
-        }
-
-        participants.values().stream()
-                .filter(p -> p != participant)
-                .filter(p -> !p.supportsReceivingMultipleVideoStreams())
-                .forEach(p -> p.remoteDesktopSourceIsMutedChanged(participant.getEndpointId(), desktopSourceIsMuted));
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -2338,11 +2318,6 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
-            Participant participant = getParticipant(member.getOccupantJid());
-            if (participant != null)
-            {
-                participant.presenceChanged();
-            }
         }
 
         @Override

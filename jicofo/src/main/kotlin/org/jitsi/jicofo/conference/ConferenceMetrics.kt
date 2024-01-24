@@ -37,12 +37,6 @@ class ConferenceMetrics {
         )
 
         @JvmField
-        val participantsNoMultiStream = metricsContainer.registerCounter(
-            "participants_no_multi_stream",
-            "Number of participants with no support for receiving multiple streams."
-        )
-
-        @JvmField
         val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"
