@@ -753,6 +753,16 @@ public class JitsiMeetConferenceImpl
                 {
                     inviteChatMember(member, member == chatRoomMember);
                 }
+                for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
+                {
+                    for (final ChatRoomMember member : visitorChatRoom.getMembers())
+                    {
+                        if (member.getRole() == MemberRole.VISITOR)
+                        {
+                            inviteChatMember(member, member == chatRoomMember);
+                        }
+                    }
+                }
             }
             // Only the one who has just joined
             else
@@ -897,9 +907,15 @@ public class JitsiMeetConferenceImpl
      */
     private boolean checkMinParticipants()
     {
-        int minParticipants = ConferenceConfig.config.getMinParticipants();
         ChatRoom chatRoom = getChatRoom();
-        return chatRoom != null && chatRoom.getMemberCount() >= minParticipants;
+        if (chatRoom == null)
+        {
+            return false;
+        }
+        int minParticipants = ConferenceConfig.config.getMinParticipants();
+        int memberCount = chatRoom.getMemberCount()
+                + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum();
+        return memberCount >= minParticipants;
     }
 
     /**
