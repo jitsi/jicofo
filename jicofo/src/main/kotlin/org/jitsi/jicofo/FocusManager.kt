@@ -263,8 +263,6 @@ class FocusManager(
             // so we'll merge stats from different "child" objects here.
             val stats = OrderedJsonObject()
             stats["total_participants"] = ConferenceMetrics.participants.get()
-            stats["total_participants_no_multi_stream"] = ConferenceMetrics.participantsNoMultiStream.get()
-            stats["total_participants_no_source_name"] = ConferenceMetrics.participantsNoSourceName.get()
             stats["total_conferences_created"] = ConferenceMetrics.conferencesCreated.get()
             stats["conferences"] = ConferenceMetrics.conferenceCount.get()
             stats["conferences_with_visitors"] = ConferenceMetrics.conferencesWithVisitors.get()

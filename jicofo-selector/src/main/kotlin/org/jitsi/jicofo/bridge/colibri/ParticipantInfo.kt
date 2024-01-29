@@ -30,7 +30,6 @@ class ParticipantInfo(
     val statsId = parameters.statsId
     val useSctp = parameters.useSctp
     val medias = parameters.medias
-    val supportsSourceNames = parameters.supportsSourceNames
     val supportsPrivateAddresses = parameters.supportsPrivateAddresses
     val useSsrcRewriting = parameters.useSsrcRewriting
     val visitor = parameters.visitor
@@ -46,7 +45,6 @@ class ParticipantInfo(
         put("bridge", session.bridge.jid.resourceOrNull.toString())
         put("audio_muted", audioMuted)
         put("video_muted", videoMuted)
-        put("source_names", supportsSourceNames)
         put("private_addresses", supportsPrivateAddresses)
         put("ssrc_rewriting", useSsrcRewriting)
         put("visitor", visitor)

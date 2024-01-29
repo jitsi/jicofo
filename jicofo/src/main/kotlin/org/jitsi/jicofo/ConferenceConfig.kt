@@ -105,10 +105,6 @@ class ConferenceConfig private constructor() {
         "jicofo.conference.reinvite-method".from(newConfig)
     }
 
-    val multiStreamBackwardCompat: Boolean by config {
-        "jicofo.conference.enable-multi-stream-backward-compat".from(newConfig)
-    }
-
     /**
      * Whether to strip simulcast streams when signaling receivers. This option requires that jitsi-videobridge
      * uses the first SSRC in the SIM group as the target SSRC when rewriting streams, as this is the only SSRC

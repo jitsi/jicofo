@@ -204,7 +204,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     participant.getStatId(),
                     participant.getChatMember().getRegion(),
                     participant.getSources(),
-                    participant.hasSourceNameSupport(),
                     participant.useSsrcRewriting(),
                     forceMuteAudio,
                     forceMuteVideo,
