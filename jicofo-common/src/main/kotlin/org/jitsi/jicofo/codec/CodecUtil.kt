@@ -258,7 +258,7 @@ class CodecUtil {
 
             if (config.rid.enabled()) {
                 val rtpStreamId = RTPHdrExtPacketExtension()
-                rtpStreamId.id = config.rid.enabled().toString()
+                rtpStreamId.id = config.rid.id.toString()
                 rtpStreamId.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id")
                 add(rtpStreamId)
             }
