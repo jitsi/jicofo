@@ -120,7 +120,7 @@ class JicofoServices {
 
     init {
         if (jibriDetector != null || sipJibriDetector != null) {
-            JicofoMetricsContainer.instance.addUpdateTask {
+            JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask {
                 JibriDetectorMetrics.updateMetrics(jibriDetector = jibriDetector, sipJibriDetector = sipJibriDetector)
             }
         }
@@ -167,7 +167,7 @@ class JicofoServices {
 
     init {
         logger.info("Registering GlobalMetrics periodic updates.")
-        JicofoMetricsContainer.instance.addUpdateTask { GlobalMetrics.update() }
+        JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { GlobalMetrics.update() }
     }
 
     fun shutdown() {
@@ -176,7 +176,7 @@ class JicofoServices {
             it.shutdown()
         }
         healthChecker?.shutdown()
-        JicofoMetricsContainer.instance.stop()
+        JicofoMetricsContainer.instance.metricsUpdater.stop()
         jettyServer?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)

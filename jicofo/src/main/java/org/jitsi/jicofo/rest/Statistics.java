@@ -41,7 +41,7 @@ public class Statistics
         JicofoServices jicofoServices
                 = Objects.requireNonNull(JicofoServices.getJicofoServicesSingleton(), "jicofoServices");
         // Update the metrics that are usually updated periodically so we read the current values.
-        JicofoMetricsContainer.getInstance().updateMetrics();
+        JicofoMetricsContainer.getInstance().getMetricsUpdater().updateMetrics();
         return jicofoServices.getStats().toJSONString();
     }
 }

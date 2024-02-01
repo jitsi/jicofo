@@ -63,7 +63,7 @@ class BridgeSelector @JvmOverloads constructor(
     private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
 
     init {
-        JicofoMetricsContainer.instance.addUpdateTask { updateMetrics() }
+        JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
     }
 
     val operationalBridgeCount: Int
