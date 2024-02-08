@@ -29,6 +29,7 @@ interface ChatRoomListener {
     fun localRoleChanged(newRole: MemberRole) {}
     fun numAudioSendersChanged(numAudioSenders: Int) {}
     fun numVideoSendersChanged(numVideoSenders: Int) {}
+    fun transcriptionRequestedChanged(transcriptionRequested: Boolean) {}
 }
 
 /** A class with the default kotlin method implementations (to avoid using @JvmDefault) **/
