@@ -2337,6 +2337,11 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
+        public void transcriptionRequestedChanged(boolean transcriptionRequested)
+        {
+        }
+
+        @Override
         public void numAudioSendersChanged(int numAudioSenders)
         {
             onNumAudioSendersChanged(numAudioSenders);

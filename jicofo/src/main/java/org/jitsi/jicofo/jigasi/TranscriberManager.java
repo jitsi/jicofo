@@ -77,7 +77,8 @@ public class TranscriberManager
 
     /**
      * A single-threaded {@link ExecutorService} to offload inviting the
-     * Transcriber from the smack thread updating presence.
+     * Transcriber from the smack thread updating presence. It's important that requests are handled sequentially to
+     * prevent multiple jigasis being invited.
      */
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
@@ -125,20 +126,37 @@ public class TranscriberManager
         if (transcriptionStatusExtension != null
                 && TranscriptionStatusExtension.Status.OFF.equals(transcriptionStatusExtension.getStatus()))
         {
-            // puts the stopping in the single threaded executor
-            // so we can order the events and avoid indicating active = false
-            // while we are starting due to concurrent presences processed
-            executorService.execute(this::stopTranscribing);
+            active = false;
+            logger.info("detected transcription status being turned off.");
         }
         if (isRequestingTranscriber(presence) && !active)
         {
-            if (jigasiDetector == null)
+            tryToStart();
+        }
+    }
+
+    private void tryToStart()
+    {
+        if (jigasiDetector == null)
+        {
+            logger.warn("Transcription requested, but jigasiDetector is not configured.");
+            return;
+        }
+
+        if (active)
+        {
+            return;
+        }
+
+        executorService.execute(() -> {
+            if (active)
             {
-                logger.warn("Transcription requested, but jigasiDetector is not configured.");
                 return;
             }
-            executorService.execute(() -> this.startTranscribing(conference.getBridgeRegions()));
-        }
+
+            // We need a modifiable list for the "exclude" parameter.
+            selectTranscriber(2, new ArrayList<>(), conference.getBridgeRegions());
+        });
     }
 
     /**
@@ -159,13 +177,6 @@ public class TranscriberManager
      */
     private void startTranscribing(@NotNull Collection<String> preferredRegions)
     {
-        if (active)
-        {
-            return;
-        }
-
-        // We need a modifiable list for the "exclude" parameter.
-        selectTranscriber(2, new ArrayList<>(), preferredRegions);
     }
 
     /**
@@ -235,15 +246,6 @@ public class TranscriberManager
     }
 
     /**
-     * Indicate transcription has stopped and sets {@link this#active} to false.
-     */
-    private void stopTranscribing()
-    {
-        active = false;
-        logger.info("detected transcription status being turned off.");
-    }
-
-    /**
      * Checks whether the given {@link Presence} indicates a conference
      * participant is requesting transcription
      *
@@ -274,6 +276,16 @@ public class TranscriberManager
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
             TranscriberManager.this.memberPresenceChanged(member);
+        }
+
+        @Override
+        public void transcriptionRequestedChanged(boolean transcriptionRequested)
+        {
+            if (transcriptionRequested)
+            {
+                logger.info("Transcription requested from the room.");
+                tryToStart();
+            }
         }
     }
 }

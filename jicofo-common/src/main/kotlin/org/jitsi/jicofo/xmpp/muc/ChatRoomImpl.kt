@@ -156,6 +156,15 @@ class ChatRoomImpl(
             }
         }
 
+    override var transcriptionRequested: Boolean = false
+        private set(value) {
+            if (value != field) {
+                logger.info("transcriptionRequested is now $value.")
+                field = value
+                eventEmitter.fireEvent { transcriptionRequestedChanged(value) }
+            }
+        }
+
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
@@ -278,10 +287,25 @@ class ChatRoomImpl(
     private fun parseConfigForm(configForm: Form) {
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
-        visitorsEnabled =
-            configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
-        participantsSoftLimit =
-            configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
+        visitorsEnabled = configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
+        participantsSoftLimit = configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
+        // Default to false unless specified.
+        val roomMetadata = configForm.getRoomMetadata()
+        if (roomMetadata != null) {
+            transcriptionRequested = roomMetadata.recording?.isTranscribingEnabled == true
+        }
+    }
+
+    private fun Form.getRoomMetadata(): RoomMetadata.Metadata? {
+        getField("muc#roominfo_jitsimetadata")?.firstValue?.let {
+            try {
+                return RoomMetadata.parse(it).metadata
+            } catch (e: Exception) {
+                logger.warn("Invalid room metadata content", e)
+                return null
+            }
+        }
+        return null
     }
 
     override fun leave() {

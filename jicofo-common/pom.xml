@@ -103,6 +103,11 @@
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.module</groupId>
+        <artifactId>jackson-module-kotlin</artifactId>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
     <dependency>
       <groupId>com.github.spotbugs</groupId>

@@ -62,6 +62,9 @@ interface ChatRoom {
      *  Read from the MUC config form. */
     val participantsSoftLimit: Int?
 
+    /** Whether the room is configured to require transcription. */
+    val transcriptionRequested: Boolean
+
     val debugState: OrderedJsonObject
 
     /** Returns the number of members that currently have their audio sources unmuted. */
