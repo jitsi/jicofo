@@ -28,6 +28,6 @@ class JicofoSelectorKotestProjectConfig : AbstractProjectConfig() {
         MetaconfigSettings.cacheEnabled = false
 
         JicofoMetricsContainer.instance.checkForNameConflicts = false
-        JicofoMetricsContainer.instance.disablePeriodicUpdates = true
+        JicofoMetricsContainer.instance.metricsUpdater.disablePeriodicUpdates = true
     }
 }

@@ -74,7 +74,7 @@ class FocusManager(
     private val pinnedConferences: MutableMap<EntityBareJid, PinnedConference> = HashMap()
 
     fun start() {
-        metricsContainer.addUpdateTask { updateMetrics() }
+        metricsContainer.metricsUpdater.addUpdateTask { updateMetrics() }
     }
 
     /**

@@ -69,7 +69,7 @@ class XmppServices(
             breweryJid
         ).apply {
             init()
-            JicofoMetricsContainer.instance.addUpdateTask { updateMetrics() }
+            JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
         }
     } ?: run {
         logger.info("No Jigasi detector configured.")

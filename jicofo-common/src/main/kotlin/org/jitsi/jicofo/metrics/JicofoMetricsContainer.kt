@@ -21,66 +21,18 @@ import org.jitsi.config.JitsiConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.metaconfig.config
 import org.jitsi.metrics.MetricsContainer
-import org.jitsi.utils.logging2.createLogger
+import org.jitsi.metrics.MetricsUpdater
 import java.time.Duration
-import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
 class JicofoMetricsContainer private constructor() : MetricsContainer(namespace = "jitsi_jicofo") {
-    private val logger = createLogger()
-    private val subtasks: MutableList<() -> Unit> = CopyOnWriteArrayList()
-
-    private var updateTask: ScheduledFuture<*>? = null
-
-    // Allow updates to be disabled for tests
-    var disablePeriodicUpdates = false
-
-    fun addUpdateTask(subtask: () -> Unit) {
-        if (disablePeriodicUpdates) {
-            logger.warn("Periodic updates are disabled, will not execute update task.")
-            return
-        }
-
-        subtasks.add(subtask)
-        synchronized(this) {
-            if (updateTask == null) {
-                logger.info("Scheduling metrics update task with interval $updateInterval.")
-                updateTask = TaskPools.scheduledPool.scheduleAtFixedRate(
-                    { updateMetrics() },
-                    0,
-                    updateInterval.toMillis(),
-                    TimeUnit.MILLISECONDS
-                )
-            }
-        }
-    }
-
-    fun updateMetrics() {
-        synchronized(this) {
-            logger.debug("Running ${subtasks.size} subtasks.")
-            subtasks.forEach {
-                try {
-                    it.invoke()
-                } catch (e: Exception) {
-                    logger.warn("Exception while running subtask", e)
-                }
-            }
-        }
-    }
-
-    fun stop() = synchronized(this) {
-        updateTask?.cancel(false)
-        updateTask = null
-        subtasks.clear()
-    }
+    val metricsUpdater = MetricsUpdater(TaskPools.scheduledPool, updateInterval)
 
     companion object {
-        @JvmStatic
-        val instance = JicofoMetricsContainer()
-
-        val updateInterval: Duration by config {
+        private val updateInterval: Duration by config {
             "jicofo.metrics.update-interval".from(JitsiConfig.newConfig)
         }
+
+        @JvmStatic
+        val instance = JicofoMetricsContainer()
     }
 }
