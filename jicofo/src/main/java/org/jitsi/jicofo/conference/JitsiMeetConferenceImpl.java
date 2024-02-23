@@ -134,6 +134,18 @@ public class JitsiMeetConferenceImpl
         });
 
     /**
+     * The aggregated count of visitors' supported codecs
+     */
+    private final PreferenceAggregator visitorCodecs = new PreferenceAggregator(
+        (codecs) -> {
+            setConferenceProperty(
+                ConferenceProperties.KEY_VISITOR_CODECS,
+                String.join(",", codecs)
+            );
+            return null;
+        });
+
+    /**
      * The {@link JibriRecorder} instance used to provide live streaming through
      * Jibri.
      */
@@ -816,7 +828,7 @@ public class JitsiMeetConferenceImpl
                 }
                 else if (participant.getChatMember().getRole() == MemberRole.VISITOR)
                 {
-                    visitorAdded();
+                    visitorAdded(participant.getChatMember().getVideoCodecs());
                 }
             }
 
@@ -1042,7 +1054,7 @@ public class JitsiMeetConferenceImpl
                 }
                 else if (removed.getChatMember().getRole() == MemberRole.VISITOR)
                 {
-                    visitorRemoved();
+                    visitorRemoved(removed.getChatMember().getVideoCodecs());
                 }
             }
         }
@@ -2013,15 +2025,21 @@ public class JitsiMeetConferenceImpl
     }
 
     /** Called when a new visitor has been added to the conference. */
-    private void visitorAdded()
+    private void visitorAdded(List<String> codecs)
     {
         visitorCount.adjustValue(+1);
+        if (codecs != null) {
+            visitorCodecs.addPreference(codecs);
+        }
     }
 
     /** Called when a new visitor has been added to the conference. */
-    private void visitorRemoved()
+    private void visitorRemoved(List<String> codecs)
     {
         visitorCount.adjustValue(-1);
+        if (codecs != null) {
+            visitorCodecs.removePreference(codecs);
+        }
     }
 
     /**

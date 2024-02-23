@@ -27,6 +27,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
+import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
@@ -67,6 +68,8 @@ class ChatRoomMemberImpl(
     override var isJibri = false
         private set
     override var statsId: String? = null
+        private set
+    override var videoCodecs: List<String>? = null
         private set
     override var isAudioMuted = true
         private set
@@ -208,6 +211,18 @@ class ChatRoomMemberImpl(
 
         presence.getExtension(StatsId::class.java)?.let {
             statsId = it.statsId
+        }
+
+        presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
+            if (videoCodecs != null && it.codecs != videoCodecs) {
+                logger.warn("Video codec list changed from {$videoCodecs} to {${it.codecs}} - not supported!")
+            }
+            if (!it.codecs.contains("vp8")) {
+                logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
+                videoCodecs = it.codecs + "vp8"
+            } else {
+                videoCodecs = it.codecs
+            }
         }
     }
 
