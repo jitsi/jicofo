@@ -144,7 +144,7 @@ class JibriChatRoomMember(
     override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
     override val region: String? get() = TODO("Not yet implemented")
     override val statsId: String? get() = TODO("Not yet implemented")
-    override val videoCodecs: Set<String>? get() = TODO("Not yet implemented")
+    override val videoCodecs: List<String>? get() = TODO("Not yet implemented")
     override val features: Set<Features> get() = TODO("Not yet implemented")
     override val debugState: OrderedJsonObject get() = TODO("Not yet implemented")
 
