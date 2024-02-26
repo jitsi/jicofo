@@ -22,7 +22,8 @@ package org.jitsi.jicofo.util
  *
  * The intended use case is maintaining the list of supported codecs for conference visitors.
  *
- * Preferences are aggregated using the Borda count; this isn't theoretically optimal, but it's computationally cheap.
+ * Preference orders are aggregated using the Borda count; this isn't theoretically optimal, but it should be
+ * good enough, and it's computationally cheap.
  */
 class PreferenceAggregator(
     private val onChanged: (List<String>) -> Unit
