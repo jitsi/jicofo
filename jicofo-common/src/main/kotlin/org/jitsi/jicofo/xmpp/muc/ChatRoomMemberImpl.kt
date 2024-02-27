@@ -27,6 +27,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
+import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
@@ -36,6 +37,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
 import org.jivesoftware.smackx.caps.packet.CapsExtension
+import org.json.simple.JSONArray
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 
@@ -67,6 +69,8 @@ class ChatRoomMemberImpl(
     override var isJibri = false
         private set
     override var statsId: String? = null
+        private set
+    override var videoCodecs: List<String>? = null
         private set
     override var isAudioMuted = true
         private set
@@ -150,6 +154,7 @@ class ChatRoomMemberImpl(
     fun processPresence(presence: Presence) {
         require(presence.from == occupantJid) { "Ignoring presence for a different member: ${presence.from}" }
 
+        val firstPresence = (this.presence == null)
         this.presence = presence
         presence.getExtension(UserInfoPacketExt::class.java)?.let {
             val newStatus = it.isRobot
@@ -185,12 +190,14 @@ class ChatRoomMemberImpl(
             isJibri = false
         }
 
-        val oldRole = role
-        chatRoom.getOccupant(this)?.let { role = fromSmack(it.role, it.affiliation) }
-        if ((role == MemberRole.VISITOR) != (oldRole == MemberRole.VISITOR)) {
+        var newRole: MemberRole = MemberRole.VISITOR
+        chatRoom.getOccupant(this)?.let { newRole = fromSmack(it.role, it.affiliation) }
+        if (!firstPresence && (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)) {
             // This will mess up various member counts
             // TODO: Should we try to update them, instead?
-            logger.warn("Member role changed from $oldRole to $role - not supported!")
+            logger.warn("Member role changed from $role to $newRole - not supported!")
+        } else {
+            role = newRole
         }
 
         isTranscriber = isJigasi && presence.getExtension(TranscriptionStatusExtension::class.java) != null
@@ -209,6 +216,36 @@ class ChatRoomMemberImpl(
         presence.getExtension(StatsId::class.java)?.let {
             statsId = it.statsId
         }
+
+        presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
+            if (!firstPresence && it.codecs != videoCodecs) {
+                logger.warn("Video codec list changed from $videoCodecs to ${it.codecs} - not supported!")
+            } else {
+                if (!it.codecs.contains("vp8")) {
+                    if (firstPresence) {
+                        logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
+                    }
+                    videoCodecs = it.codecs + "vp8"
+                } else {
+                    videoCodecs = it.codecs
+                }
+            }
+        } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
+            presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
+                if (it is StandardExtensionElement) {
+                    val codec = it.text.lowercase()
+                    val codecList = if (codec == "vp8") {
+                        listOf(codec)
+                    } else {
+                        listOf(codec, "vp8")
+                    }
+                    if (!firstPresence && codecList != videoCodecs) {
+                        logger.warn("Video codec list changed from $videoCodecs to $codecList - not supported!")
+                    } else {
+                        videoCodecs = codecList
+                    }
+                }
+            }
     }
 
     /**
@@ -240,6 +277,7 @@ class ChatRoomMemberImpl(
             this["is_jibri"] = isJibri
             this["is_jigasi"] = isJigasi
             this["role"] = role.toString()
+            this["video_codecs"] = JSONArray().apply { videoCodecs?.let { addAll(it) } }
             this["stats_id"] = statsId.toString()
             this["is_audio_muted"] = isAudioMuted
             this["is_video_muted"] = isVideoMuted

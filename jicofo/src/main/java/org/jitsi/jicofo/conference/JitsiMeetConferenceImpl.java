@@ -134,6 +134,11 @@ public class JitsiMeetConferenceImpl
         });
 
     /**
+     * The aggregated count of visitors' supported codecs
+     */
+    private final PreferenceAggregator visitorCodecs;
+
+    /**
      * The {@link JibriRecorder} instance used to provide live streaming through
      * Jibri.
      */
@@ -289,6 +294,16 @@ public class JitsiMeetConferenceImpl
                 ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
                 TimeUnit.MILLISECONDS);
 
+
+        visitorCodecs = new PreferenceAggregator(
+            logger,
+            (codecs) -> {
+                setConferenceProperty(
+                    ConferenceProperties.KEY_VISITOR_CODECS,
+                    String.join(",", codecs)
+                );
+                return null;
+            });
 
         logger.info("Created new conference.");
     }
@@ -816,7 +831,7 @@ public class JitsiMeetConferenceImpl
                 }
                 else if (participant.getChatMember().getRole() == MemberRole.VISITOR)
                 {
-                    visitorAdded();
+                    visitorAdded(participant.getChatMember().getVideoCodecs());
                 }
             }
 
@@ -1042,7 +1057,7 @@ public class JitsiMeetConferenceImpl
                 }
                 else if (removed.getChatMember().getRole() == MemberRole.VISITOR)
                 {
-                    visitorRemoved();
+                    visitorRemoved(removed.getChatMember().getVideoCodecs());
                 }
             }
         }
@@ -1579,6 +1594,7 @@ public class JitsiMeetConferenceImpl
             }
         }
         o.put("visitor_count", visitorCount);
+        o.put("visitor_codecs", visitorCodecs.debugState());
         o.put("participant_count", participantCount);
         o.put("jibri_count", jibriCount);
         o.put("jigasi_count", jigasiCount);
@@ -2013,15 +2029,23 @@ public class JitsiMeetConferenceImpl
     }
 
     /** Called when a new visitor has been added to the conference. */
-    private void visitorAdded()
+    private void visitorAdded(List<String> codecs)
     {
         visitorCount.adjustValue(+1);
+        if (codecs != null)
+        {
+            visitorCodecs.addPreference(codecs);
+        }
     }
 
     /** Called when a new visitor has been added to the conference. */
-    private void visitorRemoved()
+    private void visitorRemoved(List<String> codecs)
     {
         visitorCount.adjustValue(-1);
+        if (codecs != null)
+        {
+            visitorCodecs.removePreference(codecs);
+        }
     }
 
     /**

@@ -36,6 +36,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
@@ -118,6 +119,11 @@ fun registerXmppExtensions() {
         StatsId.ELEMENT,
         StatsId.NAMESPACE,
         StatsId.Provider()
+    )
+    ProviderManager.addExtensionProvider(
+        JitsiParticipantCodecList.ELEMENT,
+        JitsiParticipantCodecList.NAMESPACE,
+        DefaultPacketExtensionProvider(JitsiParticipantCodecList::class.java)
     )
 
     // Add the extensions used for handling the inviting of transcriber
