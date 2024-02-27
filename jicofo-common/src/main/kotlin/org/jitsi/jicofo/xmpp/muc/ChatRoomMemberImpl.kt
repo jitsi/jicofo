@@ -153,6 +153,7 @@ class ChatRoomMemberImpl(
     fun processPresence(presence: Presence) {
         require(presence.from == occupantJid) { "Ignoring presence for a different member: ${presence.from}" }
 
+        val firstPresence = (this.presence == null)
         this.presence = presence
         presence.getExtension(UserInfoPacketExt::class.java)?.let {
             val newStatus = it.isRobot
@@ -188,12 +189,14 @@ class ChatRoomMemberImpl(
             isJibri = false
         }
 
-        val oldRole = role
-        chatRoom.getOccupant(this)?.let { role = fromSmack(it.role, it.affiliation) }
-        if ((role == MemberRole.VISITOR) != (oldRole == MemberRole.VISITOR)) {
+        var newRole: MemberRole = MemberRole.VISITOR
+        chatRoom.getOccupant(this)?.let { newRole = fromSmack(it.role, it.affiliation) }
+        if (!firstPresence && (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)) {
             // This will mess up various member counts
             // TODO: Should we try to update them, instead?
-            logger.warn("Member role changed from $oldRole to $role - not supported!")
+            logger.warn("Member role changed from $role to $newRole - not supported!")
+        } else {
+            role = newRole
         }
 
         isTranscriber = isJigasi && presence.getExtension(TranscriptionStatusExtension::class.java) != null
@@ -214,22 +217,28 @@ class ChatRoomMemberImpl(
         }
 
         presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
-            if (videoCodecs != null && it.codecs != videoCodecs) {
-                logger.warn("Video codec list changed from {$videoCodecs} to {${it.codecs}} - not supported!")
-            }
-            if (!it.codecs.contains("vp8")) {
-                logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
-                videoCodecs = it.codecs + "vp8"
+            if (!firstPresence && it.codecs != videoCodecs) {
+                logger.warn("Video codec list changed from $videoCodecs to ${it.codecs} - not supported!")
             } else {
-                videoCodecs = it.codecs
+                if (!it.codecs.contains("vp8")) {
+                    logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
+                    videoCodecs = it.codecs + "vp8"
+                } else {
+                    videoCodecs = it.codecs
+                }
             }
         } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
             presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
                 if (it is StandardExtensionElement) {
-                    videoCodecs = if (it.text == "vp8") {
+                    val codecList = if (it.text == "vp8") {
                         listOf(it.text)
                     } else {
                         listOf(it.text, "vp8")
+                    }
+                    if (!firstPresence && codecList != videoCodecs) {
+                        logger.warn("Video codec list changed from $videoCodecs to $codecList - not supported!")
+                    } else {
+                        videoCodecs = codecList
                     }
                 }
             }
