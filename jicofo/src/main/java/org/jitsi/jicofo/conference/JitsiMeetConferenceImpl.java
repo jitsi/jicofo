@@ -2031,7 +2031,8 @@ public class JitsiMeetConferenceImpl
     private void visitorAdded(List<String> codecs)
     {
         visitorCount.adjustValue(+1);
-        if (codecs != null) {
+        if (codecs != null)
+        {
             visitorCodecs.addPreference(codecs);
         }
     }
@@ -2040,7 +2041,8 @@ public class JitsiMeetConferenceImpl
     private void visitorRemoved(List<String> codecs)
     {
         visitorCount.adjustValue(-1);
-        if (codecs != null) {
+        if (codecs != null)
+        {
             visitorCodecs.removePreference(codecs);
         }
     }
