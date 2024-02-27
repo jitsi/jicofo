@@ -232,10 +232,11 @@ class ChatRoomMemberImpl(
         } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
             presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
                 if (it is StandardExtensionElement) {
-                    val codecList = if (it.text == "vp8") {
-                        listOf(it.text)
+                    val codec = it.text.lowercase()
+                    val codecList = if (codec == "vp8") {
+                        listOf(codec)
                     } else {
-                        listOf(it.text, "vp8")
+                        listOf(codec, "vp8")
                     }
                     if (!firstPresence && codecList != videoCodecs) {
                         logger.warn("Video codec list changed from $videoCodecs to $codecList - not supported!")
