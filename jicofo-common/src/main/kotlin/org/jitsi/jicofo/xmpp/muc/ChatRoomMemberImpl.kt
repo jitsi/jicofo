@@ -37,6 +37,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
 import org.jivesoftware.smackx.caps.packet.CapsExtension
+import org.json.simple.JSONArray
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 
@@ -276,6 +277,7 @@ class ChatRoomMemberImpl(
             this["is_jibri"] = isJibri
             this["is_jigasi"] = isJigasi
             this["role"] = role.toString()
+            this["video_codecs"] = JSONArray().apply { videoCodecs?.let { addAll(it) } }
             this["stats_id"] = statsId.toString()
             this["is_audio_muted"] = isAudioMuted
             this["is_video_muted"] = isVideoMuted

@@ -1594,6 +1594,7 @@ public class JitsiMeetConferenceImpl
             }
         }
         o.put("visitor_count", visitorCount);
+        o.put("visitor_codecs", visitorCodecs.debugState());
         o.put("participant_count", participantCount);
         o.put("jibri_count", jibriCount);
         o.put("jigasi_count", jigasiCount);

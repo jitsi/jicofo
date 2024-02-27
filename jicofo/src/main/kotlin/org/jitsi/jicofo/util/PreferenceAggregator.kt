@@ -17,8 +17,10 @@
  */
 package org.jitsi.jicofo.util
 
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.json.simple.JSONArray
 
 /** Aggregate lists of preferences coming from a large group of people, such that the resulting aggregated
  * list consists of preference items supported by everyone, and in a rough consensus of preference order.
@@ -108,6 +110,21 @@ class PreferenceAggregator(
         }
     }
 
+    fun debugState() = OrderedJsonObject().apply {
+        synchronized(lock) {
+            put("count", count)
+            put(
+                "ranks",
+                OrderedJsonObject().apply {
+                    this@PreferenceAggregator.values.asSequence()
+                        .sortedBy { it.value.rankAggregate }
+                        .forEach { put(it.key, it.value.debugState()) }
+                }
+            )
+            put("aggregate", JSONArray().apply { addAll(aggregate) })
+        }
+    }
+
     private fun updateAggregate() {
         val newAggregate = values.asSequence()
             .filter { it.value.count == count }
@@ -124,5 +141,10 @@ class PreferenceAggregator(
     private class ValueInfo {
         var count = 0
         var rankAggregate = 0
+
+        fun debugState() = OrderedJsonObject().apply {
+            put("count", count)
+            put("rank_aggregate", rankAggregate)
+        }
     }
 }
