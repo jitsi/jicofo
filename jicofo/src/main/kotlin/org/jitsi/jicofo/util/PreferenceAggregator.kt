@@ -17,6 +17,9 @@
  */
 package org.jitsi.jicofo.util
 
+import org.jitsi.utils.logging2.Logger
+import org.jitsi.utils.logging2.createChildLogger
+
 /** Aggregate lists of preferences coming from a large group of people, such that the resulting aggregated
  * list consists of preference items supported by everyone, and in a rough consensus of preference order.
  *
@@ -26,8 +29,10 @@ package org.jitsi.jicofo.util
  * good enough, and it's computationally cheap.
  */
 class PreferenceAggregator(
+    parentLogger: Logger,
     private val onChanged: (List<String>) -> Unit
 ) {
+    private val logger = createChildLogger(parentLogger)
     private val lock = Any()
 
     var aggregate: List<String> = emptyList()
@@ -42,9 +47,13 @@ class PreferenceAggregator(
      * Add a preference to the aggregator.
      */
     fun addPreference(prefs: List<String>) {
+        val distinctPrefs = prefs.distinct()
+        if (distinctPrefs != prefs) {
+            logger.warn("Preferences $prefs contains repeated values")
+        }
         synchronized(lock) {
             count++
-            prefs.forEachIndexed { index, element ->
+            distinctPrefs.forEachIndexed { index, element ->
                 val info = values.computeIfAbsent(element) { ValueInfo() }
                 info.count++
                 info.rankAggregate += index
@@ -57,12 +66,16 @@ class PreferenceAggregator(
      * Remove a preference from the aggregator.
      */
     fun removePreference(prefs: List<String>) {
+        val distinctPrefs = prefs.distinct()
+        if (distinctPrefs != prefs) {
+            logger.warn("Preferences $prefs contains repeated values")
+        }
         synchronized(lock) {
             count--
             check(count >= 0) {
                 "Preference count $count should not be negative"
             }
-            prefs.forEachIndexed { index, element ->
+            distinctPrefs.forEachIndexed { index, element ->
                 val info = values[element]
                 check(info != null) {
                     "Preference info for $element should exist when preferences are being removed"

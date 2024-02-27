@@ -136,14 +136,7 @@ public class JitsiMeetConferenceImpl
     /**
      * The aggregated count of visitors' supported codecs
      */
-    private final PreferenceAggregator visitorCodecs = new PreferenceAggregator(
-        (codecs) -> {
-            setConferenceProperty(
-                ConferenceProperties.KEY_VISITOR_CODECS,
-                String.join(",", codecs)
-            );
-            return null;
-        });
+    private final PreferenceAggregator visitorCodecs;
 
     /**
      * The {@link JibriRecorder} instance used to provide live streaming through
@@ -301,6 +294,16 @@ public class JitsiMeetConferenceImpl
                 ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
                 TimeUnit.MILLISECONDS);
 
+
+        visitorCodecs = new PreferenceAggregator(
+            logger,
+            (codecs) -> {
+                setConferenceProperty(
+                    ConferenceProperties.KEY_VISITOR_CODECS,
+                    String.join(",", codecs)
+                );
+                return null;
+            });
 
         logger.info("Created new conference.");
     }

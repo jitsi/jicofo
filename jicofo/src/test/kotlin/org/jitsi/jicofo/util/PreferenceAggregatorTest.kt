@@ -5,12 +5,15 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import org.jitsi.utils.logging2.createLogger
 
 class PreferenceAggregatorTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
+    private val logger = createLogger()
+
     private val calledWith = mutableListOf<List<String>>()
-    private val aggregator = PreferenceAggregator {
+    private val aggregator = PreferenceAggregator(logger) {
         calledWith.add(it)
     }
 
@@ -88,6 +91,18 @@ class PreferenceAggregatorTest : ShouldSpec() {
             should("Result in the correct set, in some order, with consensus where it exists") {
                 calledWith.last().shouldContainExactlyInAnyOrder("h264", "vp9", "vp8")
                 calledWith.last().first() shouldBe "vp9"
+            }
+        }
+        context("Repeated values in preferences") {
+            aggregator.addPreference(listOf("vp9", "vp8"))
+            aggregator.addPreference(listOf("vp9", "vp8", "vp9"))
+            should("not confuse things") {
+                calledWith shouldContainExactly listOf(listOf("vp9", "vp8"))
+            }
+            aggregator.removePreference(listOf("vp9", "vp8", "vp9"))
+            aggregator.removePreference(listOf("vp9", "vp8"))
+            should("not confuse things on removal") {
+                calledWith.last().shouldContainExactly(emptyList())
             }
         }
     }
