@@ -221,7 +221,9 @@ class ChatRoomMemberImpl(
                 logger.warn("Video codec list changed from $videoCodecs to ${it.codecs} - not supported!")
             } else {
                 if (!it.codecs.contains("vp8")) {
-                    logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
+                    if (firstPresence) {
+                        logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
+                    }
                     videoCodecs = it.codecs + "vp8"
                 } else {
                     videoCodecs = it.codecs
