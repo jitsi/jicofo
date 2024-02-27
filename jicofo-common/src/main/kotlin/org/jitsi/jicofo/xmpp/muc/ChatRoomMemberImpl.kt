@@ -223,7 +223,16 @@ class ChatRoomMemberImpl(
             } else {
                 videoCodecs = it.codecs
             }
-        }
+        } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
+            presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
+                if (it is StandardExtensionElement) {
+                    videoCodecs = if (it.text == "vp8") {
+                        listOf(it.text)
+                    } else {
+                        listOf(it.text, "vp8")
+                    }
+                }
+            }
     }
 
     /**
