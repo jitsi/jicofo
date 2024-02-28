@@ -265,6 +265,12 @@ class ChatRoomImpl(
         val config = muc.configurationForm
         parseConfigForm(config)
 
+        // We only read the initial metadata from the config form. Setting room metadata after a config form reload may
+        // race with updates coming via [RoomMetadataHandler].
+        config.getRoomMetadata()?.let {
+            setRoomMetadata(it)
+        }
+
         // Make the room non-anonymous, so that others can recognize focus JID
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
@@ -283,23 +289,22 @@ class ChatRoomImpl(
         )
     }
 
+    override fun setRoomMetadata(roomMetadata: RoomMetadata) {
+        transcriptionRequested = roomMetadata.metadata?.recording?.isTranscribingEnabled == true
+    }
+
     /** Read the fields we care about from [configForm] and update local state. */
     private fun parseConfigForm(configForm: Form) {
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
         visitorsEnabled = configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
         participantsSoftLimit = configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
-        // Default to false unless specified.
-        val roomMetadata = configForm.getRoomMetadata()
-        if (roomMetadata != null) {
-            transcriptionRequested = roomMetadata.recording?.isTranscribingEnabled == true
-        }
     }
 
-    private fun Form.getRoomMetadata(): RoomMetadata.Metadata? {
+    private fun Form.getRoomMetadata(): RoomMetadata? {
         getField("muc#roominfo_jitsimetadata")?.firstValue?.let {
             try {
-                return RoomMetadata.parse(it).metadata
+                return RoomMetadata.parse(it)
             } catch (e: Exception) {
                 logger.warn("Invalid room metadata content", e)
                 return null

@@ -136,6 +136,9 @@ interface ChatRoom {
     /** Updates the list of members that are allowed to unmute audio or video. */
     fun setAvModerationWhitelist(mediaType: MediaType, whitelist: List<String>)
 
+    /** Update the value in the room_metadata structure */
+    fun setRoomMetadata(roomMetadata: RoomMetadata)
+
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
 
