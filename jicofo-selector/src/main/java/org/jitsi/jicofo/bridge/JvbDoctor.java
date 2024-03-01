@@ -61,7 +61,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private final Map<Bridge, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    private final Map<Bridge, PeriodicHealthCheckTask> tasks = new ConcurrentHashMap<>();
 
     private final HealthCheckListener listener;
 
@@ -95,7 +95,7 @@ public class JvbDoctor
     @Override
     public void bridgeRemoved(Bridge bridge)
     {
-        ScheduledFuture<?> healthTask = tasks.remove(bridge);
+        PeriodicHealthCheckTask healthTask = tasks.remove(bridge);
         if (healthTask == null)
         {
             logger.warn("Trying to remove a bridge that does not exist anymore: " + bridge);
@@ -104,7 +104,7 @@ public class JvbDoctor
 
         logger.info("Stopping health-check task for: " + bridge);
 
-        healthTask.cancel(true);
+        healthTask.cancel();
     }
 
     @Override
@@ -120,14 +120,10 @@ public class JvbDoctor
                 ? new HealthCheckPresenceTask(bridge)
                 : new HealthCheckTask(bridge);
 
-        ScheduledFuture<?> healthTask
-            = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                task,
-                healthCheckInterval,
-                healthCheckInterval,
-                TimeUnit.MILLISECONDS);
+        PeriodicHealthCheckTask periodicTask
+            = new PeriodicHealthCheckTask(task, healthCheckInterval);
 
-        tasks.put(bridge, healthTask);
+        tasks.put(bridge, periodicTask);
 
         logger.info("Scheduled health-check task for: " + bridge);
     }
@@ -135,6 +131,44 @@ public class JvbDoctor
     @Override
     public void bridgeIsShuttingDown(@NotNull Bridge bridge)
     {
+    }
+
+    private static class PeriodicHealthCheckTask implements Runnable
+    {
+        private Runnable innerTask;
+
+        private final ScheduledFuture<?> future;
+        private Future<?> innerFuture;
+        private final Object lock = new Object();
+
+        private PeriodicHealthCheckTask(Runnable task, long healthCheckInterval)
+        {
+            innerTask = task;
+            future = TaskPools.getScheduledPool().scheduleAtFixedRate(
+                this,
+                healthCheckInterval,
+                healthCheckInterval,
+                TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public void run()
+        {
+            innerFuture = TaskPools.getIoPool().submit(innerTaskRunnable);
+        }
+
+        private final Runnable innerTaskRunnable = () -> {
+            synchronized (lock) {
+                innerTask.run();
+            }
+        };
+
+        private void cancel() {
+            future.cancel(true);
+            if (innerFuture != null) {
+                innerFuture.cancel(true);
+            }
+        }
     }
 
     private class HealthCheckTask extends AbstractHealthCheckTask
