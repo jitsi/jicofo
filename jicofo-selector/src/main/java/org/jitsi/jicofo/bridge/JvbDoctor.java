@@ -133,7 +133,7 @@ public class JvbDoctor
     {
     }
 
-    private static class PeriodicHealthCheckTask implements Runnable
+    private static class PeriodicHealthCheckTask
     {
         private Runnable innerTask;
 
@@ -145,19 +145,13 @@ public class JvbDoctor
         {
             innerTask = task;
             future = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                this,
+                () -> innerFuture = TaskPools.getIoPool().submit(runInner),
                 healthCheckInterval,
                 healthCheckInterval,
                 TimeUnit.MILLISECONDS);
         }
 
-        @Override
-        public void run()
-        {
-            innerFuture = TaskPools.getIoPool().submit(innerTaskRunnable);
-        }
-
-        private final Runnable innerTaskRunnable = () -> {
+        private final Runnable runInner = () -> {
             synchronized (lock) {
                 innerTask.run();
             }
