@@ -152,14 +152,17 @@ public class JvbDoctor
         }
 
         private final Runnable runInner = () -> {
-            synchronized (lock) {
+            synchronized (lock)
+            {
                 innerTask.run();
             }
         };
 
-        private void cancel() {
+        private void cancel()
+        {
             future.cancel(true);
-            if (innerFuture != null) {
+            if (innerFuture != null)
+            {
                 innerFuture.cancel(true);
             }
         }
