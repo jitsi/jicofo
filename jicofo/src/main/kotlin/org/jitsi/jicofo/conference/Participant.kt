@@ -48,6 +48,8 @@ import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
@@ -247,8 +249,13 @@ open class Participant @JvmOverloads constructor(
         synchronized(signalQueuedSourcesTaskSyncRoot) {
             if (signalQueuedSourcesTask == null) {
                 logger.debug("Scheduling a task to signal queued remote sources after $delayMs ms.")
+                val timeOfSchedule = Instant.now()
                 signalQueuedSourcesTask = scheduledPool.schedule(
                     {
+                        val actualDelayMs = Duration.between(timeOfSchedule, Instant.now()).toMillis()
+                        if (actualDelayMs > delayMs + 3000) {
+                            logger.warn("Scheduling of sources was delayed by $actualDelayMs ms (expected $delayMs)")
+                        }
                         synchronized(signalQueuedSourcesTaskSyncRoot) {
                             sendQueuedRemoteSources()
                             signalQueuedSourcesTask = null
