@@ -368,18 +368,24 @@ public class JibriSession
                 logger.error(
                     "Unexpected response to stop iq: "
                         + (stanza != null ? XmlStringBuilderUtil.toStringOpt(stanza) : "null"));
-
-                JibriIq error = new JibriIq();
-
-                error.setFrom(stopRequest.getTo());
-                error.setFailureReason(FailureReason.ERROR);
-                error.setStatus(Status.OFF);
-
-                processJibriIqFromJibri(error);
+                stopError(stopRequest.getTo());
             }
         }).onError(exception ->
-            logger.error(
-                "Error sending stop iq: " + exception.toString()));
+        {
+            logger.error("Error from stop request: " + exception.toString());
+            stopError(stopRequest.getTo());
+        });
+    }
+
+    private void stopError(Jid jibriJid)
+    {
+        JibriIq error = new JibriIq();
+
+        error.setFrom(jibriJid);
+        error.setFailureReason(FailureReason.ERROR);
+        error.setStatus(Status.OFF);
+
+        processJibriIqFromJibri(error);
     }
 
     private void cleanupSession()
