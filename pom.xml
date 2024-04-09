@@ -34,7 +34,7 @@
   </licenses>
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>11.0.14</jetty.version>
+    <jetty.version>11.0.20</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
     <jxmpp.version>1.0.3</jxmpp.version>
@@ -44,7 +44,7 @@
     <slf4j.version>1.7.32</slf4j.version>
     <jersey.version>3.0.10</jersey.version>
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
-    <jicoco.version>1.1-132-g906f995</jicoco.version>
+    <jicoco.version>1.1-140-g8f45a9f</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
     <spotbugs.version>4.6.0</spotbugs.version>
     <junit.version>5.10.0</junit.version>
@@ -93,16 +93,6 @@
             <artifactId>junit</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpcore</artifactId>
-        <version>4.4.14</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents</groupId>
-        <artifactId>httpclient</artifactId>
-        <version>4.5.13</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
