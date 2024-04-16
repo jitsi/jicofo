@@ -117,5 +117,6 @@ val invalidJids = listOf(
     "xsf@muc.xmpp.org/؜x",
     "username@example.org@example.org",
     "foo\u0000bar@example.org",
-    "foobar@ex\u0000ample.org"
+    "foobar@ex\u0000ample.org",
+    "user@conference..example.org"
 )
