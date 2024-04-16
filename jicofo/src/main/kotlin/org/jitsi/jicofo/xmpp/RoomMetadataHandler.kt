@@ -73,7 +73,7 @@ class RoomMetadataHandler(
 
             chatRoom.setRoomMetadata(roomMetadata)
         } catch (e: Exception) {
-            logger.warn("Failed to process room_metadata request: $jsonMessage", e)
+            logger.info("Failed to process room_metadata request: $jsonMessage")
         }
     }
 
