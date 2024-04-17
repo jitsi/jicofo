@@ -55,6 +55,7 @@ import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
 import org.jivesoftware.smack.provider.ProviderManager
 import org.jivesoftware.smackx.bytestreams.socks5.Socks5Proxy
 import org.jxmpp.JxmppContext
+import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.rocksxmppprecis.RocksXmppPrecisStringprep
 
 fun initializeSmack() {
@@ -66,6 +67,9 @@ fun initializeSmack() {
     System.setProperty("jdk.xml.entityReplacementLimit", "0")
 
     // The default SimpleXmppStringrep is very permissive and allows some invalid JIDs that we don't want to allow.
+    // Force XmppStringPrepUtil to load before we override the context, otherwise it gets reverted.
+    // https://github.com/igniterealtime/jxmpp/pull/44
+    JidCreate.from("example.com")
     JxmppContext.setDefaultXmppStringprep(RocksXmppPrecisStringprep.INSTANCE)
 
     SmackConfiguration.setDefaultReplyTimeout(15000)
