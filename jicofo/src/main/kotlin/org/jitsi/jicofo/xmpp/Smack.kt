@@ -51,29 +51,12 @@ import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.SmackConfiguration
-import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
 import org.jivesoftware.smack.provider.ProviderManager
-import org.jivesoftware.smackx.bytestreams.socks5.Socks5Proxy
-import org.jxmpp.JxmppContext
-import org.jxmpp.stringprep.rocksxmppprecis.RocksXmppPrecisStringprep
 
 fun initializeSmack() {
-    System.setProperty("jdk.xml.entityExpansionLimit", "0")
-    System.setProperty("jdk.xml.maxOccurLimit", "0")
-    System.setProperty("jdk.xml.elementAttributeLimit", "524288")
-    System.setProperty("jdk.xml.totalEntitySizeLimit", "0")
-    System.setProperty("jdk.xml.maxXMLNameLimit", "524288")
-    System.setProperty("jdk.xml.entityReplacementLimit", "0")
-
-    // The default SimpleXmppStringrep is very permissive and allows some invalid JIDs that we don't want to allow.
-    JxmppContext.setDefaultXmppStringprep(RocksXmppPrecisStringprep.INSTANCE)
+    org.jitsi.xmpp.Smack.initialize()
 
     SmackConfiguration.setDefaultReplyTimeout(15000)
-    // if there is a parsing error, do not break the connection to the server(the default behaviour) as we need it for
-    // the other conferences.
-    SmackConfiguration.setDefaultParsingExceptionCallback(ExceptionLoggingCallback())
-
-    Socks5Proxy.setLocalSocks5ProxyEnabled(false)
 
     registerXmppExtensions()
 }
