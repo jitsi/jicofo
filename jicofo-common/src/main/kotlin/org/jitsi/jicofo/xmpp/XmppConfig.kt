@@ -37,6 +37,10 @@ class XmppConfig private constructor() {
             .convertFrom<List<String>> { l -> l.map { JidCreate.domainBareFrom(it) } }
     }
 
+    val useJitsiJidValidation: Boolean by config {
+        "jicofo.xmpp.use-jitsi-jid-validation".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val service = XmppServiceConnectionConfig()

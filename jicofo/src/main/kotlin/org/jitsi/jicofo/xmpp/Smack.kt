@@ -54,7 +54,7 @@ import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.provider.ProviderManager
 
 fun initializeSmack() {
-    org.jitsi.xmpp.Smack.initialize()
+    org.jitsi.xmpp.Smack.initialize(XmppConfig.config.useJitsiJidValidation)
 
     SmackConfiguration.setDefaultReplyTimeout(15000)
 
