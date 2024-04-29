@@ -38,7 +38,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
     <jxmpp.version>1.0.3</jxmpp.version>
-    <smack.version>4.4.6</smack.version>
+    <smack.version>4.4.8</smack.version>
     <kotlin.version>1.9.10</kotlin.version>
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
@@ -175,7 +175,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-79-gdc9285e</version>
+        <version>1.0-80-g0ce9883</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
