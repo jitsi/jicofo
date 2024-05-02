@@ -321,7 +321,10 @@ class ColibriV2SessionManager(
                 session = it.first
                 created = it.second
             }
-            logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
+            logger.info(
+                "Selected ${bridge.jid.resourceOrNull} for $${participant.id} " +
+                    "(visitor=${participant.visitor}, session exists: ${!created})"
+            )
             if (visitor != session.visitor) {
                 // Can happen if we're out of bridges for the specific class
                 logger.warn(
