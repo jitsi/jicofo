@@ -17,13 +17,15 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.utils.queue.PacketQueue
 
 /**
- * Manages to XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
+ * Manages the XMPP roles of occupants in a chat room, i.e. grants ownership to certain users.
  */
 sealed class ChatRoomRoleManager(
     protected val chatRoom: ChatRoom
@@ -36,8 +38,20 @@ sealed class ChatRoomRoleManager(
     protected open fun memberLeftOrKicked(member: ChatRoomMember) {}
 
     open fun stop() {}
+    open fun grantOwnership() {}
 
     open val debugState: OrderedJsonObject = OrderedJsonObject()
+
+    protected val queue = PacketQueue<Runnable>(
+        Integer.MAX_VALUE,
+        false,
+        "chat-room-role-manager-queue",
+        {
+            it.run()
+            return@PacketQueue true
+        },
+        TaskPools.ioPool
+    )
 }
 
 /**
@@ -47,8 +61,11 @@ sealed class ChatRoomRoleManager(
 class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     private var owner: ChatRoomMember? = null
 
+    override fun grantOwnership() = queue.add { electNewOwner() }
     override fun memberJoined(member: ChatRoomMember) {
-        if (owner == null) { electNewOwner() }
+        if (owner == null) {
+            electNewOwner()
+        }
     }
 
     override fun memberLeftOrKicked(member: ChatRoomMember) {
@@ -69,25 +86,22 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
     }
 
     private fun electNewOwner() {
-        if (owner != null) {
-            return
-        }
+        queue.add {
+            if (owner != null) {
+                return@add
+            }
 
-        // Skip if this is a breakout room.
-        if (chatRoom.isBreakoutRoom) {
-            return
-        }
+            owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
+            if (owner != null) {
+                return@add
+            }
 
-        owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
-        if (owner != null) {
-            return
-        }
-
-        val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
-        if (newOwner != null) {
-            logger.info("Electing new owner: $newOwner")
-            chatRoom.grantOwnership(newOwner)
-            owner = newOwner
+            val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
+            if (newOwner != null) {
+                logger.info("Electing new owner: $newOwner")
+                chatRoom.grantOwnership(newOwner)
+                owner = newOwner
+            }
         }
     }
 
@@ -106,12 +120,19 @@ class AuthenticationRoleManager(
 ) : ChatRoomRoleManager(chatRoom) {
 
     private val authenticationListener = AuthenticationListener { userJid, _, _ ->
-        chatRoom.members.find { it.jid == userJid }?.let { chatRoom.grantOwnership(it) }
+        chatRoom.members.find { it.jid == userJid }?.let {
+            queue.add {
+                logger.info("Granting ownership to $it.")
+                chatRoom.grantOwnership(it)
+            }
+        }
     }
 
     init {
         authenticationAuthority.addAuthenticationListener(authenticationListener)
     }
+
+    override fun grantOwnership() = queue.add { grantOwnerToAuthenticatedUsers() }
 
     private fun grantOwnerToAuthenticatedUsers() {
         chatRoom.members.filter {
@@ -127,7 +148,7 @@ class AuthenticationRoleManager(
             return
         }
 
-        grantOwnerToAuthenticatedUsers()
+        queue.add { grantOwnerToAuthenticatedUsers() }
     }
 
     /**
@@ -135,7 +156,9 @@ class AuthenticationRoleManager(
      */
     override fun memberJoined(member: ChatRoomMember) {
         if (member.role != MemberRole.OWNER && authenticationAuthority.getSessionForJid(member.jid) != null) {
-            chatRoom.grantOwnership(member)
+            queue.add {
+                chatRoom.grantOwnership(member)
+            }
         }
     }
 

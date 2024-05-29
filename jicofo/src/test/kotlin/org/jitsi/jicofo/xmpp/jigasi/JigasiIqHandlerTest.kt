@@ -35,6 +35,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -164,8 +165,9 @@ class JigasiIqHandlerTest : ShouldSpec() {
 
 private fun IQ?.shouldBeError(condition: Condition? = null) {
     this.shouldBeInstanceOf<ErrorIQ>()
-    if (condition != null)
+    if (condition != null) {
         error.condition shouldBe condition
+    }
 }
 
 private fun IQ?.shouldBeSuccessful() {
@@ -183,7 +185,7 @@ class JigasiXmppConnection : MockXmppConnection() {
             }
         }
         else -> {
-            println("Not handling ${iq.toXML()}")
+            println("Not handling ${iq.toStringOpt()}")
             null
         }
     }

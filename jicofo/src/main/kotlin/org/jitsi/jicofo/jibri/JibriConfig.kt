@@ -59,6 +59,10 @@ class JibriConfig private constructor() {
         "jicofo.jibri.xmpp-connection-name".from(newConfig)
     }
 
+    val privateAddressConnectivity: Boolean by config {
+        "jicofo.jibri.use-private-address-connectivity".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = JibriConfig()

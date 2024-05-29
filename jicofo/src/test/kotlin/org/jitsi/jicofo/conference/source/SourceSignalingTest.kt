@@ -19,7 +19,6 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.SourceSignaling
@@ -48,43 +47,6 @@ class SourceSignalingTest : ShouldSpec() {
         val e3 = "endpoint3"
         val e3a = Source(3, MediaType.AUDIO)
         val s3 = ConferenceSourceMap(e3 to EndpointSourceSet(e3a)).unmodifiable
-
-        val e4 = "endpoint4"
-        val e4a1 = Source(4, MediaType.AUDIO)
-        val e4v1a = Source(43, MediaType.VIDEO, name = "e4-v1")
-        val e4v1b = Source(44, MediaType.VIDEO, name = "e4-v1")
-        val e4v1c = Source(45, MediaType.VIDEO, name = "e4-v1")
-        val e4v1a_r = Source(53, MediaType.VIDEO, name = "e4-v1")
-        val e4v1b_r = Source(54, MediaType.VIDEO, name = "e4-v1")
-        val e4v1c_r = Source(55, MediaType.VIDEO, name = "e4-v1")
-        val e4vgroups = setOf(
-            SsrcGroup(SsrcGroupSemantics.Sim, listOf(43, 44, 45)),
-            SsrcGroup(SsrcGroupSemantics.Fid, listOf(43, 53)),
-            SsrcGroup(SsrcGroupSemantics.Fid, listOf(44, 54)),
-            SsrcGroup(SsrcGroupSemantics.Fid, listOf(45, 55))
-        )
-        val e4ss1a = Source(46, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
-        val e4ss1b = Source(47, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
-        val e4ss1c = Source(48, MediaType.VIDEO, name = "e4-ss1", videoType = VideoType.Desktop)
-        val s4audio = ConferenceSourceMap(e4 to EndpointSourceSet(e4a1))
-        val s4video = ConferenceSourceMap(
-            e4 to EndpointSourceSet(
-                setOf(e4v1a, e4v1b, e4v1c, e4v1a_r, e4v1b_r, e4v1c_r),
-                e4vgroups
-            )
-        )
-        val s4ss = ConferenceSourceMap(
-            e4 to EndpointSourceSet(
-                setOf(e4ss1a, e4ss1b, e4ss1c),
-                setOf()
-            )
-        )
-        val e4sources = setOf(e4a1, e4v1a, e4v1b, e4v1c, e4ss1a, e4ss1b, e4ss1c)
-        val e4groups = setOf(
-            SsrcGroup(SsrcGroupSemantics.Sim, listOf(43, 44, 45), MediaType.VIDEO),
-            SsrcGroup(SsrcGroupSemantics.Sim, listOf(46, 47, 48), MediaType.VIDEO)
-        )
-        val s4 = ConferenceSourceMap(e4 to EndpointSourceSet(e4sources, e4groups))
 
         context("Queueing remote sources") {
             val sourceSignaling = SourceSignaling()
@@ -167,109 +129,37 @@ class SourceSignalingTest : ShouldSpec() {
 
             sourceSignaling.debugState.shouldBeValidJson()
         }
-        listOf(true, false).forEach { supportsReceivingMultipleStreams ->
-            context("Filtering (supportsReceivingMultipleStreams=$supportsReceivingMultipleStreams)") {
-                val sourceSignaling = SourceSignaling(audio = true, video = false, stripSimulcast = true)
+        context("Filtering") {
+            val sourceSignaling = SourceSignaling(audio = true, video = false, stripSimulcast = true)
 
-                sourceSignaling.reset(s1 + s2).shouldBe(
-                    ConferenceSourceMap(
-                        e1 to EndpointSourceSet(e1a),
-                        e2 to EndpointSourceSet(e2a)
-                    )
+            sourceSignaling.reset(s1 + s2).shouldBe(
+                ConferenceSourceMap(
+                    e1 to EndpointSourceSet(e1a),
+                    e2 to EndpointSourceSet(e2a)
                 )
-
-                sourceSignaling.addSources(s2new)
-                sourceSignaling.update().let {
-                    it.size shouldBe 1
-                    it[0].action shouldBe Add
-                    it[0].sources shouldBe ConferenceSourceMap(e2 to EndpointSourceSet(e2a2))
-                }
-
-                sourceSignaling.removeSources(s1)
-                sourceSignaling.update().let {
-                    it.size shouldBe 1
-                    it[0].action shouldBe Remove
-                    it[0].sources shouldBe ConferenceSourceMap(e1 to EndpointSourceSet(e1a))
-                }
-
-                sourceSignaling.addSources(s1)
-                sourceSignaling.removeSources(s1)
-                sourceSignaling.update().shouldBeEmpty()
-
-                sourceSignaling.removeSources(s2)
-                sourceSignaling.addSources(s2)
-                sourceSignaling.update().shouldBeEmpty()
-            }
-        }
-        context("Filtering with no support for multiple streams") {
-            val sourceSignaling = SourceSignaling(
-                audio = true,
-                video = true,
-                stripSimulcast = true,
-                supportsReceivingMultipleStreams = false
             )
 
-            sourceSignaling.addSources(s1)
+            sourceSignaling.addSources(s2new)
             sourceSignaling.update().let {
                 it.size shouldBe 1
                 it[0].action shouldBe Add
-                it[0].sources shouldBe s1
+                it[0].sources shouldBe ConferenceSourceMap(e2 to EndpointSourceSet(e2a2))
             }
 
-            // When camera and SS are added together, it should only add SS
-            sourceSignaling.addSources(s4audio + s4video + s4ss)
-            sourceSignaling.update().let {
-                it.size shouldBe 1
-                it[0].action shouldBe Add
-                it[0].sources shouldBe (s4audio + s4ss).stripSimulcast()
-            }
-
-            // It should only remove the sources that were added (SS)
-            sourceSignaling.removeSources(s4audio + s4video + s4ss)
+            sourceSignaling.removeSources(s1)
             sourceSignaling.update().let {
                 it.size shouldBe 1
                 it[0].action shouldBe Remove
-                it[0].sources shouldBe (s4audio + s4ss).stripSimulcast()
+                it[0].sources shouldBe ConferenceSourceMap(e1 to EndpointSourceSet(e1a))
             }
 
-            sourceSignaling.addSources(s4audio + s4ss)
-            sourceSignaling.update().let {
-                it.size shouldBe 1
-                it[0].action shouldBe Add
-                it[0].sources shouldBe (s4audio + s4ss).stripSimulcast()
-            }
-
-            // SS exists, camera should not be added.
-            sourceSignaling.addSources(s4video)
+            sourceSignaling.addSources(s1)
+            sourceSignaling.removeSources(s1)
             sourceSignaling.update().shouldBeEmpty()
 
-            // When SS is removed and only camera is left, camera should be added
-            sourceSignaling.removeSources(s4ss)
-            sourceSignaling.update().let { sourceUpdates ->
-                sourceUpdates.size shouldBe 2
-
-                val remove = sourceUpdates.find { it.action == Remove }
-                remove shouldNotBe null
-                remove!!.sources shouldBe s4ss.stripSimulcast()
-
-                val add = sourceUpdates.find { it.action == Add }
-                add shouldNotBe null
-                add!!.sources shouldBe s4video.stripSimulcast()
-            }
-
-            // When SS is added and camera exists, it should be replaced.
-            sourceSignaling.addSources(s4ss)
-            sourceSignaling.update().let { sourceUpdates ->
-                sourceUpdates.size shouldBe 2
-
-                val remove = sourceUpdates.find { it.action == Remove }
-                remove shouldNotBe null
-                remove!!.sources shouldBe s4video.stripSimulcast()
-
-                val add = sourceUpdates.find { it.action == Add }
-                add shouldNotBe null
-                add!!.sources shouldBe s4ss.stripSimulcast()
-            }
+            sourceSignaling.removeSources(s2)
+            sourceSignaling.addSources(s2)
+            sourceSignaling.update().shouldBeEmpty()
         }
     }
 }

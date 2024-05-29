@@ -62,6 +62,10 @@ class BridgeSelector @JvmOverloads constructor(
      */
     private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
 
+    init {
+        JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
+    }
+
     val operationalBridgeCount: Int
         @Synchronized
         get() = bridges.values.count { it.isOperational && !it.isInGracefulShutdown }
@@ -161,7 +165,6 @@ class BridgeSelector @JvmOverloads constructor(
          * */
         version: String? = null
     ): Bridge? {
-
         var v = conferenceBridges.keys.firstOrNull()?.fullVersion
         if (v == null) {
             v = version
@@ -196,13 +199,15 @@ class BridgeSelector @JvmOverloads constructor(
 
         // If there are active bridges, prefer those.
         val activeBridges = candidateBridges.filter { !it.isDraining }.toList()
-        if (!activeBridges.isEmpty())
+        if (!activeBridges.isEmpty()) {
             candidateBridges = activeBridges
+        }
 
         // If there are bridges not shutting down, prefer those.
         val runningBridges = candidateBridges.filter { !it.isInGracefulShutdown }.toList()
-        if (!runningBridges.isEmpty())
+        if (!runningBridges.isEmpty()) {
             candidateBridges = runningBridges
+        }
 
         return bridgeSelectionStrategy.select(
             candidateBridges,
@@ -221,10 +226,10 @@ class BridgeSelector @JvmOverloads constructor(
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
             this["bridge_count"] = bridgeCount.get()
-            this["operational_bridge_count"] = bridges.values.count { it.isOperational }
-            this["in_shutdown_bridge_count"] = bridges.values.count { it.isInGracefulShutdown }
+            this["operational_bridge_count"] = operationalBridgeCountMetric.get()
+            this["in_shutdown_bridge_count"] = inShutdownBridgeCountMetric.get()
             this["lost_bridges"] = lostBridges.get()
-            this["bridge_version_count"] = bridges.values.map { it.fullVersion }.toSet().size
+            this["bridge_version_count"] = bridgeVersionCount.get()
         }
 
     val debugState: OrderedJsonObject
@@ -236,14 +241,35 @@ class BridgeSelector @JvmOverloads constructor(
             }
         }
 
+    fun updateMetrics() {
+        inShutdownBridgeCountMetric.set(bridges.values.count { it.isInGracefulShutdown }.toLong())
+        operationalBridgeCountMetric.set(bridges.values.count { it.isOperational }.toLong())
+        bridgeVersionCount.set(bridges.values.map { it.fullVersion }.toSet().size.toLong())
+    }
+
     companion object {
         @JvmField
         val lostBridges = JicofoMetricsContainer.instance.registerCounter(
-            "bridge_selector_lost_bridges", "Number of bridges which disconnected unexpectedly."
+            "bridge_selector_lost_bridges",
+            "Number of bridges which disconnected unexpectedly."
         )
+
         @JvmField
         val bridgeCount = JicofoMetricsContainer.instance.registerLongGauge(
-            "bridge_selector_bridge_count", "The current number of bridges"
+            "bridge_selector_bridge_count",
+            "The current number of bridges"
+        )
+        val operationalBridgeCountMetric = JicofoMetricsContainer.instance.registerLongGauge(
+            "bridge_selector_bridge_count_operational",
+            "The current number of operational bridges"
+        )
+        val inShutdownBridgeCountMetric = JicofoMetricsContainer.instance.registerLongGauge(
+            "bridge_selector_bridge_count_in_shutdown",
+            "The current number of bridges in graceful shutdown"
+        )
+        val bridgeVersionCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "bridge_selector_bridge_version_count",
+            "The current number of different bridge versions"
         )
     }
 

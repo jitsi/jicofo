@@ -34,6 +34,7 @@ import org.jxmpp.jid.Jid
  */
 interface ChatRoomMember {
     val chatRoom: ChatRoom
+
     /** The ID of this member. Set to the resource part of the occupant JID. */
     val name: String
 
@@ -54,6 +55,7 @@ interface ChatRoomMember {
 
     val isRobot: Boolean
     val isJigasi: Boolean
+    val isTranscriber: Boolean
     val isJibri: Boolean
     val isAudioMuted: Boolean
     val isVideoMuted: Boolean
@@ -63,6 +65,9 @@ interface ChatRoomMember {
 
     /** The statistics id if any. */
     val statsId: String?
+
+    /** The supported video codecs if any */
+    val videoCodecs: List<String>?
 
     /**
      * The list of features advertised as XMPP capabilities. Note that although the features are cached (XEP-0115),

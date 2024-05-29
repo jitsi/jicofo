@@ -23,10 +23,7 @@ import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 /**
- * FIXME work in progress, still have to integrate OAuth
- *
- * This interface is intended to encapsulate authorization method like
- * Shibboleth, OAuth or XMPP domain.
+ * This interface is intended to encapsulate authorization method like XMPP domain.
  *
  * @author Pawel Domas
  */

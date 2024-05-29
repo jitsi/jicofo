@@ -84,18 +84,25 @@ class ConferenceConfig private constructor() {
             }
     }
 
+    val restartRequestMinInterval: Duration by config {
+        "jicofo.conference.restart-request-rate-limits.min-interval".from(newConfig)
+    }
+
+    val restartRequestMaxRequests: Int by config {
+        "jicofo.conference.restart-request-rate-limits.max-requests".from(newConfig)
+    }
+
+    val restartRequestInterval: Duration by config {
+        "jicofo.conference.restart-request-rate-limits.interval".from(newConfig)
+    }
+
     /**
      * Get the number of milliseconds to delay signaling of Jingle sources given a certain [conferenceSize].
      */
-    fun getSourceSignalingDelayMs(conferenceSize: Int) =
-        sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
+    fun getSourceSignalingDelayMs(conferenceSize: Int) = sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0
 
     val reinviteMethod: ReinviteMethod by config {
         "jicofo.conference.reinvite-method".from(newConfig)
-    }
-
-    val multiStreamBackwardCompat: Boolean by config {
-        "jicofo.conference.enable-multi-stream-backward-compat".from(newConfig)
     }
 
     /**

@@ -24,7 +24,6 @@ import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jibri.JibriStatusPacketExt
-import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -57,6 +56,7 @@ class JibriDetector(
     val logger = createLogger()
 
     val xmppConnection = xmppProvider.xmppConnection
+
     /**
      * Selects a Jibri to be used for a recording session.
      *
@@ -75,7 +75,9 @@ class JibriDetector(
         return if (Duration.between(oldest.lastFailed, now) >= FAILURE_TIMEOUT) {
             oldest.lastSelected = now
             oldest.jid
-        } else null
+        } else {
+            null
+        }
     }
 
     /**
@@ -126,12 +128,6 @@ class JibriDetector(
 
     fun addHandler(eventHandler: EventHandler) = eventEmitter.addHandler(eventHandler)
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
-
-    val stats: JSONObject
-        get() = JSONObject().apply {
-            this["count"] = instanceCount
-            this["available"] = getInstanceCount { it.status.isAvailable }
-        }
 
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().also { debugState ->

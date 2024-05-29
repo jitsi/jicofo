@@ -32,6 +32,9 @@
       <!-- False positives with kotlin 1.6. -->
       <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
       <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
+      <!-- False positive with kotlin lazy initialization. -->
+      <Bug pattern="BC_IMPOSSIBLE_INSTANCEOF"/>
+      <Bug pattern="MS_EXPOSE_REP"/>
     </Or>
   </And>
 </Match>

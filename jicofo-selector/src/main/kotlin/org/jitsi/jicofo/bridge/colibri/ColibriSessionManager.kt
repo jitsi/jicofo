@@ -40,6 +40,7 @@ interface ColibriSessionManager {
     fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean
     val bridgeCount: Int
     val bridgeRegions: Set<String>
+
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(participant: ParticipantAllocationParameters): ColibriAllocation
 
@@ -78,6 +79,9 @@ interface ColibriSessionManager {
             /** The list of participant IDs which were on the removed bridge. **/
             participantIds: List<String>
         )
+
+        /** Endpoint removed due to a failure e.g. unknown endpoint */
+        fun endpointRemoved(endpointId: String)
     }
 }
 
@@ -86,11 +90,11 @@ data class ParticipantAllocationParameters(
     val statsId: String?,
     val region: String?,
     val sources: EndpointSourceSet,
-    val supportsSourceNames: Boolean,
     val useSsrcRewriting: Boolean,
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,
     val useSctp: Boolean,
     val visitor: Boolean,
+    val supportsPrivateAddresses: Boolean,
     val medias: Set<Media>
 )

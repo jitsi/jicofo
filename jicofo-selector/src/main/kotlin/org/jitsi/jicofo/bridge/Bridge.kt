@@ -96,7 +96,9 @@ class Bridge @JvmOverloads internal constructor(
                 Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0
             ) {
                 false
-            } else field
+            } else {
+                field
+            }
         set(isOperational) {
             field = isOperational
             if (!isOperational) {
@@ -113,7 +115,7 @@ class Bridge @JvmOverloads internal constructor(
     /**
      * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
      */
-    var isInGracefulShutdown = false /* we assume it is not shutting down */
+    var isInGracefulShutdown = false // we assume it is not shutting down
 
     /**
      * Whether the bridge is in SHUTTING_DOWN mode.
@@ -127,7 +129,7 @@ class Bridge @JvmOverloads internal constructor(
     /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
-    var isDraining = true /* Default to true to prevent unwanted selection before reading actual state */
+    var isDraining = true // Default to true to prevent unwanted selection before reading actual state
         private set
 
     /**
@@ -182,8 +184,8 @@ class Bridge @JvmOverloads internal constructor(
         }
         if (java.lang.Boolean.parseBoolean(
                 stats.getValueAsString(
-                        ColibriStatsExtension.SHUTDOWN_IN_PROGRESS
-                    )
+                    ColibriStatsExtension.SHUTDOWN_IN_PROGRESS
+                )
             )
         ) {
             isInGracefulShutdown = true
@@ -329,11 +331,17 @@ class Bridge @JvmOverloads internal constructor(
             val otherPriority = getPriority(b2)
             return if (myPriority != otherPriority) {
                 myPriority - otherPriority
-            } else b1.stress.compareTo(b2.stress)
+            } else {
+                b1.stress.compareTo(b2.stress)
+            }
         }
 
         private fun getPriority(b: Bridge): Int {
-            return if (b.isOperational) { if (b.isInGracefulShutdown) 2 else 1 } else 3
+            return if (b.isOperational) {
+                if (b.isInGracefulShutdown) 2 else 1
+            } else {
+                3
+            }
         }
     }
 }

@@ -36,6 +36,7 @@ import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
@@ -50,23 +51,12 @@ import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
 import org.jivesoftware.smack.SmackConfiguration
-import org.jivesoftware.smack.parsing.ExceptionLoggingCallback
 import org.jivesoftware.smack.provider.ProviderManager
-import org.jivesoftware.smackx.bytestreams.socks5.Socks5Proxy
 
 fun initializeSmack() {
-    System.setProperty("jdk.xml.entityExpansionLimit", "0")
-    System.setProperty("jdk.xml.maxOccurLimit", "0")
-    System.setProperty("jdk.xml.elementAttributeLimit", "524288")
-    System.setProperty("jdk.xml.totalEntitySizeLimit", "0")
-    System.setProperty("jdk.xml.maxXMLNameLimit", "524288")
-    System.setProperty("jdk.xml.entityReplacementLimit", "0")
-    SmackConfiguration.setDefaultReplyTimeout(15000)
-    // if there is a parsing error, do not break the connection to the server(the default behaviour) as we need it for
-    // the other conferences.
-    SmackConfiguration.setDefaultParsingExceptionCallback(ExceptionLoggingCallback())
+    org.jitsi.xmpp.Smack.initialize(XmppConfig.config.useJitsiJidValidation)
 
-    Socks5Proxy.setLocalSocks5ProxyEnabled(false)
+    SmackConfiguration.setDefaultReplyTimeout(15000)
 
     registerXmppExtensions()
 }
@@ -113,6 +103,11 @@ fun registerXmppExtensions() {
         StatsId.NAMESPACE,
         StatsId.Provider()
     )
+    ProviderManager.addExtensionProvider(
+        JitsiParticipantCodecList.ELEMENT,
+        JitsiParticipantCodecList.NAMESPACE,
+        DefaultPacketExtensionProvider(JitsiParticipantCodecList::class.java)
+    )
 
     // Add the extensions used for handling the inviting of transcriber
     ProviderManager.addExtensionProvider(
@@ -151,6 +146,11 @@ fun registerXmppExtensions() {
     MuteIqProvider.registerMuteIqProvider()
     MuteVideoIqProvider.registerMuteVideoIqProvider()
     StartMutedProvider.registerStartMutedProvider()
+    ProviderManager.addExtensionProvider(
+        TranscriptionStatusExtension.ELEMENT,
+        TranscriptionStatusExtension.NAMESPACE,
+        DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
+    )
 
     ProviderManager.addExtensionProvider(
         AudioMutedExtension.ELEMENT,

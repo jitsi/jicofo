@@ -25,7 +25,6 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
-import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.Features
@@ -34,7 +33,6 @@ import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
-import org.jitsi.jicofo.xmpp.muc.SourceInfo
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
@@ -46,9 +44,12 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.EntityFullJid
 import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
@@ -68,7 +69,7 @@ open class Participant @JvmOverloads constructor(
     private val jingleIqRequestHandler: JingleIqRequestHandler,
     parentLogger: Logger? = null,
     /** The list of XMPP features supported by this participant. */
-    private val supportedFeatures: Set<Features> = Features.defaultFeatures,
+    val supportedFeatures: Set<Features> = Features.defaultFeatures,
     /** The [Clock] used by this participant. */
     clock: Clock = Clock.systemUTC()
 ) {
@@ -93,8 +94,7 @@ open class Participant @JvmOverloads constructor(
     private val sourceSignaling = SourceSignaling(
         audio = hasAudioSupport(),
         video = hasVideoSupport(),
-        ConferenceConfig.config.stripSimulcast(),
-        supportsReceivingMultipleVideoStreams() || !ConferenceConfig.config.multiStreamBackwardCompat
+        ConferenceConfig.config.stripSimulcast()
     )
 
     /**
@@ -107,7 +107,12 @@ open class Participant @JvmOverloads constructor(
      */
     private var inviteRunnable: Cancelable? = null
 
-    private val restartRequestsRateLimit = RateLimit(clock = clock)
+    private val restartRequestsRateLimit = RateLimit(
+        minInterval = ConferenceConfig.config.restartRequestMinInterval,
+        maxRequests = ConferenceConfig.config.restartRequestMaxRequests,
+        interval = ConferenceConfig.config.restartRequestInterval,
+        clock = clock
+    )
 
     /**
      * The Jingle session (if any) established with this peer.
@@ -127,52 +132,11 @@ open class Participant @JvmOverloads constructor(
     private val signalQueuedSourcesTaskSyncRoot = Any()
 
     /**
-     * Whether the screensharing source of this participant (if it exists) is muted. If a screensharing source doesn't
-     * exists this stays false (though the source and the mute status are communicated separately so they may not
-     * always be in sync)
+     * Whether this participant is a "user participant" for the purposes of
+     * [JitsiMeetConferenceImpl.getUserParticipantCount].
+     * Needs to be unchanging so counts don't get out of sync.
      */
-    private var desktopSourceIsMuted = false
-
-    init {
-        updateDesktopSourceIsMuted(chatMember.sourceInfos)
-    }
-
-    /**
-     * Notify this [Participant] that the underlying [ChatRoomMember]'s presence changed.
-     */
-    fun presenceChanged() {
-        if (updateDesktopSourceIsMuted(chatMember.sourceInfos)) {
-            conference.desktopSourceIsMutedChanged(this, desktopSourceIsMuted)
-        }
-    }
-
-    /**
-     * Update the value of [.desktopSourceIsMuted] based on the advertised [SourceInfo]s.
-     * @return true if the value of [.desktopSourceIsMuted] changed as a result of this call.
-     */
-    private fun updateDesktopSourceIsMuted(sourceInfos: Set<SourceInfo>): Boolean {
-        val newValue = sourceInfos
-            .any { (_, muted, videoType) -> videoType === VideoType.Desktop && muted }
-        if (desktopSourceIsMuted != newValue) {
-            desktopSourceIsMuted = newValue
-            return true
-        }
-        return false
-    }
-
-    /**
-     * Notify this participant that another participant's (identified by `owner`) screensharing source was muted
-     * or unmuted.
-     */
-    fun remoteDesktopSourceIsMutedChanged(owner: String, muted: Boolean) {
-        // This is only needed for backwards compatibility with clients that don't support receiving multiple streams.
-        if (supportsReceivingMultipleVideoStreams()) {
-            return
-        }
-        sourceSignaling.remoteDesktopSourceIsMutedChanged(owner, muted)
-        // Signal updates, if any, immediately.
-        synchronized(signalQueuedSourcesTaskSyncRoot) { scheduleSignalingOfQueuedSources() }
-    }
+    val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
 
     /**
      * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
@@ -204,9 +168,6 @@ open class Participant @JvmOverloads constructor(
         }
     }
 
-    /** Return `true` if this participant supports source name signaling. */
-    fun hasSourceNameSupport() = supportedFeatures.contains(Features.SOURCE_NAMES)
-
     /** Return `true` if this participant supports SSRC rewriting functionality. */
     fun hasSsrcRewritingSupport() = supportedFeatures.contains(Features.SSRC_REWRITING_V1)
 
@@ -215,7 +176,6 @@ open class Participant @JvmOverloads constructor(
 
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
     fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
-    fun supportsReceivingMultipleVideoStreams() = supportedFeatures.contains(Features.RECEIVE_MULTIPLE_STREAMS)
 
     /** Returns `true` iff this participant supports REMB. */
     fun hasRembSupport() = supportedFeatures.contains(Features.REMB)
@@ -289,8 +249,13 @@ open class Participant @JvmOverloads constructor(
         synchronized(signalQueuedSourcesTaskSyncRoot) {
             if (signalQueuedSourcesTask == null) {
                 logger.debug("Scheduling a task to signal queued remote sources after $delayMs ms.")
+                val timeOfSchedule = Instant.now()
                 signalQueuedSourcesTask = scheduledPool.schedule(
                     {
+                        val actualDelayMs = Duration.between(timeOfSchedule, Instant.now()).toMillis()
+                        if (actualDelayMs > delayMs + 3000) {
+                            logger.warn("Scheduling of sources was delayed by $actualDelayMs ms (expected $delayMs)")
+                        }
                         synchronized(signalQueuedSourcesTaskSyncRoot) {
                             sendQueuedRemoteSources()
                             signalQueuedSourcesTask = null
@@ -348,22 +313,24 @@ open class Participant @JvmOverloads constructor(
 
     /**
      * Whether force-muting should be suppressed for this participant (it is a trusted participant and doesn't
-     * support unmuting).
+     * support unmuting, or is a visitor and muting is redundant).
      */
-    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri
+    fun shouldSuppressForceMute() = (chatMember.isJigasi && !hasAudioMuteSupport()) || chatMember.isJibri ||
+        chatMember.role == MemberRole.VISITOR
 
     /** Checks whether this [Participant]'s role has moderator rights. */
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
 
-    val debugState: OrderedJsonObject
-        get() = OrderedJsonObject().apply {
-            this["id"] = endpointId
+    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+        this["id"] = endpointId
+        if (full) {
             this["source_signaling"] = sourceSignaling.debugState
-            this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
-            this["jingle_session"] = jingleSession?.debugState() ?: "null"
-            this["chatMember"] = chatMember.debugState
         }
+        statId?.let { this["stats_id"] = it }
+        this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
+        this["jingle_session"] = jingleSession?.debugState() ?: "null"
+    }
 
     /**
      * Create a new [JingleSession] instance for this participant. Defined here and left open for easier testing.
@@ -388,9 +355,11 @@ open class Participant @JvmOverloads constructor(
 
     private inner class JingleRequestHandlerImpl : JingleRequestHandler {
         private fun checkJingleSession(jingleSession: JingleSession): StanzaError? =
-            if (this@Participant.jingleSession != jingleSession)
+            if (this@Participant.jingleSession != jingleSession) {
                 StanzaError.from(StanzaError.Condition.item_not_found, "jingle session no longer active").build()
-            else null
+            } else {
+                null
+            }
 
         override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
@@ -440,10 +409,8 @@ open class Participant @JvmOverloads constructor(
             return null
         }
 
-        override fun onSessionAccept(
-            jingleSession: JingleSession,
-            contents: List<ContentPacketExtension>
-        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.SESSION_ACCEPT)
+        override fun onSessionAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            onSessionOrTransportAccept(jingleSession, contents, JingleAction.SESSION_ACCEPT)
 
         private fun onSessionOrTransportAccept(
             jingleSession: JingleSession,
@@ -529,10 +496,12 @@ open class Participant @JvmOverloads constructor(
                     // to simply contain the latest session, but until then just log a warning.
                     logger.warn("Accepting transport-info for a different (new?) jingle session")
                 }
-            } else checkJingleSession(jingleSession)?.let {
-                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
-                // we prefer to avoid trickle at all and don't expect to see it.
-                logger.warn("Received an early or stale transport-info from non-jigasi.")
+            } else {
+                checkJingleSession(jingleSession)?.let {
+                    // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
+                    // we prefer to avoid trickle at all and don't expect to see it.
+                    logger.warn("Received an early or stale transport-info from non-jigasi.")
+                }
             }
 
             val transport = contents.getTransport()
@@ -542,15 +511,13 @@ open class Participant @JvmOverloads constructor(
             return null
         }
 
-        override fun onTransportAccept(
-            jingleSession: JingleSession,
-            contents: List<ContentPacketExtension>
-        ) = onSessionOrTransportAccept(jingleSession, contents, JingleAction.TRANSPORT_ACCEPT)
+        override fun onTransportAccept(jingleSession: JingleSession, contents: List<ContentPacketExtension>) =
+            onSessionOrTransportAccept(jingleSession, contents, JingleAction.TRANSPORT_ACCEPT)
 
         override fun onTransportReject(jingleSession: JingleSession, iq: JingleIQ) {
             checkJingleSession(jingleSession)?.let { return }
 
-            logger.warn("Received transport-reject: ${iq.toXML()}")
+            logger.warn("Received transport-reject: ${iq.toStringOpt()}")
         }
     }
 }

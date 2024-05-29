@@ -17,6 +17,7 @@ package org.jitsi.impl.protocol.xmpp.log;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 import org.jivesoftware.smack.packet.*;
@@ -66,13 +67,17 @@ public class PacketDebugger
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(
+                () -> "RCV PKT (" + id + "): " + XmlStringBuilderUtil.Companion.toStringOpt(streamElement.toXML())
+        );
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(
+                () -> "SENT PKT (" + id + "): " + XmlStringBuilderUtil.Companion.toStringOpt(streamElement.toXML())
+        );
     }
 
     // It's fine to do non-atomic as it's only 1 thread doing write operation

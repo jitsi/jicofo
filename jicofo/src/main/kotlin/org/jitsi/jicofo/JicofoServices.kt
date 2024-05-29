@@ -24,7 +24,6 @@ import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
-import org.jitsi.jicofo.auth.ShibbolethAuthAuthority
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
@@ -34,6 +33,9 @@ import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
+import org.jitsi.jicofo.jibri.JibriDetectorMetrics
+import org.jitsi.jicofo.metrics.GlobalMetrics
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
@@ -48,7 +50,6 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
-import java.lang.management.ManagementFactory
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
 /**
@@ -71,7 +72,8 @@ class JicofoServices {
 
     val xmppServices = XmppServices(
         conferenceStore = focusManager,
-        focusManager = focusManager, // TODO do not use FocusManager directly
+        // TODO do not use FocusManager directly
+        focusManager = focusManager,
         authenticationAuthority = authenticationAuthority
     ).also {
         it.clientConnection.addListener(focusManager)
@@ -116,6 +118,14 @@ class JicofoServices {
         null
     }
 
+    init {
+        if (jibriDetector != null || sipJibriDetector != null) {
+            JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask {
+                JibriDetectorMetrics.updateMetrics(jibriDetector = jibriDetector, sipJibriDetector = sipJibriDetector)
+            }
+        }
+    }
+
     private val healthChecker: JicofoHealthChecker? = if (HealthConfig.config.enabled) {
         JicofoHealthChecker(
             HealthConfig.config,
@@ -125,7 +135,9 @@ class JicofoServices {
         ).apply {
             start()
         }
-    } else null
+    } else {
+        null
+    }
 
     private val jettyServer: Server?
 
@@ -133,12 +145,13 @@ class JicofoServices {
         jettyServer = if (RestConfig.config.enabled) {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
-                authenticationAuthority as? ShibbolethAuthAuthority,
                 CurrentVersionImpl.VERSION,
                 healthChecker,
                 if (RestConfig.config.enableConferenceRequest) {
                     ConferenceRequest(xmppServices.conferenceIqHandler)
-                } else null
+                } else {
+                    null
+                }
             )
             createServer(RestConfig.config.httpServerConfig).also {
                 it.servletContextHandler.addServlet(
@@ -147,7 +160,14 @@ class JicofoServices {
                 )
                 it.start()
             }
-        } else null
+        } else {
+            null
+        }
+    }
+
+    init {
+        logger.info("Registering GlobalMetrics periodic updates.")
+        JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { GlobalMetrics.update() }
     }
 
     fun shutdown() {
@@ -156,6 +176,7 @@ class JicofoServices {
             it.shutdown()
         }
         healthChecker?.shutdown()
+        JicofoMetricsContainer.instance.metricsUpdater.stop()
         jettyServer?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)
@@ -165,12 +186,11 @@ class JicofoServices {
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()
         xmppServices.clientConnection.removeListener(focusManager)
-        focusManager.stop()
         xmppServices.shutdown()
     }
 
     private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
-        return if (AuthConfig.config.enabled) {
+        return if (AuthConfig.config.type != AuthConfig.Type.NONE) {
             logger.info("Starting authentication service with config=$authConfig.")
             val authAuthority = when (authConfig.type) {
                 AuthConfig.Type.XMPP -> XMPPDomainAuthAuthority(
@@ -182,13 +202,7 @@ class JicofoServices {
                 AuthConfig.Type.JWT -> ExternalJWTAuthority(
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
-
-                AuthConfig.Type.SHIBBOLETH -> ShibbolethAuthAuthority(
-                    authConfig.enableAutoLogin,
-                    authConfig.authenticationLifetime,
-                    authConfig.loginUrl,
-                    AuthConfig.config.logoutUrl
-                )
+                AuthConfig.Type.NONE -> null
             }
             authAuthority
         } else {
@@ -197,18 +211,18 @@ class JicofoServices {
         }
     }
 
-    fun getStats(): JSONObject = JSONObject().apply {
+    fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
 
         put("bridge_selector", bridgeSelector.stats)
-        jibriDetector?.let { put("jibri_detector", it.stats) }
-        sipJibriDetector?.let { put("sip_jibri_detector", it.stats) }
+        JibriDetectorMetrics.appendStats(this)
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
-        put("threads", ManagementFactory.getThreadMXBean().threadCount)
+        put("threads", GlobalMetrics.threadsMetrics.get())
         put("jingle", JingleStats.toJson())
+        put("version", CurrentVersionImpl.VERSION.toString())
         healthChecker?.let {
             val result = it.result
             put("slow_health_check", it.totalSlowHealthChecks)
@@ -247,5 +261,12 @@ class JicofoServices {
 
         @JvmStatic
         var jicofoServicesSingleton: JicofoServices? by SynchronizedDelegate(null, jicofoServicesSingletonSyncRoot)
+
+        @JvmField
+        val versionMetric = JicofoMetricsContainer.instance.registerInfo(
+            "version",
+            "Application version",
+            CurrentVersionImpl.VERSION.toString()
+        )
     }
 }

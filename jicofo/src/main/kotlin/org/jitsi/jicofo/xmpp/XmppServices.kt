@@ -22,6 +22,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -66,7 +67,10 @@ class XmppServices(
         JigasiDetector(
             getXmppConnectionByName(JigasiConfig.config.xmppConnectionName),
             breweryJid
-        ).apply { init() }
+        ).apply {
+            init()
+            JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
+        }
     } ?: run {
         logger.info("No Jigasi detector configured.")
         null
@@ -83,28 +87,36 @@ class XmppServices(
             conferenceStore,
             jigasiDetector
         )
-    } else null
+    } else {
+        null
+    }
     val jigasiStats: OrderedJsonObject
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
     val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
+    val configurationChangeHandler = ConfigurationChangeHandler(clientConnection, conferenceStore)
+    val roomMetadataHandler = RoomMetadataHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     val jingleHandler = JingleIqRequestHandler(
         visitorConnections.map { it.xmppConnection }.toSet() + clientConnection.xmppConnection
     )
+    val visitorsManager = VisitorsManager(clientConnection, focusManager)
 
     val conferenceIqHandler = ConferenceIqHandler(
         xmppProvider = clientConnection,
         focusManager = focusManager,
         focusAuthJid = XmppConfig.client.jid,
         authAuthority = authenticationAuthority,
-        jigasiEnabled = jigasiDetector != null
+        jigasiEnabled = jigasiDetector != null,
+        visitorsManager
     ).apply {
         clientConnection.xmppConnection.registerIQRequestHandler(this)
     }
 
-    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) null else {
+    private val authenticationIqHandler: AuthenticationIqHandler? = if (authenticationAuthority == null) {
+        null
+    } else {
         AuthenticationIqHandler(authenticationAuthority).also {
             clientConnection.xmppConnection.registerIQRequestHandler(it.loginUrlIqHandler)
             clientConnection.xmppConnection.registerIQRequestHandler(it.logoutIqHandler)

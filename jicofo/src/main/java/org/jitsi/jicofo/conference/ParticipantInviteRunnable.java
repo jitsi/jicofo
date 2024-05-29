@@ -22,6 +22,8 @@ import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.codec.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.jibri.*;
+import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -31,6 +33,7 @@ import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
 import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -162,17 +165,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
 
     private void doRun()
     {
-        Offer offer;
-
-        try
-        {
-            offer = createOffer();
-        }
-        catch (UnsupportedFeatureConfigurationException e)
-        {
-            logger.error("Error creating offer", e);
-            return;
-        }
+        Offer offer = createOffer();
         if (canceled)
         {
             return;
@@ -195,20 +188,28 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                 }
                 else
                 {
-                    logger.warn("Failed to convert ContentPacketExtension to Media: " + content.toXML());
+                    logger.warn(
+                            "Failed to convert ContentPacketExtension to Media: "
+                                    + XmlStringBuilderUtil.toStringOpt(content));
                 }
             });
+            // This makes the bridge signal its private host candidates. We enable them for backend components, because
+            // they may be in the same network as the bridge, and disable them for endpoints to avoid checking
+            // unnecessary pairs (unless the endpoints explicitly signal the feature).
+            boolean privateAddresses =
+                (participant.getChatMember().isJigasi() && JigasiConfig.config.getPrivateAddressConnectivity()) ||
+                    (participant.getChatMember().isJibri() && JibriConfig.config.getPrivateAddressConnectivity());
             ParticipantAllocationParameters participantOptions = new ParticipantAllocationParameters(
                     participant.getEndpointId(),
                     participant.getStatId(),
                     participant.getChatMember().getRegion(),
                     participant.getSources(),
-                    participant.hasSourceNameSupport(),
                     participant.useSsrcRewriting(),
                     forceMuteAudio,
                     forceMuteVideo,
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
                     (participant.getChatMember().getRole() == MemberRole.VISITOR),
+                    privateAddresses,
                     medias);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }
@@ -279,7 +280,6 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
      * {@inheritDoc}
      */
     private Offer createOffer()
-        throws UnsupportedFeatureConfigurationException
     {
         OfferOptions offerOptions = new OfferOptions();
         OfferOptionsUtilKt.applyConstraints(offerOptions, participant);

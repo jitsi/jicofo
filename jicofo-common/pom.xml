@@ -25,18 +25,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
     </dependency>
@@ -103,6 +91,11 @@
       <groupId>org.glassfish.jersey.media</groupId>
       <artifactId>jersey-media-json-jackson</artifactId>
     </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.module</groupId>
+        <artifactId>jackson-module-kotlin</artifactId>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
     <dependency>
       <groupId>com.github.spotbugs</groupId>
@@ -352,7 +345,7 @@
       <plugin>
         <groupId>com.github.gantsign.maven</groupId>
         <artifactId>ktlint-maven-plugin</artifactId>
-        <version>1.13.1</version>
+        <version>${ktlint-maven-plugin.version}</version>
         <configuration>
           <sourceRoots>
             <sourceRoot>${project.basedir}/src/main/kotlin</sourceRoot>

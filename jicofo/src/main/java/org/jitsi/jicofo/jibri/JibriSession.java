@@ -25,6 +25,7 @@ import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -351,7 +352,7 @@ public class JibriSession
         stopRequest.setAction(JibriIq.Action.STOP);
         stopRequest.setSessionId(this.sessionId);
 
-        logger.info("Trying to stop: " + stopRequest.toXML());
+        logger.info("Trying to stop: " + XmlStringBuilderUtil.toStringOpt(stopRequest));
 
         SmackFuture<IQ, Exception> future =
             jibriDetector.getXmppConnection().sendIqRequestAsync(stopRequest, 60000);
@@ -366,19 +367,25 @@ public class JibriSession
             {
                 logger.error(
                     "Unexpected response to stop iq: "
-                        + (stanza != null ? stanza.toXML() : "null"));
-
-                JibriIq error = new JibriIq();
-
-                error.setFrom(stopRequest.getTo());
-                error.setFailureReason(FailureReason.ERROR);
-                error.setStatus(Status.OFF);
-
-                processJibriIqFromJibri(error);
+                        + (stanza != null ? XmlStringBuilderUtil.toStringOpt(stanza) : "null"));
+                stopError(stopRequest.getTo());
             }
         }).onError(exception ->
-            logger.error(
-                "Error sending stop iq: " + exception.toString()));
+        {
+            logger.error("Error from stop request: " + exception.toString());
+            stopError(stopRequest.getTo());
+        });
+    }
+
+    private void stopError(Jid jibriJid)
+    {
+        JibriIq error = new JibriIq();
+
+        error.setFrom(jibriJid);
+        error.setFailureReason(FailureReason.ERROR);
+        error.setStatus(Status.OFF);
+
+        processJibriIqFromJibri(error);
     }
 
     private void cleanupSession()
@@ -428,7 +435,7 @@ public class JibriSession
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            logger.info("Updating status from JIBRI: " + iq.toXML() + " for " + roomName);
+            logger.info("Updating status from JIBRI: " + XmlStringBuilderUtil.toStringOpt(iq) + " for " + roomName);
 
             handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
@@ -479,7 +486,7 @@ public class JibriSession
         startIq.setTo(jibriJid);
         startIq.setType(IQ.Type.set);
         startIq.setAction(JibriIq.Action.START);
-        startIq.setSessionId(this.sessionId);
+        startIq.setSessionId(sessionId);
         logger.debug(
             "Passing on jibri application data: " + this.applicationData);
         startIq.setAppData(this.applicationData);
@@ -509,11 +516,33 @@ public class JibriSession
 
         IQ reply = UtilKt.sendIqAndGetResponse(jibriDetector.getXmppConnection(), startIq);
 
+        if (reply == null)
+        {
+            logger.error("Jibri start request timed out, sending a stop command.");
+
+            // The timeout may be due to internal jibri processing and not because of the network (e.g. chrome
+            // taking a long time to start up). Since we won't be keeping a track of this jibri session anymore, send
+            // a "stop" to prevent it from staying in the conference (if it succeeds to get there).
+            JibriIq stopRequest = new JibriIq();
+
+            stopRequest.setType(IQ.Type.set);
+            stopRequest.setTo(jibriJid);
+            stopRequest.setAction(JibriIq.Action.STOP);
+            stopRequest.setSessionId(sessionId);
+            try
+            {
+                jibriDetector.getXmppConnection().trySendStanza(stopRequest);
+            }
+            catch (SmackException.NotConnectedException e)
+            {
+                logger.error("Can't send stop IQ, not connected");
+            }
+
+            throw new StartException.UnexpectedResponse();
+        }
         if (!(reply instanceof JibriIq))
         {
-            logger.error(
-                    "Unexpected response to start request: "
-                            + (reply != null ? reply.toXML() : "null"));
+            logger.error("Unexpected response to start request: " + XmlStringBuilderUtil.toStringOpt(reply));
 
             throw new StartException.UnexpectedResponse();
         }
@@ -527,8 +556,7 @@ public class JibriSession
         if (!isPendingResponse(jibriIq))
         {
             logger.error(
-                "Unexpected status received in response to the start IQ: "
-                        + jibriIq.toXML());
+                "Unexpected status received in response to the start IQ: " + XmlStringBuilderUtil.toStringOpt(jibriIq));
 
             throw new StartException.UnexpectedResponse();
         }

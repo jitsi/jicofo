@@ -170,14 +170,6 @@ class CodecUtil {
                     opus.addRtcpFeedbackType(createRtcpFbPacketExtension("transport-cc", null))
                 }
             }
-            if (config.isac16.enabled()) {
-                // a=rtpmap:103 ISAC/16000
-                add(createPayloadTypeExtension(config.isac16.pt(), "ISAC", 16000))
-            }
-            if (config.isac32.enabled()) {
-                // a=rtpmap:104 ISAC/32000
-                add(createPayloadTypeExtension(config.isac32.pt(), "ISAC", 32000))
-            }
             if (config.telephoneEvent.enabled()) {
                 // rtpmap:126 telephone-event/8000
                 add(createPayloadTypeExtension(config.telephoneEvent.pt(), "telephone-event", 8000))
@@ -266,7 +258,7 @@ class CodecUtil {
 
             if (config.rid.enabled()) {
                 val rtpStreamId = RTPHdrExtPacketExtension()
-                rtpStreamId.id = config.rid.enabled().toString()
+                rtpStreamId.id = config.rid.id.toString()
                 rtpStreamId.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:rtp-stream-id")
                 add(rtpStreamId)
             }
@@ -280,15 +272,12 @@ class CodecUtil {
             }
         }
 
-        private fun createPayloadTypeExtension(
-            id: Int,
-            name: String,
-            clockRate: Int
-        ) = PayloadTypePacketExtension().apply {
-            setId(id)
-            this.name = name
-            clockrate = clockRate
-        }
+        private fun createPayloadTypeExtension(id: Int, name: String, clockRate: Int) =
+            PayloadTypePacketExtension().apply {
+                setId(id)
+                this.name = name
+                clockrate = clockRate
+            }
 
         fun PayloadTypePacketExtension.addVideoExtensions(options: OfferOptions, codecConfig: CodecConfig) {
             // a=rtcp-fb:XXX ccm fir

@@ -25,7 +25,10 @@ import org.jitsi.jicofo.codec.Config.Companion.config
 class CodecConfigTest : ShouldSpec() {
     init {
         context("Default configuration") {
-            config.av1.enabled() shouldBe false
+            config.av1.enabled() shouldBe true
+            config.av1.pt() shouldBe 41
+            config.av1.rtxEnabled() shouldBe true
+            config.av1.rtxPt() shouldBe 42
 
             config.vp8.enabled() shouldBe true
             config.vp8.pt() shouldBe 100
@@ -48,12 +51,6 @@ class CodecConfigTest : ShouldSpec() {
             config.opus.useInbandFec() shouldBe true
             config.opus.red.enabled() shouldBe false
             shouldThrow<Throwable> { config.opus.red.pt() }
-
-            config.isac16.enabled() shouldBe true
-            config.isac16.pt() shouldBe 103
-
-            config.isac32.enabled() shouldBe true
-            config.isac32.pt() shouldBe 104
 
             config.framemarking.enabled shouldBe false
             config.framemarking.id shouldBe 9

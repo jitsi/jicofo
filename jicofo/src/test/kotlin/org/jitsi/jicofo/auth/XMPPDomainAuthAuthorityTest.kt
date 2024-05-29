@@ -10,6 +10,7 @@ import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jitsi.xmpp.extensions.jitsimeet.SessionInvalidPacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError.Condition
 import org.jxmpp.jid.impl.JidCreate
@@ -31,7 +32,8 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         focusManager = focusManager,
         focusAuthJid = "",
         authAuthority = authAuthority,
-        jigasiEnabled = false
+        jigasiEnabled = false,
+        visitorsManager = mockk(relaxed = true)
     )
 
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance
@@ -93,9 +95,8 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
                 machineUID = user2MachineUid
             }
 
-            println("query=${query.toXML()}")
+            println("query=${query.toStringOpt()}")
             conferenceIqHandler.handleConferenceIq(query).let {
-                println("XXX ${it.toXML()}")
                 it.shouldBeInstanceOf<ConferenceIq>()
                 it.sessionId shouldBe null
             }

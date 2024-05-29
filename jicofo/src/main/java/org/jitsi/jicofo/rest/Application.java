@@ -18,8 +18,6 @@ package org.jitsi.jicofo.rest;
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.auth.*;
-import org.jitsi.jicofo.auth.rest.*;
 import org.jitsi.jicofo.health.*;
 import org.jitsi.jicofo.metrics.*;
 import org.jitsi.rest.prometheus.*;
@@ -35,8 +33,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(ShibbolethAuthAuthority shibbolethAuthAuthority,
-                       @NotNull Version version,
+    public Application(@NotNull Version version,
                        JicofoHealthChecker healthChecker,
                        ConferenceRequest conferenceRequest)
     {
@@ -56,11 +53,6 @@ public class Application
         }
 
         register(new org.jitsi.rest.Version(version));
-
-        if (shibbolethAuthAuthority != null)
-        {
-            register(new ShibbolethLogin(shibbolethAuthAuthority));
-        }
 
         if (RestConfig.config.getEnablePrometheus())
         {

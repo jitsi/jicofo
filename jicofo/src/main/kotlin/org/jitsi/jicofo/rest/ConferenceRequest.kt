@@ -28,6 +28,7 @@ import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
+import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -38,17 +39,20 @@ import org.jxmpp.stringprep.XmppStringprepException
 class ConferenceRequest(
     val conferenceIqHandler: ConferenceIqHandler
 ) {
+    private val logger = createLogger()
+
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest): String {
-
+    fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest?): String {
         val response: IQ
+        if (conferenceRequest == null) throw BadRequestExceptionWithMessage("Missing body.")
         try {
             response = conferenceIqHandler.handleConferenceIq(conferenceRequest.toConferenceIq())
         } catch (e: XmppStringprepException) {
             throw BadRequestExceptionWithMessage("Invalid room name: ${e.message}")
         } catch (e: Exception) {
+            logger.error(e.message, e)
             throw BadRequestExceptionWithMessage(e.message)
         }
 
@@ -56,11 +60,9 @@ class ConferenceRequest(
             if (response is ErrorIQ) {
                 throw when (response.error.condition) {
                     StanzaError.Condition.not_authorized -> {
-                        System.err.println("Not authorised")
                         ForbiddenException()
                     }
                     StanzaError.Condition.not_acceptable -> {
-                        System.err.println("not_acceptable")
                         BadRequestExceptionWithMessage("invalid-session")
                     }
                     else -> BadRequestExceptionWithMessage(response.error.toString())

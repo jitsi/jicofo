@@ -17,10 +17,21 @@
  */
 package org.jitsi.jicofo.metrics
 
+import org.jitsi.config.JitsiConfig
+import org.jitsi.jicofo.TaskPools
+import org.jitsi.metaconfig.config
 import org.jitsi.metrics.MetricsContainer
+import org.jitsi.metrics.MetricsUpdater
+import java.time.Duration
 
 class JicofoMetricsContainer private constructor() : MetricsContainer(namespace = "jitsi_jicofo") {
+    val metricsUpdater = MetricsUpdater(TaskPools.scheduledPool, updateInterval)
+
     companion object {
+        private val updateInterval: Duration by config {
+            "jicofo.metrics.update-interval".from(JitsiConfig.newConfig)
+        }
+
         @JvmStatic
         val instance = JicofoMetricsContainer()
     }

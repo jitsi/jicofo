@@ -21,30 +21,22 @@ package org.jitsi.jicofo.auth
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
-import org.jitsi.metaconfig.optionalconfig
 import java.time.Duration
 
 class AuthConfig private constructor() {
-    val enabled: Boolean by config {
+    private val enabled: Boolean by config {
         // Enabled if the URL is set to anything
-        legacyLoginUrlPropertyName.from(legacyConfig).convertFrom<String> { true }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(legacyConfig).convertFrom<String> { true }
         // Read the legacy key from newConfig in case it was set as a System property.
-        legacyLoginUrlPropertyName.from(newConfig).convertFrom<String> { true }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(newConfig).convertFrom<String> { true }
         "jicofo.authentication.enabled".from(newConfig)
     }
 
     val loginUrl: String by config {
-        legacyLoginUrlPropertyName.from(legacyConfig).convertFrom<String> { it.stripType() }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(legacyConfig).convertFrom<String> { it.stripType() }
         // Read the legacy key from newConfig in case it was set as a System property.
-        legacyLoginUrlPropertyName.from(newConfig).convertFrom<String> { it.stripType() }
+        LEGACY_LOGIN_URL_PROPERTY_NAME.from(newConfig).convertFrom<String> { it.stripType() }
         "jicofo.authentication.login-url".from(newConfig)
-    }
-
-    val logoutUrl: String? by optionalconfig {
-        legacyLogoutUrlPropertyName.from(legacyConfig)
-        // Read the legacy key from newConfig in case it was set as a System property.
-        legacyLogoutUrlPropertyName.from(newConfig)
-        "jicofo.authentication.logout-url".from(newConfig)
     }
 
     val authenticationLifetime: Duration by config {
@@ -59,19 +51,22 @@ class AuthConfig private constructor() {
         "jicofo.authentication.enable-auto-login".from(newConfig)
     }
 
-    val type: Type by config {
+    val type: Type
+        get() = if (enabled) typeProperty else Type.NONE
+
+    private val typeProperty: Type by config {
         "org.jitsi.jicofo.auth.URL".from(legacyConfig).convertFrom<String> {
             when {
                 it.startsWith("XMPP:") -> Type.XMPP
                 it.startsWith("EXT_JWT:") -> Type.JWT
-                else -> Type.SHIBBOLETH
+                else -> Type.NONE
             }
         }
         "jicofo.authentication.type".from(newConfig)
     }
 
     override fun toString(): String {
-        return "AuthConfig[enabled=$enabled, type=$type, loginUrl=$loginUrl, logoutUrl=$logoutUrl, " +
+        return "AuthConfig[enabled=$enabled, type=$type, loginUrl=$loginUrl, " +
             "authenticationLifetime=$authenticationLifetime, enableAutoLogin=$enableAutoLogin]"
     }
 
@@ -79,14 +74,13 @@ class AuthConfig private constructor() {
         @JvmField
         val config = AuthConfig()
 
-        const val legacyLoginUrlPropertyName = "org.jitsi.jicofo.auth.URL"
-        const val legacyLogoutUrlPropertyName = "org.jitsi.jicofo.auth.LOGOUT_URL"
+        const val LEGACY_LOGIN_URL_PROPERTY_NAME = "org.jitsi.jicofo.auth.URL"
     }
 
     enum class Type {
         XMPP,
         JWT,
-        SHIBBOLETH
+        NONE
     }
 }
 

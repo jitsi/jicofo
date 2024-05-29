@@ -29,6 +29,7 @@ import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.RecordingMode
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Status
 import org.jitsi.xmpp.extensions.jibri.RecordingStatus
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import java.util.*
@@ -184,7 +185,9 @@ class JibriRecorder(
                 }
             }
         }
-        logger.info("Publishing new jibri-recording-status: ${recordingStatus.toXML()} in: " + conference.roomName)
+        logger.info(
+            "Publishing new jibri-recording-status: ${recordingStatus.toStringOpt()} in: ${conference.roomName}"
+        )
 
         conference.chatRoom?.setPresenceExtension(recordingStatus)
     }

@@ -37,21 +37,15 @@ class ConferenceMetrics {
         )
 
         @JvmField
-        val participantsNoMultiStream = metricsContainer.registerCounter(
-            "participants_no_multi_stream",
-            "Number of participants with no support for receiving multiple streams."
-        )
-
-        @JvmField
-        val participantsNoSourceName = metricsContainer.registerCounter(
-            "participants_no_source_name",
-            "Number of participants with no support for source names."
-        )
-
-        @JvmField
         val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"
+        )
+
+        @JvmField
+        val bridgesRemoved = metricsContainer.registerCounter(
+            "bridges_removed",
+            "Number of times a bridge was removed from a conference due to a failure"
         )
 
         @JvmField
@@ -75,7 +69,25 @@ class ConferenceMetrics {
         @JvmField
         val currentParticipants = metricsContainer.registerLongGauge(
             "participants_current",
-            "The current number of participants."
+            "The current number of participants. This includes visitors."
+        )
+
+        @JvmField
+        val currentVisitors = metricsContainer.registerLongGauge(
+            "visitors_current",
+            "The current number of visitors."
+        )
+
+        @JvmField
+        val conferenceCount = metricsContainer.registerLongGauge(
+            "conferences",
+            "Running count of conferences (excluding internal conferences created for health checks)."
+        )
+
+        @JvmField
+        val conferencesWithVisitors = metricsContainer.registerLongGauge(
+            "conferences_with_visitors",
+            "Running count of conferences which have at least 1 visitor."
         )
 
         /**

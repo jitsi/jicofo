@@ -53,7 +53,11 @@ class ConferenceSourceMapTest : ShouldSpec() {
         val endpoint1AdditionalSourceSet = EndpointSourceSet(
             setOf(
                 // The duplicates should be removed
-                s1, s2, s3, s4, s7
+                s1,
+                s2,
+                s3,
+                s4,
+                s7
             ),
             setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4)))
         )
@@ -72,99 +76,99 @@ class ConferenceSourceMapTest : ShouldSpec() {
 
         context("Constructors") {
             context("Default") {
-                val conferenceSourceMap = ConferenceSourceMap(mutableMapOf(jid1 to endpoint1SourceSet))
+                val conferenceSourceMap = ConferenceSourceMap(mutableMapOf(JID_1 to endpoint1SourceSet))
                 conferenceSourceMap.size shouldBe 1
-                conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1SourceSet
             }
             context("With a single EndpointSourceSet") {
-                val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
+                val conferenceSourceMap = ConferenceSourceMap(JID_1 to endpoint1SourceSet)
                 conferenceSourceMap.size shouldBe 1
-                conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1SourceSet
             }
             context("With multiple EndpointSourceSets") {
                 val conferenceSourceMap = ConferenceSourceMap(
-                    jid1 to endpoint1SourceSet,
-                    jid2 to endpoint2SourceSet
+                    JID_1 to endpoint1SourceSet,
+                    JID_2 to endpoint2SourceSet
                 )
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1SourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
         }
         context("Add") {
-            val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
+            val conferenceSourceMap = ConferenceSourceMap(JID_1 to endpoint1SourceSet)
 
             context("Without overlap in endpoints") {
-                conferenceSourceMap.add(jid2, endpoint2SourceSet)
+                conferenceSourceMap.add(JID_2, endpoint2SourceSet)
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe endpoint1SourceSet
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1SourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
             context("With overlap in endpoints") {
                 conferenceSourceMap.add(
                     ConferenceSourceMap(
-                        jid1 to endpoint1AdditionalSourceSet,
-                        jid2 to endpoint2SourceSet
+                        JID_1 to endpoint1AdditionalSourceSet,
+                        JID_2 to endpoint2SourceSet
                     )
                 )
 
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1CombinedSourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
         }
         context("Remove") {
             val conferenceSourceMap = ConferenceSourceMap(
-                jid1 to endpoint1CombinedSourceSet,
-                jid2 to endpoint2SourceSet
+                JID_1 to endpoint1CombinedSourceSet,
+                JID_2 to endpoint2SourceSet
             )
             context("All of an endpoint's sources") {
-                conferenceSourceMap.remove(ConferenceSourceMap(jid2 to endpoint2SourceSet))
+                conferenceSourceMap.remove(ConferenceSourceMap(JID_2 to endpoint2SourceSet))
                 conferenceSourceMap.size shouldBe 1
-                conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
-                conferenceSourceMap[jid2] shouldBe null
+                conferenceSourceMap[JID_1] shouldBe endpoint1CombinedSourceSet
+                conferenceSourceMap[JID_2] shouldBe null
             }
             context("Some of an endpoint's sources") {
-                conferenceSourceMap.remove(ConferenceSourceMap(jid1 to endpoint1SourceSet))
+                conferenceSourceMap.remove(ConferenceSourceMap(JID_1 to endpoint1SourceSet))
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe EndpointSourceSet(
+                conferenceSourceMap[JID_1] shouldBe EndpointSourceSet(
                     setOf(s3, s4),
                     setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(3, 4)))
                 )
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
             context("Nonexistent endpoint sources") {
                 conferenceSourceMap.remove(
                     ConferenceSourceMap(
-                        jid1 to EndpointSourceSet(
+                        JID_1 to EndpointSourceSet(
                             setOf(Source(12345, MediaType.VIDEO)),
                             setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(12345)))
                         )
                     )
                 )
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1CombinedSourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
             context("Nonexistent endpoint") {
                 conferenceSourceMap.remove(ConferenceSourceMap("differentJid" to endpoint1CombinedSourceSet))
                 conferenceSourceMap.size shouldBe 2
-                conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
-                conferenceSourceMap[jid2] shouldBe endpoint2SourceSet
+                conferenceSourceMap[JID_1] shouldBe endpoint1CombinedSourceSet
+                conferenceSourceMap[JID_2] shouldBe endpoint2SourceSet
             }
         }
         context("Operator plus") {
-            val a = ConferenceSourceMap(jid1 to endpoint1SourceSet)
-            val b = ConferenceSourceMap(jid2 to endpoint2SourceSet)
-            (a + b) shouldBe ConferenceSourceMap(jid1 to endpoint1SourceSet, jid2 to endpoint2SourceSet)
+            val a = ConferenceSourceMap(JID_1 to endpoint1SourceSet)
+            val b = ConferenceSourceMap(JID_2 to endpoint2SourceSet)
+            (a + b) shouldBe ConferenceSourceMap(JID_1 to endpoint1SourceSet, JID_2 to endpoint2SourceSet)
         }
         context("Operator minus") {
-            val a = ConferenceSourceMap(jid1 to endpoint1SourceSet, jid2 to endpoint2SourceSet)
-            val b = ConferenceSourceMap(jid1 to endpoint1SourceSet)
-            (a - b) shouldBe ConferenceSourceMap(jid2 to endpoint2SourceSet)
+            val a = ConferenceSourceMap(JID_1 to endpoint1SourceSet, JID_2 to endpoint2SourceSet)
+            val b = ConferenceSourceMap(JID_1 to endpoint1SourceSet)
+            (a - b) shouldBe ConferenceSourceMap(JID_2 to endpoint2SourceSet)
         }
         context("To Jingle") {
-            val conferenceSourceMap = ConferenceSourceMap(jid1 to endpoint1SourceSet)
+            val conferenceSourceMap = ConferenceSourceMap(JID_1 to endpoint1SourceSet)
             val contents = conferenceSourceMap.toJingle()
 
             contents.size shouldBe 2
@@ -178,7 +182,7 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 Source(2, MediaType.VIDEO)
             )
             videoSources.forEach {
-                it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe jid1
+                it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe JID_1
             }
 
             val sourceGroupPacketExtension =
@@ -191,21 +195,21 @@ class ConferenceSourceMapTest : ShouldSpec() {
             val audioSources = audioRtpDesc.getChildExtensionsOfType(SourcePacketExtension::class.java)
             audioSources.map { Source(MediaType.AUDIO, it) } shouldBe listOf(s7)
             audioSources.forEach {
-                it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe jid1
+                it.getFirstChildOfType(SSRCInfoPacketExtension::class.java).owner shouldBe JID_1
             }
         }
         context("unmodifiable") {
             val conferenceSourceMap = ConferenceSourceMap(
-                jid1 to endpoint1SourceSet,
-                jid2 to endpoint2SourceSet
+                JID_1 to endpoint1SourceSet,
+                JID_2 to endpoint2SourceSet
             )
 
             val unmodifiable = conferenceSourceMap.unmodifiable
-            unmodifiable[jid1] shouldBe endpoint1SourceSet
+            unmodifiable[JID_1] shouldBe endpoint1SourceSet
 
-            conferenceSourceMap.add(jid1, endpoint1AdditionalSourceSet)
-            conferenceSourceMap[jid1] shouldBe endpoint1CombinedSourceSet
-            unmodifiable[jid1] shouldBe endpoint1CombinedSourceSet
+            conferenceSourceMap.add(JID_1, endpoint1AdditionalSourceSet)
+            conferenceSourceMap[JID_1] shouldBe endpoint1CombinedSourceSet
+            unmodifiable[JID_1] shouldBe endpoint1CombinedSourceSet
 
             shouldThrow<UnsupportedOperationException> {
                 unmodifiable.add(ConferenceSourceMap())
@@ -220,13 +224,13 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 setOf(s1, s2, s3, s4, s5, s6, s7),
                 setOf(sim, fid1, fid2, fid3)
             )
-            val conferenceSourceMap = ConferenceSourceMap(jid1 to sourceSet, jid2 to e2sourceSet)
+            val conferenceSourceMap = ConferenceSourceMap(JID_1 to sourceSet, JID_2 to e2sourceSet)
 
             // Assume EndpointSourceSet.stripSimulcast works correctly, tested above.
             context("Simulcast") {
                 conferenceSourceMap.stripSimulcast()
-                conferenceSourceMap[jid1] shouldBe sourceSet.stripSimulcast
-                conferenceSourceMap[jid2] shouldBe e2sourceSet.stripSimulcast
+                conferenceSourceMap[JID_1] shouldBe sourceSet.stripSimulcast
+                conferenceSourceMap[JID_2] shouldBe e2sourceSet.stripSimulcast
             }
         }
         context("Compact JSON") {

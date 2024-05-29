@@ -271,17 +271,17 @@ class BridgeSelectorTest : ShouldSpec() {
     }
 }
 
-private const val enableOctoConfig = "jicofo.octo.enabled=true"
+private const val ENABLE_OCTO_CONFIG = "jicofo.octo.enabled=true"
 val regionBasedConfig = """
-    $enableOctoConfig
+    $ENABLE_OCTO_CONFIG
     jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
 """.trimIndent()
 private val splitConfig = """
-    $enableOctoConfig
+    $ENABLE_OCTO_CONFIG
     jicofo.bridge.selection-strategy=SplitBridgeSelectionStrategy
 """.trimIndent()
 private val visitorConfig = """
-    $enableOctoConfig
+    $ENABLE_OCTO_CONFIG
     jicofo.bridge.selection-strategy=VisitorSelectionStrategy
     jicofo.bridge.visitor-selection-strategy=SingleBridgeSelectionStrategy
     jicofo.bridge.participant-selection-strategy=SingleBridgeSelectionStrategy

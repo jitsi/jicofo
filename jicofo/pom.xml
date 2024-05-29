@@ -35,14 +35,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -55,6 +47,10 @@
       <artifactId>smack-tcp</artifactId>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
+    <dependency>
+      <groupId>org.jxmpp</groupId>
+      <artifactId>jxmpp-stringprep-rocksxmppprecis</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
@@ -143,6 +139,11 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.mockk</groupId>
+      <artifactId>mockk-jvm</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -399,7 +400,7 @@
       <plugin>
         <groupId>com.github.gantsign.maven</groupId>
         <artifactId>ktlint-maven-plugin</artifactId>
-        <version>1.13.1</version>
+        <version>${ktlint-maven-plugin.version}</version>
         <configuration>
           <sourceRoots>
             <sourceRoot>${project.basedir}/src/main/kotlin</sourceRoot>

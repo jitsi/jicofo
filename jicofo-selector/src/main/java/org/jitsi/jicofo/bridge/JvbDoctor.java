@@ -23,6 +23,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
+import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -60,7 +61,7 @@ public class JvbDoctor
     /**
      * Health check tasks map.
      */
-    private final Map<Bridge, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    private final Map<Bridge, PeriodicHealthCheckTask> tasks = new ConcurrentHashMap<>();
 
     private final HealthCheckListener listener;
 
@@ -94,7 +95,7 @@ public class JvbDoctor
     @Override
     public void bridgeRemoved(Bridge bridge)
     {
-        ScheduledFuture<?> healthTask = tasks.remove(bridge);
+        PeriodicHealthCheckTask healthTask = tasks.remove(bridge);
         if (healthTask == null)
         {
             logger.warn("Trying to remove a bridge that does not exist anymore: " + bridge);
@@ -103,7 +104,7 @@ public class JvbDoctor
 
         logger.info("Stopping health-check task for: " + bridge);
 
-        healthTask.cancel(true);
+        healthTask.cancel();
     }
 
     @Override
@@ -119,14 +120,10 @@ public class JvbDoctor
                 ? new HealthCheckPresenceTask(bridge)
                 : new HealthCheckTask(bridge);
 
-        ScheduledFuture<?> healthTask
-            = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                task,
-                healthCheckInterval,
-                healthCheckInterval,
-                TimeUnit.MILLISECONDS);
+        PeriodicHealthCheckTask periodicTask
+            = new PeriodicHealthCheckTask(task, healthCheckInterval);
 
-        tasks.put(bridge, healthTask);
+        tasks.put(bridge, periodicTask);
 
         logger.info("Scheduled health-check task for: " + bridge);
     }
@@ -134,6 +131,41 @@ public class JvbDoctor
     @Override
     public void bridgeIsShuttingDown(@NotNull Bridge bridge)
     {
+    }
+
+    private static class PeriodicHealthCheckTask
+    {
+        private Runnable innerTask;
+
+        private final ScheduledFuture<?> future;
+        private Future<?> innerFuture;
+        private final Object lock = new Object();
+
+        private PeriodicHealthCheckTask(Runnable task, long healthCheckInterval)
+        {
+            innerTask = task;
+            future = TaskPools.getScheduledPool().scheduleAtFixedRate(
+                () -> innerFuture = TaskPools.getIoPool().submit(runInner),
+                healthCheckInterval,
+                healthCheckInterval,
+                TimeUnit.MILLISECONDS);
+        }
+
+        private final Runnable runInner = () -> {
+            synchronized (lock)
+            {
+                innerTask.run();
+            }
+        };
+
+        private void cancel()
+        {
+            future.cancel(true);
+            if (innerFuture != null)
+            {
+                innerFuture.cancel(true);
+            }
+        }
     }
 
     private class HealthCheckTask extends AbstractHealthCheckTask
@@ -236,13 +268,16 @@ public class JvbDoctor
                         || StanzaError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
-                        logger.warn("Health check failed for: " + bridge + ": " + error.toXML().toString());
+                        logger.warn(
+                                "Health check failed for: " + bridge + ": " + XmlStringBuilderUtil.toStringOpt(error)
+                        );
                         listener.healthCheckFailed(bridge.getJid());
                     }
                     else
                     {
                         logger.error(
-                                "Unexpected error returned by the bridge: " + bridge + ", err: " + response.toXML());
+                                "Unexpected error returned by the bridge: " + bridge + ", err: "
+                                        + XmlStringBuilderUtil.toStringOpt(response));
                     }
                 }
             }

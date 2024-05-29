@@ -26,6 +26,7 @@ import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jitsimeet.MuteIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
@@ -89,13 +90,13 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
     val doMute = request.doMute
     val mediaType = request.mediaType
     if (doMute == null || jidToMute == null) {
-        logger.warn("Mute request missing required fields: ${request.iq.toXML()}")
+        logger.warn("Mute request missing required fields: ${request.iq.toStringOpt()}")
         return RejectedWithError(request.iq, StanzaError.Condition.bad_request)
     }
 
     val conference = request.conferenceStore.getConference(request.iq.from.asEntityBareJidIfPossible())
         ?: return RejectedWithError(request.iq, StanzaError.Condition.item_not_found).also {
-            logger.warn("Mute request for unknown conference: ${request.iq.toXML()}")
+            logger.warn("Mute request for unknown conference: ${request.iq.toStringOpt()}")
         }
 
     TaskPools.ioPool.execute {
@@ -106,20 +107,21 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                     // If this was a remote mute, notify the participant that was muted.
                     if (request.iq.from != request.jidToMute) {
                         request.connection.tryToSendStanza(
-                            if (request.mediaType == MediaType.AUDIO)
+                            if (request.mediaType == MediaType.AUDIO) {
                                 MuteIq().apply {
                                     actor = request.iq.from
                                     type = IQ.Type.set
                                     to = request.jidToMute
                                     mute = request.doMute
                                 }
-                            else
+                            } else {
                                 MuteVideoIq().apply {
                                     actor = request.iq.from
                                     type = IQ.Type.set
                                     to = request.jidToMute
                                     mute = request.doMute
                                 }
+                            }
                         )
                     }
                 }
@@ -137,7 +139,7 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                 )
             }
         } catch (e: Exception) {
-            logger.warn("Failed to handle mute request: ${request.iq.toXML()}", e)
+            logger.warn("Failed to handle mute request: ${request.iq.toStringOpt()}", e)
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
             )

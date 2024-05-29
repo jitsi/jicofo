@@ -23,7 +23,6 @@ import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
 import org.jitsi.jicofo.jibri.JibriSession
 import org.jitsi.jicofo.jibri.JibriStats
-import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -40,6 +39,7 @@ import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Level
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
 
 /**
  * Manages the set of [JitsiMeetConference]s in this instance.
@@ -55,9 +55,6 @@ class FocusManager(
 
     val logger = createLogger()
 
-    /** The thread that expires [JitsiMeetConference]s. */
-    private val expireThread = FocusExpireThread()
-
     /**
      * Jitsi Meet conferences mapped by MUC room names.
      *
@@ -67,14 +64,6 @@ class FocusManager(
      * [.conferencesSyncRoot] in `#getConferenceCount()` is safe.
      */
     private val conferences: MutableMap<EntityBareJid, JitsiMeetConferenceImpl> = ConcurrentHashMap()
-
-    /** TODO: move to companion object */
-    private val conferenceCount = instance.registerLongGauge(
-        "conferences",
-        "Running count of conferences (excluding internal conferences created for health checks)."
-    )
-
-    /** TODO: move to companion object */
     private val conferencesCache: MutableList<JitsiMeetConference> = CopyOnWriteArrayList()
 
     /** The object used to synchronize access to [.conferences]. */
@@ -84,8 +73,14 @@ class FocusManager(
     /** Holds the conferences that are currently pinned to a specific bridge version. */
     private val pinnedConferences: MutableMap<EntityBareJid, PinnedConference> = HashMap()
 
-    fun start() = expireThread.start()
-    fun stop() = expireThread.stop()
+    fun start() {
+        metricsContainer.metricsUpdater.addUpdateTask { updateMetrics() }
+    }
+
+    /**
+     * Whether there are any breakout conferences whose main room is [jid].
+     */
+    fun hasBreakoutRooms(jid: EntityBareJid) = conferences.values.any { it.mainRoomJid == jid }
 
     /**
      * @return <tt>true</tt> if conference focus is in the room and ready to handle session participants.
@@ -144,7 +139,7 @@ class FocusManager(
             conferencesCache.add(conference)
         }
         if (includeInStatistics) {
-            conferenceCount.inc()
+            ConferenceMetrics.conferenceCount.inc()
             ConferenceMetrics.conferencesCreated.inc()
         }
         return conference
@@ -157,7 +152,14 @@ class FocusManager(
             conferences.remove(roomName)
             conferencesCache.remove(conference)
             if (conference.includeInStatistics()) {
-                conferenceCount.dec()
+                ConferenceMetrics.conferenceCount.dec()
+            }
+
+            // If this was a breakout room, tell the main conference that it ended.
+            conference.mainRoomJid?.let { mainRoomJid ->
+                conferences[mainRoomJid]?.let {
+                    TaskPools.ioPool.submit { it.breakoutConferenceEnded() }
+                }
             }
 
             // It is not clear whether the code below necessarily needs to hold the lock or not.
@@ -204,11 +206,19 @@ class FocusManager(
         // The sum of squares of conference sizes.
         var endpointPairs = 0
         val jibriSessions: MutableSet<JibriSession> = HashSet()
+        var conferencesWithVisitors = 0
+        var visitors = 0L
+
         for (conference in getConferences()) {
             if (!conference.includeInStatistics()) {
                 continue
             }
             var confSize = conference.participantCount
+            val conferenceVisitors = conference.visitorCount
+            visitors += conferenceVisitors
+            if (conferenceVisitors > 0) {
+                conferencesWithVisitors++
+            }
             // getParticipantCount only includes endpoints with allocated media
             // channels, so if a single participant is waiting in a meeting
             // they wouldn't be counted.  In stats, calling this a conference
@@ -231,6 +241,8 @@ class FocusManager(
         ConferenceMetrics.currentParticipants.set(numParticipants.toLong())
         ConferenceMetrics.conferenceSizes = conferenceSizes
         ConferenceMetrics.participantPairs.set(endpointPairs.toLong())
+        ConferenceMetrics.conferencesWithVisitors.set(conferencesWithVisitors.toLong())
+        ConferenceMetrics.currentVisitors.set(visitors.toLong())
 
         JibriStats.liveStreamingActive.set(
             jibriSessions.count { it.jibriType == JibriSession.Type.LIVE_STREAMING && it.isActive }.toLong()
@@ -245,20 +257,18 @@ class FocusManager(
 
     // We want to avoid exposing unnecessary hierarchy levels in the stats,
     // so we'll merge stats from different "child" objects here.
-    val stats: JSONObject
+    val stats: OrderedJsonObject
         get() {
-            updateMetrics()
-
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            val stats = JSONObject()
+            val stats = OrderedJsonObject()
             stats["total_participants"] = ConferenceMetrics.participants.get()
-            stats["total_participants_no_multi_stream"] = ConferenceMetrics.participantsNoMultiStream.get()
-            stats["total_participants_no_source_name"] = ConferenceMetrics.participantsNoSourceName.get()
             stats["total_conferences_created"] = ConferenceMetrics.conferencesCreated.get()
-            stats["conferences"] = conferenceCount.get()
+            stats["conferences"] = ConferenceMetrics.conferenceCount.get()
+            stats["conferences_with_visitors"] = ConferenceMetrics.conferencesWithVisitors.get()
             val bridgeFailures = JSONObject()
             bridgeFailures["participants_moved"] = ConferenceMetrics.participantsMoved.get()
+            bridgeFailures["bridges_removed"] = ConferenceMetrics.bridgesRemoved.get()
             stats["bridge_failures"] = bridgeFailures
             val participantNotifications = JSONObject()
             participantNotifications["ice_failed"] = ConferenceMetrics.participantsIceFailed.get()
@@ -266,6 +276,7 @@ class FocusManager(
             stats["participant_notifications"] = participantNotifications
             stats["largest_conference"] = ConferenceMetrics.largestConference.get()
             stats["participants"] = ConferenceMetrics.currentParticipants.get()
+            stats["visitors"] = ConferenceMetrics.currentVisitors.get()
             stats["conference_sizes"] = ConferenceMetrics.conferenceSizes.toJson()
             stats["endpoint_pairs"] = ConferenceMetrics.participantPairs.get()
             stats["jibri"] = JSONObject().apply {
@@ -291,11 +302,7 @@ class FocusManager(
     }
 
     /** Create or update the pinning for the specified conference. */
-    fun pinConference(
-        roomName: EntityBareJid,
-        jvbVersion: String,
-        duration: Duration
-    ) {
+    fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration) {
         val pc = PinnedConference(jvbVersion, duration)
         synchronized(conferencesSyncRoot) {
             val prev = pinnedConferences.remove(roomName)
@@ -348,71 +355,6 @@ class FocusManager(
             }
         }
         this["pins"] = pins
-    }
-
-    /**
-     * Takes care of stopping [JitsiMeetConference] if no participant ever joins.
-     *
-     * TODO: this would be cleaner if it maintained a list of conferences to check, with conferences firing a
-     * "participant joined" event.
-     */
-    private inner class FocusExpireThread {
-        private val timeout = ConferenceConfig.config.conferenceStartTimeout
-        private var timeoutThread: Thread? = null
-        private val sleepLock = Object()
-        private var enabled = false
-
-        fun start() {
-            check(this.timeoutThread == null)
-            val timeoutThread = Thread({ expireLoop() }, "FocusExpireThread")
-            enabled = true
-            this.timeoutThread = timeoutThread
-            timeoutThread.start()
-        }
-
-        fun stop() {
-            val timeoutThread = this.timeoutThread ?: return
-            enabled = false
-            synchronized(sleepLock) { sleepLock.notifyAll() }
-            this.timeoutThread = try {
-                if (Thread.currentThread() !== timeoutThread) {
-                    timeoutThread.join()
-                }
-                null
-            } catch (e: InterruptedException) {
-                throw RuntimeException(e)
-            }
-        }
-
-        private fun expireLoop() {
-            while (enabled) {
-                // Sleep
-                try {
-                    synchronized(sleepLock) { sleepLock.wait(5000) }
-                } catch (e: InterruptedException) {
-                    // Continue to check the enabled flag
-                    // if we're still supposed to run
-                }
-                if (!enabled) {
-                    break
-                }
-                try {
-                    val conferenceCopy = synchronized(conferencesSyncRoot) { ArrayList(conferences.values) }
-
-                    // Loop over conferences
-                    conferenceCopy.filterNot { it.hasHadAtLeastOneParticipant() }.forEach { it ->
-                        if (Duration.between(it.creationTime, Instant.now()) > timeout) {
-                            if (it.includeInStatistics()) {
-                                logger.info("Expiring $it")
-                            }
-                            it.stop()
-                        }
-                    }
-                } catch (ex: Exception) {
-                    logger.warn("Error while checking for timed out conference", ex)
-                }
-            }
-        }
     }
 
     /** Holds pinning information for one conference. */

@@ -21,7 +21,7 @@ import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
-import org.jitsi.jicofo.visitors.VisitorsConfig
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -41,7 +41,8 @@ class ConferenceIqHandler(
     val focusManager: FocusManager,
     val focusAuthJid: String,
     val authAuthority: AuthenticationAuthority?,
-    val jigasiEnabled: Boolean
+    val jigasiEnabled: Boolean,
+    val visitorsManager: VisitorsManager
 ) : XmppProvider.Listener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
@@ -82,9 +83,11 @@ class ConferenceIqHandler(
             focusJid = focusAuthJid
         }
 
-        logger.info("Focus request for room: $room")
+        logger.info("Conference request for room $room, from ${query.from}")
+        conferenceRequestCounter.inc()
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
+        if (!roomExists) newConferenceRequestCounter.inc()
 
         // Authentication logic
         val error: IQ? = processExtensions(query, room, response, roomExists)
@@ -92,9 +95,19 @@ class ConferenceIqHandler(
             return error
         }
 
+        val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        val vnode = if (VisitorsConfig.config.enabled) conference?.redirectVisitor(visitorRequested) else null
+        val vnode = if (visitorSupported && visitorsManager.enabled) {
+            conference?.redirectVisitor(visitorRequested)
+        } else {
+            null
+        }
+        if (visitorsManager.enabled && !visitorSupported) {
+            logger.info("Endpoint with no visitor support.")
+        }
+
         XmppConfig.visitors[vnode]?.jid?.let {
+            logger.info("Redirecting to $vnode")
             response.vnode = vnode
             response.focusJid = it
         } ?: run {
@@ -151,10 +164,7 @@ class ConferenceIqHandler(
             if (!roomExists) {
                 // If an associated breakout room exists and all members have left the main room, skip
                 // authentication for the main room so users can go back to it.
-                val breakoutRoomExists = focusManager.getConferences().any { conference ->
-                    conference.chatRoom?.let { it.isBreakoutRoom && room.toString() == it.mainRoom } ?: false
-                }
-                if (!breakoutRoomExists && authAuthority.getUserIdentity(query.from) == null) {
+                if (!focusManager.hasBreakoutRooms(room) && authAuthority.getUserIdentity(query.from) == null) {
                     // Error not authorized
                     return ErrorFactory.createNotAuthorizedError(query, "not authorized user domain")
                 }
@@ -167,7 +177,8 @@ class ConferenceIqHandler(
     override fun handleIQRequest(iqRequest: IQ?): IQ? {
         if (iqRequest !is ConferenceIq) {
             return IQ.createErrorResponse(
-                iqRequest, StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
+                iqRequest,
+                StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
             ).also {
                 logger.error("Received an unexpected IQ type: $iqRequest")
             }
@@ -200,5 +211,16 @@ class ConferenceIqHandler(
             logger.info("Using breakout room component at $address.")
             JidCreate.domainBareFrom(address)
         }
+    }
+
+    companion object {
+        val conferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
+            "conference_requests",
+            "Number of conference requests received."
+        )
+        val newConferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
+            "conference_requests_new",
+            "Number of conference requests received for new conferences."
+        )
     }
 }

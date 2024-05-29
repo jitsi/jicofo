@@ -166,9 +166,7 @@ data class EndpointSourceSet(
          */
         @JvmStatic
         @Throws(IllegalArgumentException::class)
-        fun fromJingle(
-            contents: List<ContentPacketExtension>
-        ): EndpointSourceSet {
+        fun fromJingle(contents: List<ContentPacketExtension>): EndpointSourceSet {
             val sources = mutableSetOf<Source>()
             val ssrcGroups = mutableSetOf<SsrcGroup>()
 
@@ -208,7 +206,6 @@ fun EndpointSourceSet.toJingle(
     contentMap: MutableMap<MediaType, ContentPacketExtension>,
     owner: String?
 ): List<ContentPacketExtension> {
-
     sources.forEach { source ->
         val content = contentMap.computeIfAbsent(source.mediaType) {
             ContentPacketExtension().apply { name = source.mediaType.toString() }
@@ -238,28 +235,24 @@ private fun ContentPacketExtension.getOrCreateRtpDescription() =
         this@getOrCreateRtpDescription.addChildExtension(this)
     }
 
-operator fun EndpointSourceSet?.plus(other: EndpointSourceSet?): EndpointSourceSet =
-    when {
-        this == null && other == null -> EndpointSourceSet.EMPTY
-        this == null -> other!!
-        other == null -> this
-        else -> EndpointSourceSet(
-            sources + other.sources,
-            ssrcGroups + other.ssrcGroups
-        )
-    }
+operator fun EndpointSourceSet?.plus(other: EndpointSourceSet?): EndpointSourceSet = when {
+    this == null && other == null -> EndpointSourceSet.EMPTY
+    this == null -> other!!
+    other == null -> this
+    else -> EndpointSourceSet(
+        sources + other.sources,
+        ssrcGroups + other.ssrcGroups
+    )
+}
 
 operator fun EndpointSourceSet.minus(other: EndpointSourceSet): EndpointSourceSet =
     EndpointSourceSet(sources - other.sources, ssrcGroups - other.ssrcGroups)
 
-operator fun EndpointSourceSet.plus(sources: Set<Source>) =
-    EndpointSourceSet(this.sources + sources, this.ssrcGroups)
+operator fun EndpointSourceSet.plus(sources: Set<Source>) = EndpointSourceSet(this.sources + sources, this.ssrcGroups)
 
-operator fun EndpointSourceSet.plus(source: Source) =
-    EndpointSourceSet(this.sources + source, this.ssrcGroups)
+operator fun EndpointSourceSet.plus(source: Source) = EndpointSourceSet(this.sources + source, this.ssrcGroups)
 
-operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) =
-    EndpointSourceSet(this.sources, this.ssrcGroups + ssrcGroup)
+operator fun EndpointSourceSet.plus(ssrcGroup: SsrcGroup) = EndpointSourceSet(this.sources, this.ssrcGroups + ssrcGroup)
 
 private fun EndpointSourceSet.doStripSimulcast(): EndpointSourceSet {
     val groupsToRemove = mutableSetOf<SsrcGroup>()

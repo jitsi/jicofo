@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.jigasi
 
 import org.jitsi.jicofo.JicofoConfig
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
@@ -71,9 +72,9 @@ open class JigasiDetector(
 
     val stats: JSONObject
         get() = JSONObject().apply {
-            this["sip_count"] = getInstanceCount { it.supportsSip() }
-            this["sip_in_graceful_shutdown_count"] = getInstanceCount { it.supportsSip() && it.isInGracefulShutdown() }
-            this["transcriber_count"] = getInstanceCount { it.supportsTranscription() }
+            this["sip_count"] = sipCount.get()
+            this["sip_in_graceful_shutdown_count"] = sipInGracefulShutdownCount.get()
+            this["transcriber_count"] = transcriberCount.get()
         }
 
     val debugState: OrderedJsonObject
@@ -89,6 +90,12 @@ open class JigasiDetector(
             }
         }
 
+    fun updateMetrics() {
+        sipCount.set(getInstanceCount { it.supportsSip() }.toLong())
+        sipInGracefulShutdownCount.set(getInstanceCount { it.supportsSip() && it.isInGracefulShutdown() }.toLong())
+        transcriberCount.set(getInstanceCount { it.supportsTranscription() }.toLong())
+    }
+
     /**
      * The companion object is necessary for the implicit call to this.createLogger() in the super constructor!
      */
@@ -101,7 +108,6 @@ open class JigasiDetector(
             localRegion: String? = null,
             transcriber: Boolean = false
         ): Jid? {
-
             val availableInstances = instances
                 .filter { !exclude.contains(it.jid) }
                 .filter { !it.isInGracefulShutdown() }
@@ -118,6 +124,19 @@ open class JigasiDetector(
 
             return availableInstances.leastLoaded()?.jid
         }
+
+        val sipCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "jigasi_sip_count",
+            "Number of jigasi instances that support SIP"
+        )
+        val sipInGracefulShutdownCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "jigasi_sip_in_graceful_shutdown_count",
+            "Number of jigasi instances that support SIP and are in graceful shutdown"
+        )
+        val transcriberCount = JicofoMetricsContainer.instance.registerLongGauge(
+            "jigasi_transcriber_count",
+            "Number of jigasi instances that support SIP"
+        )
     }
 }
 

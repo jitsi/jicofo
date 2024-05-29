@@ -34,6 +34,7 @@ import org.jivesoftware.smack.ConnectionListener
 import org.jivesoftware.smack.ReconnectionListener
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
@@ -147,6 +148,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
      * state.
      */
     fun addListener(listener: Listener) = listeners.add(listener)
+
     /** Removes the specified listener. */
     fun removeListener(listener: Listener) = listeners.remove(listener)
 
@@ -235,6 +237,9 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         val start = System.currentTimeMillis()
         val featureStrings: List<String> = try {
             discoveryManager.discoverInfo(jid)?.features?.map { it.`var` }?.toList() ?: emptyList()
+        } catch (e: SmackException.NoResponseException) {
+            logger.info("No response for disco#info, assuming default features.")
+            return Features.defaultFeatures
         } catch (e: Exception) {
             logger.warn("Failed to discover features for $jid: ${e.message}, assuming default feature set.", e)
             return Features.defaultFeatures
@@ -255,13 +260,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         val components: Set<Component> = if (discoveryManager == null) {
             logger.info("Can not discover components, no ServiceDiscoveryManager")
             emptySet()
-        } else try {
-            discoveryManager.discoverInfo(domain)?.identities
-                ?.filter { it.category == "component" }
-                ?.map { Component(it.type, it.name) }?.toSet() ?: emptySet()
-        } catch (e: Exception) {
-            logger.warn("Failed to discover info", e)
-            emptySet()
+        } else {
+            try {
+                discoveryManager.discoverInfo(domain)?.identities
+                    ?.filter { it.category == "component" }
+                    ?.map { Component(it.type, it.name) }?.toSet() ?: emptySet()
+            } catch (e: Exception) {
+                logger.warn("Failed to discover info", e)
+                emptySet()
+            }
         }
 
         this.components = components

@@ -111,6 +111,9 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { sourceInfos } returns emptySet()
                     every { statsId } returns "statsId"
                     every { region } returns "region"
+                    every { isJibri } returns false
+                    every { isJigasi } returns false
+                    every { isTranscriber } returns false
                 },
                 conference,
                 mockk(),

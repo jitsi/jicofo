@@ -103,11 +103,9 @@ class BridgeConfig private constructor() {
         }
     }
 
-    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy =
-        createClassInstance(className)
+    private fun createSelectionStrategy(className: String): BridgeSelectionStrategy = createClassInstance(className)
 
-    private fun createTopologyStrategy(className: String): TopologySelectionStrategy =
-        createClassInstance(className)
+    private fun createTopologyStrategy(className: String): TopologySelectionStrategy = createClassInstance(className)
 
     val healthChecksEnabled: Boolean by config {
         "org.jitsi.jicofo.HEALTH_CHECK_INTERVAL".from(JitsiConfig.legacyConfig)
@@ -163,6 +161,7 @@ class BridgeConfig private constructor() {
 
     companion object {
         const val BASE = "jicofo.bridge"
+
         @JvmField
         val config = BridgeConfig()
     }

@@ -26,6 +26,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -73,7 +74,7 @@ class JigasiIqHandler(
             }
         }
 
-        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toXML()}")
+        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toStringOpt()}")
         Stats.acceptedRequests.inc()
 
         TaskPools.ioPool.execute {
@@ -101,7 +102,7 @@ class JigasiIqHandler(
     ) {
         // Check if Jigasi is available
         val jigasiJid = jigasiDetector.selectSipJigasi(exclude, conferenceRegions) ?: run {
-            logger.warn("Request failed, no instances available: ${request.iq.toXML()}")
+            logger.warn("Request failed, no instances available: ${request.iq.toStringOpt()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
                     request.iq,
@@ -122,7 +123,7 @@ class JigasiIqHandler(
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
         } catch (e: SmackException.NotConnectedException) {
-            logger.error("Request failed,  XMPP not connected: ${request.iq.toXML()}")
+            logger.error("Request failed,  XMPP not connected: ${request.iq.toStringOpt()}")
             stats.xmppNotConnected()
             return
         }
@@ -133,7 +134,7 @@ class JigasiIqHandler(
                     logger.warn("Jigasi instance timed out: $jigasiJid")
                     Stats.singleInstanceTimeouts.inc()
                 } else {
-                    logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toXML()}")
+                    logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toStringOpt()}")
                     Stats.singleInstanceErrors.inc()
                 }
 
@@ -176,8 +177,10 @@ class JigasiIqHandler(
     class Stats {
         /** User requests which failed due to no jigasi instances being available. */
         private val requestsFailedNoInstanceAvailable = AtomicInteger()
+
         /** User requests which failed due to the jigasi XMPP connection not being connected. */
         private val requestsFailedXmppNotConnected = AtomicInteger()
+
         /** User requests which failed because all jigasi instances (up to the max retry count) failed. */
         private val requestsFailedAllInstancesFailed = AtomicInteger()
 
@@ -191,25 +194,25 @@ class JigasiIqHandler(
         }
 
         companion object {
-            private const val prefix = "jigasi_iq_handler"
+            private const val PREFIX = "jigasi_iq_handler"
             val rejectedRequests = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_rejected_requests",
+                "${PREFIX}_rejected_requests",
                 "User requests which were rejected (e.g. not authorized, bad request)."
             )
             val acceptedRequests = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_accepted_requests",
+                "${PREFIX}_accepted_requests",
                 "User requests which were accepted."
             )
             val retries = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_retries",
+                "${PREFIX}_retries",
                 "Requests retried with a different jigasi instance."
             )
             val singleInstanceErrors = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_instance_errors",
+                "${PREFIX}_instance_errors",
                 "Errors received from jigasi instances."
             )
             val singleInstanceTimeouts = JicofoMetricsContainer.instance.registerCounter(
-                "${prefix}_instance_timeouts",
+                "${PREFIX}_instance_timeouts",
                 "Timeouts for requests sent to jigasi instances."
             )
 

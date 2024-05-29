@@ -46,14 +46,24 @@ interface ChatRoom {
     /** The size of [members], exposed separately for performance (avoid creating a new list just to get the count) */
     val memberCount: Int
 
-    /** Whether this [ChatRoom] is a breakout room. */
-    val isBreakoutRoom: Boolean
+    /**
+     *  The number of [members] with role VISITOR. Exposed separately for performance (avoid creating a new list
+     *  just to get the count).  Also includes visitors who have joined within the last vnode-join-latency-interval,
+     *  as reported by [visitorInvited]. */
+    val visitorCount: Int
 
-    /** The JID of the main room associated with this [ChatRoom], if this [ChatRoom] is a breakout room (else null) */
-    val mainRoom: String?
+    /** Whether a lobby is enabled for the room. Read from the MUC config form. */
+    val lobbyEnabled: Boolean
 
-    /** Get the unique meeting ID associated by this room (set by the MUC service). */
-    val meetingId: String?
+    /** Whether the visitors feature is enabled for the room. Read from the MUC config form. */
+    val visitorsEnabled: Boolean?
+
+    /** The number of participants in the room after which new endpoints should be redirected to visitors.
+     *  Read from the MUC config form. */
+    val participantsSoftLimit: Int?
+
+    /** Whether the room is configured to require transcription. */
+    val transcriptionRequested: Boolean
 
     val debugState: OrderedJsonObject
 
@@ -63,9 +73,12 @@ interface ChatRoom {
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
 
-    /** Joins this chat room with the preconfigured nickname. */
+    /**
+     * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after
+     * joining.
+     */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    fun join()
+    fun join(): ChatRoomInfo
 
     /** Leave the chat room. */
     fun leave()
@@ -90,8 +103,10 @@ interface ChatRoom {
 
     /** Add all of [extensions] to our presence. */
     fun addPresenceExtensions(extensions: Collection<ExtensionElement>)
+
     /** Add [extension] to our presence, no-op if we already have an extension with the same QName. */
     fun addPresenceExtensionIfMissing(extension: ExtensionElement)
+
     /** Remove presence extensions matching the predicate [pred]. */
     fun removePresenceExtensions(pred: (ExtensionElement) -> Boolean)
 
@@ -121,6 +136,24 @@ interface ChatRoom {
     /** Updates the list of members that are allowed to unmute audio or video. */
     fun setAvModerationWhitelist(mediaType: MediaType, whitelist: List<String>)
 
+    /** Update the value in the room_metadata structure */
+    fun setRoomMetadata(roomMetadata: RoomMetadata)
+
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
+
+    /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
+    fun reloadConfiguration()
+
+    /** Notify the chatroom that a visitor has been redirected to this room.
+     */
+    fun visitorInvited()
 }
+
+/** Holds fields read from the MUC config form at join time, which never change. */
+data class ChatRoomInfo(
+    /** The meeting ID, or null if none is set. */
+    val meetingId: String?,
+    /** The JID of the main room if this is a breakout room, otherwise null. */
+    val mainRoomJid: EntityBareJid?
+)

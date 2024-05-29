@@ -32,16 +32,21 @@ class TaskPools {
         @JvmStatic
         var ioPool: ExecutorService = defaultIoPool
 
-        fun resetIoPool() { ioPool = defaultIoPool }
+        fun resetIoPool() {
+            ioPool = defaultIoPool
+        }
 
         private val defaultScheduledPool: ScheduledExecutorService = Executors.newScheduledThreadPool(
-            3, CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
+            3,
+            CustomizableThreadFactory("Jicofo Global Scheduled Pool", true)
         )
 
         @JvmStatic
         var scheduledPool: ScheduledExecutorService = defaultScheduledPool
 
-        fun resetScheduledPool() { scheduledPool = defaultScheduledPool }
+        fun resetScheduledPool() {
+            scheduledPool = defaultScheduledPool
+        }
 
         @JvmStatic
         fun shutdown() {

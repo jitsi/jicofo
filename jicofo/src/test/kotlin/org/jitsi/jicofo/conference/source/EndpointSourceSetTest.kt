@@ -37,7 +37,7 @@ class EndpointSourceSetTest : ShouldSpec() {
     init {
         context("From XML") {
             // Assume serializing works correctly -- it's tested below.
-            val contents = sourceSet.toJingle(jid1)
+            val contents = sourceSet.toJingle(JID_1)
             val parsed = EndpointSourceSet.fromJingle(contents)
             // Use the provided ownerJid, not the one encoded in XML.
             parsed shouldBe sourceSet
@@ -128,8 +128,8 @@ class EndpointSourceSetTest : ShouldSpec() {
     }
 }
 
-const val jid1 = "jid1"
-const val jid2 = "jid2"
+const val JID_1 = "jid1"
+const val JID_2 = "jid2"
 val s1 = Source(1, VIDEO)
 val s2 = Source(2, VIDEO)
 val s3 = Source(3, VIDEO)

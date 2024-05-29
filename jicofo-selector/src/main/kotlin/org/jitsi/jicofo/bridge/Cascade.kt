@@ -51,8 +51,7 @@ data class CascadeRepair<N : CascadeNode<N, L>, L : CascadeLink>(
     val meshId: String
 )
 
-fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) =
-    sessions[node.relayId] === node
+fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.containsNode(node: N) = sessions[node.relayId] === node
 
 fun <N : CascadeNode<N, L>, L : CascadeLink> N.hasMesh(meshId: String?): Boolean =
     relays.values.any { it.meshId == meshId }
@@ -110,7 +109,7 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     repairFn: (C, Set<Set<N>>) -> Set<CascadeRepair<N, L>>
 ) {
     if (!containsNode(node)) {
-        return; /* Or should this be an exception. i.e. `require`? */
+        return; // Or should this be an exception. i.e. `require`?
     }
     check(sessions[node.relayId] === node) {
         "Bridge entry for ${node.relayId} is not $node"
@@ -191,10 +190,7 @@ private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getNodesBehin
 }
 
 /* Traverse the graph from a node; for each other node, indicate the node from which it was reached. */
-fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.getPathsFrom(
-    node: N,
-    pathFn: (C, N, N?) -> Unit
-) {
+fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.getPathsFrom(node: N, pathFn: (C, N, N?) -> Unit) {
     pathFn(this, node, null)
     node.relays.values.forEach {
         getPathsFrom(it, node, pathFn)
@@ -317,10 +313,7 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(node:
     return Int.MAX_VALUE
 }
 
-private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(
-    link: L,
-    pred: (N) -> Boolean
-): Int {
+private fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.getDistanceFrom(link: L, pred: (N) -> Boolean): Int {
     val node = checkNotNull(sessions[link.relayId])
 
     if (pred(node)) return 0

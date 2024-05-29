@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2015-Present 8x8, Inc.
+ * Copyright @ 2023 - present 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.conference;
+package org.jitsi.jicofo.metrics
 
-public class UnsupportedFeatureConfigurationException
-    extends Exception
-{
-    public UnsupportedFeatureConfigurationException(String msg)
-    {
-        super(msg);
+import java.lang.management.ManagementFactory
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
+
+class GlobalMetrics {
+    companion object {
+        @JvmField
+        val threadsMetrics = metricsContainer.registerLongGauge(
+            "threads",
+            "The current number of JVM threads"
+        )
+
+        fun update() {
+            threadsMetrics.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
+        }
     }
 }

@@ -18,7 +18,9 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
+import org.jitsi.jicofo.util.PendingCount
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
@@ -29,6 +31,7 @@ import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.observableWhenChanged
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -40,6 +43,7 @@ import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
+import org.jivesoftware.smackx.muc.MucConfigFormManager
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -49,6 +53,7 @@ import org.jivesoftware.smackx.muc.packet.MUCAdmin
 import org.jivesoftware.smackx.muc.packet.MUCInitialPresence
 import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
+import org.jivesoftware.smackx.xdata.form.Form
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -70,16 +75,32 @@ class ChatRoomImpl(
         addContext("room", roomJid.toString())
     }
 
+    /**
+     * Keep track of the recently added visitors.
+     */
+    private val pendingVisitorsCounter = PendingCount(
+        JicofoConfig.config.vnodeJoinLatencyInterval
+    )
+
+    override fun visitorInvited() {
+        pendingVisitorsCounter.eventPending()
+    }
+
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+    private var visitorMemberCount: Int = 0
+    override val visitorCount: Int
+        get() = synchronized(membersMap) { visitorMemberCount } +
+            pendingVisitorsCounter.getCount().toInt()
 
     /** Stores our last MUC presence packet for future update. */
     private var lastPresenceSent: PresenceBuilder? = null
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
+
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
         // The initial presence sent by smack contains an empty "x"
@@ -111,19 +132,40 @@ class ChatRoomImpl(
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
 
-    /** The value of the "meetingId" field from the MUC form, if present. */
-    override var meetingId: String? = null
-        private set
+    override var lobbyEnabled: Boolean = false
+        private set(value) {
+            if (value != field) {
+                logger.info("Lobby is now ${if (value) "enabled" else "disabled"}.")
+                field = value
+            }
+        }
 
-    /** The value of the "isbreakout" field from the MUC form, if present. */
-    override var isBreakoutRoom = false
-        private set
+    override var visitorsEnabled: Boolean? = null
+        private set(value) {
+            if (value != field) {
+                logger.info("Visitors is now: $value")
+                field = value
+            }
+        }
 
-    /** The value of "breakout_main_room" field from the MUC form, if present. */
-    override var mainRoom: String? = null
-        private set
+    override var participantsSoftLimit: Int? = null
+        private set(value) {
+            if (value != field) {
+                logger.info("ParticipantsSoftLimit is now $value.")
+                field = value
+            }
+        }
 
-    private val avModerationByMediaType = mutableMapOf<MediaType, AvModerationForMediaType>()
+    override var transcriptionRequested: Boolean = false
+        private set(value) {
+            if (value != field) {
+                logger.info("transcriptionRequested is now $value.")
+                field = value
+                eventEmitter.fireEvent { transcriptionRequestedChanged(value) }
+            }
+        }
+
+    private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
     private val eventEmitter: EventEmitter<ChatRoomListener> = SyncEventEmitter()
@@ -140,26 +182,25 @@ class ChatRoomImpl(
         eventEmitter.fireEvent { numVideoSendersChanged(newValue) }
     }
 
-    override val debugState = OrderedJsonObject().apply {
-        this["room_jid"] = roomJid.toString()
-        this["my_occupant_jid"] = myOccupantJid.toString()
-        val membersJson = OrderedJsonObject()
-        membersMap.values.forEach {
-            membersJson[it.name] = it.debugState
+    override val debugState: OrderedJsonObject
+        get() = OrderedJsonObject().apply {
+            this["room_jid"] = roomJid.toString()
+            this["my_occupant_jid"] = myOccupantJid.toString()
+            val membersJson = OrderedJsonObject()
+            membersMap.values.forEach {
+                membersJson[it.name] = it.debugState
+            }
+            this["members"] = membersJson
+            this["audio_senders_count"] = audioSendersCount
+            this["video_senders_count"] = videoSendersCount
+            this["av_moderation"] = OrderedJsonObject().apply {
+                avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
+            }
         }
-        this["members"] = membersJson
-        this["meeting_id"] = meetingId.toString()
-        this["is_breakout_room"] = isBreakoutRoom
-        this["main_room"] = mainRoom.toString()
-        this["audio_senders_count"] = audioSendersCount
-        this["video_senders_count"] = videoSendersCount
-        this["av_moderation"] = OrderedJsonObject().apply {
-            avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
-        }
-    }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ChatRoomListener) = eventEmitter.removeHandler(listener)
+
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
 
@@ -183,10 +224,10 @@ class ChatRoomImpl(
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    override fun join() {
+    override fun join(): ChatRoomInfo {
         // TODO: clean-up the way we figure out what nickname to use.
         resetState()
-        joinAs(xmppProvider.config.username)
+        return joinAs(xmppProvider.config.username)
     }
 
     /**
@@ -196,52 +237,80 @@ class ChatRoomImpl(
     private fun resetState() {
         synchronized(membersMap) {
             if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members.")
+                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
                 membersMap.clear()
+                visitorMemberCount = 0
+                audioSendersCount = 0
+                videoSendersCount = 0
             }
         }
         synchronized(this) {
             lastPresenceSent = null
-            meetingId = null
             logger.addContext("meeting_id", "")
-            isBreakoutRoom = false
-            mainRoom = null
             avModerationByMediaType.values.forEach { it.reset() }
         }
     }
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
-    private fun joinAs(nickname: Resourcepart) {
+    private fun joinAs(nickname: Resourcepart): ChatRoomInfo {
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
-        if (muc.isJoined) {
-            muc.leave()
+        synchronized(muc) {
+            if (muc.isJoined) {
+                muc.leave()
+            }
         }
+
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
         val config = muc.configurationForm
+        parseConfigForm(config)
 
-        // Read breakout rooms options
-        val isBreakoutRoomField = config.getField(MucConfigFields.IS_BREAKOUT_ROOM)
-        if (isBreakoutRoomField != null) {
-            isBreakoutRoom = isBreakoutRoomField.firstValue.toBoolean()
-            if (isBreakoutRoom) {
-                mainRoom = config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
-            }
-        }
-
-        // Read meetingId
-        val meetingIdField = config.getField(MucConfigFields.MEETING_ID)
-        if (meetingIdField != null) {
-            meetingId = meetingIdField.firstValue
-            if (meetingId != null) {
-                logger.addContext("meeting_id", meetingId)
-            }
+        // We only read the initial metadata from the config form. Setting room metadata after a config form reload may
+        // race with updates coming via [RoomMetadataHandler].
+        config.getRoomMetadata()?.let {
+            setRoomMetadata(it)
         }
 
         // Make the room non-anonymous, so that others can recognize focus JID
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
         muc.sendConfigurationForm(answer)
+
+        // Read the breakout room and meetingId.
+        val mainRoomStr = if (config.getField(MucConfigFields.IS_BREAKOUT_ROOM)?.firstValue?.toBoolean() == true) {
+            config.getField(MucConfigFields.MAIN_ROOM)?.firstValue
+        } else {
+            null
+        }
+
+        return ChatRoomInfo(
+            meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
+            mainRoomJid = if (mainRoomStr == null) null else JidCreate.entityBareFrom(mainRoomStr)
+        )
+    }
+
+    override fun setRoomMetadata(roomMetadata: RoomMetadata) {
+        transcriptionRequested = roomMetadata.metadata?.recording?.isTranscribingEnabled == true
+    }
+
+    /** Read the fields we care about from [configForm] and update local state. */
+    private fun parseConfigForm(configForm: Form) {
+        lobbyEnabled =
+            configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
+        visitorsEnabled = configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
+        participantsSoftLimit = configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
+    }
+
+    private fun Form.getRoomMetadata(): RoomMetadata? {
+        getField("muc#roominfo_jitsimetadata")?.firstValue?.let {
+            try {
+                return RoomMetadata.parse(it)
+            } catch (e: Exception) {
+                logger.warn("Invalid room metadata content", e)
+                return null
+            }
+        }
+        return null
     }
 
     override fun leave() {
@@ -260,6 +329,14 @@ class ChatRoomImpl(
                 // listeners lingering around
                 if (isJoined) {
                     muc.leave()
+                } else {
+                    // If the join attempt timed out the XMPP server might have processed it and created the MUC, and
+                    // since the XMPP connection is long-lived the MUC will leak.
+                    val leavePresence = connection.stanzaFactory.buildPresenceStanza()
+                        .ofType(Presence.Type.unavailable)
+                        .to(myOccupantJid)
+                        .build()
+                    connection.sendStanza(leavePresence)
                 }
             } catch (e: Exception) {
                 // when the connection is not connected or we get NotConnectedException, this is expected (skip log)
@@ -290,7 +367,7 @@ class ChatRoomImpl(
         try {
             val reply = xmppProvider.xmppConnection.sendIqAndGetResponse(admin)
             if (reply == null || reply.type != IQ.Type.result) {
-                logger.warn("Failed to grant ownership: ${reply?.toXML() ?: "timeout"}")
+                logger.warn("Failed to grant ownership: ${reply?.toString() ?: "timeout"}")
             }
         } catch (e: SmackException.NotConnectedException) {
             logger.warn("Failed to grant ownership: XMPP disconnected")
@@ -301,29 +378,32 @@ class ChatRoomImpl(
 
     override fun setPresenceExtension(extension: ExtensionElement) {
         val presenceToSend = synchronized(this) {
-            lastPresenceSent?.let { presence ->
-                presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
-                    presence.removeExtension(existingExtension)
-                }
-                presence.addExtension(extension)
-
-                presence.build()
-            } ?: run {
+            val presence = lastPresenceSent ?: run {
                 logger.error("No presence packet obtained yet")
-                null
+                return
             }
+
+            presence.getExtensions(extension.qName).toList().forEach { existingExtension ->
+                presence.removeExtension(existingExtension)
+            }
+            presence.addExtension(extension)
+
+            presence.build()
         }
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
     }
 
     override fun addPresenceExtensionIfMissing(extension: ExtensionElement) {
         val presenceToSend = synchronized(this) {
-            lastPresenceSent?.let { presence ->
-                if (presence.extensions?.any { it.qName == extension.qName } == true) {
-                    null
-                } else {
-                    presence.addExtension(extension).build()
-                }
+            val presence = lastPresenceSent ?: run {
+                logger.error("No presence packet obtained yet")
+                return
+            }
+
+            if (presence.extensions?.any { it.qName == extension.qName } == true) {
+                null
+            } else {
+                presence.addExtension(extension).build()
             }
         }
         presenceToSend?.let { xmppProvider.xmppConnection.tryToSendStanza(it) }
@@ -350,22 +430,21 @@ class ChatRoomImpl(
         toRemove: Collection<ExtensionElement> = emptyList(),
         toAdd: Collection<ExtensionElement> = emptyList()
     ): Presence? = synchronized(this) {
-        lastPresenceSent?.let { presence ->
-            var changed = false
-            toRemove.forEach {
-                presence.removeExtension(it)
-                // We don't have a good way to check if it was actually removed.
-                changed = true
-            }
-            toAdd.forEach {
-                presence.addExtension(it)
-                changed = true
-            }
-            if (changed) presence.build() else null
-        } ?: run {
+        val presence = lastPresenceSent ?: run {
             logger.error("No presence packet obtained yet")
-            null
+            return null
         }
+        var changed = false
+        toRemove.forEach {
+            presence.removeExtension(it)
+            // We don't have a good way to check if it was actually removed.
+            changed = true
+        }
+        toAdd.forEach {
+            presence.addExtension(it)
+            changed = true
+        }
+        return if (changed) presence.build() else null
     }
 
     /**
@@ -382,6 +461,10 @@ class ChatRoomImpl(
             membersMap[jid] = newMember
             if (!newMember.isAudioMuted) audioSendersCount++
             if (!newMember.isVideoMuted) videoSendersCount++
+            if (newMember.role == MemberRole.VISITOR) {
+                pendingVisitorsCounter.eventOccurred()
+                visitorMemberCount++
+            }
             return newMember
         }
     }
@@ -480,15 +563,15 @@ class ChatRoomImpl(
      */
     override fun processPresence(presence: Presence?) {
         if (presence == null || presence.error != null) {
-            logger.warn("Unable to handle packet: ${presence?.toXML()}")
+            logger.warn("Unable to handle packet: ${presence?.toXML()?.toStringOpt()}")
             return
         }
-        logger.trace { "Presence received ${presence.toXML()}" }
+        logger.trace { "Presence received ${presence.toXML().toStringOpt()}" }
 
         // Should never happen, but log if something is broken
         val myOccupantJid = this.myOccupantJid
         if (myOccupantJid == null) {
-            logger.error("Processing presence when myOccupantJid is not set: ${presence.toXML()}")
+            logger.error("Processing presence when myOccupantJid is not set: ${presence.toXML().toStringOpt()}")
         }
         if (myOccupantJid != null && myOccupantJid.equals(presence.from)) {
             processOwnPresence(presence)
@@ -497,15 +580,25 @@ class ChatRoomImpl(
         }
     }
 
+    override fun reloadConfiguration() {
+        if (muc.isJoined) {
+            // Request the form from the MUC service.
+            val config = muc.configurationForm
+            parseConfigForm(config)
+        }
+    }
+
     private object MucConfigFields {
         const val IS_BREAKOUT_ROOM = "muc#roominfo_isbreakout"
         const val MAIN_ROOM = "muc#roominfo_breakout_main_room"
         const val MEETING_ID = "muc#roominfo_meetingId"
         const val WHOIS = "muc#roomconfig_whois"
+        const val PARTICIPANTS_SOFT_LIMIT = "muc#roominfo_participantsSoftLimit"
+        const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
     }
 
     internal inner class MemberListener : ParticipantStatusListener {
-        override fun joined(mucJid: EntityFullJid) {
+        override fun joined(mucJid: EntityFullJid?) {
             // When a new member joins, Smack seems to fire ParticipantStatusListener#joined and
             // PresenceListener#processPresence in a non-deterministic order.
 
@@ -516,7 +609,7 @@ class ChatRoomImpl(
             logger.debug { "Ignore a member joined event for $mucJid" }
         }
 
-        private fun removeMember(occupantJid: EntityFullJid): ChatRoomMemberImpl? {
+        private fun removeMember(occupantJid: EntityFullJid?): ChatRoomMemberImpl? {
             synchronized(membersMap) {
                 val removed = membersMap.remove(occupantJid)
                 if (removed == null) {
@@ -524,6 +617,9 @@ class ChatRoomImpl(
                 } else {
                     if (!removed.isAudioMuted) audioSendersCount--
                     if (!removed.isVideoMuted) videoSendersCount--
+                    if (removed.role == MemberRole.VISITOR) {
+                        visitorMemberCount--
+                    }
                 }
                 return removed
             }
@@ -532,7 +628,7 @@ class ChatRoomImpl(
         /**
          * This needs to be prepared to run twice for the same member.
          */
-        override fun left(occupantJid: EntityFullJid) {
+        override fun left(occupantJid: EntityFullJid?) {
             logger.debug { "Left $occupantJid room: $roomJid" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
@@ -540,7 +636,7 @@ class ChatRoomImpl(
                 ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
 
-        override fun kicked(occupantJid: EntityFullJid, actor: Jid, reason: String) {
+        override fun kicked(occupantJid: EntityFullJid?, actor: Jid?, reason: String?) {
             logger.debug { "Kicked: $occupantJid, $actor, $reason" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
@@ -548,7 +644,7 @@ class ChatRoomImpl(
                 ?: logger.error("Kicked member does not exist: $occupantJid")
         }
 
-        override fun nicknameChanged(oldNickname: EntityFullJid, newNickname: Resourcepart) {
+        override fun nicknameChanged(oldNickname: EntityFullJid?, newNickname: Resourcepart?) {
             logger.error("nicknameChanged - NOT IMPLEMENTED")
         }
     }
@@ -557,7 +653,7 @@ class ChatRoomImpl(
      * Listens for room destroyed and pass it to the conference.
      */
     private inner class LocalUserStatusListener : UserStatusListener {
-        override fun roomDestroyed(alternateMUC: MultiUserChat, reason: String) {
+        override fun roomDestroyed(alternateMUC: MultiUserChat?, reason: String?) {
             eventEmitter.fireEvent { roomDestroyed(reason) }
         }
     }

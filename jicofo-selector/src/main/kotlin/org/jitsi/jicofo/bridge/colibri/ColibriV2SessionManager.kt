@@ -42,6 +42,7 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -142,8 +143,9 @@ class ColibriV2SessionManager(
         return participants.toSet()
     }
 
-    private fun removeParticipantInfosBySession(bySession: Map<Colibri2Session, List<ParticipantInfo>>):
-        Set<ParticipantInfo> {
+    private fun removeParticipantInfosBySession(
+        bySession: Map<Colibri2Session, List<ParticipantInfo>>
+    ): Set<ParticipantInfo> {
         var sessionRemoved = false
         val participantsRemoved = mutableSetOf<ParticipantInfo>()
         bySession.forEach { (session, sessionParticipantsToRemove) ->
@@ -163,7 +165,6 @@ class ColibriV2SessionManager(
 
                 // Visitors don't have relay endpoints.
                 if (sessionParticipantsToRemove.any { !it.visitor }) {
-
                     // If the session was removed the relays themselves are expired, so there's no need to expire
                     // individual endpoints within a relay.
                     getPathsFrom(session) { _, otherSession, from ->
@@ -183,7 +184,6 @@ class ColibriV2SessionManager(
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
-
         synchronized(syncRoot) {
             val participantsToMuteBySession = mutableMapOf<Colibri2Session, MutableSet<ParticipantInfo>>()
 
@@ -231,16 +231,16 @@ class ColibriV2SessionManager(
      * Get the [Colibri2Session] for a specific [Bridge]. If one doesn't exist, create it. Returns the session and
      * a boolean indicating whether the session was just created (true) or existed (false).
      */
-    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean):
-        Pair<Colibri2Session, Boolean> = synchronized(syncRoot) {
-        var session = sessions[bridge.relayId]
-        if (session != null) {
-            return Pair(session, false)
-        }
+    private fun getOrCreateSession(bridge: Bridge, visitor: Boolean): Pair<Colibri2Session, Boolean> =
+        synchronized(syncRoot) {
+            var session = sessions[bridge.relayId]
+            if (session != null) {
+                return Pair(session, false)
+            }
 
-        session = Colibri2Session(this, bridge, visitor, logger)
-        return Pair(session, true)
-    }
+            session = Colibri2Session(this, bridge, visitor, logger)
+            return Pair(session, true)
+        }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
@@ -321,7 +321,10 @@ class ColibriV2SessionManager(
                 session = it.first
                 created = it.second
             }
-            logger.info("Selected ${bridge.jid.resourceOrNull}, session exists: ${!created}")
+            logger.info(
+                "Selected ${bridge.jid.resourceOrNull} for $${participant.id} " +
+                    "(visitor=${participant.visitor}, session exists: ${!created})"
+            )
             if (visitor != session.visitor) {
                 // Can happen if we're out of bridges for the specific class
                 logger.warn(
@@ -360,12 +363,28 @@ class ColibriV2SessionManager(
         val response: IQ?
         try {
             response = stanzaCollector.nextResult()
-            logger.trace { "Received response: ${response?.toXML()}" }
+            logger.trace { "Received response: ${response?.toStringOpt()}" }
         } finally {
             stanzaCollector.cancel()
         }
 
         synchronized(syncRoot) {
+            // We may have already removed the session and/or participant, for example due to a previous failure. In
+            // that case we shouldn't act on this error (hence removeBridge=false).
+            if (!sessions.containsValue(session)) {
+                logger.info("Ignoring response for a session that's no longer active (bridge=${session.bridge.jid})")
+                throw ColibriAllocationFailedException(
+                    "Session no longer active (bridge=${session.bridge.jid})",
+                    removeBridge = false
+                )
+            }
+            if (!participants.containsValue(participantInfo)) {
+                logger.info("Ignoring response for a participant that's no longer active: ${participantInfo.id}")
+                throw ColibriAllocationFailedException(
+                    "Participant no longer active: ${participantInfo.id}",
+                    removeBridge = false
+                )
+            }
             try {
                 return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
@@ -394,7 +413,6 @@ class ColibriV2SessionManager(
         created: Boolean,
         participantInfo: ParticipantInfo
     ): ColibriAllocation {
-
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
         // bridge as non-operational so the caller can do the right thing:
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
@@ -421,13 +439,13 @@ class ColibriV2SessionManager(
                 Colibri2Error.ELEMENT,
                 Colibri2Error.NAMESPACE
             )?.reason
-            logger.info("Received error response: ${response.toXML()}")
+            logger.info("Received error response: ${response.toStringOpt()}")
             when (response.error?.condition) {
                 bad_request -> {
                     // Most probably we sent a bad request.
                     // If we flag the bridge as non-operational we may disrupt other conferences.
                     // If we trigger a re-invite we may cause the same error repeating.
-                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toXML()?.toString()}", false)
+                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toStringOpt()}", false)
                 }
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
@@ -446,7 +464,7 @@ class ColibriV2SessionManager(
                     if (reason == null) {
                         // An error NOT coming from the bridge.
                         throw ColibriAllocationFailedException(
-                            "XMPP error: ${response.error?.toXML()}",
+                            "XMPP error: ${response.error?.toStringOpt()}",
                             true
                         )
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
@@ -459,7 +477,7 @@ class ColibriV2SessionManager(
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We remove the bridge from the conference (expiring it) and re-invite the participants.
-                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toXML()}", true)
+                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toStringOpt()}", true)
                     }
                 }
                 service_unavailable -> {
@@ -475,7 +493,7 @@ class ColibriV2SessionManager(
                 }
                 else -> {
                     session.bridge.isOperational = false
-                    throw ColibriAllocationFailedException("Error: ${response.error?.toXML()}", true)
+                    throw ColibriAllocationFailedException("Error: ${response.error?.toStringOpt()}", true)
                 }
             }
         }
@@ -515,6 +533,16 @@ class ColibriV2SessionManager(
         }
     }
 
+    internal fun endpointFailed(endpointId: String) {
+        val participantInfo = participants[endpointId]
+        if (participantInfo != null) {
+            remove(participantInfo)
+            eventEmitter.fireEvent { endpointRemoved(participantInfo.id) }
+        } else {
+            logger.error("Cannot find endpointFailed by $endpointId.")
+        }
+    }
+
     override fun updateParticipant(
         participantId: String,
         transport: IceUdpTransportPacketExtension?,
@@ -540,7 +568,7 @@ class ColibriV2SessionManager(
                 getPathsFrom(participantInfo.session) { _, otherSession, from ->
                     if (from != null) {
                         // We make sure that relayId is not null when there are multiple sessions.
-                        otherSession.updateRemoteParticipant(participantInfo, participantInfo.session.relayId!!, false)
+                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, false)
                     }
                 }
             }
@@ -594,7 +622,7 @@ class ColibriV2SessionManager(
         relayId: String
     ) {
         logger.info("Received transport from $session for relay $relayId")
-        logger.debug { "Received transport from $session for relay $relayId: ${transport.toXML()}" }
+        logger.debug { "Received transport from $session for relay $relayId: ${transport.toStringOpt()}" }
         synchronized(syncRoot) {
             // It's possible a new session was started for the same bridge.
             if (!sessions.containsKey(session.bridge.relayId) || sessions[session.bridge.relayId] != session) {
