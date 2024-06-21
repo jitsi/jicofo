@@ -144,7 +144,7 @@ public class JvbDoctor
         private PeriodicHealthCheckTask(Runnable task, long healthCheckInterval)
         {
             innerTask = task;
-            future = TaskPools.getScheduledPool().scheduleAtFixedRate(
+            future = TaskPools.getScheduledPool().scheduleWithFixedDelay(
                 () -> innerFuture = TaskPools.getIoPool().submit(runInner),
                 healthCheckInterval,
                 healthCheckInterval,
