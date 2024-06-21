@@ -116,7 +116,7 @@ public class JvbDoctor
             return;
         }
 
-        Runnable task = config.getUsePresenceForHealth()
+        AbstractHealthCheckTask task = config.getUsePresenceForHealth()
                 ? new HealthCheckPresenceTask(bridge)
                 : new HealthCheckTask(bridge);
 
@@ -135,20 +135,18 @@ public class JvbDoctor
 
     private static class PeriodicHealthCheckTask
     {
-        private Runnable innerTask;
+        private AbstractHealthCheckTask innerTask;
 
-        private final ScheduledFuture<?> future;
+        private ScheduledFuture<?> future;
         private Future<?> innerFuture;
         private final Object lock = new Object();
+        private final long healthCheckInterval;
 
-        private PeriodicHealthCheckTask(Runnable task, long healthCheckInterval)
+        private PeriodicHealthCheckTask(AbstractHealthCheckTask task, long interval)
         {
             innerTask = task;
-            future = TaskPools.getScheduledPool().scheduleAtFixedRate(
-                () -> innerFuture = TaskPools.getIoPool().submit(runInner),
-                healthCheckInterval,
-                healthCheckInterval,
-                TimeUnit.MILLISECONDS);
+            healthCheckInterval = interval;
+            reschedule();
         }
 
         private final Runnable runInner = () -> {
@@ -156,7 +154,19 @@ public class JvbDoctor
             {
                 innerTask.run();
             }
+            if (!innerTask.taskInvalid())
+            {
+                reschedule();
+            }
         };
+
+        private void reschedule()
+        {
+            future = TaskPools.getScheduledPool().schedule(
+                    () -> innerFuture = TaskPools.getIoPool().submit(runInner),
+                    healthCheckInterval,
+                    TimeUnit.MILLISECONDS);
+        }
 
         private void cancel()
         {
