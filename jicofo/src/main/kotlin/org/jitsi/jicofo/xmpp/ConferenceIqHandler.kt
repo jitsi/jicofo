@@ -97,6 +97,10 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
+        if (visitorRequested && conference?.chatRoom?.visitorsLive != true) {
+            response.isReady = false
+            response.addProperty(ConferenceIq.Property("live", "false"))
+        }
         val vnode = if (visitorSupported && visitorsManager.enabled) {
             conference?.redirectVisitor(visitorRequested)
         } else {
