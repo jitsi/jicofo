@@ -147,6 +147,13 @@ class ChatRoomImpl(
                 field = value
             }
         }
+    override var visitorsLive: Boolean = false
+        private set(value) {
+            if (value != field) {
+                logger.info("VisitorsLive is now: $value")
+                field = value
+            }
+        }
 
     override var participantsSoftLimit: Int? = null
         private set(value) {
@@ -291,6 +298,7 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         transcriptionRequested = roomMetadata.metadata?.recording?.isTranscribingEnabled == true
+        visitorsLive = roomMetadata.metadata?.visitors?.live == true
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
