@@ -100,6 +100,7 @@ class ConferenceIqHandler(
         if (visitorRequested && conference?.chatRoom?.visitorsLive != true) {
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
+            return response
         }
         val vnode = if (visitorSupported && visitorsManager.enabled) {
             conference?.redirectVisitor(visitorRequested)
