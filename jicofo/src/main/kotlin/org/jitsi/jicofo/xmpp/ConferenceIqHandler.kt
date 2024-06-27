@@ -22,6 +22,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
+import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -97,7 +98,7 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        if (visitorRequested && conference?.chatRoom?.visitorsLive != true) {
+        if (visitorRequested && VisitorsConfig.config.enableLiveRoom && conference?.chatRoom?.visitorsLive != true) {
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
             return response

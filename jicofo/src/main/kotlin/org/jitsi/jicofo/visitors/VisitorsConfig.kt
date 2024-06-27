@@ -43,6 +43,11 @@ class VisitorsConfig private constructor() {
     val requireMucConfigFlag: Boolean by config {
         "jicofo.visitors.require-muc-config-flag".from(newConfig)
     }
+
+    val enableLiveRoom: Boolean by config {
+        "jicofo.visitors.enable-live-room".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = VisitorsConfig()
