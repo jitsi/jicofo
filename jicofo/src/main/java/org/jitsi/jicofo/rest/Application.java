@@ -17,13 +17,9 @@ package org.jitsi.jicofo.rest;
 
 import org.glassfish.hk2.utilities.binding.*;
 import org.glassfish.jersey.server.*;
-import org.jetbrains.annotations.*;
-import org.jitsi.jicofo.health.*;
-import org.jitsi.jicofo.metrics.*;
-import org.jitsi.rest.prometheus.*;
-import org.jitsi.utils.version.*;
 
 import java.time.*;
+import java.util.*;
 
 /**
  * Adds the configuration for the REST web endpoints.
@@ -33,9 +29,7 @@ public class Application
 {
     protected final Clock clock = Clock.systemUTC();
 
-    public Application(@NotNull Version version,
-                       JicofoHealthChecker healthChecker,
-                       ConferenceRequest conferenceRequest)
+    public Application(List<Object> components)
     {
         register(new AbstractBinder()
         {
@@ -47,21 +41,6 @@ public class Application
         });
         packages("org.jitsi.jicofo.rest");
 
-        if (healthChecker != null)
-        {
-            register(new org.jitsi.rest.Health(healthChecker));
-        }
-
-        register(new org.jitsi.rest.Version(version));
-
-        if (RestConfig.config.getEnablePrometheus())
-        {
-            register(new Prometheus(JicofoMetricsContainer.getInstance()));
-        }
-
-        if (conferenceRequest != null)
-        {
-            register(conferenceRequest);
-        }
+        components.forEach(this::register);
     }
 }
