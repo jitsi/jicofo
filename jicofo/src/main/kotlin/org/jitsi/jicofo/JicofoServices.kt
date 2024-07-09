@@ -44,7 +44,9 @@ import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
+import org.jitsi.rest.Version
 import org.jitsi.rest.createServer
+import org.jitsi.rest.prometheus.Prometheus
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -145,12 +147,18 @@ class JicofoServices {
         jettyServer = if (RestConfig.config.enabled) {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
-                CurrentVersionImpl.VERSION,
-                healthChecker,
-                if (RestConfig.config.enableConferenceRequest) {
-                    ConferenceRequest(xmppServices.conferenceIqHandler)
-                } else {
-                    null
+                buildList
+                {
+                    healthChecker?.let {
+                        add(org.jitsi.rest.Health(it))
+                    }
+                    add(Version(CurrentVersionImpl.VERSION))
+                    if (RestConfig.config.enableConferenceRequest) {
+                        add(ConferenceRequest(xmppServices.conferenceIqHandler))
+                    }
+                    if (RestConfig.config.enablePrometheus) {
+                        add(Prometheus(JicofoMetricsContainer.instance))
+                    }
                 }
             )
             createServer(RestConfig.config.httpServerConfig).also {
