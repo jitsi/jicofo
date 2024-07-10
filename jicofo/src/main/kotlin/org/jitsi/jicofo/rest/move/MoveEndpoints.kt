@@ -29,6 +29,7 @@ import jakarta.ws.rs.core.Response
 import org.jitsi.config.JitsiConfig
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.rest.BadRequestExceptionWithMessage
@@ -167,7 +168,14 @@ class MoveEndpoints(
             throw BadRequestExceptionWithMessage("Invalid bridge ID")
         }
 
-        return bridgeSelector.get(bridgeJid) ?: throw NotFoundExceptionWithMessage("Bridge not found")
+        bridgeSelector.get(bridgeJid)?.let { return it }
+
+        val bridgeFullJid = try {
+            JidCreate.from("${BridgeConfig.config.breweryJid}/$bridge")
+        } catch (e: Exception) {
+            throw BadRequestExceptionWithMessage("Invalid bridge ID")
+        }
+        return bridgeSelector.get(bridgeFullJid) ?: throw NotFoundExceptionWithMessage("Bridge not found")
     }
 
     private fun getConference(conferenceId: String): JitsiMeetConference {
@@ -176,7 +184,8 @@ class MoveEndpoints(
         } catch (e: Exception) {
             throw BadRequestExceptionWithMessage("Invalid conference ID")
         }
-        return conferenceStore.getConference(conferenceJid) ?: throw NotFoundExceptionWithMessage("Conference not found")
+        return conferenceStore.getConference(conferenceJid)
+            ?: throw NotFoundExceptionWithMessage("Conference not found")
     }
 
     private fun Bridge.getConferences() = conferenceStore.getAllConferences().mapNotNull { conference ->
