@@ -39,6 +39,8 @@ import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
+import org.jitsi.jicofo.rest.move.MoveEndpoints
+import org.jitsi.jicofo.rest.move.MoveEndpointsConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
@@ -147,8 +149,7 @@ class JicofoServices {
         jettyServer = if (RestConfig.config.enabled) {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
-                buildList
-                {
+                buildList {
                     healthChecker?.let {
                         add(org.jitsi.rest.Health(it))
                     }
@@ -158,6 +159,9 @@ class JicofoServices {
                     }
                     if (RestConfig.config.enablePrometheus) {
                         add(Prometheus(JicofoMetricsContainer.instance))
+                    }
+                    if (MoveEndpointsConfig.enabled) {
+                        add(MoveEndpoints(focusManager, bridgeSelector))
                     }
                 }
             )

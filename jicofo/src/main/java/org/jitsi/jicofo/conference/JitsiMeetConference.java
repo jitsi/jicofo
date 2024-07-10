@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
@@ -150,4 +151,17 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     /** Get the stats for this conference that should be exported to rtcstats. */
     @NotNull
     OrderedJsonObject getRtcstatsState();
+
+    /** Move (reinvite) and endpoint in this conference. Return true if the endpoint was moved. */
+    boolean moveEndpoint(@NotNull String endpointId, Bridge bridge);
+
+    /**
+     * Move (reinvite) a specific number of endpoints from the conference from a specific bridge.
+     * @param bridge the bridge from which to move endpoints.
+     * @param numEps the number of endpoints to move.
+     * @return the number of endpoints moved.
+     */
+    int moveEndpoints(@NotNull Bridge bridge, int numEps);
+    /** Get information about the bridges currently used by this conference. */
+    Map<Bridge, ConferenceBridgeProperties> getBridges();
 }

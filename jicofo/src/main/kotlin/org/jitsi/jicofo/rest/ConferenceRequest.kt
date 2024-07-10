@@ -82,6 +82,6 @@ class ConferenceRequest(
  * in the constructor below) is necessary.  This class exists in order to expose
  * that behavior in a more concise way
  */
-private class BadRequestExceptionWithMessage(message: String?) : BadRequestException(
+class BadRequestExceptionWithMessage(message: String?) : BadRequestException(
     Response.status(HttpServletResponse.SC_BAD_REQUEST, message).build()
 )

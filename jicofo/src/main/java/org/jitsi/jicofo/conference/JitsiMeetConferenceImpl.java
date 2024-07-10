@@ -1686,6 +1686,56 @@ public class JitsiMeetConferenceImpl
         }
     }
 
+    public Map<Bridge, ConferenceBridgeProperties> getBridges()
+    {
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        if (colibriSessionManager == null)
+        {
+            return Collections.emptyMap();
+        }
+        return colibriSessionManager.getBridges();
+    }
+
+    @Override
+    public boolean moveEndpoint(@NotNull String endpointId, Bridge bridge)
+    {
+        if (bridge != null)
+        {
+            List<String> bridgeParticipants = colibriSessionManager.getParticipants(bridge);
+            if (!bridgeParticipants.contains(endpointId))
+            {
+                logger.warn("Endpoint " + endpointId + " is not connected to bridge " + bridge.getJid());
+                return false;
+            }
+        }
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        if (colibriSessionManager == null)
+        {
+            return false;
+        }
+
+        colibriSessionManager.removeParticipant(endpointId);
+        return reInviteParticipantsById(Collections.singletonList(endpointId)) == 1;
+    }
+
+    @Override
+    public int moveEndpoints(@NotNull Bridge bridge, int numEps)
+    {
+        logger.info("Moving " + numEps + " endpoints from " + bridge.getJid());
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        if (colibriSessionManager == null)
+        {
+            return 0;
+        }
+        List<String> participantIds
+                = colibriSessionManager.getParticipants(bridge).stream().limit(numEps).collect(Collectors.toList());
+        for (String participantId : participantIds)
+        {
+            colibriSessionManager.removeParticipant(participantId);
+        }
+        return reInviteParticipantsById(participantIds);
+    }
+
     /**
      * Checks whether a request for a new endpoint to join this conference should be redirected to a visitor node.
      * @return the name of the visitor node if it should be redirected, and null otherwise.
@@ -1887,33 +1937,41 @@ public class JitsiMeetConferenceImpl
         }
     }
 
-    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
+    private int reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite)
     {
-        reInviteParticipantsById(participantIdsToReinvite, true);
+        return reInviteParticipantsById(participantIdsToReinvite, true);
     }
 
-    private void reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
+    private int reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
     {
-        if (!participantIdsToReinvite.isEmpty())
+        int n = participantIdsToReinvite.size();
+        if (n == 0)
         {
-            ConferenceMetrics.participantsMoved.addAndGet(participantIdsToReinvite.size());
-            synchronized (participantLock)
-            {
-                List<Participant> participantsToReinvite = new ArrayList<>();
-                for (Participant participant : participants.values())
-                {
-                    if (participantIdsToReinvite.contains(participant.getEndpointId()))
-                    {
-                        participantsToReinvite.add(participant);
-                    }
-                }
-                if (participantsToReinvite.size() != participantIdsToReinvite.size())
-                {
-                    logger.error("Can not re-invite all participants, no Participant object for some of them.");
-                }
-                reInviteParticipants(participantsToReinvite, updateParticipant);
-            }
+            return 0;
         }
+
+        List<Participant> participantsToReinvite = new ArrayList<>();
+        synchronized (participantLock)
+        {
+            for (Participant participant : participants.values())
+            {
+                if (participantsToReinvite.size() == n)
+                {
+                    break;
+                }
+                if (participantIdsToReinvite.contains(participant.getEndpointId()))
+                {
+                    participantsToReinvite.add(participant);
+                }
+            }
+            if (participantsToReinvite.size() != participantIdsToReinvite.size())
+            {
+                logger.error("Can not re-invite all participants, no Participant object for some of them.");
+            }
+            reInviteParticipants(participantsToReinvite, updateParticipant);
+        }
+        ConferenceMetrics.participantsMoved.addAndGet(participantsToReinvite.size());
+        return participantsToReinvite.size();
     }
 
     /**
