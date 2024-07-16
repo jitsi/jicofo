@@ -92,6 +92,11 @@ class MoveEndpoints(
      * Moves a specific number E of endpoints from a specific bridge B. If a conference is specified, only endpoints in
      * that conference are moved. Otherwise, all conferences are ordered by the number of endpoints on B, and endpoints
      * from large conferences are removed until E is reached.
+     *
+     * If a conference is specified, the endpoints are selected randomly from it. Otherwise, the endpoints are selected
+     * by ordering the list of conferences that use the bridge by the number of endpoints on this bridge. Then we select
+     * greedily from the list until we've selected the desired count. Note that this may need to be adjusted if it leads
+     * to thundering horde issues (though the recentlyAddedEndpointCount correction should prevent them).
      */
     @Path("move-endpoints")
     @GET
@@ -101,7 +106,7 @@ class MoveEndpoints(
          * Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. This is a required parameter, but without a
          * @DefaultValue jetty returns a 500 and prints a stack trace.
          */
-        @QueryParam("bridge") bridgeId: String,
+        @QueryParam("bridge") @DefaultValue("") bridgeId: String,
         /**
          * Optional conference JID, e.g room@conference.example.com. If specified only endpoints from this conference
          * will be moved.
@@ -125,6 +130,11 @@ class MoveEndpoints(
 
     /**
      * Move a specific fraction of the endpoints from a specific bridge.
+     *
+     * The endpoints to move are selected by ordering the list of conferences that use the bridge by the number of
+     * endpoints on this bridge. Then we select greedily from the list until we've selected the desired count. Note
+     * that this may need to be adjusted if it leads to thundering horde issues (though the recentlyAddedEndpointCount
+     * correction should prevent them).
      */
     @Path("move-fraction")
     @GET
@@ -134,16 +144,16 @@ class MoveEndpoints(
          * Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. This is a required parameter, but without a
          * @DefaultValue jetty returns a 500 and prints a stack trace.
          */
-        @QueryParam("bridge") bridgeId: String,
+        @QueryParam("bridge") @DefaultValue("") bridgeId: String,
         /** The fraction of endpoints to move. Defaults to 10% */
         @QueryParam("fraction") @DefaultValue("0.1") fraction: Double
     ): Result {
+        if (bridgeId.isEmpty()) throw BadRequestExceptionWithMessage("Bridge JID is missing")
         val bridge = getBridge(bridgeId)
         val bridgeConferences = bridge.getConferences()
         val totalEndpoints = bridgeConferences.sumOf { it.second }
         val numEndpoints = (fraction * totalEndpoints).roundToInt()
-        logger.info("Moving $fraction of endpoints from bridge=$bridge")
-        logger.info("Moving $numEndpoints out of $totalEndpoints")
+        logger.info("Moving $fraction of endpoints from bridge=$bridge ($numEndpoints out of $totalEndpoints)")
         val endpointsToMove = bridgeConferences.select(numEndpoints)
         return doMove(bridge, endpointsToMove)
     }
@@ -213,6 +223,8 @@ class MoveEndpointsConfig {
  * select(m, 3) should return {a: 1, b: 2}
  * select(m, 6) should return {a: 1, b: 3, c: 2}
  * select(m, 100) should return {a: 1, b: 3, c: 3}
+ *
+ * That is, it selects greedily in the order of the list.
  */
 private fun <T> List<Pair<T, Int>>.select(n: Int): Map<T, Int> {
     var moved = 0

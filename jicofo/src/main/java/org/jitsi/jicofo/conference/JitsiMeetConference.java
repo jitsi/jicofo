@@ -152,16 +152,19 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     @NotNull
     OrderedJsonObject getRtcstatsState();
 
-    /** Move (reinvite) and endpoint in this conference. Return true if the endpoint was moved. */
+    /** Move (reinvite) an endpoint in this conference. Return true if the endpoint was moved. */
     boolean moveEndpoint(@NotNull String endpointId, Bridge bridge);
 
     /**
-     * Move (reinvite) a specific number of endpoints from the conference from a specific bridge.
+     * Move (reinvite) a specific number of endpoints from the conference from a specific bridge. The implementation
+     * decides which endpoints to move.
+     *
      * @param bridge the bridge from which to move endpoints.
      * @param numEps the number of endpoints to move.
      * @return the number of endpoints moved.
      */
     int moveEndpoints(@NotNull Bridge bridge, int numEps);
+
     /** Get information about the bridges currently used by this conference. */
     Map<Bridge, ConferenceBridgeProperties> getBridges();
 }

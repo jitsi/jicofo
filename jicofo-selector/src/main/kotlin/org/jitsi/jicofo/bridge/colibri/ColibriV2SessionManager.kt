@@ -82,7 +82,7 @@ class ColibriV2SessionManager(
     }
 
     /**
-     * The colibri2 sessions that are currently active, mapped by the relay of the [Bridge] that they use.
+     * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
     override val sessions = mutableMapOf<String?, Colibri2Session>()
 
