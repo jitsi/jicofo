@@ -27,6 +27,7 @@ import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.JSONObject
 import org.jxmpp.jid.Jid
 import java.time.Clock
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
 /**
@@ -50,17 +51,16 @@ class BridgeSelector @JvmOverloads constructor(
     fun addHandler(eventHandler: EventHandler) = eventEmitter.addHandler(eventHandler)
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
 
-    /**
-     * The bridge selection strategy.
-     */
+    /** The bridge selection strategy. */
     private val bridgeSelectionStrategy = BridgeConfig.config.selectionStrategy.also {
         logger.info("Using ${it.javaClass.name}")
     }
 
-    /**
-     * The map of bridge JID to <tt>Bridge</tt>.
-     */
-    private val bridges: MutableMap<Jid, Bridge> = mutableMapOf()
+    /** The map of bridge JID to <tt>Bridge</tt>. */
+    private val bridges: MutableMap<Jid, Bridge> = ConcurrentHashMap()
+
+    /** Get the [Bridge] with a specific JID or null */
+    fun get(jid: Jid) = bridges[jid]
 
     init {
         JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }

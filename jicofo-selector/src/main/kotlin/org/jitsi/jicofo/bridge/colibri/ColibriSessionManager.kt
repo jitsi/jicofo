@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
@@ -41,8 +42,12 @@ interface ColibriSessionManager {
     val bridgeCount: Int
     val bridgeRegions: Set<String>
 
+    /** Get the list of participant IDs that are currently allocated on a specific [Bridge]. */
+    fun getParticipants(bridge: Bridge): List<String>
+
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun allocate(participant: ParticipantAllocationParameters): ColibriAllocation
+    fun getBridges(): Map<Bridge, ConferenceBridgeProperties>
 
     fun updateParticipant(
         participantId: String,

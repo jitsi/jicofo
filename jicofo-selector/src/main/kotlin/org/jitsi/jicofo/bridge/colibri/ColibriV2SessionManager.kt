@@ -82,7 +82,7 @@ class ColibriV2SessionManager(
     }
 
     /**
-     * The colibri2 sessions that are currently active, mapped by the [Bridge] that they use.
+     * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
     override val sessions = mutableMapOf<String?, Colibri2Session>()
 
@@ -92,15 +92,18 @@ class ColibriV2SessionManager(
      */
     private val participants = mutableMapOf<String, ParticipantInfo>()
 
+    override fun getParticipants(bridge: Bridge): List<String> = synchronized(syncRoot) {
+        val session = sessions[bridge.relayId] ?: return emptyList()
+        return getSessionParticipants(session).map { it.id }
+    }
+
     /**
      * Maintains the same set as [participants], but organized by their session. Needs to be kept in sync with
      * [participants] (see [add], [remove], [clear]).
      */
     private val participantsBySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
 
-    /**
-     * Protects access to [sessions], [participants] and [participantsBySession].
-     */
+    /** Protects access to [sessions], [participants] and [participantsBySession]. */
     private val syncRoot = Any()
 
     /**
@@ -243,7 +246,7 @@ class ColibriV2SessionManager(
         }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
-    private fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
+    override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
         return participantsBySession.entries
             .filter { it.key.bridge.isOperational }
             .associate {
