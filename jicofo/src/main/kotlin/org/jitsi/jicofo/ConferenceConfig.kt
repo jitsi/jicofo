@@ -38,6 +38,10 @@ class ConferenceConfig private constructor() {
     }
     fun enableAutoOwner(): Boolean = enableAutoOwner
 
+    val enableModeratorChecks: Boolean by config {
+        "jicofo.conference.enable-moderator-checks".from(newConfig)
+    }
+
     val maxSsrcsPerUser: Int by config {
         "org.jitsi.jicofo.MAX_SSRC_PER_USER".from(legacyConfig)
         "jicofo.conference.max-ssrcs-per-user".from(newConfig)

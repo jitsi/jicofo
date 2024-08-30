@@ -2138,7 +2138,12 @@ public class JitsiMeetConferenceImpl
     @Override
     public boolean acceptJigasiRequest(@NotNull Jid from)
     {
-        return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
+        if (ConferenceConfig.config.getEnableModeratorChecks())
+        {
+            return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
+        }
+
+        return true;
     }
 
     @Override

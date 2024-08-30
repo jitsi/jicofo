@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
@@ -156,9 +157,11 @@ abstract class BaseJibri internal constructor(
             return session.processJibriIqRequestFromJibri(iq)
         }
 
-        verifyModeratorRole(iq)?.let {
-            logger.warn("Ignored Jibri request from non-moderator.")
-            return IQ.createErrorResponse(iq, it)
+        if (ConferenceConfig.config.enableModeratorChecks) {
+            verifyModeratorRole(iq)?.let {
+                logger.warn("Ignored Jibri request from non-moderator.")
+                return IQ.createErrorResponse(iq, it)
+            }
         }
 
         return when (iq.action) {
