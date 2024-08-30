@@ -100,8 +100,14 @@ class JigasiIqHandler(
         retryCount: Int = 2,
         exclude: List<Jid> = emptyList()
     ) {
+        val selector = if (request.iq.destination == "jitsi_meet_transcribe") {
+            jigasiDetector::selectTranscriber
+        } else {
+            jigasiDetector::selectSipJigasi
+        }
+
         // Check if Jigasi is available
-        val jigasiJid = jigasiDetector.selectSipJigasi(exclude, conferenceRegions) ?: run {
+        val jigasiJid = selector(exclude, conferenceRegions) ?: run {
             logger.warn("Request failed, no instances available: ${request.iq.toStringOpt()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
