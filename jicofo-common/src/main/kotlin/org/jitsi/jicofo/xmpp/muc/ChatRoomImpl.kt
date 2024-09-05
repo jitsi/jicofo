@@ -163,15 +163,6 @@ class ChatRoomImpl(
             }
         }
 
-    override var transcriptionRequested: Boolean = false
-        private set(value) {
-            if (value != field) {
-                logger.info("transcriptionRequested is now $value.")
-                field = value
-                eventEmitter.fireEvent { transcriptionRequestedChanged(value) }
-            }
-        }
-
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
@@ -297,7 +288,6 @@ class ChatRoomImpl(
     }
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
-        transcriptionRequested = roomMetadata.metadata?.recording?.isTranscribingEnabled == true
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
     }
 

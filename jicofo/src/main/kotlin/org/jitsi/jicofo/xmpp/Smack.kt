@@ -45,7 +45,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.MuteIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
-import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionRequestExtension
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
@@ -109,12 +108,7 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(JitsiParticipantCodecList::class.java)
     )
 
-    // Add the extensions used for handling the inviting of transcriber
-    ProviderManager.addExtensionProvider(
-        TranscriptionRequestExtension.ELEMENT,
-        TranscriptionRequestExtension.NAMESPACE,
-        DefaultPacketExtensionProvider(TranscriptionRequestExtension::class.java)
-    )
+    // The extension used for detecting a transcriber
     ProviderManager.addExtensionProvider(
         TranscriptionStatusExtension.ELEMENT,
         TranscriptionStatusExtension.NAMESPACE,
@@ -146,11 +140,6 @@ fun registerXmppExtensions() {
     MuteIqProvider.registerMuteIqProvider()
     MuteVideoIqProvider.registerMuteVideoIqProvider()
     StartMutedProvider.registerStartMutedProvider()
-    ProviderManager.addExtensionProvider(
-        TranscriptionStatusExtension.ELEMENT,
-        TranscriptionStatusExtension.NAMESPACE,
-        DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
-    )
 
     ProviderManager.addExtensionProvider(
         AudioMutedExtension.ELEMENT,
