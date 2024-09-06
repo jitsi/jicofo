@@ -316,6 +316,13 @@ public class JitsiMeetConferenceImpl
         return mainRoomJid;
     }
 
+    @Override
+    public List<EntityBareJid> getVisitorRoomsJids()
+    {
+        return this.visitorChatRooms.values().stream().map(ChatRoom::getRoomJid)
+            .collect(Collectors.toList());
+    }
+
     /**
      * @return the colibri session manager, late init.
      */
