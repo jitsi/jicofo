@@ -62,11 +62,18 @@ class JigasiIqHandler(
                 Stats.rejectedRequests.inc()
             }
 
-        val conference = conferenceStore.getConference(conferenceJid)
-            ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
-                logger.warn("Rejected request for non-existent conference: $conferenceJid")
-                Stats.rejectedRequests.inc()
-            }
+        var conference = conferenceStore.getConference(conferenceJid)
+
+        if (conference == null) {
+            // let's search for visitor room with that jid, its maybe invite from a visitor
+            conference = conferenceStore.getAllConferences()
+                .find { c -> c.visitorRoomsJids.contains(conferenceJid) }
+        }
+
+        conference ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
+            logger.warn("Rejected request for non-existent conference: $conferenceJid")
+            Stats.rejectedRequests.inc()
+        }
 
         if (!conference.acceptJigasiRequest(request.iq.from)) {
             return RejectedWithError(request, StanzaError.Condition.forbidden).also {

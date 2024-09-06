@@ -83,7 +83,9 @@ class XmppServices(
 
     private val jigasiIqHandler = if (jigasiDetector != null) {
         JigasiIqHandler(
-            setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
+            setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection) + visitorConnections.map {
+                it.xmppConnection
+            }.toSet(),
             conferenceStore,
             jigasiDetector
         )

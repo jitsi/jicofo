@@ -49,6 +49,11 @@ public interface JitsiMeetConference extends XmppProvider.Listener
      */
     EntityBareJid getMainRoomJid();
 
+    /**
+     * @return the JIDs of the connected visitor rooms.
+     */
+    List<EntityBareJid> getVisitorRoomsJids();
+
     /** Return the number of visitors in the conference */
     long getVisitorCount();
 
