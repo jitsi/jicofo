@@ -98,11 +98,8 @@ open class JigasiDetector(
     }
 
     fun hasTranscriber(chatRoom: ChatRoom?): Boolean {
-        chatRoom?.let {
-            chatRoom.members.firstOrNull { member -> member.isTranscriber } != null
-        }
-
-        return false
+        return chatRoom?.members?.any { member -> member.isTranscriber }
+            ?: false
     }
 
     /**
