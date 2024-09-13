@@ -150,12 +150,6 @@ public class JitsiMeetConferenceImpl
      */
     private JibriSipGateway jibriSipGateway;
 
-    /**
-     * The {@link TranscriberManager} who listens for participants requesting
-     * transcription and, when necessary, dialing the transcriber instance.
-     */
-    private TranscriberManager transcriberManager;
-
     private ChatRoomRoleManager chatRoomRoleManager;
 
     /**
@@ -502,15 +496,6 @@ public class JitsiMeetConferenceImpl
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
-        transcriberManager = new TranscriberManager(
-            jicofoServices.getXmppServices().getXmppConnectionByName(
-                JigasiConfig.config.xmppConnectionName()
-            ),
-            this,
-            chatRoom,
-            jicofoServices.getXmppServices().getJigasiDetector(),
-            logger);
-
         ChatRoomInfo chatRoomInfo = chatRoom.join();
         if (chatRoomInfo.getMeetingId() == null)
         {
@@ -650,11 +635,6 @@ public class JitsiMeetConferenceImpl
         {
             chatRoom.removeListener(chatRoomRoleManager);
             chatRoomRoleManager.stop();
-        }
-        if (transcriberManager != null)
-        {
-            transcriberManager.dispose();
-            transcriberManager = null;
         }
 
         chatRoom.leave();
@@ -1545,7 +1525,6 @@ public class JitsiMeetConferenceImpl
         o.put("participants", participantsJson);
         //o.put("jibri_recorder", jibriRecorder.getDebugState());
         //o.put("jibri_sip_gateway", jibriSipGateway.getDebugState());
-        //o.put("transcriber_manager", transcriberManager.getDebugState());
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
         o.put("chat_room_role_manager", chatRoomRoleManager == null ? "null" : chatRoomRoleManager.getDebugState());
         o.put("started", started.get());
@@ -2159,7 +2138,12 @@ public class JitsiMeetConferenceImpl
     @Override
     public boolean acceptJigasiRequest(@NotNull Jid from)
     {
-        return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
+        if (ConferenceConfig.config.getEnableModeratorChecks())
+        {
+            return MemberRoleKt.hasModeratorRights(getRoleForMucJid(from));
+        }
+
+        return true;
     }
 
     @Override
@@ -2415,11 +2399,6 @@ public class JitsiMeetConferenceImpl
 
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
-        {
-        }
-
-        @Override
-        public void transcriptionRequestedChanged(boolean transcriptionRequested)
         {
         }
 

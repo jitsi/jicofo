@@ -19,21 +19,20 @@ package org.jitsi.jicofo.xmpp.muc
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
 class RoomMetadataTest : ShouldSpec() {
     init {
         context("Valid") {
-            context("With isTranscribingEnabled set") {
+            context("With visitors.live set") {
                 val parsed = RoomMetadata.parse(
                     """
                 {
                     "type": "room_metadata",
                      "metadata": {
-                        "recording": {
-                            "isTranscribingEnabled": true,
+                        "visitors": {
+                            "live": true,
                             "anotherField": 123
                         },
                         "anotherField": {}
@@ -42,9 +41,9 @@ class RoomMetadataTest : ShouldSpec() {
                     """.trimIndent()
                 )
                 parsed.shouldBeInstanceOf<RoomMetadata>()
-                parsed.metadata!!.recording!!.isTranscribingEnabled shouldBe true
+                parsed.metadata!!.visitors!!.live shouldBe true
             }
-            context("With no recording included") {
+            context("With no visitors included") {
 
                 val parsed = RoomMetadata.parse(
                     """
@@ -60,8 +59,7 @@ class RoomMetadataTest : ShouldSpec() {
                     """.trimIndent()
                 )
                 parsed.shouldBeInstanceOf<RoomMetadata>()
-                parsed.metadata.shouldNotBeNull()
-                parsed.metadata?.recording shouldBe null
+                parsed.metadata!!.visitors shouldBe null
             }
         }
         context("Invalid") {

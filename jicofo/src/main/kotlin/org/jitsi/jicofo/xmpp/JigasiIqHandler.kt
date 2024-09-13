@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
@@ -79,7 +80,7 @@ class JigasiIqHandler(
 
         TaskPools.ioPool.execute {
             try {
-                inviteJigasi(request, conference.bridgeRegions)
+                inviteJigasi(request, conference)
             } catch (e: Exception) {
                 logger.warn("Failed to invite jigasi", e)
                 request.connection.tryToSendStanza(
@@ -96,12 +97,26 @@ class JigasiIqHandler(
      */
     private fun inviteJigasi(
         request: IqRequest<DialIq>,
-        conferenceRegions: Set<String>,
+        conference: JitsiMeetConference,
         retryCount: Int = 2,
         exclude: List<Jid> = emptyList()
     ) {
+        val selector = if (request.iq.destination == "jitsi_meet_transcribe") {
+            if (jigasiDetector.hasTranscriber(conference.chatRoom)) {
+                logger.warn("Request failed, transcriber already available: ${request.iq.toStringOpt()}")
+                IQ.createErrorResponse(
+                    request.iq,
+                    StanzaError.getBuilder(StanzaError.Condition.conflict).build()
+                )
+                return
+            }
+            jigasiDetector::selectTranscriber
+        } else {
+            jigasiDetector::selectSipJigasi
+        }
+
         // Check if Jigasi is available
-        val jigasiJid = jigasiDetector.selectSipJigasi(exclude, conferenceRegions) ?: run {
+        val jigasiJid = selector(exclude, conference.bridgeRegions) ?: run {
             logger.warn("Request failed, no instances available: ${request.iq.toStringOpt()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
@@ -142,7 +157,7 @@ class JigasiIqHandler(
                     logger.info("Will retry up to $retryCount more times.")
                     Stats.retries.inc()
                     // Do not try the same instance again.
-                    inviteJigasi(request, conferenceRegions, retryCount - 1, exclude + jigasiJid)
+                    inviteJigasi(request, conference, retryCount - 1, exclude + jigasiJid)
                 } else {
                     val condition = if (responseFromJigasi == null) {
                         StanzaError.Condition.remote_server_timeout
@@ -157,6 +172,7 @@ class JigasiIqHandler(
                 }
             }
             else -> {
+                logger.info("response from jigasi: ${responseFromJigasi.toStringOpt()}")
                 // Successful response from Jigasi, forward it as the response to the client.
                 request.connection.tryToSendStanza(
                     responseFromJigasi.apply {

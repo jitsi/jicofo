@@ -21,6 +21,7 @@ import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
@@ -94,6 +95,11 @@ open class JigasiDetector(
         sipCount.set(getInstanceCount { it.supportsSip() }.toLong())
         sipInGracefulShutdownCount.set(getInstanceCount { it.supportsSip() && it.isInGracefulShutdown() }.toLong())
         transcriberCount.set(getInstanceCount { it.supportsTranscription() }.toLong())
+    }
+
+    fun hasTranscriber(chatRoom: ChatRoom?): Boolean {
+        return chatRoom?.members?.any { member -> member.isTranscriber }
+            ?: false
     }
 
     /**
