@@ -47,7 +47,6 @@ import org.jivesoftware.smackx.muc.MucConfigFormManager
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
-import org.jivesoftware.smackx.muc.ParticipantStatusListener
 import org.jivesoftware.smackx.muc.UserStatusListener
 import org.jivesoftware.smackx.muc.packet.MUCAdmin
 import org.jivesoftware.smackx.muc.packet.MUCInitialPresence
@@ -121,7 +120,6 @@ class ChatRoomImpl(
     /** Smack multi user chat backend instance. */
     private val muc: MultiUserChat =
         MultiUserChatManager.getInstanceFor(xmppProvider.xmppConnection).getMultiUserChat(this.roomJid).apply {
-            addParticipantStatusListener(memberListener)
             addUserStatusListener(userListener)
             addParticipantListener(this@ChatRoomImpl)
         }
@@ -313,7 +311,6 @@ class ChatRoomImpl(
 
     override fun leave() {
         muc.removePresenceInterceptor(presenceInterceptor)
-        muc.removeParticipantStatusListener(memberListener)
         muc.removeUserStatusListener(userListener)
         muc.removeParticipantListener(this)
         leaveCallback(this)
@@ -544,9 +541,11 @@ class ChatRoomImpl(
                 // Trigger member "joined"
                 eventEmitter.fireEvent { memberJoined(member) }
             } else if (memberLeft) {
-                // In some cases smack fails to call left(). We'll call it here
-                // any time we receive presence unavailable
-                memberListener.left(jid)
+                if (MUCUser.from(presence).status.contains(MUCUser.Status.KICKED_307)) {
+                    memberListener.kicked(jid)
+                } else {
+                    memberListener.left(jid)
+                }
             }
             if (!memberLeft) {
                 eventEmitter.fireEvent { memberPresenceChanged(member) }
@@ -595,18 +594,7 @@ class ChatRoomImpl(
         const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
     }
 
-    internal inner class MemberListener : ParticipantStatusListener {
-        override fun joined(mucJid: EntityFullJid?) {
-            // When a new member joins, Smack seems to fire ParticipantStatusListener#joined and
-            // PresenceListener#processPresence in a non-deterministic order.
-
-            // In order to ensure that we have all the information contained in presence at the time that we create a
-            // new ChatMemberImpl, we completely ignore this joined event. Instead, we rely on processPresence to detect
-            // when a new member has joined and trigger the creation of a ChatMemberImpl by calling
-            // ChatRoomImpl#memberJoined()
-            logger.debug { "Ignore a member joined event for $mucJid" }
-        }
-
+    private inner class MemberListener {
         private fun removeMember(occupantJid: EntityFullJid?): ChatRoomMemberImpl? {
             synchronized(membersMap) {
                 val removed = membersMap.remove(occupantJid)
@@ -623,10 +611,8 @@ class ChatRoomImpl(
             }
         }
 
-        /**
-         * This needs to be prepared to run twice for the same member.
-         */
-        override fun left(occupantJid: EntityFullJid?) {
+        /** This needs to be prepared to run twice for the same member. */
+        fun left(occupantJid: EntityFullJid) {
             logger.debug { "Left $occupantJid room: $roomJid" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
@@ -634,16 +620,10 @@ class ChatRoomImpl(
                 ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
 
-        override fun kicked(occupantJid: EntityFullJid?, actor: Jid?, reason: String?) {
-            logger.debug { "Kicked: $occupantJid, $actor, $reason" }
-
+        fun kicked(occupantJid: EntityFullJid) {
             val member = synchronized(membersMap) { removeMember(occupantJid) }
             member?.let { eventEmitter.fireEvent { memberKicked(it) } }
                 ?: logger.error("Kicked member does not exist: $occupantJid")
-        }
-
-        override fun nicknameChanged(oldNickname: EntityFullJid?, newNickname: Resourcepart?) {
-            logger.error("nicknameChanged - NOT IMPLEMENTED")
         }
     }
 
