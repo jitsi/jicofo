@@ -35,6 +35,7 @@ import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
 import org.jxmpp.jid.Jid
+import org.jxmpp.jid.impl.JidCreate
 import java.util.concurrent.atomic.AtomicInteger
 
 class JigasiIqHandler(
@@ -62,22 +63,28 @@ class JigasiIqHandler(
                 Stats.rejectedRequests.inc()
             }
 
-        var conference = conferenceStore.getConference(conferenceJid)
-
-        if (conference == null) {
-            // let's search for visitor room with that jid, maybe it's an invite from a visitor
-            conference = conferenceStore.getAllConferences()
-                .find { c -> c.visitorRoomsJids.contains(conferenceJid) }
-        }
-
-        conference ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
-            logger.warn("Rejected request for non-existent conference: $conferenceJid")
-            Stats.rejectedRequests.inc()
-        }
+        val conference = conferenceStore.getConference(conferenceJid)
+            // search for visitor room with that jid, maybe it's an invite from a visitor
+            ?: conferenceStore.getAllConferences().find { c -> c.visitorRoomsJids.contains(conferenceJid) }
+            ?: return RejectedWithError(request, StanzaError.Condition.item_not_found).also {
+                logger.warn("Rejected request for non-existent conference: $conferenceJid")
+                Stats.rejectedRequests.inc()
+            }
 
         if (!conference.acceptJigasiRequest(request.iq.from)) {
             return RejectedWithError(request, StanzaError.Condition.forbidden).also {
                 logger.warn("Rejected request from unauthorized user: ${request.iq.from}")
+                Stats.rejectedRequests.inc()
+            }
+        }
+
+        val roomNameHeader = request.iq.getHeader("JvbRoomName")
+        if (roomNameHeader != null && JidCreate.entityBareFrom(roomNameHeader) != conference.mainRoomJid) {
+            return RejectedWithError(request, StanzaError.Condition.forbidden).also {
+                logger.warn(
+                    "Rejecting request with non-matching JvbRoomName: from=${request.iq.from} " +
+                        ", mainRoomJid=${conference.mainRoomJid}, JvbRoomName=$roomNameHeader"
+                )
                 Stats.rejectedRequests.inc()
             }
         }
