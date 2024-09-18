@@ -46,6 +46,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
             every { features } returns Features.defaultFeatures
             every { debugState } returns OrderedJsonObject()
             every { presence } returns mockk {
+                every { status } returns null
                 every { getExtension(any<String>()) } returns null
                 every { getExtension(any<QName>()) } returns null
                 every { getExtension(any<Class<out ExtensionElement>>()) } returns null
