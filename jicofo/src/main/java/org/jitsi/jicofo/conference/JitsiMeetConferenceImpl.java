@@ -2302,8 +2302,19 @@ public class JitsiMeetConferenceImpl
             if (chatRoomToLeave != null)
             {
                 ChatRoom finalChatRoom = chatRoomToLeave;
+                final String finalVnode = vnode;
+
                 TaskPools.getIoPool().submit(() ->
                 {
+                    IQ disconnectResponse
+                            = jicofoServices.getXmppServices().getVisitorsManager().sendIqToComponentAndGetResponse(
+                                roomName,
+                                Collections.singletonList(new DisconnectVnodePacketExtension(finalVnode)));
+                    if (disconnectResponse == null || !disconnectResponse.getType().equals(IQ.Type.result))
+                    {
+                        logger.warn("Error or no response to disconnect request: " + disconnectResponse);
+                    }
+
                     try
                     {
                         logger.info("Removing visitor chat room");
@@ -2315,11 +2326,6 @@ public class JitsiMeetConferenceImpl
                     }
                 });
 
-                if (vnode != null)
-                {
-                    jicofoServices.getXmppServices().getVisitorsManager().sendIqToComponent(
-                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
-                }
             }
         }
 
