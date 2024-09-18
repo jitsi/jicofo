@@ -57,7 +57,7 @@ class VisitorsManager(
         logger.info("VisitorsComponentManager is now ${if (enabled) "en" else "dis"}abled with address $address")
     }
 
-    fun sendIqToComponent(roomJid: EntityBareJid, extensions: List<ExtensionElement>) {
+    fun sendIqToComponent(roomJid: EntityBareJid, extensions: List<ExtensionElement>, callback: (() -> Unit)?) {
         val address = this.address ?: throw Exception("Component not available.")
         val iq = VisitorsIq.Builder(xmppProvider.xmppConnection).apply {
             to(address)
@@ -75,6 +75,8 @@ class VisitorsManager(
                 }
                 else -> logger.warn("Received error response: ${response.toStringOpt()}")
             }
+
+            callback?.invoke()
         }
     }
 

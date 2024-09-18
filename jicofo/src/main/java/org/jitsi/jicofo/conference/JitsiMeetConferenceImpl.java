@@ -644,35 +644,41 @@ public class JitsiMeetConferenceImpl
             chatRoomRoleManager.stop();
         }
 
-        chatRoom.leave();
-
-        chatRoom.removeListener(chatRoomListener);
-        chatRoom = null;
-
-        List<ExtensionElement> disconnectVnodeExtensions = new ArrayList<>();
-        synchronized (visitorChatRooms)
-        {
-            visitorChatRooms.forEach((vnode, visitorChatRoom) ->
-            {
-                disconnectVnodeExtensions.add(new DisconnectVnodePacketExtension(vnode));
-                try
-                {
-                    visitorChatRoom.removeAllListeners();
-                    visitorChatRoom.leave();
-                }
-                catch (Exception e)
-                {
-                    logger.error("Failed to leave visitor room", e);
-                }
-            });
-            visitorChatRooms.clear();
-        }
+        // first disconnect vnodes before leaving
+        List<ExtensionElement> disconnectVnodeExtensions = visitorChatRooms.keySet().stream()
+                .map(DisconnectVnodePacketExtension::new).collect(Collectors.toList());
 
         if (!disconnectVnodeExtensions.isEmpty())
         {
             jicofoServices.getXmppServices().getVisitorsManager()
-                    .sendIqToComponent(roomName, disconnectVnodeExtensions);
+                    .sendIqToComponent(roomName, disconnectVnodeExtensions, () -> {
+                        synchronized (visitorChatRooms)
+                        {
+                            visitorChatRooms.values().forEach(visitorChatRoom -> {
+                                try
+                                {
+                                    visitorChatRoom.removeAllListeners();
+                                    visitorChatRoom.leave();
+                                }
+                                catch (Exception e)
+                                {
+                                    logger.error("Failed to leave visitor room", e);
+                                }
+                            });
+                            visitorChatRooms.clear();
+                        }
+
+                        chatRoom.leave();
+                        return null;
+                    });
         }
+        else
+        {
+            chatRoom.leave();
+        }
+
+        chatRoom.removeListener(chatRoomListener);
+        chatRoom = null;
     }
 
     /**
@@ -1891,7 +1897,7 @@ public class JitsiMeetConferenceImpl
             VisitorsManager visitorsManager = jicofoServices.getXmppServices().getVisitorsManager();
             visitorsManager.sendIqToComponent(
                     roomName,
-                    Collections.singletonList(new ConnectVnodePacketExtension(node)));
+                    Collections.singletonList(new ConnectVnodePacketExtension(node)), null);
         }
         else
         {
@@ -2318,7 +2324,7 @@ public class JitsiMeetConferenceImpl
                 if (vnode != null)
                 {
                     jicofoServices.getXmppServices().getVisitorsManager().sendIqToComponent(
-                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
+                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)), null);
                 }
             }
         }
@@ -2342,6 +2348,7 @@ public class JitsiMeetConferenceImpl
             if (member.getRole() != MemberRole.VISITOR)
             {
                 logger.debug("Member kicked for non-visitor member of visitor room: " + member);
+                return;
             }
             onMemberKicked(member);
         }
@@ -2352,6 +2359,7 @@ public class JitsiMeetConferenceImpl
             if (member.getRole() != MemberRole.VISITOR)
             {
                 logger.debug("Member left for non-visitor member of visitor room: " + member);
+                return;
             }
             onMemberLeft(member);
         }
