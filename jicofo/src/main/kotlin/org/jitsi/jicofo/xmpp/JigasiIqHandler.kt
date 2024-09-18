@@ -79,11 +79,11 @@ class JigasiIqHandler(
         }
 
         val roomNameHeader = request.iq.getHeader("JvbRoomName")
-        if (roomNameHeader != null && JidCreate.entityBareFrom(roomNameHeader) != conference.mainRoomJid) {
+        if (roomNameHeader != null && JidCreate.entityBareFrom(roomNameHeader) != conference.roomName) {
             return RejectedWithError(request, StanzaError.Condition.forbidden).also {
                 logger.warn(
                     "Rejecting request with non-matching JvbRoomName: from=${request.iq.from} " +
-                        ", mainRoomJid=${conference.mainRoomJid}, JvbRoomName=$roomNameHeader"
+                        ", roomName=${conference.roomName}, JvbRoomName=$roomNameHeader"
                 )
                 Stats.rejectedRequests.inc()
             }
