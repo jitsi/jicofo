@@ -57,17 +57,24 @@ class VisitorsManager(
         logger.info("VisitorsComponentManager is now ${if (enabled) "en" else "dis"}abled with address $address")
     }
 
-    fun sendIqToComponent(roomJid: EntityBareJid, extensions: List<ExtensionElement>, callback: (() -> Unit)?) {
+    private fun createIq(roomJid: EntityBareJid, extensions: List<ExtensionElement>): VisitorsIq {
         val address = this.address ?: throw Exception("Component not available.")
-        val iq = VisitorsIq.Builder(xmppProvider.xmppConnection).apply {
+        return VisitorsIq.Builder(xmppProvider.xmppConnection).apply {
             to(address)
             ofType(IQ.Type.get)
             room = roomJid
             addExtensions(extensions)
         }.build()
+    }
 
+    /** Send an IQ, block for response or timeout, return the result. */
+    fun sendIqToComponentAndGetResponse(roomJid: EntityBareJid, extensions: List<ExtensionElement>): IQ? =
+        xmppProvider.xmppConnection.sendIqAndGetResponse(createIq(roomJid, extensions))
+
+    /** Send an IQ, return immediately. Log an error if there's no response. */
+    fun sendIqToComponent(roomJid: EntityBareJid, extensions: List<ExtensionElement>) {
         TaskPools.ioPool.submit {
-            val response = xmppProvider.xmppConnection.sendIqAndGetResponse(iq)
+            val response = sendIqToComponentAndGetResponse(roomJid, extensions)
             when {
                 response == null -> logger.warn("Timeout waiting for VisitorsIq response.")
                 response.type == IQ.Type.result -> {
@@ -75,8 +82,6 @@ class VisitorsManager(
                 }
                 else -> logger.warn("Received error response: ${response.toStringOpt()}")
             }
-
-            callback?.invoke()
         }
     }
 
