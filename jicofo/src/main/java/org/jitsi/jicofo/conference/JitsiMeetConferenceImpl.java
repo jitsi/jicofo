@@ -169,7 +169,9 @@ public class JitsiMeetConferenceImpl
     private Future<?> singleParticipantTout;
 
     /**
-     * A task to stop the conference if no participants join after an initial timeout.
+     * A task to stop the conference if no participants or breakout rooms are present after a timeout.
+     * It's triggered when the conference is first created, or when the last participant leaves with an indication
+     * that it will join a breakout room.
      */
     private Future<?> conferenceStartTimeout;
 
