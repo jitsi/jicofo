@@ -640,17 +640,31 @@ public class JitsiMeetConferenceImpl
             chatRoomRoleManager.stop();
         }
 
-        chatRoom.leave();
+        // first disconnect vnodes before leaving
+        final List<ExtensionElement> disconnectVnodeExtensions;
+        final List<ChatRoom> visitorChatRoomsToLeave;
+        synchronized (visitorChatRooms)
+        {
+            disconnectVnodeExtensions = visitorChatRooms.keySet().stream()
+                    .map(DisconnectVnodePacketExtension::new).collect(Collectors.toList());
+            visitorChatRoomsToLeave = new ArrayList<>(visitorChatRooms.values());
+            visitorChatRooms.clear();
+        }
 
+        final ChatRoom chatRoomToLeave = chatRoom;
         chatRoom.removeListener(chatRoomListener);
         chatRoom = null;
 
-        List<ExtensionElement> disconnectVnodeExtensions = new ArrayList<>();
-        synchronized (visitorChatRooms)
+        TaskPools.getIoPool().submit(() ->
         {
-            visitorChatRooms.forEach((vnode, visitorChatRoom) ->
+            if (!disconnectVnodeExtensions.isEmpty())
             {
-                disconnectVnodeExtensions.add(new DisconnectVnodePacketExtension(vnode));
+                jicofoServices.getXmppServices().getVisitorsManager()
+                        .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+            }
+
+            visitorChatRoomsToLeave.forEach(visitorChatRoom ->
+            {
                 try
                 {
                     visitorChatRoom.removeAllListeners();
@@ -661,14 +675,9 @@ public class JitsiMeetConferenceImpl
                     logger.error("Failed to leave visitor room", e);
                 }
             });
-            visitorChatRooms.clear();
-        }
 
-        if (!disconnectVnodeExtensions.isEmpty())
-        {
-            jicofoServices.getXmppServices().getVisitorsManager()
-                    .sendIqToComponent(roomName, disconnectVnodeExtensions);
-        }
+            chatRoomToLeave.leave();
+        });
     }
 
     /**
@@ -2372,6 +2381,7 @@ public class JitsiMeetConferenceImpl
             if (member.getRole() != MemberRole.VISITOR)
             {
                 logger.debug("Member kicked for non-visitor member of visitor room: " + member);
+                return;
             }
             onMemberKicked(member);
         }
@@ -2382,6 +2392,7 @@ public class JitsiMeetConferenceImpl
             if (member.getRole() != MemberRole.VISITOR)
             {
                 logger.debug("Member left for non-visitor member of visitor room: " + member);
+                return;
             }
             onMemberLeft(member);
         }
