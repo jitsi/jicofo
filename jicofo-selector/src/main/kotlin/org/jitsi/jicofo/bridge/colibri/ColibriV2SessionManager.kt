@@ -52,6 +52,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.net.URI
 import java.util.Collections.singletonList
 
 /**
@@ -68,6 +69,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
+    private val audioExportUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -80,6 +82,8 @@ class ColibriV2SessionManager(
     private val topologySelectionStrategy = BridgeConfig.config.topologyStrategy.also {
         logger.info("Using ${it.javaClass.name}")
     }
+
+    private var sessionForAudioRecording: Colibri2Session? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -241,7 +245,16 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            session = Colibri2Session(this, bridge, visitor, logger)
+            session = Colibri2Session(
+                this,
+                bridge,
+                visitor,
+                if (audioExportUrl != null && sessionForAudioRecording == null) audioExportUrl else null,
+                logger
+            )
+            if (audioExportUrl != null && sessionForAudioRecording == null) {
+                sessionForAudioRecording = session
+            }
             return Pair(session, true)
         }
 
