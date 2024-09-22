@@ -45,6 +45,7 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -328,12 +329,15 @@ public class JitsiMeetConferenceImpl
         {
             // We initialize colibriSessionManager only after having joined the room, so meetingId must be set.
             String meetingId = Objects.requireNonNull(this.meetingId);
+            URI multiTrackRecorderUrl = RecordingConfig.config.multiTrackRecorderUrl(meetingId);
+            // TODO update presence to reflect
             colibriSessionManager = new ColibriV2SessionManager(
                     jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                     jicofoServices.getBridgeSelector(),
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
+                    multiTrackRecorderUrl,
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
