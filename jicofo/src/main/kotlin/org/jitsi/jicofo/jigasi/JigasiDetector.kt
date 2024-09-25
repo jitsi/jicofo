@@ -37,7 +37,7 @@ import org.jxmpp.jid.Jid
  */
 open class JigasiDetector(
     xmppProvider: XmppProvider,
-    breweryJid: EntityBareJid,
+    val breweryJid: EntityBareJid,
     private val localRegion: String? = JicofoConfig.config.localRegion
 ) : BaseBrewery<ColibriStatsExtension>(
     xmppProvider,
@@ -80,6 +80,7 @@ open class JigasiDetector(
 
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().also { debugState ->
+            debugState["brewery_jid"] = breweryJid.toString()
             instances.forEach { instance ->
                 val instanceJson = OrderedJsonObject().apply {
                     this["supports_sip"] = instance.supportsSip()
