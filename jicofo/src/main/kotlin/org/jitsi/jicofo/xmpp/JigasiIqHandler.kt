@@ -116,7 +116,7 @@ class JigasiIqHandler(
         exclude: List<Jid> = emptyList()
     ) {
         val selector = if (request.iq.destination == "jitsi_meet_transcribe") {
-            if (jigasiDetector.hasTranscriber(conference.chatRoom)) {
+            if (conference.hasTranscriber()) {
                 logger.warn("Request failed, transcriber already available: ${request.iq.toStringOpt()}")
                 IQ.createErrorResponse(
                     request.iq,
@@ -256,3 +256,5 @@ class JigasiIqHandler(
         }
     }
 }
+
+private fun JitsiMeetConference.hasTranscriber(): Boolean = this.chatRoom?.members?.any { it.isTranscriber } ?: false
