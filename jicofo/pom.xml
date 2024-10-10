@@ -75,6 +75,10 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-metrics-jetty</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-metaconfig</artifactId>
     </dependency>
     <dependency>
