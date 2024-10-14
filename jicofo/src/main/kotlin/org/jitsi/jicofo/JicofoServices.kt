@@ -142,7 +142,7 @@ class JicofoServices {
         null
     }
 
-    private val ktor = JicofoKtor().apply { start() }
+    private val ktor = JicofoKtor(healthChecker).apply { start() }
     private val jettyServer: Server?
 
     init {
@@ -150,9 +150,6 @@ class JicofoServices {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
                 buildList {
-                    healthChecker?.let {
-                        add(org.jitsi.rest.Health(it))
-                    }
                     if (RestConfig.config.enableConferenceRequest) {
                         add(ConferenceRequest(xmppServices.conferenceIqHandler))
                     }
