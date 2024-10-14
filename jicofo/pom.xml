@@ -52,7 +52,16 @@
       <artifactId>ktor-server-netty-jvm</artifactId>
       <version>${ktor.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>io.ktor</groupId>
+      <artifactId>ktor-server-content-negotiation-jvm</artifactId>
+      <version>${ktor.version}</version>
+    </dependency>
+    <dependency>
+    <groupId>io.ktor</groupId>
+    <artifactId>ktor-serialization-jackson-jvm</artifactId>
+    <version>${ktor.version}</version>
+</dependency>
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smack-tcp</artifactId>
@@ -83,10 +92,6 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jicoco-metrics</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco-metrics-jetty</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>

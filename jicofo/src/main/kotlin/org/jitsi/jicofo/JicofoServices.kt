@@ -153,7 +153,6 @@ class JicofoServices {
                     healthChecker?.let {
                         add(org.jitsi.rest.Health(it))
                     }
-                    add(Version(CurrentVersionImpl.VERSION))
                     if (RestConfig.config.enableConferenceRequest) {
                         add(ConferenceRequest(xmppServices.conferenceIqHandler))
                     }
