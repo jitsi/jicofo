@@ -48,7 +48,6 @@ import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
 import org.jitsi.rest.Version
 import org.jitsi.rest.createServer
-import org.jitsi.rest.prometheus.Prometheus
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -143,6 +142,7 @@ class JicofoServices {
         null
     }
 
+    private val ktor = JicofoKtor().apply { start() }
     private val jettyServer: Server?
 
     init {
@@ -156,9 +156,6 @@ class JicofoServices {
                     add(Version(CurrentVersionImpl.VERSION))
                     if (RestConfig.config.enableConferenceRequest) {
                         add(ConferenceRequest(xmppServices.conferenceIqHandler))
-                    }
-                    if (RestConfig.config.enablePrometheus) {
-                        add(Prometheus(JicofoMetricsContainer.instance))
                     }
                     if (MoveEndpointsConfig.enabled) {
                         add(MoveEndpoints(focusManager, bridgeSelector))
@@ -190,6 +187,7 @@ class JicofoServices {
         healthChecker?.shutdown()
         JicofoMetricsContainer.instance.metricsUpdater.stop()
         jettyServer?.stop()
+        ktor?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)
             it.shutdown()
