@@ -34,7 +34,7 @@
   </licenses>
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>11.0.20</jetty.version>
+    <jetty.version>11.0.24</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
     <jxmpp.version>1.0.3</jxmpp.version>
