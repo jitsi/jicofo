@@ -139,7 +139,18 @@ class JicofoServices {
     }
 
     private val ktor = if (RestConfig.config.enabled) {
-        org.jitsi.jicofo.ktor.Application(healthChecker, xmppServices.conferenceIqHandler, focusManager, bridgeSelector)
+        org.jitsi.jicofo.ktor.Application(
+            healthChecker,
+            xmppServices.conferenceIqHandler,
+            focusManager,
+            bridgeSelector
+        ) { full, confId ->
+            if (confId == null) {
+                getDebugState(full)
+            } else {
+                getConferenceDebugState(confId)
+            }
+        }
     } else {
         logger.info("Rest interface disabled.")
         null
@@ -241,7 +252,7 @@ class JicofoServices {
         }
     }
 
-    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+    private fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
         put("focus_manager", focusManager.getDebugState(full))
         put("bridge_selector", bridgeSelector.debugState)
         put("jibri_detector", jibriDetector?.debugState ?: "null")
@@ -251,7 +262,7 @@ class JicofoServices {
         put("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
     }
 
-    fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
+    private fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
         val conference = focusManager.getConference(JidCreate.entityBareFrom(conferenceId))
         return conference?.debugState ?: OrderedJsonObject()
     }

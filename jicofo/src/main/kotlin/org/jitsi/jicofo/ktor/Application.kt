@@ -32,6 +32,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.RoutingCall
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
@@ -41,17 +42,22 @@ import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
+import org.jitsi.jicofo.ktor.exception.MissingParameter
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
+import org.jitsi.jicofo.xmpp.XmppCapsStats
+import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
+import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 
 class Application(
     private val healthChecker: HealthCheckService?,
     conferenceIqHandler: ConferenceIqHandler,
     private val conferenceStore: ConferenceStore,
-    bridgeSelector: BridgeSelector
+    bridgeSelector: BridgeSelector,
+    private val getDebugState: (full: Boolean, confId: String?) -> OrderedJsonObject
 ) {
     private val logger = createLogger()
     private val server = start()
@@ -76,6 +82,7 @@ class Application(
                 conferenceRequest()
                 moveEndpoints()
                 rtcstats()
+                debug()
             }
         }.start(wait = false)
     }
@@ -143,7 +150,7 @@ class Application(
                 }
             }
 
-            call.respondText(ContentType.Application.Json, HttpStatusCode.OK) {rtcstats.toJSONString() }
+            call.respondJson(rtcstats)
         }
     }
 
@@ -179,4 +186,51 @@ class Application(
             }
         }
     }
+
+    private fun Route.debug() {
+        if (RestConfig.config.enableDebug) {
+            route("/debug") {
+                get("") {
+                    call.respondJson(
+                        getDebugState(call.request.queryParameters["full"] == "true", null)
+                    )
+                }
+                get("conferences") {
+                    val conferencesJson = JSONArray().apply {
+                        conferenceStore.getAllConferences().forEach {
+                            add(it.roomName.toString())
+                        }
+                    }
+                    call.respondJson(conferencesJson)
+                }
+                get("conferences-full") {
+                    val conferencesJson = JSONObject().apply {
+                        conferenceStore.getAllConferences().forEach {
+                            put(it.roomName.toString(), it.debugState)
+                        }
+                    }
+                    call.respondJson(conferencesJson)
+                }
+                get("/conference/{confId}") {
+                    val confId = call.parameters["confId"] ?: throw MissingParameter("conference")
+                    call.respondJson(
+                        getDebugState(true, confId)
+                    )
+                }
+                get("xmpp-caps") {
+                    call.respondJson(XmppCapsStats.stats)
+                }
+            }
+        }
+    }
+}
+
+private suspend fun RoutingCall.respondJson(json: JSONArray) {
+    respondText(ContentType.Application.Json, HttpStatusCode.OK) { json.toJSONString() }
+}
+private suspend fun RoutingCall.respondJson(json: JSONObject) {
+    respondText(ContentType.Application.Json, HttpStatusCode.OK) { json.toJSONString() }
+}
+private suspend fun RoutingCall.respondJson(json: OrderedJsonObject) {
+    respondText(ContentType.Application.Json, HttpStatusCode.OK) { json.toJSONString() }
 }

@@ -39,6 +39,10 @@ class RestConfig private constructor() {
         "jicofo.rest.move-endpoints.enabled".from(JitsiConfig.newConfig)
     }
 
+    val enableDebug: Boolean by config {
+        "jicofo.rest.debug.enabled".from(JitsiConfig.newConfig)
+    }
+
     companion object {
         @JvmField
         val config = RestConfig()
