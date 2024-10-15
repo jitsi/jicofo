@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2020 - present 8x8, Inc
+ * Copyright @ 2024 - present 8x8, Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo
+package org.jitsi.jicofo.ktor
 
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.parseHeaderValue
 import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.install
+import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -34,19 +37,50 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import org.jitsi.health.HealthCheckService
+import org.jitsi.jicofo.ConferenceRequest
+import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.rest.ConferenceRequestHandler
 import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
 
-class JicofoKtor(
+class Application(
     private val healthChecker: HealthCheckService?,
     conferenceIqHandler: ConferenceIqHandler
 ) {
-    val logger = createLogger()
+    private val logger = createLogger()
+    private val server = start()
     private val conferenceRequestHandler = ConferenceRequestHandler(conferenceIqHandler)
+
+    private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
+        logger.info("Starting ktor on port 9999")
+        return embeddedServer(Netty, port = 9999, host = "0.0.0.0") {
+            install(ContentNegotiation) {
+                jackson {}
+            }
+            install(StatusPages) {
+                exception<Throwable> { call, cause ->
+                    ExceptionHandler.handle(call, cause)
+                }
+            }
+
+            routing {
+                if (RestConfig.config.enablePrometheus) {
+                    get("/metrics") {
+                        val accepts =
+                            parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
+                        val (metrics, contentType) = JicofoMetricsContainer.instance.getMetrics(accepts)
+                        call.respondText(metrics, contentType = ContentType.parse(contentType))
+                    }
+                }
+                about()
+                conferenceRequest()
+            }
+        }.start(wait = false)
+    }
+
+    fun stop() = server.stop()
 
     private fun Route.about() {
         data class VersionInfo(
@@ -90,30 +124,5 @@ class JicofoKtor(
                 call.respond(response)
             }
         }
-    }
-    fun start() {
-        logger.info("Starting ktor on port 9999")
-        embeddedServer(Netty, port = 9999, host = "0.0.0.0") {
-            install(ContentNegotiation) {
-                jackson {}
-            }
-
-            routing {
-                if (RestConfig.config.enablePrometheus) {
-                    get("/metrics") {
-                        val accepts =
-                            parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
-                        val (metrics, contentType) = JicofoMetricsContainer.instance.getMetrics(accepts)
-                        call.respondText(metrics, contentType = ContentType.parse(contentType))
-                    }
-                }
-                about()
-                conferenceRequest()
-            }
-        }.start(wait = false)
-    }
-
-    fun stop() {
-
     }
 }

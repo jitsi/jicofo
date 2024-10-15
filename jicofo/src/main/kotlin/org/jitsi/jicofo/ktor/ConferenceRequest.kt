@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.rest
+package org.jitsi.jicofo.ktor
 
 import org.jitsi.jicofo.ConferenceRequest
+import org.jitsi.jicofo.ktor.exception.BadRequest
+import org.jitsi.jicofo.ktor.exception.Forbidden
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -34,25 +36,21 @@ class ConferenceRequestHandler(private val conferenceIqHandler: ConferenceIqHand
         try {
             response = conferenceIqHandler.handleConferenceIq(conferenceRequest.toConferenceIq())
         } catch (e: XmppStringprepException) {
-            throw BadRequestExceptionWithMessage("Invalid room name: ${e.message}")
+            throw BadRequest("Invalid room name: ${e.message}")
         } catch (e: Exception) {
             logger.error(e.message, e)
-            throw BadRequestExceptionWithMessage(e.message)
+            throw BadRequest(e.message)
         }
 
         if (response !is ConferenceIq) {
             if (response is ErrorIQ) {
                 throw when (response.error.condition) {
-                    StanzaError.Condition.not_authorized -> {
-                        Forbidden()
-                    }
-                    StanzaError.Condition.not_acceptable -> {
-                        BadRequestExceptionWithMessage("invalid-session")
-                    }
-                    else -> BadRequestExceptionWithMessage(response.error.toString())
+                    StanzaError.Condition.not_authorized -> Forbidden()
+                    StanzaError.Condition.not_acceptable -> BadRequest("invalid-session")
+                    else -> BadRequest(response.error.toString())
                 }
             } else {
-                throw InternalServerErrorException()
+                throw InternalError()
             }
         }
 
@@ -60,6 +58,3 @@ class ConferenceRequestHandler(private val conferenceIqHandler: ConferenceIqHand
     }
 }
 
-class BadRequestExceptionWithMessage(message: String?) : RuntimeException(message)
-class Forbidden : RuntimeException("Forbidden")
-class InternalServerErrorException : RuntimeException()

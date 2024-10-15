@@ -58,10 +58,15 @@
       <version>${ktor.version}</version>
     </dependency>
     <dependency>
-    <groupId>io.ktor</groupId>
-    <artifactId>ktor-serialization-jackson-jvm</artifactId>
-    <version>${ktor.version}</version>
-</dependency>
+      <groupId>io.ktor</groupId>
+      <artifactId>ktor-serialization-jackson-jvm</artifactId>
+      <version>${ktor.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.ktor</groupId>
+      <artifactId>ktor-server-status-pages-jvm</artifactId>
+      <version>${ktor.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smack-tcp</artifactId>

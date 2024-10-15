@@ -140,7 +140,12 @@ class JicofoServices {
         null
     }
 
-    private val ktor = JicofoKtor(healthChecker, xmppServices.conferenceIqHandler).apply { start() }
+    private val ktor = if (RestConfig.config.enabled) {
+        org.jitsi.jicofo.ktor.Application(healthChecker, xmppServices.conferenceIqHandler)
+    } else {
+        logger.info("Rest interface disabled.")
+        null
+    }
     private val jettyServer: Server?
 
     init {
