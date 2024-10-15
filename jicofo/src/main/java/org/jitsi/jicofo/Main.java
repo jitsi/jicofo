@@ -49,6 +49,11 @@ public class Main
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
                 logger.error("An uncaught exception occurred in thread=" + t, e));
 
+        if (System.getProperty("config.file", "").isEmpty())
+        {
+            logger.warn("Required property config.file is missing. Set with -Dconfig.file=");
+            return;
+        }
         setupMetaconfigLogger();
         JitsiConfig.Companion.reloadNewConfig();
 
