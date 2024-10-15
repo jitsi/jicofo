@@ -18,10 +18,15 @@
 package org.jitsi.jicofo.util
 
 import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.PinnedConference
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jxmpp.jid.EntityBareJid
+import java.time.Duration
 
 class ListConferenceStore : ConferenceStore, MutableList<JitsiMeetConference> by ArrayList() {
     override fun getAllConferences() = this
     override fun getConference(jid: EntityBareJid) = find { it.roomName == jid }
+    override fun getPinnedConferences(): List<PinnedConference> = listOf()
+    override fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration) { }
+    override fun unpinConference(roomName: EntityBareJid) {}
 }

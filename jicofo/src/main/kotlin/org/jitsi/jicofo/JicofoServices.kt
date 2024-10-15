@@ -31,9 +31,9 @@ import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jibri.JibriDetectorMetrics
+import org.jitsi.jicofo.ktor.RestConfig
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.ktor.RestConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices

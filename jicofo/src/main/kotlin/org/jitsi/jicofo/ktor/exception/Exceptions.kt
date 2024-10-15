@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.ktor.exception
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
@@ -26,7 +27,9 @@ sealed class JicofoKtorException(message: String?) : RuntimeException(message)
 open class BadRequest(message: String? = null) : JicofoKtorException("Bad request: ${message ?: ""}")
 class NotFound(message: String?) : JicofoKtorException("Not found: ${message ?: ""}")
 class Forbidden(message: String? = null) : JicofoKtorException("Forbidden: ${message ?: ""}")
-class InternalError(message: String? = null): JicofoKtorException("Internal error: ${message ?: ""}")
+class InternalError(message: String? = null) : JicofoKtorException("Internal error: ${message ?: ""}")
+
+@SuppressFBWarnings(value = ["NP_METHOD_PARAMETER_TIGHTENS_ANNOTATION"], justification = "False positive")
 class MissingParameter(parameter: String) : BadRequest("Missing parameter: $parameter")
 
 object ExceptionHandler {

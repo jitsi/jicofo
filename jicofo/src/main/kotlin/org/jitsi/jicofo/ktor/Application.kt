@@ -43,6 +43,7 @@ import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.ktor.exception.BadRequest
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
+import org.jitsi.jicofo.ktor.exception.Forbidden
 import org.jitsi.jicofo.ktor.exception.MissingParameter
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.version.CurrentVersionImpl
@@ -50,15 +51,20 @@ import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
+import org.jivesoftware.smack.packet.ErrorIQ
+import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.StanzaError
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.stringprep.XmppStringprepException
 import java.time.Duration
 import org.jitsi.jicofo.ktor.RestConfig.Companion.config as config
 
 class Application(
     private val healthChecker: HealthCheckService?,
-    conferenceIqHandler: ConferenceIqHandler,
+    private val conferenceIqHandler: ConferenceIqHandler,
     private val conferenceStore: ConferenceStore,
     bridgeSelector: BridgeSelector,
     private val getStatsJson: () -> OrderedJsonObject,
@@ -66,7 +72,6 @@ class Application(
 ) {
     private val logger = createLogger()
     private val server = start()
-    private val conferenceRequestHandler = ConferenceRequestHandler(conferenceIqHandler)
     private val moveEndpointsHandler = MoveEndpoints(conferenceStore, bridgeSelector)
 
     private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
@@ -139,9 +144,28 @@ class Application(
     private fun Route.conferenceRequest() {
         if (config.enableConferenceRequest) {
             post("/conference-request/v1") {
-                val conferenceRequest = call.receive<ConferenceRequest>()
-                val response = conferenceRequestHandler.handleRequest(conferenceRequest)
-                call.respond(response)
+                val request = call.receive<ConferenceRequest>()
+                val response: IQ = try {
+                    conferenceIqHandler.handleConferenceIq(request.toConferenceIq())
+                } catch (e: XmppStringprepException) {
+                    throw BadRequest("Invalid room name: ${e.message}")
+                } catch (e: Exception) {
+                    logger.error(e.message, e)
+                    throw BadRequest(e.message)
+                }
+
+                if (response !is ConferenceIq) {
+                    if (response is ErrorIQ) {
+                        throw when (response.error.condition) {
+                            StanzaError.Condition.not_authorized -> Forbidden()
+                            StanzaError.Condition.not_acceptable -> BadRequest("invalid-session")
+                            else -> BadRequest(response.error.toString())
+                        }
+                    } else {
+                        throw InternalError()
+                    }
+                }
+                call.respond(ConferenceRequest.fromConferenceIq(response))
             }
         }
     }
@@ -249,7 +273,9 @@ class Application(
                     }
 
                     conferenceStore.pinConference(
-                        conferenceJid, pin.jvbVersion, Duration.ofMinutes(pin.durationMinutes.toLong())
+                        conferenceJid,
+                        pin.jvbVersion,
+                        Duration.ofMinutes(pin.durationMinutes.toLong())
                     )
                     call.respond(HttpStatusCode.OK)
                 }
