@@ -46,11 +46,12 @@ import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
+import org.json.simple.JSONObject
 
 class Application(
     private val healthChecker: HealthCheckService?,
     conferenceIqHandler: ConferenceIqHandler,
-    conferenceStore: ConferenceStore,
+    private val conferenceStore: ConferenceStore,
     bridgeSelector: BridgeSelector
 ) {
     private val logger = createLogger()
@@ -71,22 +72,27 @@ class Application(
             }
 
             routing {
-                if (RestConfig.config.enablePrometheus) {
-                    get("/metrics") {
-                        val accepts =
-                            parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
-                        val (metrics, contentType) = JicofoMetricsContainer.instance.getMetrics(accepts)
-                        call.respondText(metrics, contentType = ContentType.parse(contentType))
-                    }
-                }
+                metrics()
                 about()
                 conferenceRequest()
                 moveEndpoints()
+                rtcstats()
             }
         }.start(wait = false)
     }
 
     fun stop() = server.stop()
+
+    private fun Route.metrics() {
+        if (RestConfig.config.enablePrometheus) {
+            get("/metrics") {
+                val accepts =
+                    parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
+                val (metrics, contentType) = JicofoMetricsContainer.instance.getMetrics(accepts)
+                call.respondText(metrics, contentType = ContentType.parse(contentType))
+            }
+        }
+    }
 
     private fun Route.about() {
         data class VersionInfo(val name: String? = null, val version: String? = null, val os: String? = null)
@@ -124,6 +130,21 @@ class Application(
                 val response = conferenceRequestHandler.handleRequest(conferenceRequest)
                 call.respond(response)
             }
+        }
+    }
+
+    private fun Route.rtcstats() {
+        get("/rtcstats") {
+            val rtcstats = JSONObject()
+            conferenceStore.getAllConferences().forEach { conference ->
+                if (conference.includeInStatistics() && conference.isRtcStatsEnabled) {
+                    conference.meetingId?.let { meetingId ->
+                        rtcstats.put(meetingId, conference.rtcstatsState)
+                    }
+                }
+            }
+
+            call.respondText(ContentType.Application.Json, HttpStatusCode.OK) {rtcstats.toJSONString() }
         }
     }
 
