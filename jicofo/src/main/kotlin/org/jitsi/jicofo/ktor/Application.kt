@@ -60,6 +60,7 @@ class Application(
     conferenceIqHandler: ConferenceIqHandler,
     private val conferenceStore: ConferenceStore,
     bridgeSelector: BridgeSelector,
+    private val getStatsJson: () -> OrderedJsonObject,
     private val getDebugState: (full: Boolean, confId: String?) -> OrderedJsonObject
 ) {
     private val logger = createLogger()
@@ -80,13 +81,14 @@ class Application(
             }
 
             routing {
-                metrics()
                 about()
                 conferenceRequest()
-                moveEndpoints()
-                rtcstats()
                 debug()
+                metrics()
+                moveEndpoints()
                 pin()
+                rtcstats()
+                stats()
             }
         }.start(wait = false)
     }
@@ -262,6 +264,12 @@ class Application(
                     call.respond(HttpStatusCode.OK)
                 }
             }
+        }
+    }
+
+    private fun Route.stats() {
+        get("/stats") {
+            call.respondJson(getStatsJson())
         }
     }
 }

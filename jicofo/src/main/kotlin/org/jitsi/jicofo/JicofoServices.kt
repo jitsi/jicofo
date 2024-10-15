@@ -143,7 +143,8 @@ class JicofoServices {
             healthChecker,
             xmppServices.conferenceIqHandler,
             focusManager,
-            bridgeSelector
+            bridgeSelector,
+            { getStats() }
         ) { full, confId ->
             if (confId == null) {
                 getDebugState(full)
@@ -223,7 +224,10 @@ class JicofoServices {
         }
     }
 
-    fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
+    /** Gets statistics for the /stats HTTP interface. */
+    private fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
+        // Update the metrics that are usually updated periodically so we read the current values.
+        JicofoMetricsContainer.instance.metricsUpdater.updateMetrics()
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
