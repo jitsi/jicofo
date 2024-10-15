@@ -20,7 +20,6 @@ package org.jitsi.jicofo
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jxmpp.jid.EntityBareJid
 import java.time.Duration
-import java.time.Instant
 
 interface ConferenceStore {
     /** Get a list of all conferences. */
@@ -44,5 +43,5 @@ interface ConferenceStore {
 data class PinnedConference(
     val conferenceId: String,
     val jvbVersion: String,
-    val expiresAt: Instant
+    val expiresAt: String
 )

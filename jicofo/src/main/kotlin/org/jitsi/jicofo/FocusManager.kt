@@ -342,7 +342,7 @@ class FocusManager(
         synchronized(conferencesSyncRoot) {
             expirePins(clock.instant())
             pinnedConferences.forEach { (conferenceId, p) ->
-                add(PinnedConference(conferenceId.toString(), p.jvbVersion, p.expiresAt))
+                add(PinnedConference(conferenceId.toString(), p.jvbVersion, p.expiresAt.toString()))
             }
         }
     }

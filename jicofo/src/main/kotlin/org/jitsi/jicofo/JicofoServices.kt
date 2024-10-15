@@ -42,6 +42,7 @@ import org.jitsi.jicofo.xmpp.jingle.JingleStats
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
@@ -239,7 +240,7 @@ class JicofoServices {
         put("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
     }
 
-    private fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
+    private fun getConferenceDebugState(conferenceId: EntityBareJid) = OrderedJsonObject().apply {
         val conference = focusManager.getConference(JidCreate.entityBareFrom(conferenceId))
         return conference?.debugState ?: OrderedJsonObject()
     }

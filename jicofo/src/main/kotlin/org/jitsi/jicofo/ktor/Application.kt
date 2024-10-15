@@ -57,6 +57,7 @@ import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 import java.time.Duration
@@ -68,7 +69,7 @@ class Application(
     private val conferenceStore: ConferenceStore,
     bridgeSelector: BridgeSelector,
     private val getStatsJson: () -> OrderedJsonObject,
-    private val getDebugState: (full: Boolean, confId: String?) -> OrderedJsonObject
+    private val getDebugState: (full: Boolean, confId: EntityBareJid?) -> OrderedJsonObject
 ) {
     private val logger = createLogger()
     private val server = start()
@@ -105,7 +106,7 @@ class Application(
         if (config.enablePrometheus) {
             get("/metrics") {
                 val accepts =
-                    parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
+                    parseHeaderValue(call.request.headers["Accept"]).sortedByDescending { it.quality }.map { it.value }
                 val (metrics, contentType) = JicofoMetricsContainer.instance.getMetrics(accepts)
                 call.respondText(metrics, contentType = ContentType.parse(contentType))
             }
@@ -144,7 +145,12 @@ class Application(
     private fun Route.conferenceRequest() {
         if (config.enableConferenceRequest) {
             post("/conference-request/v1") {
-                val request = call.receive<ConferenceRequest>()
+                val request = try {
+                    call.receive<ConferenceRequest>()
+                } catch (e: Exception) {
+                    throw BadRequest(e.message)
+                }
+
                 val response: IQ = try {
                     conferenceIqHandler.handleConferenceIq(request.toConferenceIq())
                 } catch (e: XmppStringprepException) {
@@ -206,7 +212,7 @@ class Application(
                         )
                     )
                 }
-                get("move-endpoints") {
+                get("move-fraction") {
                     call.respond(
                         moveEndpointsHandler.moveFraction(
                             call.request.queryParameters["bridge"],
@@ -242,10 +248,15 @@ class Application(
                     }
                     call.respondJson(conferencesJson)
                 }
-                get("/conference/{confId}") {
-                    val confId = call.parameters["confId"] ?: throw MissingParameter("conference")
+                get("/conference/{conference}") {
+                    val conference = call.parameters["conference"] ?: throw MissingParameter("conference")
+                    val conferenceJid = try {
+                        JidCreate.entityBareFrom(conference)
+                    } catch (e: Exception) {
+                        throw BadRequest("Invalid conference ID")
+                    }
                     call.respondJson(
-                        getDebugState(true, confId)
+                        getDebugState(true, conferenceJid)
                     )
                 }
                 get("xmpp-caps") {
@@ -265,7 +276,11 @@ class Application(
                     call.respond(conferenceStore.getPinnedConferences())
                 }
                 post("") {
-                    val pin = call.receive<PinJson>()
+                    val pin = try {
+                        call.receive<PinJson>()
+                    } catch (e: Exception) {
+                        throw BadRequest(e.message)
+                    }
                     val conferenceJid = try {
                         JidCreate.entityBareFrom(pin.conferenceId)
                     } catch (e: Exception) {
