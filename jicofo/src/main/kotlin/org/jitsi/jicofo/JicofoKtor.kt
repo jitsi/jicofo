@@ -25,22 +25,28 @@ import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
+import org.jitsi.jicofo.rest.ConferenceRequestHandler
 import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.version.CurrentVersionImpl
+import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
 
 class JicofoKtor(
-    val healthChecker: HealthCheckService?
+    private val healthChecker: HealthCheckService?,
+    conferenceIqHandler: ConferenceIqHandler
 ) {
     val logger = createLogger()
+    private val conferenceRequestHandler = ConferenceRequestHandler(conferenceIqHandler)
 
     private fun Route.about() {
         data class VersionInfo(
@@ -76,6 +82,15 @@ class JicofoKtor(
         }
     }
 
+    private fun Route.conferenceRequest() {
+        if (RestConfig.config.enableConferenceRequest) {
+            post("/conference-request/v1") {
+                val conferenceRequest = call.receive<ConferenceRequest>()
+                val response = conferenceRequestHandler.handleRequest(conferenceRequest)
+                call.respond(response)
+            }
+        }
+    }
     fun start() {
         logger.info("Starting ktor on port 9999")
         embeddedServer(Netty, port = 9999, host = "0.0.0.0") {
@@ -93,6 +108,7 @@ class JicofoKtor(
                     }
                 }
                 about()
+                conferenceRequest()
             }
         }.start(wait = false)
     }

@@ -37,7 +37,6 @@ import org.jitsi.jicofo.jibri.JibriDetectorMetrics
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
-import org.jitsi.jicofo.rest.ConferenceRequest
 import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.rest.move.MoveEndpoints
 import org.jitsi.jicofo.rest.move.MoveEndpointsConfig
@@ -46,7 +45,6 @@ import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
-import org.jitsi.rest.Version
 import org.jitsi.rest.createServer
 import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
@@ -142,7 +140,7 @@ class JicofoServices {
         null
     }
 
-    private val ktor = JicofoKtor(healthChecker).apply { start() }
+    private val ktor = JicofoKtor(healthChecker, xmppServices.conferenceIqHandler).apply { start() }
     private val jettyServer: Server?
 
     init {
@@ -151,7 +149,7 @@ class JicofoServices {
             val restApp = Application(
                 buildList {
                     if (RestConfig.config.enableConferenceRequest) {
-                        add(ConferenceRequest(xmppServices.conferenceIqHandler))
+                        //add(ConferenceRequest(xmppServices.conferenceIqHandler))
                     }
                     if (MoveEndpointsConfig.enabled) {
                         add(MoveEndpoints(focusManager, bridgeSelector))

@@ -17,16 +17,7 @@
  */
 package org.jitsi.jicofo.rest
 
-import jakarta.servlet.http.HttpServletResponse
-import jakarta.ws.rs.BadRequestException
-import jakarta.ws.rs.Consumes
-import jakarta.ws.rs.ForbiddenException
-import jakarta.ws.rs.InternalServerErrorException
-import jakarta.ws.rs.POST
-import jakarta.ws.rs.Path
-import jakarta.ws.rs.Produces
-import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
+import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -35,18 +26,11 @@ import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.stringprep.XmppStringprepException
 
-@Path("/conference-request/v1")
-class ConferenceRequest(
-    val conferenceIqHandler: ConferenceIqHandler
-) {
+class ConferenceRequestHandler(private val conferenceIqHandler: ConferenceIqHandler) {
     private val logger = createLogger()
 
-    @POST
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.APPLICATION_JSON)
-    fun conferenceRequest(conferenceRequest: org.jitsi.jicofo.ConferenceRequest?): String {
+    fun handleRequest(conferenceRequest: ConferenceRequest): ConferenceRequest {
         val response: IQ
-        if (conferenceRequest == null) throw BadRequestExceptionWithMessage("Missing body.")
         try {
             response = conferenceIqHandler.handleConferenceIq(conferenceRequest.toConferenceIq())
         } catch (e: XmppStringprepException) {
@@ -60,7 +44,7 @@ class ConferenceRequest(
             if (response is ErrorIQ) {
                 throw when (response.error.condition) {
                     StanzaError.Condition.not_authorized -> {
-                        ForbiddenException()
+                        Forbidden()
                     }
                     StanzaError.Condition.not_acceptable -> {
                         BadRequestExceptionWithMessage("invalid-session")
@@ -72,16 +56,10 @@ class ConferenceRequest(
             }
         }
 
-        return org.jitsi.jicofo.ConferenceRequest.fromConferenceIq(response).toJson()
+        return ConferenceRequest.fromConferenceIq(response)
     }
 }
 
-/**
- * The ctor for {@link BadRequestException} which takes in a String doesn't
- * actually include that String in the response.  A much longer syntax (seen
- * in the constructor below) is necessary.  This class exists in order to expose
- * that behavior in a more concise way
- */
-class BadRequestExceptionWithMessage(message: String?) : BadRequestException(
-    Response.status(HttpServletResponse.SC_BAD_REQUEST, message).build()
-)
+class BadRequestExceptionWithMessage(message: String?) : RuntimeException(message)
+class Forbidden : RuntimeException("Forbidden")
+class InternalServerErrorException : RuntimeException()
