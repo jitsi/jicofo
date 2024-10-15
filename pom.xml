@@ -34,7 +34,6 @@
   </licenses>
   <properties>
     <assembly.skipAssembly>false</assembly.skipAssembly>
-    <jetty.version>11.0.20</jetty.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
     <jxmpp.version>1.0.3</jxmpp.version>
@@ -43,7 +42,6 @@
     <ktor.version>3.0.0</ktor.version>
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
-    <jersey.version>3.0.10</jersey.version>
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
     <jicoco.version>1.1-142-gfed0320</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
@@ -99,11 +97,6 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>3.12.0</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-server</artifactId>
-        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.igniterealtime.smack</groupId>
@@ -189,26 +182,6 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.glassfish.jersey.containers</groupId>
-        <artifactId>jersey-container-jetty-http</artifactId>
-        <version>${jersey.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.containers</groupId>
-        <artifactId>jersey-container-servlet</artifactId>
-        <version>${jersey.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.inject</groupId>
-        <artifactId>jersey-hk2</artifactId>
-        <version>${jersey.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.media</groupId>
-        <artifactId>jersey-media-json-jackson</artifactId>
-        <version>${jersey.version}</version>
-      </dependency>
-      <dependency>
           <groupId>com.fasterxml.jackson.module</groupId>
           <artifactId>jackson-module-kotlin</artifactId>
           <version>2.14.1</version>
@@ -244,42 +217,6 @@
         <artifactId>mockito-core</artifactId>
         <version>4.0.0</version>
         <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.test-framework</groupId>
-        <artifactId>jersey-test-framework-core</artifactId>
-        <version>${jersey.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.test-framework.providers</groupId>
-        <artifactId>jersey-test-framework-provider-jetty</artifactId>
-        <version>${jersey.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>org.glassfish.jersey.test-framework.providers</groupId>
-        <artifactId>jersey-test-framework-provider-grizzly2</artifactId>
-        <version>${jersey.version}</version>
-        <scope>test</scope>
-        <exclusions>
-          <exclusion>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>io.kotest</groupId>
