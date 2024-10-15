@@ -38,6 +38,8 @@ import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.ConferenceRequest
+import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.RestConfig
@@ -47,11 +49,14 @@ import org.jitsi.utils.logging2.createLogger
 
 class Application(
     private val healthChecker: HealthCheckService?,
-    conferenceIqHandler: ConferenceIqHandler
+    conferenceIqHandler: ConferenceIqHandler,
+    conferenceStore: ConferenceStore,
+    bridgeSelector: BridgeSelector
 ) {
     private val logger = createLogger()
     private val server = start()
     private val conferenceRequestHandler = ConferenceRequestHandler(conferenceIqHandler)
+    private val moveEndpointsHandler = MoveEndpoints(conferenceStore, bridgeSelector)
 
     private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
         logger.info("Starting ktor on port 9999")
@@ -76,6 +81,7 @@ class Application(
                 }
                 about()
                 conferenceRequest()
+                moveEndpoints()
             }
         }.start(wait = false)
     }
@@ -83,12 +89,7 @@ class Application(
     fun stop() = server.stop()
 
     private fun Route.about() {
-        data class VersionInfo(
-            val name: String? = null,
-            val version: String? = null,
-            val os: String? = null
-        )
-
+        data class VersionInfo(val name: String? = null, val version: String? = null, val os: String? = null)
         val versionInfo = VersionInfo(
             CurrentVersionImpl.VERSION.applicationName,
             CurrentVersionImpl.VERSION.toString(),
@@ -122,6 +123,39 @@ class Application(
                 val conferenceRequest = call.receive<ConferenceRequest>()
                 val response = conferenceRequestHandler.handleRequest(conferenceRequest)
                 call.respond(response)
+            }
+        }
+    }
+
+    private fun Route.moveEndpoints() {
+        if (RestConfig.config.enableMoveEndpoints) {
+            route("/move-endpoints") {
+                get("move-endpoint") {
+                    call.respond(
+                        moveEndpointsHandler.moveEndpoint(
+                            call.request.queryParameters["conference"],
+                            call.request.queryParameters["endpoint"],
+                            call.request.queryParameters["bridge"],
+                        )
+                    )
+                }
+                get("move-endpoints") {
+                    call.respond(
+                        moveEndpointsHandler.moveEndpoints(
+                            call.request.queryParameters["bridge"],
+                            call.request.queryParameters["conference"],
+                            call.request.queryParameters["numEndpoints"]?.toInt() ?: 1
+                        )
+                    )
+                }
+                get("move-endpoints") {
+                    call.respond(
+                        moveEndpointsHandler.moveFraction(
+                            call.request.queryParameters["bridge"],
+                            call.request.queryParameters["fraction"]?.toDouble() ?: 0.1
+                        )
+                    )
+                }
             }
         }
     }

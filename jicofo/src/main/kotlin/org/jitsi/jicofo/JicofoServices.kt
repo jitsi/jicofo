@@ -38,8 +38,6 @@ import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.rest.RestConfig
-import org.jitsi.jicofo.rest.move.MoveEndpoints
-import org.jitsi.jicofo.rest.move.MoveEndpointsConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
@@ -141,7 +139,7 @@ class JicofoServices {
     }
 
     private val ktor = if (RestConfig.config.enabled) {
-        org.jitsi.jicofo.ktor.Application(healthChecker, xmppServices.conferenceIqHandler)
+        org.jitsi.jicofo.ktor.Application(healthChecker, xmppServices.conferenceIqHandler, focusManager, bridgeSelector)
     } else {
         logger.info("Rest interface disabled.")
         null
@@ -153,12 +151,6 @@ class JicofoServices {
             logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
             val restApp = Application(
                 buildList {
-                    if (RestConfig.config.enableConferenceRequest) {
-                        //add(ConferenceRequest(xmppServices.conferenceIqHandler))
-                    }
-                    if (MoveEndpointsConfig.enabled) {
-                        add(MoveEndpoints(focusManager, bridgeSelector))
-                    }
                 }
             )
             createServer(RestConfig.config.httpServerConfig).also {

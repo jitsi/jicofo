@@ -23,9 +23,11 @@ import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respondText
 
 sealed class JicofoKtorException(message: String?) : RuntimeException(message)
-class BadRequest(message: String? = null) : JicofoKtorException("Bad request: ${message ?: ""}")
+open class BadRequest(message: String? = null) : JicofoKtorException("Bad request: ${message ?: ""}")
+class NotFound(message: String?) : JicofoKtorException("Not found: ${message ?: ""}")
 class Forbidden(message: String? = null) : JicofoKtorException("Forbidden: ${message ?: ""}")
 class InternalError(message: String? = null): JicofoKtorException("Internal error: ${message ?: ""}")
+class MissingParameter(parameter: String) : BadRequest("Missing parameter: $parameter")
 
 object ExceptionHandler {
     suspend fun handle(call: ApplicationCall, cause: Throwable) {
