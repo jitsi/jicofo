@@ -54,6 +54,7 @@ import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
+import org.jitsi.jicofo.ktor.RestConfig.Companion.config as config
 
 class Application(
     private val healthChecker: HealthCheckService?,
@@ -69,8 +70,8 @@ class Application(
     private val moveEndpointsHandler = MoveEndpoints(conferenceStore, bridgeSelector)
 
     private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
-        logger.info("Starting ktor on port 9999")
-        return embeddedServer(Netty, port = 9999, host = "0.0.0.0") {
+        logger.info("Starting ktor on port ${config.port}, host ${config.host}")
+        return embeddedServer(Netty, port = config.port, host = config.host) {
             install(ContentNegotiation) {
                 jackson {}
             }
@@ -96,7 +97,7 @@ class Application(
     fun stop() = server.stop()
 
     private fun Route.metrics() {
-        if (RestConfig.config.enablePrometheus) {
+        if (config.enablePrometheus) {
             get("/metrics") {
                 val accepts =
                     parseHeaderValue(call.request.headers["Accept"]).sortedBy { it.quality }.map { it.value }
@@ -136,7 +137,7 @@ class Application(
     }
 
     private fun Route.conferenceRequest() {
-        if (RestConfig.config.enableConferenceRequest) {
+        if (config.enableConferenceRequest) {
             post("/conference-request/v1") {
                 val conferenceRequest = call.receive<ConferenceRequest>()
                 val response = conferenceRequestHandler.handleRequest(conferenceRequest)
@@ -161,7 +162,7 @@ class Application(
     }
 
     private fun Route.moveEndpoints() {
-        if (RestConfig.config.enableMoveEndpoints) {
+        if (config.enableMoveEndpoints) {
             route("/move-endpoints") {
                 get("move-endpoint") {
                     call.respond(
@@ -194,7 +195,7 @@ class Application(
     }
 
     private fun Route.debug() {
-        if (RestConfig.config.enableDebug) {
+        if (config.enableDebug) {
             route("/debug") {
                 get("") {
                     call.respondJson(
@@ -234,7 +235,7 @@ class Application(
         data class PinJson(val conferenceId: String, val jvbVersion: String, val durationMinutes: Int)
         data class UnpinJson(val conferenceId: String)
 
-        if (RestConfig.config.pinEnabled) {
+        if (config.pinEnabled) {
             route("/pin") {
                 get("") {
                     call.respond(conferenceStore.getPinnedConferences())

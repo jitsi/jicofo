@@ -18,9 +18,6 @@
 package org.jitsi.jicofo
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
-import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.ServletHolder
-import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -36,15 +33,12 @@ import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jibri.JibriDetectorMetrics
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.rest.Application
 import org.jitsi.jicofo.ktor.RestConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
-import org.jitsi.rest.createServer
-import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
@@ -156,26 +150,6 @@ class JicofoServices {
         logger.info("Rest interface disabled.")
         null
     }
-    private val jettyServer: Server?
-
-    init {
-        jettyServer = if (RestConfig.config.enabled) {
-            logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
-            val restApp = Application(
-                buildList {
-                }
-            )
-            createServer(RestConfig.config.httpServerConfig).also {
-                it.servletContextHandler.addServlet(
-                    ServletHolder(ServletContainer(restApp)),
-                    "/*"
-                )
-                it.start()
-            }
-        } else {
-            null
-        }
-    }
 
     init {
         logger.info("Registering GlobalMetrics periodic updates.")
@@ -189,7 +163,6 @@ class JicofoServices {
         }
         healthChecker?.shutdown()
         JicofoMetricsContainer.instance.metricsUpdater.stop()
-        jettyServer?.stop()
         ktor?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)

@@ -19,13 +19,19 @@ package org.jitsi.jicofo.ktor
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
-import org.jitsi.rest.JettyBundleActivatorConfig
-import org.jitsi.rest.isEnabled
 
 class RestConfig private constructor() {
-    val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
+    val port: Int by config {
+        "jicofo.rest.port".from(JitsiConfig.newConfig)
+    }
 
-    val enabled = httpServerConfig.isEnabled()
+    val host: String by config {
+        "jicofo.rest.host".from(JitsiConfig.newConfig)
+    }
+
+    val enabled: Boolean by config {
+        "jicofo.rest.enabled".from(JitsiConfig.newConfig)
+    }
 
     val enablePrometheus: Boolean by config {
         "jicofo.rest.prometheus.enabled".from(JitsiConfig.newConfig)
