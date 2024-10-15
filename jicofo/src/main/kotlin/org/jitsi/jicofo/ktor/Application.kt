@@ -41,6 +41,7 @@ import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.ktor.exception.BadRequest
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.ktor.exception.MissingParameter
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
@@ -51,6 +52,8 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONArray
 import org.json.simple.JSONObject
+import org.jxmpp.jid.impl.JidCreate
+import java.time.Duration
 
 class Application(
     private val healthChecker: HealthCheckService?,
@@ -83,6 +86,7 @@ class Application(
                 moveEndpoints()
                 rtcstats()
                 debug()
+                pin()
             }
         }.start(wait = false)
     }
@@ -219,6 +223,43 @@ class Application(
                 }
                 get("xmpp-caps") {
                     call.respondJson(XmppCapsStats.stats)
+                }
+            }
+        }
+    }
+
+    private fun Route.pin() {
+        data class PinJson(val conferenceId: String, val jvbVersion: String, val durationMinutes: Int)
+        data class UnpinJson(val conferenceId: String)
+
+        if (RestConfig.config.pinEnabled) {
+            route("/pin") {
+                get("") {
+                    call.respond(conferenceStore.getPinnedConferences())
+                }
+                post("") {
+                    val pin = call.receive<PinJson>()
+                    val conferenceJid = try {
+                        JidCreate.entityBareFrom(pin.conferenceId)
+                    } catch (e: Exception) {
+                        throw BadRequest("Invalid conference ID")
+                    }
+
+                    conferenceStore.pinConference(
+                        conferenceJid, pin.jvbVersion, Duration.ofMinutes(pin.durationMinutes.toLong())
+                    )
+                    call.respond(HttpStatusCode.OK)
+                }
+                post("/remove") {
+                    val unpin = call.receive<UnpinJson>()
+                    val conferenceJid = try {
+                        JidCreate.entityBareFrom(unpin.conferenceId)
+                    } catch (e: Exception) {
+                        throw BadRequest("Invalid conference ID")
+                    }
+
+                    conferenceStore.unpinConference(conferenceJid)
+                    call.respond(HttpStatusCode.OK)
                 }
             }
         }

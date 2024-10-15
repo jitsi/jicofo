@@ -43,6 +43,10 @@ class RestConfig private constructor() {
         "jicofo.rest.debug.enabled".from(JitsiConfig.newConfig)
     }
 
+    val pinEnabled: Boolean by config {
+        "jicofo.rest.pin.enabled".from(JitsiConfig.newConfig)
+    }
+
     companion object {
         @JvmField
         val config = RestConfig()
