@@ -64,12 +64,6 @@ case "$1" in
         OLD_JITSI_CONFIG="/etc/jitsi/jicofo/sip-communicator.properties"
         HOCON_CONFIG="/etc/jitsi/jicofo/jicofo.conf"
 
-        # Updates config so new and old installs will start using the new config file
-        if ! grep -q "\-Dconfig.file" "$CONFIG"; then
-            echo "Updating $CONFIG to use jicofo.conf"
-            sed -i 's|JAVA_SYS_PROPS="|JAVA_SYS_PROPS="-Dconfig.file='"$HOCON_CONFIG"' |g' $CONFIG
-        fi
-
         if [ ! -f $HOCON_CONFIG ]; then
             echo "Generating an empty jicofo.conf file"
             echo "# Jicofo HOCON configuration. See reference.conf in /usr/share/jicofo/jicofo.jar for
