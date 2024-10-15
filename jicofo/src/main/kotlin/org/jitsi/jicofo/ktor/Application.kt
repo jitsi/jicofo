@@ -42,7 +42,6 @@ import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.rest.RestConfig
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.utils.logging2.createLogger
