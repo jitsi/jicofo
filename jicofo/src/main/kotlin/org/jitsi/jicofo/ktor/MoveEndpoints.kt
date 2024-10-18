@@ -15,25 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.rest.move
+package org.jitsi.jicofo.ktor
 
-import jakarta.servlet.http.HttpServletResponse
-import jakarta.ws.rs.DefaultValue
-import jakarta.ws.rs.GET
-import jakarta.ws.rs.NotFoundException
-import jakarta.ws.rs.Path
-import jakarta.ws.rs.Produces
-import jakarta.ws.rs.QueryParam
-import jakarta.ws.rs.core.MediaType
-import jakarta.ws.rs.core.Response
-import org.jitsi.config.JitsiConfig
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConference
-import org.jitsi.jicofo.rest.BadRequestExceptionWithMessage
-import org.jitsi.metaconfig.config
+import org.jitsi.jicofo.ktor.exception.BadRequest
+import org.jitsi.jicofo.ktor.exception.MissingParameter
+import org.jitsi.jicofo.ktor.exception.NotFound
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
 import kotlin.math.min
@@ -44,7 +35,6 @@ import kotlin.math.roundToInt
  * that when re-inviting the normal bridge selection logic is used again, so it's possible that the same bridge is
  * selected (unless it's unhealthy/draining or overloaded and there are less loaded bridges).
  */
-@Path("/move-endpoints")
 class MoveEndpoints(
     val conferenceStore: ConferenceStore,
     val bridgeSelector: BridgeSelector
@@ -54,28 +44,19 @@ class MoveEndpoints(
     /**
      * Move a specific endpoint in a specific conference.
      */
-    @Path("move-endpoint")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
     fun moveEndpoint(
-        /**
-         * Conference JID, e.g room@conference.example.com. This is a required parameter, but without a @DefaultValue
-         * jetty returns a 500 and prints a stack trace.
-         */
-        @QueryParam("conference") @DefaultValue("") conferenceId: String,
-        /**
-         * Endpoint ID, e.g. abcdefgh. This is a required parameter, but without a @DefaultValue jetty returns a 500
-         * and prints a stack trace.
-         */
-        @QueryParam("endpoint") @DefaultValue("") endpointId: String,
+        /** Conference JID, e.g room@conference.example.com. */
+        conferenceId: String?,
+        /** Endpoint ID, e.g. abcdefgh. */
+        endpointId: String?,
         /**
          * Optional bridge JID. If specified, the endpoint will only be moved it if is indeed connected to this bridge.
          */
-        @QueryParam("bridge") @DefaultValue("") bridgeId: String
+        bridgeId: String?
     ): Result {
-        if (conferenceId.isEmpty()) throw BadRequestExceptionWithMessage("Conference ID is missing")
-        if (endpointId.isEmpty()) throw BadRequestExceptionWithMessage("Endpoint ID is missing")
-        val bridge = if (bridgeId.isEmpty()) null else getBridge(bridgeId)
+        if (conferenceId.isNullOrBlank()) throw MissingParameter("conference")
+        if (endpointId.isNullOrBlank()) throw MissingParameter("endpoint")
+        val bridge = if (bridgeId.isNullOrBlank()) null else getBridge(bridgeId)
         val conference = getConference(conferenceId)
 
         logger.info("Moving conference=$conferenceId endpoint=$endpointId bridge=$bridgeId")
@@ -98,26 +79,20 @@ class MoveEndpoints(
      * greedily from the list until we've selected the desired count. Note that this may need to be adjusted if it leads
      * to thundering horde issues (though the recentlyAddedEndpointCount correction should prevent them).
      */
-    @Path("move-endpoints")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
     fun moveEndpoints(
-        /**
-         * Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. This is a required parameter, but without a
-         * @DefaultValue jetty returns a 500 and prints a stack trace.
-         */
-        @QueryParam("bridge") @DefaultValue("") bridgeId: String,
+        /** Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. */
+        bridgeId: String?,
         /**
          * Optional conference JID, e.g room@conference.example.com. If specified only endpoints from this conference
          * will be moved.
          */
-        @QueryParam("conference") @DefaultValue("") conferenceId: String,
+        conferenceId: String?,
         /** Number of endpoints to move. */
-        @QueryParam("endpoints") @DefaultValue("1") numEndpoints: Int
+        numEndpoints: Int
     ): Result {
-        if (bridgeId.isEmpty()) throw BadRequestExceptionWithMessage("Bridge JID is missing")
+        if (bridgeId.isNullOrBlank()) throw MissingParameter("bridge")
         val bridge = getBridge(bridgeId)
-        val conference = if (conferenceId.isEmpty()) null else getConference(conferenceId)
+        val conference = if (conferenceId.isNullOrBlank()) null else getConference(conferenceId)
         val bridgeConferences = if (conference == null) {
             bridge.getConferences()
         } else {
@@ -136,19 +111,13 @@ class MoveEndpoints(
      * that this may need to be adjusted if it leads to thundering horde issues (though the recentlyAddedEndpointCount
      * correction should prevent them).
      */
-    @Path("move-fraction")
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
     fun moveFraction(
-        /**
-         * Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. This is a required parameter, but without a
-         * @DefaultValue jetty returns a 500 and prints a stack trace.
-         */
-        @QueryParam("bridge") @DefaultValue("") bridgeId: String,
-        /** The fraction of endpoints to move. Defaults to 10% */
-        @QueryParam("fraction") @DefaultValue("0.1") fraction: Double
+        /** Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. */
+        bridgeId: String?,
+        /** The fraction of endpoints to move. */
+        fraction: Double
     ): Result {
-        if (bridgeId.isEmpty()) throw BadRequestExceptionWithMessage("Bridge JID is missing")
+        if (bridgeId.isNullOrBlank()) throw MissingParameter("bridge")
         val bridge = getBridge(bridgeId)
         val bridgeConferences = bridge.getConferences()
         val totalEndpoints = bridgeConferences.sumOf { it.second }
@@ -175,7 +144,7 @@ class MoveEndpoints(
         val bridgeJid = try {
             JidCreate.from(bridge)
         } catch (e: Exception) {
-            throw BadRequestExceptionWithMessage("Invalid bridge ID")
+            throw BadRequest("Invalid bridge ID")
         }
 
         bridgeSelector.get(bridgeJid)?.let { return it }
@@ -183,19 +152,18 @@ class MoveEndpoints(
         val bridgeFullJid = try {
             JidCreate.from("${BridgeConfig.config.breweryJid}/$bridge")
         } catch (e: Exception) {
-            throw BadRequestExceptionWithMessage("Invalid bridge ID")
+            throw BadRequest("Invalid bridge ID")
         }
-        return bridgeSelector.get(bridgeFullJid) ?: throw NotFoundExceptionWithMessage("Bridge not found")
+        return bridgeSelector.get(bridgeFullJid) ?: throw NotFound("Bridge not found")
     }
 
     private fun getConference(conferenceId: String): JitsiMeetConference {
         val conferenceJid = try {
             JidCreate.entityBareFrom(conferenceId)
         } catch (e: Exception) {
-            throw BadRequestExceptionWithMessage("Invalid conference ID")
+            throw BadRequest("Invalid conference ID")
         }
-        return conferenceStore.getConference(conferenceJid)
-            ?: throw NotFoundExceptionWithMessage("Conference not found")
+        return conferenceStore.getConference(conferenceJid) ?: throw NotFound("Conference not found")
     }
 
     private fun Bridge.getConferences() = conferenceStore.getAllConferences().mapNotNull { conference ->
@@ -207,14 +175,6 @@ data class Result(
     val movedEndpoints: Int,
     val conferences: Int
 )
-
-class MoveEndpointsConfig {
-    companion object {
-        val enabled: Boolean by config {
-            "jicofo.rest.move-endpoints.enabled".from(JitsiConfig.newConfig)
-        }
-    }
-}
 
 /**
  * Select endpoints to move, e.g. with a map m={a: 1, b: 3, c: 3}:
@@ -239,10 +199,3 @@ private fun <T> List<Pair<T, Int>>.select(n: Int): Map<T, Int> {
         }
     }
 }
-
-/**
- * The [NotFoundException(String message)] constructor doesn't actually include the message in the response.
- */
-class NotFoundExceptionWithMessage(message: String?) : NotFoundException(
-    Response.status(HttpServletResponse.SC_NOT_FOUND, message).build()
-)

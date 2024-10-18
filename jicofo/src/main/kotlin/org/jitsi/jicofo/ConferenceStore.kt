@@ -19,6 +19,7 @@ package org.jitsi.jicofo
 
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jxmpp.jid.EntityBareJid
+import java.time.Duration
 
 interface ConferenceStore {
     /** Get a list of all conferences. */
@@ -26,6 +27,10 @@ interface ConferenceStore {
 
     /** Get a conference for a specific [Jid] (i.e. name). */
     fun getConference(jid: EntityBareJid): JitsiMeetConference?
+
+    fun getPinnedConferences(): List<PinnedConference>
+    fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration)
+    fun unpinConference(roomName: EntityBareJid)
 
     fun addListener(listener: Listener) {}
     fun removeListener(listener: Listener) {}
@@ -35,7 +40,8 @@ interface ConferenceStore {
     }
 }
 
-class EmptyConferenceStore : ConferenceStore {
-    override fun getAllConferences() = emptyList<JitsiMeetConference>()
-    override fun getConference(jid: EntityBareJid): JitsiMeetConference? = null
-}
+data class PinnedConference(
+    val conferenceId: String,
+    val jvbVersion: String,
+    val expiresAt: String
+)

@@ -22,8 +22,6 @@ import io.kotest.matchers.shouldBe
 import io.mockk.mockk
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.utils.time.FakeClock
-import org.json.simple.JSONArray
-import org.json.simple.JSONObject
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
@@ -49,7 +47,7 @@ class BridgePinTest : ShouldSpec() {
             focusManager.pinConference(conf3, v3, Duration.ofMinutes(14))
 
             should("pin correctly") {
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 3
+                focusManager.getPinnedConferences().size shouldBe 3
                 focusManager.getBridgeVersionForConference(conf1) shouldBe v1
                 focusManager.getBridgeVersionForConference(conf2) shouldBe v2
                 focusManager.getBridgeVersionForConference(conf3) shouldBe v3
@@ -57,19 +55,19 @@ class BridgePinTest : ShouldSpec() {
 
             should("expire") {
                 clock.elapse(Duration.ofMinutes(11))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 2
+                focusManager.getPinnedConferences().size shouldBe 2
                 focusManager.getBridgeVersionForConference(conf1) shouldBe null
                 focusManager.getBridgeVersionForConference(conf2) shouldBe v2
                 focusManager.getBridgeVersionForConference(conf3) shouldBe v3
 
                 clock.elapse(Duration.ofMinutes(2))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 1
+                focusManager.getPinnedConferences().size shouldBe 1
                 focusManager.getBridgeVersionForConference(conf1) shouldBe null
                 focusManager.getBridgeVersionForConference(conf2) shouldBe null
                 focusManager.getBridgeVersionForConference(conf3) shouldBe v3
 
                 clock.elapse(Duration.ofMinutes(2))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 0
+                focusManager.getPinnedConferences().size shouldBe 0
                 focusManager.getBridgeVersionForConference(conf1) shouldBe null
                 focusManager.getBridgeVersionForConference(conf2) shouldBe null
                 focusManager.getBridgeVersionForConference(conf3) shouldBe null
@@ -85,7 +83,7 @@ class BridgePinTest : ShouldSpec() {
 
             should("unpin") {
                 focusManager.unpinConference(conf3)
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 2
+                focusManager.getPinnedConferences().size shouldBe 2
                 focusManager.getBridgeVersionForConference(conf1) shouldBe v1
                 focusManager.getBridgeVersionForConference(conf2) shouldBe v2
                 focusManager.getBridgeVersionForConference(conf3) shouldBe null
@@ -94,32 +92,23 @@ class BridgePinTest : ShouldSpec() {
             should("modify version and timeout") {
                 clock.elapse(Duration.ofMinutes(4))
                 focusManager.pinConference(conf1, v3, Duration.ofMinutes(10))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 2
+                focusManager.getPinnedConferences().size shouldBe 2
                 focusManager.getBridgeVersionForConference(conf1) shouldBe v3
                 focusManager.getBridgeVersionForConference(conf2) shouldBe v2
                 focusManager.getBridgeVersionForConference(conf3) shouldBe null
 
                 clock.elapse(Duration.ofMinutes(9))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 1
+                focusManager.getPinnedConferences().size shouldBe 1
                 focusManager.getBridgeVersionForConference(conf1) shouldBe v3
                 focusManager.getBridgeVersionForConference(conf2) shouldBe null
                 focusManager.getBridgeVersionForConference(conf3) shouldBe null
 
                 clock.elapse(Duration.ofMinutes(2))
-                getNumPins(focusManager.getPinnedConferencesJson()) shouldBe 0
+                focusManager.getPinnedConferences().size shouldBe 0
                 focusManager.getBridgeVersionForConference(conf1) shouldBe null
                 focusManager.getBridgeVersionForConference(conf2) shouldBe null
                 focusManager.getBridgeVersionForConference(conf3) shouldBe null
             }
         }
-    }
-}
-
-fun getNumPins(obj: JSONObject): Int {
-    val pins = obj["pins"]
-    if (pins is JSONArray) {
-        return pins.size
-    } else {
-        return -1
     }
 }

@@ -28,13 +28,11 @@ import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.QueueStatistics.Companion.getStatistics
 import org.jitsi.utils.stats.ConferenceSizeBuckets
-import org.json.simple.JSONArray
 import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -71,7 +69,7 @@ class FocusManager(
     private val listeners: MutableList<ConferenceStore.Listener> = ArrayList()
 
     /** Holds the conferences that are currently pinned to a specific bridge version. */
-    private val pinnedConferences: MutableMap<EntityBareJid, PinnedConference> = HashMap()
+    private val pinnedConferences: MutableMap<EntityBareJid, PinnedConferenceState> = HashMap()
 
     fun start() {
         metricsContainer.metricsUpdater.addUpdateTask { updateMetrics() }
@@ -302,8 +300,8 @@ class FocusManager(
     }
 
     /** Create or update the pinning for the specified conference. */
-    fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration) {
-        val pc = PinnedConference(jvbVersion, duration)
+    override fun pinConference(roomName: EntityBareJid, jvbVersion: String, duration: Duration) {
+        val pc = PinnedConferenceState(jvbVersion, duration)
         synchronized(conferencesSyncRoot) {
             val prev = pinnedConferences.remove(roomName)
             if (prev != null) {
@@ -317,7 +315,7 @@ class FocusManager(
     /**
      * Remove any existing pinning for the specified conference.
      */
-    fun unpinConference(roomName: EntityBareJid) = synchronized(conferencesSyncRoot) {
+    override fun unpinConference(roomName: EntityBareJid) = synchronized(conferencesSyncRoot) {
         val prev = pinnedConferences.remove(roomName)
         logger.info(if (prev != null) "Removing pin for $roomName" else "Unpin failed: $roomName")
     }
@@ -340,25 +338,17 @@ class FocusManager(
     }
 
     /** Get the set of current pinned conferences. */
-    fun getPinnedConferencesJson(): JSONObject = JSONObject().apply {
-        val pins = JSONArray()
+    override fun getPinnedConferences(): List<PinnedConference> = buildList {
         synchronized(conferencesSyncRoot) {
             expirePins(clock.instant())
-            pinnedConferences.forEach { (conferenceId, pinnedConference) ->
-                pins.add(
-                    JSONObject().apply {
-                        this["conference-id"] = conferenceId.toString()
-                        this["jvb-version"] = pinnedConference.jvbVersion
-                        this["expires-at"] = pinnedConference.expiresAt.atZone(ZoneId.systemDefault()).toString()
-                    }
-                )
+            pinnedConferences.forEach { (conferenceId, p) ->
+                add(PinnedConference(conferenceId.toString(), p.jvbVersion, p.expiresAt.toString()))
             }
         }
-        this["pins"] = pins
     }
 
     /** Holds pinning information for one conference. */
-    private inner class PinnedConference(
+    private inner class PinnedConferenceState(
         /** The version of the bridge that this conference must use. */
         val jvbVersion: String,
         duration: Duration

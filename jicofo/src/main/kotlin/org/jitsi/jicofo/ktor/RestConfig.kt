@@ -15,17 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.rest
+package org.jitsi.jicofo.ktor
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.config
-import org.jitsi.rest.JettyBundleActivatorConfig
-import org.jitsi.rest.isEnabled
 
 class RestConfig private constructor() {
-    val httpServerConfig = JettyBundleActivatorConfig("org.jitsi.jicofo.auth", "jicofo.rest")
+    val port: Int by config {
+        "jicofo.rest.port".from(JitsiConfig.newConfig)
+    }
 
-    val enabled = httpServerConfig.isEnabled()
+    val host: String by config {
+        "jicofo.rest.host".from(JitsiConfig.newConfig)
+    }
+
+    val enabled: Boolean by config {
+        "jicofo.rest.enabled".from(JitsiConfig.newConfig)
+    }
 
     val enablePrometheus: Boolean by config {
         "jicofo.rest.prometheus.enabled".from(JitsiConfig.newConfig)
@@ -33,6 +39,18 @@ class RestConfig private constructor() {
 
     val enableConferenceRequest: Boolean by config {
         "jicofo.rest.conference-request.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val enableMoveEndpoints: Boolean by config {
+        "jicofo.rest.move-endpoints.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val enableDebug: Boolean by config {
+        "jicofo.rest.debug.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val pinEnabled: Boolean by config {
+        "jicofo.rest.pin.enabled".from(JitsiConfig.newConfig)
     }
 
     companion object {
