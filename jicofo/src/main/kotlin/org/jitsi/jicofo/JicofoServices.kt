@@ -18,9 +18,6 @@
 package org.jitsi.jicofo
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
-import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.ServletHolder
-import org.glassfish.jersey.servlet.ServletContainer
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -34,25 +31,18 @@ import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jibri.JibriDetectorMetrics
+import org.jitsi.jicofo.ktor.RestConfig
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.rest.Application
-import org.jitsi.jicofo.rest.ConferenceRequest
-import org.jitsi.jicofo.rest.RestConfig
-import org.jitsi.jicofo.rest.move.MoveEndpoints
-import org.jitsi.jicofo.rest.move.MoveEndpointsConfig
 import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
-import org.jitsi.rest.Version
-import org.jitsi.rest.createServer
-import org.jitsi.rest.prometheus.Prometheus
-import org.jitsi.rest.servletContextHandler
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.json.simple.JSONObject
+import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
 
@@ -143,38 +133,23 @@ class JicofoServices {
         null
     }
 
-    private val jettyServer: Server?
-
-    init {
-        jettyServer = if (RestConfig.config.enabled) {
-            logger.info("Starting HTTP server with config: ${RestConfig.config.httpServerConfig}.")
-            val restApp = Application(
-                buildList {
-                    healthChecker?.let {
-                        add(org.jitsi.rest.Health(it))
-                    }
-                    add(Version(CurrentVersionImpl.VERSION))
-                    if (RestConfig.config.enableConferenceRequest) {
-                        add(ConferenceRequest(xmppServices.conferenceIqHandler))
-                    }
-                    if (RestConfig.config.enablePrometheus) {
-                        add(Prometheus(JicofoMetricsContainer.instance))
-                    }
-                    if (MoveEndpointsConfig.enabled) {
-                        add(MoveEndpoints(focusManager, bridgeSelector))
-                    }
-                }
-            )
-            createServer(RestConfig.config.httpServerConfig).also {
-                it.servletContextHandler.addServlet(
-                    ServletHolder(ServletContainer(restApp)),
-                    "/*"
-                )
-                it.start()
+    private val ktor = if (RestConfig.config.enabled) {
+        org.jitsi.jicofo.ktor.Application(
+            healthChecker,
+            xmppServices.conferenceIqHandler,
+            focusManager,
+            bridgeSelector,
+            { getStats() }
+        ) { full, confId ->
+            if (confId == null) {
+                getDebugState(full)
+            } else {
+                getConferenceDebugState(confId)
             }
-        } else {
-            null
         }
+    } else {
+        logger.info("Rest interface disabled.")
+        null
     }
 
     init {
@@ -189,7 +164,7 @@ class JicofoServices {
         }
         healthChecker?.shutdown()
         JicofoMetricsContainer.instance.metricsUpdater.stop()
-        jettyServer?.stop()
+        ktor?.stop()
         jvbDoctor?.let {
             bridgeSelector.removeHandler(it)
             it.shutdown()
@@ -223,7 +198,10 @@ class JicofoServices {
         }
     }
 
-    fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
+    /** Gets statistics for the /stats HTTP interface. */
+    private fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
+        // Update the metrics that are usually updated periodically so we read the current values.
+        JicofoMetricsContainer.instance.metricsUpdater.updateMetrics()
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
         putAll(focusManager.stats)
@@ -252,7 +230,7 @@ class JicofoServices {
         }
     }
 
-    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+    private fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
         put("focus_manager", focusManager.getDebugState(full))
         put("bridge_selector", bridgeSelector.debugState)
         put("jibri_detector", jibriDetector?.debugState ?: "null")
@@ -262,7 +240,7 @@ class JicofoServices {
         put("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
     }
 
-    fun getConferenceDebugState(conferenceId: String) = OrderedJsonObject().apply {
+    private fun getConferenceDebugState(conferenceId: EntityBareJid) = OrderedJsonObject().apply {
         val conference = focusManager.getConference(JidCreate.entityBareFrom(conferenceId))
         return conference?.debugState ?: OrderedJsonObject()
     }
