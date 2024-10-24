@@ -35,8 +35,8 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
-import org.jitsi.xmpp.extensions.colibri2.Export
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.colibri2.Sctp
@@ -59,7 +59,7 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
-    val audioExportUrl: URI?,
+    val audioRecordUrl: URI?,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -199,9 +199,16 @@ class Colibri2Session(
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
-            audioExportUrl?.let {
-                logger.warn("XXX adding export to colibri iq url=$it")
-                addExport(Export(it, audio = true))
+            audioRecordUrl?.let {
+                logger.warn("Adding export to colibri iq url=$it")
+                addConnect(
+                    Connect(
+                        url = it,
+                        type = Connect.Types.RECORDER,
+                        protocol = Connect.Protocols.MEDIAJSON,
+                        audio = true
+                    )
+                )
             }
         }
     }
