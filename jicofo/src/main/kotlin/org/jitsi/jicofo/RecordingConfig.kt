@@ -22,7 +22,7 @@ import org.jitsi.metaconfig.optionalconfig
 import java.net.URI
 
 class RecordingConfig private constructor() {
-    val multiTrackRecorderUrlTemplate: String? by optionalconfig {
+    private val multiTrackRecorderUrlTemplate: String? by optionalconfig {
         "jicofo.recording.multi-track-recorder-url-template".from(JitsiConfig.newConfig)
     }
 

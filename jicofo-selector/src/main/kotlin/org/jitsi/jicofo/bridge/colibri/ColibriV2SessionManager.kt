@@ -68,7 +68,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
-    private val audioExportUrl: URI?,
+    private val audioRecordUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -248,10 +248,10 @@ class ColibriV2SessionManager(
                 this,
                 bridge,
                 visitor,
-                if (audioExportUrl != null && sessionForAudioRecording == null) audioExportUrl else null,
+                if (audioRecordUrl != null && sessionForAudioRecording == null) audioRecordUrl else null,
                 logger
             )
-            if (audioExportUrl != null && sessionForAudioRecording == null) {
+            if (audioRecordUrl != null && sessionForAudioRecording == null) {
                 sessionForAudioRecording = session
             }
             return Pair(session, true)
