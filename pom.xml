@@ -192,6 +192,11 @@
         <artifactId>spotbugs-annotations</artifactId>
         <version>${spotbugs.version}</version>
       </dependency>
+      <dependency>
+          <groupId>io.ktor</groupId>
+          <artifactId>ktor-server-cors-jvm</artifactId>
+          <version>${ktor_version}</version>
+      </dependency>
       <!-- runtime -->
       <dependency>
         <groupId>rusv</groupId>

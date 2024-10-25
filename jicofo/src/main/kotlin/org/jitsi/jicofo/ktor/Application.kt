@@ -27,6 +27,7 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.netty.NettyApplicationEngine
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -144,6 +145,17 @@ class Application(
 
     private fun Route.conferenceRequest() {
         if (config.enableConferenceRequest) {
+            install(CORS) {
+                allowMethod(HttpMethod.Options)
+                allowMethod(HttpMethod.Post)
+                allowHeader(HttpHeaders.Authorization)
+                allowCredentials = true
+                allowNonSimpleContentTypes = true
+                allowSameOrigin = true
+                allowHost(ApplicationRequest.host(), schemes = listOf("https"))
+            }
+
+            options("/conference-request/v1") {}
             post("/conference-request/v1") {
                 val request = try {
                     call.receive<ConferenceRequest>()
