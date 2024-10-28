@@ -340,7 +340,7 @@ public class JitsiMeetConferenceImpl
             // We initialize colibriSessionManager only after having joined the room, so meetingId must be set.
             String meetingId = Objects.requireNonNull(this.meetingId);
             URI multiTrackRecorderUrl = RecordingConfig.config.multiTrackRecorderUrl(meetingId);
-            // TODO update presence to reflect
+
             colibriSessionManager = new ColibriV2SessionManager(
                     jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                     jicofoServices.getBridgeSelector(),
@@ -351,6 +351,11 @@ public class JitsiMeetConferenceImpl
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
+
+            if (multiTrackRecorderUrl != null)
+            {
+                setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, Boolean.TRUE.toString());
+            }
         }
         return colibriSessionManager;
     }
