@@ -34,6 +34,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingCall
 import io.ktor.server.routing.get
+import io.ktor.server.routing.options
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -144,6 +145,9 @@ class Application(
 
     private fun Route.conferenceRequest() {
         if (config.enableConferenceRequest) {
+            options("/conference-request/v1") {
+                call.respond(HttpStatusCode.OK)
+            }
             post("/conference-request/v1") {
                 val request = try {
                     call.receive<ConferenceRequest>()
