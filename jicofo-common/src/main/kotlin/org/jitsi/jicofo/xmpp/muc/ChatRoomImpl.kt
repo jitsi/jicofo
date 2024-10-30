@@ -59,6 +59,7 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.util.concurrent.ConcurrentHashMap
+import java.util.logging.Level
 
 @SuppressFBWarnings(
     value = ["JLM_JSR166_UTILCONCURRENT_MONITORENTER"],
@@ -67,10 +68,12 @@ import java.util.concurrent.ConcurrentHashMap
 class ChatRoomImpl(
     override val xmppProvider: XmppProvider,
     override val roomJid: EntityBareJid,
+    logLevel: Level,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
     private val logger = createLogger().apply {
+        level = logLevel
         addContext("room", roomJid.toString())
     }
 

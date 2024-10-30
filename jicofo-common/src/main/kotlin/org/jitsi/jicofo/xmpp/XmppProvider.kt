@@ -45,6 +45,7 @@ import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.logging.Level
 
 /** Wraps a Smack [XMPPConnection]. */
 class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
@@ -221,7 +222,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
 
     @Throws(RoomExistsException::class)
     fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name)
-    fun findOrCreateRoom(name: EntityBareJid): ChatRoom = muc.findOrCreateRoom(name)
+    fun findOrCreateRoom(name: EntityBareJid, logLevel: Level): ChatRoom = muc.findOrCreateRoom(name, logLevel)
 
     fun discoverFeatures(jid: EntityFullJid): Set<Features> {
         if (!xmppConnection.isConnected) {
@@ -333,21 +334,21 @@ private class Muc(val xmppProvider: XmppProvider) {
     private val rooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
 
     @Throws(RoomExistsException::class)
-    fun createChatRoom(roomJid: EntityBareJid): ChatRoom {
+    fun createChatRoom(roomJid: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom {
         synchronized(rooms) {
             if (rooms.containsKey(roomJid)) {
                 throw RoomExistsException("Room '$roomJid' exists")
             }
-            return ChatRoomImpl(xmppProvider, roomJid) { removeRoom(it) }.also {
+            return ChatRoomImpl(xmppProvider, roomJid, logLevel) { removeRoom(it) }.also {
                 rooms[roomJid] = it
             }
         }
     }
 
-    fun findOrCreateRoom(roomJid: EntityBareJid): ChatRoom {
+    fun findOrCreateRoom(roomJid: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom {
         synchronized(rooms) {
             try {
-                return rooms[roomJid] ?: createChatRoom(roomJid)
+                return rooms[roomJid] ?: createChatRoom(roomJid, logLevel)
             } catch (e: RoomExistsException) {
                 throw RuntimeException("Unexpected RoomExistsException.")
             }

@@ -25,7 +25,7 @@ class MockXmppProvider(val xmppConnection: AbstractXMPPConnection = MockXmppConn
     val chatRooms = mutableMapOf<EntityBareJid, MockChatRoom>()
     val xmppProvider = mockk<XmppProvider>(relaxed = true) {
         every { registered } returns true
-        every { findOrCreateRoom(any()) } answers { getRoom(arg(0)).chatRoom }
+        every { findOrCreateRoom(any(), any()) } answers { getRoom(arg(0)).chatRoom }
         every { xmppConnection } returns this@MockXmppProvider.xmppConnection
     }
 
