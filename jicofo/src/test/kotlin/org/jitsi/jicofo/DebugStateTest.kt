@@ -29,6 +29,7 @@ import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
+import java.util.logging.Level
 
 /**
  * All debugState interfaces should produce valid JSON.
@@ -50,7 +51,7 @@ class DebugStateTest : ShouldSpec() {
         context("ChatRoomImpl and members") {
             val conferenceJid = JidCreate.entityBareFrom("conference@example.com")
 
-            val chatRoom = ChatRoomImpl(mockk(relaxed = true), conferenceJid) { }
+            val chatRoom = ChatRoomImpl(mockk(relaxed = true), conferenceJid, Level.INFO) { }
             chatRoom.debugState.shouldBeValidJson()
 
             val member = ChatRoomMemberImpl(

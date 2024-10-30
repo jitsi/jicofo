@@ -495,7 +495,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName);
+        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName, logger.getLevel());
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
@@ -1875,7 +1875,7 @@ public class JitsiMeetConferenceImpl
                     xmppProvider);
 
             // Will call join after releasing the lock
-            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid);
+            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid, logger.getLevel());
 
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 
