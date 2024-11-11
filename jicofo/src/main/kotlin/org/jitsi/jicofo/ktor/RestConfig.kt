@@ -29,9 +29,11 @@ class RestConfig private constructor() {
         "jicofo.rest.host".from(JitsiConfig.newConfig)
     }
 
-    val enabled: Boolean by config {
+    private val enabledProp: Boolean by config {
         "jicofo.rest.enabled".from(JitsiConfig.newConfig)
     }
+
+    val enabled = enabledProp && port > 0
 
     val enablePrometheus: Boolean by config {
         "jicofo.rest.prometheus.enabled".from(JitsiConfig.newConfig)
