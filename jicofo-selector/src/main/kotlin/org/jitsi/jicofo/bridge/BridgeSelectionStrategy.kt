@@ -87,11 +87,6 @@ abstract class BridgeSelectionStrategy {
     private var totalLeastLoaded = 0
 
     /**
-     * Maximum participants per bridge in one conference, or `-1` for no maximum.
-     */
-    private val maxParticipantsPerBridge = config.maxBridgeParticipants()
-
-    /**
      * Selects a bridge to be used for a new participant in a conference.
      *
      * @param bridges the list of bridges to select from.
@@ -401,9 +396,9 @@ abstract class BridgeSelectionStrategy {
      */
     private fun isOverloaded(bridge: Bridge, conferenceBridges: Map<Bridge, ConferenceBridgeProperties>): Boolean {
         return bridge.isOverloaded || (
-            maxParticipantsPerBridge > 0 &&
+            config.maxBridgeParticipants > 0 &&
                 conferenceBridges.containsKey(bridge) &&
-                conferenceBridges[bridge]!!.participantCount >= maxParticipantsPerBridge
+                conferenceBridges[bridge]!!.participantCount >= config.maxBridgeParticipants
             )
     }
 
