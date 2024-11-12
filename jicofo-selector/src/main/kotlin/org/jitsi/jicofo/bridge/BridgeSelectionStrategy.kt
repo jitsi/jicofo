@@ -18,6 +18,7 @@ package org.jitsi.jicofo.bridge
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.json.simple.JSONObject
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
  * Represents an algorithm for bridge selection.
@@ -88,8 +89,7 @@ abstract class BridgeSelectionStrategy {
     /**
      * Maximum participants per bridge in one conference, or `-1` for no maximum.
      */
-    private val maxParticipantsPerBridge =
-        BridgeConfig.config.maxBridgeParticipants()
+    private val maxParticipantsPerBridge = config.maxBridgeParticipants()
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
@@ -176,7 +176,7 @@ abstract class BridgeSelectionStrategy {
         participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = getRegionGroup(desiredRegion)
+        val regionGroup = config.getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .intersect(conferenceBridges.keys)
@@ -234,7 +234,7 @@ abstract class BridgeSelectionStrategy {
         participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = getRegionGroup(desiredRegion)
+        val regionGroup = config.getRegionGroup(desiredRegion)
         val result = bridges
             .filterNot { isOverloaded(it, conferenceBridges) }
             .firstOrNull { regionGroup.contains(it.region) }
@@ -279,7 +279,7 @@ abstract class BridgeSelectionStrategy {
         participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = getRegionGroup(desiredRegion)
+        val regionGroup = config.getRegionGroup(desiredRegion)
         val result = bridges
             .intersect(conferenceBridges.keys)
             .firstOrNull { regionGroup.contains(it.region) }
@@ -320,7 +320,7 @@ abstract class BridgeSelectionStrategy {
         participantProperties: ParticipantProperties,
         desiredRegion: String?
     ): Bridge? {
-        val regionGroup = getRegionGroup(desiredRegion)
+        val regionGroup = config.getRegionGroup(desiredRegion)
         val result = bridges
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
@@ -405,22 +405,6 @@ abstract class BridgeSelectionStrategy {
                 conferenceBridges.containsKey(bridge) &&
                 conferenceBridges[bridge]!!.participantCount >= maxParticipantsPerBridge
             )
-    }
-
-    private val regionGroups: MutableMap<String, Set<String>> = HashMap()
-
-    init {
-        BridgeConfig.config.regionGroups.forEach { regionGroup ->
-            regionGroup.forEach { region ->
-                regionGroups[region] = regionGroup
-            }
-        }
-    }
-
-    protected fun getRegionGroup(region: String?): Set<String> {
-        if (region == null) return setOf()
-        val regionGroup = regionGroups[region]
-        return regionGroup ?: setOf(region)
     }
 
     val stats: JSONObject

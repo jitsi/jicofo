@@ -72,7 +72,7 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
         val participantRegion = participantProperties.region
         var region = participantRegion ?: localRegion
         if (localRegion != null) {
-            val regionGroup = getRegionGroup(region)
+            val regionGroup = BridgeConfig.config.getRegionGroup(region)
             if (conferenceBridges.isEmpty() && region != localRegion) {
                 // Selecting an initial bridge for a participant not in the local region. This is most likely because
                 // exactly one of the first two participants in the conference is not in the local region, and we're

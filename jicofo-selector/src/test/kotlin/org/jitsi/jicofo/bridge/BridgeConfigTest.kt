@@ -82,7 +82,7 @@ class BridgeConfigTest : ShouldSpec() {
             }
         }
         context("Region groups") {
-            config.regionGroups shouldBe emptySet()
+            config.regionGroups shouldBe emptyMap()
 
             withNewConfig(
                 """
@@ -92,7 +92,15 @@ class BridgeConfigTest : ShouldSpec() {
                 ]
                 """.trimIndent()
             ) {
-                config.regionGroups shouldBe setOf(setOf("us-east", "us-west"), setOf("eu-central", "eu-west"))
+                config.regionGroups shouldBe mapOf(
+                    "us-east" to setOf("us-east", "us-west"),
+                    "us-west" to setOf("us-east", "us-west"),
+                    "eu-central" to setOf("eu-central", "eu-west"),
+                    "eu-west" to setOf("eu-central", "eu-west")
+                )
+                config.getRegionGroup(null) shouldBe emptySet()
+                config.getRegionGroup("abc") shouldBe setOf("abc")
+                config.getRegionGroup("us-east") shouldBe setOf("us-east", "us-west")
             }
         }
     }

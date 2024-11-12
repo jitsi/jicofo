@@ -148,16 +148,26 @@ class BridgeConfig private constructor() {
         "jicofo.bridge.xmpp-connection-name".from(JitsiConfig.newConfig)
     }
 
-    val regionGroups: Set<Set<String>> by config {
+    val regionGroups: Map<String, Set<String>> by config {
         "jicofo.bridge".from(JitsiConfig.newConfig).convertFrom<ConfigObject> {
             val regionGroupsConfigList = it["region-groups"] as? ConfigList ?: emptyList<ConfigValue>()
-            regionGroupsConfigList.map { regionsConfigList ->
+            val regionGroups = regionGroupsConfigList.map { regionsConfigList ->
                 (regionsConfigList as? ConfigList ?: emptyList<ConfigValue>()).map { region ->
                     region.unwrapped().toString()
                 }.toSet()
             }.toSet()
+            mutableMapOf<String, Set<String>>().apply {
+                regionGroups.forEach { regionGroup ->
+                    regionGroup.forEach { region ->
+                        this[region] = regionGroup
+                    }
+                }
+            }
         }
     }
+
+    fun getRegionGroup(region: String?): Set<String> =
+        if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
     companion object {
         const val BASE = "jicofo.bridge"

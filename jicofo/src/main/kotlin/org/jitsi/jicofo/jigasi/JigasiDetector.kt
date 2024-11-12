@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.jigasi
 
 import org.jitsi.jicofo.JicofoConfig
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
@@ -119,6 +120,14 @@ open class JigasiDetector(
             availableInstances.filter { it.isInRegion(*preferredRegions.toTypedArray()) }.let {
                 if (it.isNotEmpty()) return it.leastLoaded()?.jid
             }
+            // Try to match the preferred region groups.
+            val extendedPreferredRegions = preferredRegions.flatMap { region ->
+                BridgeConfig.config.getRegionGroup(region)
+            }
+            availableInstances.filter { it.isInRegion(*extendedPreferredRegions.toTypedArray()) }.let {
+                if (it.isNotEmpty()) return it.leastLoaded()?.jid
+            }
+
             // Otherwise try to match the local region.
             availableInstances.filter { it.isInRegion(localRegion) }.let {
                 if (it.isNotEmpty()) return it.leastLoaded()?.jid
