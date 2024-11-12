@@ -86,6 +86,7 @@ open class JigasiDetector(
                     this["supports_transcription"] = instance.supportsTranscription()
                     this["is_in_graceful_shutdown"] = instance.isInGracefulShutdown()
                     this["participants"] = instance.getParticipantCount()
+                    this["region"] = instance.getRegion() ?: "null"
                 }
                 debugState[instance.jid.resourceOrEmpty.toString()] = instanceJson
             }
@@ -148,8 +149,10 @@ private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.supportsTranscriptio
 private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.supportsSip(): Boolean =
     java.lang.Boolean.parseBoolean(status.getValueAsString(ColibriStatsExtension.SUPPORTS_SIP))
 private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.isInRegion(vararg regions: String?): Boolean =
-    regions.contains(status.getValueAsString(ColibriStatsExtension.REGION))
+    regions.contains(this.getRegion())
 private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.getParticipantCount(): Int =
     status.getValueAsInt(ColibriStatsExtension.PARTICIPANTS) ?: 0
+private fun BaseBrewery<ColibriStatsExtension>.BrewInstance.getRegion(): String? =
+    status.getValueAsString(ColibriStatsExtension.REGION)
 private fun List<BaseBrewery<ColibriStatsExtension>.BrewInstance>.leastLoaded() =
     minByOrNull { it.getParticipantCount() }
