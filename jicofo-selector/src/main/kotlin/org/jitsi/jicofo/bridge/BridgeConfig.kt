@@ -36,40 +36,38 @@ class BridgeConfig private constructor() {
         "org.jitsi.jicofo.BridgeSelector.MAX_PARTICIPANTS_PER_BRIDGE".from(JitsiConfig.legacyConfig)
         "$BASE.max-bridge-participants".from(JitsiConfig.newConfig)
     }
-    fun maxBridgeParticipants() = maxBridgeParticipants
 
     val maxBridgePacketRatePps: Int by config {
         "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE".from(JitsiConfig.legacyConfig)
         "$BASE.max-bridge-packet-rate".from(JitsiConfig.newConfig)
     }
-    fun maxBridgePacketRatePps() = maxBridgePacketRatePps
 
     val averageParticipantPacketRatePps: Int by config {
         "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE".from(JitsiConfig.legacyConfig)
         "$BASE.average-participant-packet-rate-pps"
             .from(JitsiConfig.newConfig).softDeprecated("use $BASE.average-participant-stress")
     }
-    fun averageParticipantPacketRatePps() = averageParticipantPacketRatePps
 
     val averageParticipantStress: Double by config {
         "$BASE.average-participant-stress".from(JitsiConfig.newConfig)
     }
-    fun averageParticipantStress() = averageParticipantStress
 
     val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
-    fun stressThreshold() = stressThreshold
 
+    /**
+     * How long the "failed" state should be sticky for. Once a [Bridge] goes in a non-operational state (via
+     * [.setIsOperational]) it will be considered non-operational for at least this amount of time.
+     * See the tests for example behavior.
+     */
     val failureResetThreshold: Duration by config {
         "org.jitsi.focus.BRIDGE_FAILURE_RESET_THRESHOLD".from(JitsiConfig.legacyConfig)
             .convertFrom<Long> { Duration.ofMillis(it) }
         "$BASE.failure-reset-threshold".from(JitsiConfig.newConfig)
     }
-    fun failureResetThreshold() = failureResetThreshold
 
     val participantRampupInterval: Duration by config {
         "$BASE.participant-rampup-interval".from(JitsiConfig.newConfig)
     }
-    fun participantRampupInterval() = participantRampupInterval
 
     val selectionStrategy: BridgeSelectionStrategy by config {
         "org.jitsi.jicofo.BridgeSelector.BRIDGE_SELECTION_STRATEGY".from(JitsiConfig.legacyConfig)
@@ -148,16 +146,26 @@ class BridgeConfig private constructor() {
         "jicofo.bridge.xmpp-connection-name".from(JitsiConfig.newConfig)
     }
 
-    val regionGroups: Set<Set<String>> by config {
+    val regionGroups: Map<String, Set<String>> by config {
         "jicofo.bridge".from(JitsiConfig.newConfig).convertFrom<ConfigObject> {
             val regionGroupsConfigList = it["region-groups"] as? ConfigList ?: emptyList<ConfigValue>()
-            regionGroupsConfigList.map { regionsConfigList ->
+            val regionGroups = regionGroupsConfigList.map { regionsConfigList ->
                 (regionsConfigList as? ConfigList ?: emptyList<ConfigValue>()).map { region ->
                     region.unwrapped().toString()
                 }.toSet()
             }.toSet()
+            mutableMapOf<String, Set<String>>().apply {
+                regionGroups.forEach { regionGroup ->
+                    regionGroup.forEach { region ->
+                        this[region] = regionGroup
+                    }
+                }
+            }
         }
     }
+
+    fun getRegionGroup(region: String?): Set<String> =
+        if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
     companion object {
         const val BASE = "jicofo.bridge"

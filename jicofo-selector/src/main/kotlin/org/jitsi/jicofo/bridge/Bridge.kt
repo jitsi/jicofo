@@ -27,6 +27,7 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
  * Represents a jitsi-videobridge instance, reachable at a certain JID, which
@@ -51,7 +52,7 @@ class Bridge @JvmOverloads internal constructor(
      * Keep track of the recently added endpoints.
      */
     private val newEndpointsRate = RateTracker(
-        BridgeConfig.config.participantRampupInterval(),
+        config.participantRampupInterval,
         Duration.ofMillis(100),
         clock
     )
@@ -93,7 +94,7 @@ class Bridge @JvmOverloads internal constructor(
             // To filter out intermittent failures, do not return operational
             // until past the reset threshold since the last failure.
             if (failureInstant != null &&
-                Duration.between(failureInstant, clock.instant()).compareTo(failureResetThreshold) < 0
+                Duration.between(failureInstant, clock.instant()).compareTo(config.failureResetThreshold) < 0
             ) {
                 false
             } else {
@@ -110,7 +111,7 @@ class Bridge @JvmOverloads internal constructor(
     /**
      * Start out with the configured value, update if the bridge reports a value.
      */
-    private var averageParticipantStress = BridgeConfig.config.averageParticipantStress()
+    private var averageParticipantStress = config.averageParticipantStress
 
     /**
      * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
@@ -216,7 +217,7 @@ class Bridge @JvmOverloads internal constructor(
         val healthy = stats.getValueAsString("healthy")
         if (healthy != null) {
             isHealthy = java.lang.Boolean.parseBoolean(healthy)
-        } else if (BridgeConfig.config.usePresenceForHealth) {
+        } else if (config.usePresenceForHealth) {
             logger.warn(
                 "Presence-based health checks are enabled, but presence did not include health status. Health " +
                     "checks for this bridge are effectively disabled."
@@ -286,7 +287,7 @@ class Bridge @JvmOverloads internal constructor(
      * @return true if the stress of the bridge is greater-than-or-equal to the threshold.
      */
     val isOverloaded: Boolean
-        get() = stress >= BridgeConfig.config.stressThreshold()
+        get() = stress >= config.stressThreshold
 
     val debugState: OrderedJsonObject
         get() {
@@ -306,12 +307,6 @@ class Bridge @JvmOverloads internal constructor(
         }
 
     companion object {
-        /**
-         * How long the "failed" state should be sticky for. Once a [Bridge] goes in a non-operational state (via
-         * [.setIsOperational]) it will be considered non-operational for at least this amount of time.
-         * See the tests for example behavior.
-         */
-        private val failureResetThreshold = BridgeConfig.config.failureResetThreshold()
 
         /**
          * Returns a negative number if b1 is more able to serve conferences than b2. The computation is based on the
