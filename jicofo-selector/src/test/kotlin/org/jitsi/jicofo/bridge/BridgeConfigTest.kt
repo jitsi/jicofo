@@ -31,7 +31,7 @@ class BridgeConfigTest : ShouldSpec() {
     init {
         MetaconfigSettings.cacheEnabled = false
         context("with no config the defaults from reference.conf should be used") {
-            config.maxBridgeParticipants shouldBe -1
+            config.maxBridgeParticipants shouldBe 80
             config.maxBridgePacketRatePps shouldBe 50000
             config.averageParticipantPacketRatePps shouldBe 500
         }
