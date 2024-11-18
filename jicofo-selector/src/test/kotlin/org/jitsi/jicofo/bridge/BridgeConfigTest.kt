@@ -32,29 +32,21 @@ class BridgeConfigTest : ShouldSpec() {
         MetaconfigSettings.cacheEnabled = false
         context("with no config the defaults from reference.conf should be used") {
             config.maxBridgeParticipants shouldBe 80
-            config.maxBridgePacketRatePps shouldBe 50000
-            config.averageParticipantPacketRatePps shouldBe 500
         }
         context("with legacy config") {
             withLegacyConfig(legacyConfig) {
                 config.maxBridgeParticipants shouldBe 111
-                config.maxBridgePacketRatePps shouldBe 111
-                config.averageParticipantPacketRatePps shouldBe 111
             }
         }
         context("with new config") {
             withNewConfig(newConfig) {
                 config.maxBridgeParticipants shouldBe 222
-                config.maxBridgePacketRatePps shouldBe 222
-                config.averageParticipantPacketRatePps shouldBe 222
             }
         }
         context("with both legacy and new config the legacy values should be used") {
             withLegacyConfig(legacyConfig) {
                 withNewConfig(newConfig) {
                     config.maxBridgeParticipants shouldBe 111
-                    config.maxBridgePacketRatePps shouldBe 111
-                    config.averageParticipantPacketRatePps shouldBe 111
                 }
             }
         }
@@ -115,7 +107,6 @@ private val newConfig = """
 jicofo {
     bridge {
         max-bridge-participants=222
-        max-bridge-packet-rate=222
         average-participant-packet-rate-pps=222
     }
 }    
