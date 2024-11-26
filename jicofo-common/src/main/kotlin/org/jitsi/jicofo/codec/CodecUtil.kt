@@ -206,7 +206,7 @@ class CodecUtil {
         fun createVideoRtpHdrExtExtensions(
             options: OfferOptions = OfferOptions()
         ): Collection<RTPHdrExtPacketExtension> = buildList {
-            if (config.av1.enabled() && config.av1DependencyDescriptor.enabled()) {
+            if (config.av1DependencyDescriptor.enabled()) {
                 // https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension
                 val dependencyDescriptorExt = RTPHdrExtPacketExtension()
                 dependencyDescriptorExt.id = config.av1DependencyDescriptor.id().toString()
