@@ -40,7 +40,9 @@ import org.jitsi.xmpp.extensions.jitsimeet.*;
 import org.jitsi.jicofo.jibri.*;
 
 import org.jitsi.xmpp.extensions.visitors.*;
+import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.tcp.*;
 import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
@@ -174,6 +176,11 @@ public class JitsiMeetConferenceImpl
      * that it will join a breakout room.
      */
     private Future<?> conferenceStartTimeout;
+
+    /**
+     * Reconnect timer. Used to stop the conference if XMPP connection is not restored in a given time.
+     */
+    private Future<?> reconnectTimeout;
 
     /**
      * Whether participants being invited to the conference as a result of joining (as opposed to having already
@@ -1076,24 +1083,35 @@ public class JitsiMeetConferenceImpl
         if (registered)
         {
             logger.info("XMPP reconnected");
-            if (chatRoom == null)
-            {
-                try
-                {
-                    joinTheRoom();
-                }
-                catch (Exception e)
-                {
-                    logger.error("Failed to join the room: " + roomName, e);
 
-                    stop();
-                }
+            if (this.reconnectTimeout != null)
+            {
+                this.reconnectTimeout.cancel(true);
+                this.reconnectTimeout = null;
+            }
+            else
+            {
+                logger.error("Reconnected but not supposed to be here:" + roomName);
             }
         }
         else
         {
             logger.info("XMPP disconnected.");
-            stop();
+            XMPPConnection connection = chatRoom.getXmppProvider().getXmppConnection();
+
+            if (connection instanceof XMPPTCPConnection
+                && ((XMPPTCPConnection) connection).isSmEnabled())
+            {
+                logger.info("XMPP will wait for a reconnect.");
+                reconnectTimeout = TaskPools.getScheduledPool().schedule(
+                        this::stop,
+                        ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
+                        TimeUnit.MILLISECONDS);
+            }
+            else
+            {
+                stop();
+            }
         }
     }
 

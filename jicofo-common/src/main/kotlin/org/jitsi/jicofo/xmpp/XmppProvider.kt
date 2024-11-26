@@ -97,6 +97,14 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
             registered = true
             logger.info("Registered.")
+            if (connection is XMPPTCPConnection) {
+                logger.info(
+                    "Registered. isSmEnabled:" + connection.isSmEnabled +
+                        " isSmAvailable:" + connection.isSmAvailable +
+                        " isSmResumptionPossible:" + connection.isSmResumptionPossible
+                )
+            }
+
             config.xmppDomain?.let {
                 logger.info("Will discover components for $it")
                 TaskPools.ioPool.submit { discoverComponents(it) }
@@ -282,8 +290,8 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             // Smack uses SASL Mechanisms ANONYMOUS and PLAIN, but tries to authenticate with GSSAPI when it's offered
             // by the server. Disable GSSAPI.
             SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
-            XMPPTCPConnection.setUseStreamManagementResumptionDefault(false)
-            XMPPTCPConnection.setUseStreamManagementDefault(false)
+            XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
+            XMPPTCPConnection.setUseStreamManagementDefault(true)
         }
     }
 
