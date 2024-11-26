@@ -206,6 +206,15 @@ class CodecUtil {
         fun createVideoRtpHdrExtExtensions(
             options: OfferOptions = OfferOptions()
         ): Collection<RTPHdrExtPacketExtension> = buildList {
+            if (config.videoLayersAllocation.enabled) {
+                // a=extmap:12 http://www.webrtc.org/experiments/rtp-hdrext/video-layers-allocation00
+                add(
+                    RTPHdrExtPacketExtension().apply {
+                        id = config.videoLayersAllocation.id.toString()
+                        uri = URI.create("http://www.webrtc.org/experiments/rtp-hdrext/video-layers-allocation00")
+                    }
+                )
+            }
             if (config.av1DependencyDescriptor.enabled()) {
                 // https://aomediacodec.github.io/av1-rtp-spec/#dependency-descriptor-rtp-header-extension
                 val dependencyDescriptorExt = RTPHdrExtPacketExtension()
