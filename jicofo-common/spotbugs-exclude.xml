@@ -43,6 +43,8 @@
     <Bug pattern="EI_EXPOSE_REP2"/>
     <!-- False positives in java code for an unknown reason. -->
     <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    <!-- We throw from constructors on illegal arguments, i.e. programming errors. -->
+    <Bug pattern="CT_CONSTRUCTOR_THROW"/>
   </Or>
 </Match>
 
