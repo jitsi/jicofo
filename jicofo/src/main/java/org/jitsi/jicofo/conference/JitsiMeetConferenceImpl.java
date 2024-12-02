@@ -1105,7 +1105,7 @@ public class JitsiMeetConferenceImpl
                 logger.info("XMPP will wait for a reconnect.");
                 reconnectTimeout = TaskPools.getScheduledPool().schedule(
                         this::stop,
-                        ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
+                        XmppConfig.client.getReplyTimeout().toMillis(),
                         TimeUnit.MILLISECONDS);
             }
             else

@@ -168,8 +168,8 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         {
             reconnectTimeout = TaskPools.getScheduledPool().schedule(
                 this::stop,
-                10,
-                TimeUnit.SECONDS);
+                XmppConfig.service.getReplyTimeout().toMillis(),
+                TimeUnit.MILLISECONDS);
         }
     }
 
