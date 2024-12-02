@@ -37,17 +37,6 @@ class BridgeConfig private constructor() {
         "$BASE.max-bridge-participants".from(JitsiConfig.newConfig)
     }
 
-    val maxBridgePacketRatePps: Int by config {
-        "org.jitsi.jicofo.BridgeSelector.MAX_BRIDGE_PACKET_RATE".from(JitsiConfig.legacyConfig)
-        "$BASE.max-bridge-packet-rate".from(JitsiConfig.newConfig)
-    }
-
-    val averageParticipantPacketRatePps: Int by config {
-        "org.jitsi.jicofo.BridgeSelector.AVG_PARTICIPANT_PACKET_RATE".from(JitsiConfig.legacyConfig)
-        "$BASE.average-participant-packet-rate-pps"
-            .from(JitsiConfig.newConfig).softDeprecated("use $BASE.average-participant-stress")
-    }
-
     val averageParticipantStress: Double by config {
         "$BASE.average-participant-stress".from(JitsiConfig.newConfig)
     }
