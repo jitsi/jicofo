@@ -23,13 +23,13 @@ import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as met
 class GlobalMetrics {
     companion object {
         @JvmField
-        val threadsMetrics = metricsContainer.registerLongGauge(
+        val threadCount = metricsContainer.registerLongGauge(
             "threads",
             "The current number of JVM threads"
         )
 
         fun update() {
-            threadsMetrics.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
+            threadCount.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
         }
     }
 }
