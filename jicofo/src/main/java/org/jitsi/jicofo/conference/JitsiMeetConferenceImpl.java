@@ -1093,6 +1093,16 @@ public class JitsiMeetConferenceImpl
             {
                 logger.error("Reconnected but not supposed to be here:" + roomName);
             }
+
+            XMPPConnection connection = chatRoom.getXmppProvider().getXmppConnection();
+            if (connection instanceof XMPPTCPConnection && !((XMPPTCPConnection) connection).streamWasResumed())
+            {
+                logger.error("Reconnected without resuming, give up and stop.");
+
+                // This is a connect without resumption, so make sure we fix the state, by stopping
+                // all clients will reload the state will be fine when they invite us again.
+                stop();
+            }
         }
         else
         {
