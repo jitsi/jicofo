@@ -96,7 +96,16 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     private val connectionListener = object : ConnectionListener {
         override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
             registered = true
-            logger.info("Registered.")
+            logger.info(
+                "Registered." + if (connection is XMPPTCPConnection) {
+                    " isSmEnabled:" + connection.isSmEnabled +
+                        " isSmAvailable:" + connection.isSmAvailable +
+                        " isSmResumptionPossible:" + connection.isSmResumptionPossible
+                } else {
+                    ""
+                }
+            )
+
             config.xmppDomain?.let {
                 logger.info("Will discover components for $it")
                 TaskPools.ioPool.submit { discoverComponents(it) }
@@ -279,11 +288,14 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         init {
             EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo")
             ReconnectionManager.setEnabledPerDefault(true)
+            // Jicofo handles at most two connections and most of the time that is localhost and the number
+            // of jicofo instances is small so we can afford to retry quickly.
+            ReconnectionManager.setDefaultFixedDelay(2)
             // Smack uses SASL Mechanisms ANONYMOUS and PLAIN, but tries to authenticate with GSSAPI when it's offered
             // by the server. Disable GSSAPI.
             SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
-            XMPPTCPConnection.setUseStreamManagementResumptionDefault(false)
-            XMPPTCPConnection.setUseStreamManagementDefault(false)
+            XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
+            XMPPTCPConnection.setUseStreamManagementDefault(true)
         }
     }
 

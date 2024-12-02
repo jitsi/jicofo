@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.util.*;
@@ -75,6 +76,11 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * The presence extension namespace.
      */
     private final String extensionNamespace;
+
+    /**
+     * Reconnect timer. Used to stop the conference if XMPP connection is not restored in a given time.
+     */
+    private Future<?> reconnectTimeout;
 
     /**
      * Creates new instance of <tt>BaseBrewery</tt>
@@ -150,11 +156,20 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     {
         if (registered)
         {
+            if (this.reconnectTimeout != null)
+            {
+                this.reconnectTimeout.cancel(true);
+                this.reconnectTimeout = null;
+            }
+
             maybeStart();
         }
         else
         {
-            stop();
+            reconnectTimeout = TaskPools.getScheduledPool().schedule(
+                this::stop,
+                XmppConfig.service.getReplyTimeout().toMillis(),
+                TimeUnit.MILLISECONDS);
         }
     }
 
