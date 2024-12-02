@@ -96,14 +96,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     private val connectionListener = object : ConnectionListener {
         override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
             registered = true
-            logger.info("Registered.")
-            if (connection is XMPPTCPConnection) {
-                logger.info(
-                    "Registered. isSmEnabled:" + connection.isSmEnabled +
+            logger.info(
+                "Registered." + if (connection is XMPPTCPConnection) {
+                    " isSmEnabled:" + connection.isSmEnabled +
                         " isSmAvailable:" + connection.isSmAvailable +
                         " isSmResumptionPossible:" + connection.isSmResumptionPossible
-                )
-            }
+                } else {
+                    ""
+                }
+            )
 
             config.xmppDomain?.let {
                 logger.info("Will discover components for $it")
