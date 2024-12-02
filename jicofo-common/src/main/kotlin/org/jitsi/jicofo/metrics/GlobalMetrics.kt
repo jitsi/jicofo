@@ -28,6 +28,11 @@ class GlobalMetrics {
             "The current number of JVM threads"
         )
 
+        val xmppDisconnects = metricsContainer.registerCounter(
+            "xmpp_disconnects",
+            "The number of times one of the XMPP connections has disconnected."
+        )
+
         fun update() {
             threadCount.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
         }

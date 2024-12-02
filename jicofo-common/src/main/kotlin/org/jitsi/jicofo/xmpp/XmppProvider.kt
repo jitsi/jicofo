@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.impl.protocol.xmpp.log.PacketDebugger
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.xmpp.XmppProvider.RoomExistsException
 import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
@@ -116,11 +117,13 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
 
         override fun connectionClosed() {
             logger.info("XMPP connection closed")
+            GlobalMetrics.xmppDisconnects.inc()
             registered = false
         }
 
         override fun connectionClosedOnError(e: Exception) {
             logger.error("XMPP connection closed on error: ${e.message}", e)
+            GlobalMetrics.xmppDisconnects.inc()
             registered = false
         }
     }
