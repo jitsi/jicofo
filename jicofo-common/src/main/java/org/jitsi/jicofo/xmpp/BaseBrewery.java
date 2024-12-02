@@ -24,6 +24,7 @@ import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
+import org.jivesoftware.smack.tcp.*;
 import org.jxmpp.jid.*;
 
 import java.lang.*;
@@ -160,6 +161,13 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             {
                 this.reconnectTimeout.cancel(true);
                 this.reconnectTimeout = null;
+            }
+
+            AbstractXMPPConnection connection = xmppProvider.getXmppConnection();
+            if (connection instanceof XMPPTCPConnection && !((XMPPTCPConnection) connection).streamWasResumed())
+            {
+                // We are not resuming the stream, so we need to stop and start clean
+                stop();
             }
 
             maybeStart();
