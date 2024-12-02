@@ -45,7 +45,8 @@
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
     <jicoco.version>1.1-143-g175c44b</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
-    <spotbugs.version>4.6.0</spotbugs.version>
+    <spotbugs.version>4.8.6</spotbugs.version>
+    <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
     <junit.version>5.10.0</junit.version>
     <mockk.version>1.13.8</mockk.version>
   </properties>
@@ -276,7 +277,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.7</version>
+            <version>0.8.12</version>
             <executions>
               <execution>
                 <goals>
