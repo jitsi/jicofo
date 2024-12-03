@@ -97,7 +97,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
             registered = true
             logger.info(
-                "Registered." + if (connection is XMPPTCPConnection) {
+                "Registered (resumed=$resumed)." + if (connection is XMPPTCPConnection) {
                     " isSmEnabled:" + connection.isSmEnabled +
                         " isSmAvailable:" + connection.isSmAvailable +
                         " isSmResumptionPossible:" + connection.isSmResumptionPossible
