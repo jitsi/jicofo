@@ -23,13 +23,18 @@ import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as met
 class GlobalMetrics {
     companion object {
         @JvmField
-        val threadsMetrics = metricsContainer.registerLongGauge(
+        val threadCount = metricsContainer.registerLongGauge(
             "threads",
             "The current number of JVM threads"
         )
 
+        val xmppDisconnects = metricsContainer.registerCounter(
+            "xmpp_disconnects",
+            "The number of times one of the XMPP connections has disconnected."
+        )
+
         fun update() {
-            threadsMetrics.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
+            threadCount.set(ManagementFactory.getThreadMXBean().threadCount.toLong())
         }
     }
 }

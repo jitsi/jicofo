@@ -210,7 +210,7 @@ class JicofoServices {
         JibriDetectorMetrics.appendStats(this)
         xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
         put("jigasi", xmppServices.jigasiStats)
-        put("threads", GlobalMetrics.threadsMetrics.get())
+        put("threads", GlobalMetrics.threadCount.get())
         put("jingle", JingleStats.toJson())
         put("version", CurrentVersionImpl.VERSION.toString())
         healthChecker?.let {
