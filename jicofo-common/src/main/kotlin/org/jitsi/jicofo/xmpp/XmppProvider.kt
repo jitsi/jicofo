@@ -34,7 +34,6 @@ import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ConnectionListener
 import org.jivesoftware.smack.ReconnectionListener
 import org.jivesoftware.smack.ReconnectionManager
-import org.jivesoftware.smack.SASLAuthentication
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
@@ -285,21 +284,6 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
 
         this.components = components
-    }
-
-    companion object {
-        init {
-            EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo")
-            ReconnectionManager.setEnabledPerDefault(true)
-            // Jicofo handles at most two connections and most of the time that is localhost and the number
-            // of jicofo instances is small so we can afford to retry quickly.
-            ReconnectionManager.setDefaultFixedDelay(2)
-            // Smack uses SASL Mechanisms ANONYMOUS and PLAIN, but tries to authenticate with GSSAPI when it's offered
-            // by the server. Disable GSSAPI.
-            SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
-            XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
-            XMPPTCPConnection.setUseStreamManagementDefault(true)
-        }
     }
 
     class RoomExistsException(message: String) : Exception(message)

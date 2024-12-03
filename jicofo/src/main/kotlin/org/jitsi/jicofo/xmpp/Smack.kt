@@ -49,13 +49,33 @@ import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
+import org.jivesoftware.smack.ReconnectionManager
+import org.jivesoftware.smack.SASLAuthentication
 import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.provider.ProviderManager
+import org.jivesoftware.smack.tcp.XMPPTCPConnection
+import org.jivesoftware.smackx.caps.EntityCapsManager
 
 fun initializeSmack() {
-    org.jitsi.xmpp.Smack.initialize(XmppConfig.config.useJitsiJidValidation)
+    org.jitsi.xmpp.Smack.initialize(useJitsiXmppStringprep = XmppConfig.config.useJitsiJidValidation)
 
+    EntityCapsManager.setDefaultEntityNode("http://jitsi.org/jicofo")
+
+    // Default to 15 seconds, may be overriden by the different connections.
     SmackConfiguration.setDefaultReplyTimeout(15000)
+
+    ReconnectionManager.setEnabledPerDefault(true)
+    // Jicofo handles at most two connections and most of the time that is localhost and the number
+    // of jicofo instances is small so we can afford to retry quickly.
+    ReconnectionManager.setDefaultFixedDelay(2)
+
+    // Smack uses SASL Mechanisms ANONYMOUS and PLAIN, but tries to authenticate with GSSAPI when it's offered
+    // by the server. Disable GSSAPI.
+    SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
+
+    // Enable Stream Management
+    XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
+    XMPPTCPConnection.setUseStreamManagementDefault(true)
 
     registerXmppExtensions()
 }
