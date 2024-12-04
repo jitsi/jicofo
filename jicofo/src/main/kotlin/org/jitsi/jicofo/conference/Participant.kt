@@ -71,8 +71,12 @@ open class Participant @JvmOverloads constructor(
     /** The list of XMPP features supported by this participant. */
     val supportedFeatures: Set<Features> = Features.defaultFeatures,
     /** The [Clock] used by this participant. */
-    clock: Clock = Clock.systemUTC()
+    private val clock: Clock = Clock.systemUTC()
 ) {
+    private val createdInstant: Instant = clock.instant()
+
+    fun durationSeconds(): Double = Duration.between(createdInstant, clock.instant()).toMillis() / 1000.0
+
     /** The endpoint ID for this participant in the videobridge (Colibri) context. */
     val endpointId: String = chatMember.name
 

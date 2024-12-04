@@ -31,6 +31,18 @@ class ConferenceMetrics {
         )
 
         @JvmField
+        val conferenceSeconds = metricsContainer.registerDoubleGauge(
+            "conferences_seconds",
+            "The duration of completed conferences in seconds."
+        )
+
+        @JvmField
+        val endpointSeconds = metricsContainer.registerDoubleGauge(
+            "endpoint_seconds",
+            "The duration of endpoints in a conferences in seconds."
+        )
+
+        @JvmField
         val participants = metricsContainer.registerCounter(
             "participants",
             "The total number of participants that have connected to this Jicofo since it was started."
