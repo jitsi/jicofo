@@ -90,6 +90,18 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
 
         override fun reconnectionFailed(e: Exception) {
             logger.error("XMPP reconnection failed: ${e.message}", e)
+
+            if (xmppConnection.isConnected) {
+                xmppConnection.disconnect()
+
+                // If there was an error reconnecting, do not give up, let's retry
+                // if we retry too quickly and prosody is not fully up ('invalid-namespace' error)
+                connectRetry.runRetryingTask(
+                    SimpleRetryTask(0, 1000L, true) {
+                        doConnect()
+                    }
+                )
+            }
         }
     }
 
