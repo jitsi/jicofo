@@ -47,6 +47,7 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -252,6 +253,8 @@ public class JitsiMeetConferenceImpl
      * TODO: support changing it.
      */
     private boolean visitorsBroadcastEnabled = VisitorsConfig.config.getAutoEnableBroadcast();
+
+    @NotNull private final Instant createdInstant = Instant.now();
 
     /**
      * The unique meeting ID for this conference. We expect this to be set by the XMPP server in the MUC config form.
@@ -478,6 +481,11 @@ public class JitsiMeetConferenceImpl
         }
 
         logger.info("Stopped.");
+        if (includeInStatistics())
+        {
+            ConferenceMetrics.conferenceSeconds.addAndGet(
+                    Duration.between(createdInstant, Instant.now()).toMillis() / 1000.0);
+        }
         if (listener != null)
         {
             listener.conferenceEnded(this);
@@ -1058,6 +1066,10 @@ public class JitsiMeetConferenceImpl
                     "Removed participant " + participant.getChatMember().getName() + " removed=" + (removed != null));
             if (!willReinvite && removed != null)
             {
+                if (includeInStatistics())
+                {
+                    ConferenceMetrics.endpointSeconds.addAndGet(participant.durationSeconds());
+                }
                 if (removed.isUserParticipant())
                 {
                     userParticipantRemoved();
