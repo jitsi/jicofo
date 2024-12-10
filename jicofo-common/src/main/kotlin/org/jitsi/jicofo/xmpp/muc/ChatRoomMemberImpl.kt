@@ -173,17 +173,25 @@ class ChatRoomMemberImpl(
         // We recognize jigasi by the existence of a "feature" extension in its presence.
         val features = presence.getExtension(FeaturesExtension::class.java)
         if (features != null) {
-            isJigasi = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jigasi" }
-            if (features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jibri" }) {
-                isJibri = isJidTrusted().also {
-                    if (!it) {
-                        val domain = jid?.asDomainBareJid()
-                        logger.warn(
-                            "Jibri signaled from a non-trusted domain ($domain). The domain can be " +
-                                "configured as trusted with the jicofo.xmpp.trusted-domains property."
-                        )
-                    }
-                }
+            val domain = jid?.asDomainBareJid()
+            val jidTrusted = domain != null && XmppConfig.config.trustedDomains.contains(domain)
+            val jibriSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jibri" }
+            val jigasiSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jigasi" }
+
+            isJibri = jibriSignaled && jidTrusted
+            isJigasi = jigasiSignaled && jidTrusted
+
+            if (jibriSignaled && !jidTrusted) {
+                logger.warn(
+                    "Jibri signaled from a non-trusted domain ($domain). The domain can be " +
+                        "configured as trusted with the jicofo.xmpp.trusted-domains property."
+                )
+            }
+            if (jigasiSignaled && !jidTrusted) {
+                logger.warn(
+                    "Jigasi signaled from a non-trusted domain ($domain). The domain can be " +
+                        "configured as trusted with the jicofo.xmpp.trusted-domains property."
+                )
             }
         } else {
             isJigasi = false
@@ -248,14 +256,6 @@ class ChatRoomMemberImpl(
             }
     }
 
-    /**
-     * Whether this member is a trusted entity (logged in to one of the pre-configured trusted domains).
-     */
-    private fun isJidTrusted() = jid?.let { XmppConfig.config.trustedDomains.contains(it.asDomainBareJid()) } ?: false
-
-    /**
-     * {@inheritDoc}
-     */
     override fun toString() = "ChatMember[id=$name role=$role]"
 
     override val features: Set<Features> by lazy {
