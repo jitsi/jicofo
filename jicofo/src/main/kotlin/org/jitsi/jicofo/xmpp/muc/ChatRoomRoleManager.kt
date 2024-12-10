@@ -91,12 +91,12 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
                 return@add
             }
 
-            owner = chatRoom.members.find { !it.isRobot && it.role.hasOwnerRights() }
+            owner = chatRoom.members.find { !(it.isJibri || it.isJigasi) && it.role.hasOwnerRights() }
             if (owner != null) {
                 return@add
             }
 
-            val newOwner = chatRoom.members.find { !it.isRobot && it.role != MemberRole.VISITOR }
+            val newOwner = chatRoom.members.find { !(it.isJibri || it.isJigasi) && it.role != MemberRole.VISITOR }
             if (newOwner != null) {
                 logger.info("Electing new owner: $newOwner")
                 chatRoom.grantOwnership(newOwner)

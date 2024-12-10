@@ -53,7 +53,6 @@ interface ChatRoomMember {
     /** The last [Presence] packet received for this member (or null it if no presence has been received yet) */
     val presence: Presence?
 
-    val isRobot: Boolean
     val isJigasi: Boolean
     val isTranscriber: Boolean
     val isJibri: Boolean

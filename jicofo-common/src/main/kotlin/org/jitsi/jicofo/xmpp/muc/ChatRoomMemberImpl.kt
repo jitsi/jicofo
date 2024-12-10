@@ -98,13 +98,6 @@ class ChatRoomMemberImpl(
         }
         private set
 
-    private var robot = false
-    override val isRobot: Boolean
-        get() {
-            // Jigasi and Jibri do not use the "robot" signaling, but semantically they should be considered "robots".
-            return robot || isJigasi || isJibri
-        }
-
     private fun updateSourceInfo(presence: Presence) {
         val sourceInfo = presence.getExtension<StandardExtensionElement>("SourceInfo", "jabber:client")
         if (sourceInfo == null) {
@@ -156,13 +149,6 @@ class ChatRoomMemberImpl(
 
         val firstPresence = (this.presence == null)
         this.presence = presence
-        presence.getExtension(UserInfoPacketExt::class.java)?.let {
-            val newStatus = it.isRobot
-            if (newStatus != null && robot != newStatus) {
-                logger.debug { "robot: $robot" }
-                robot = newStatus
-            }
-        }
 
         presence.getExtension(CapsExtension::class.java)?.let {
             capsNodeVer = "${it.node}#${it.ver}"
@@ -273,9 +259,9 @@ class ChatRoomMemberImpl(
             this["region"] = region.toString()
             this["occupant_jid"] = occupantJid.toString()
             this["jid"] = jid.toString()
-            this["robot"] = robot
             this["is_jibri"] = isJibri
             this["is_jigasi"] = isJigasi
+            this["is_transcriber"] = isTranscriber
             this["role"] = role.toString()
             this["video_codecs"] = JSONArray().apply { videoCodecs?.let { addAll(it) } }
             this["stats_id"] = statsId.toString()
