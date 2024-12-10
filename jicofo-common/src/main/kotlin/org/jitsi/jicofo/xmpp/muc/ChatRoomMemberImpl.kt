@@ -32,7 +32,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
-import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
@@ -98,13 +97,6 @@ class ChatRoomMemberImpl(
         }
         private set
 
-    private var robot = false
-    override val isRobot: Boolean
-        get() {
-            // Jigasi and Jibri do not use the "robot" signaling, but semantically they should be considered "robots".
-            return robot || isJigasi || isJibri
-        }
-
     private fun updateSourceInfo(presence: Presence) {
         val sourceInfo = presence.getExtension<StandardExtensionElement>("SourceInfo", "jabber:client")
         if (sourceInfo == null) {
@@ -156,13 +148,6 @@ class ChatRoomMemberImpl(
 
         val firstPresence = (this.presence == null)
         this.presence = presence
-        presence.getExtension(UserInfoPacketExt::class.java)?.let {
-            val newStatus = it.isRobot
-            if (newStatus != null && robot != newStatus) {
-                logger.debug { "robot: $robot" }
-                robot = newStatus
-            }
-        }
 
         presence.getExtension(CapsExtension::class.java)?.let {
             capsNodeVer = "${it.node}#${it.ver}"
@@ -173,17 +158,25 @@ class ChatRoomMemberImpl(
         // We recognize jigasi by the existence of a "feature" extension in its presence.
         val features = presence.getExtension(FeaturesExtension::class.java)
         if (features != null) {
-            isJigasi = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jigasi" }
-            if (features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jibri" }) {
-                isJibri = isJidTrusted().also {
-                    if (!it) {
-                        val domain = jid?.asDomainBareJid()
-                        logger.warn(
-                            "Jibri signaled from a non-trusted domain ($domain). The domain can be " +
-                                "configured as trusted with the jicofo.xmpp.trusted-domains property."
-                        )
-                    }
-                }
+            val domain = jid?.asDomainBareJid()
+            val jidTrusted = domain != null && XmppConfig.config.trustedDomains.contains(domain)
+            val jibriSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jibri" }
+            val jigasiSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jigasi" }
+
+            isJibri = jibriSignaled && jidTrusted
+            isJigasi = jigasiSignaled && jidTrusted
+
+            if (jibriSignaled && !jidTrusted) {
+                logger.warn(
+                    "Jibri signaled from a non-trusted domain ($domain). The domain can be " +
+                        "configured as trusted with the jicofo.xmpp.trusted-domains property."
+                )
+            }
+            if (jigasiSignaled && !jidTrusted) {
+                logger.warn(
+                    "Jigasi signaled from a non-trusted domain ($domain). The domain can be " +
+                        "configured as trusted with the jicofo.xmpp.trusted-domains property."
+                )
             }
         } else {
             isJigasi = false
@@ -248,14 +241,6 @@ class ChatRoomMemberImpl(
             }
     }
 
-    /**
-     * Whether this member is a trusted entity (logged in to one of the pre-configured trusted domains).
-     */
-    private fun isJidTrusted() = jid?.let { XmppConfig.config.trustedDomains.contains(it.asDomainBareJid()) } ?: false
-
-    /**
-     * {@inheritDoc}
-     */
     override fun toString() = "ChatMember[id=$name role=$role]"
 
     override val features: Set<Features> by lazy {
@@ -273,9 +258,9 @@ class ChatRoomMemberImpl(
             this["region"] = region.toString()
             this["occupant_jid"] = occupantJid.toString()
             this["jid"] = jid.toString()
-            this["robot"] = robot
             this["is_jibri"] = isJibri
             this["is_jigasi"] = isJigasi
+            this["is_transcriber"] = isTranscriber
             this["role"] = role.toString()
             this["video_codecs"] = JSONArray().apply { videoCodecs?.let { addAll(it) } }
             this["stats_id"] = statsId.toString()
