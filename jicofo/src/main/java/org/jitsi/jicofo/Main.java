@@ -19,12 +19,12 @@ package org.jitsi.jicofo;
 
 import kotlin.jvm.functions.*;
 import org.jetbrains.annotations.*;
-import org.jitsi.cmd.*;
 import org.jitsi.config.*;
 import org.jitsi.metaconfig.*;
-import org.jitsi.shutdown.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+
+import java.util.concurrent.*;
 
 
 /**
@@ -42,7 +42,6 @@ public class Main
      * @param args command-line arguments.
      */
     public static void main(String[] args)
-            throws ParseException
     {
         logger.info("Starting Jicofo.");
 
@@ -63,9 +62,8 @@ public class Main
         ConfigUtils.PASSWORD_CMD_LINE_ARGS = "user_password";
 
 
-        ShutdownServiceImpl shutdownService = new ShutdownServiceImpl();
-        // Register shutdown hook to perform cleanup before exit
-        Runtime.getRuntime().addShutdownHook(new Thread(shutdownService::beginShutdown));
+        CountDownLatch shutdownLatch = new CountDownLatch(1);
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdownLatch::countDown));
 
         JicofoServices jicofoServices;
         try
@@ -88,7 +86,7 @@ public class Main
 
         try
         {
-            shutdownService.waitForShutdown();
+            shutdownLatch.await();
         }
         catch (Exception e)
         {
