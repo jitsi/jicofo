@@ -23,12 +23,8 @@ import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.xmpp.XmppProvider.RoomExistsException
 import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
-import org.jitsi.retry.RetryStrategy
-import org.jitsi.retry.SimpleRetryTask
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-import org.jitsi.xmpp.TrustAllHostnameVerifier
-import org.jitsi.xmpp.TrustAllX509TrustManager
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ConnectionListener
@@ -43,9 +39,13 @@ import org.jivesoftware.smackx.disco.ServiceDiscoveryManager
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
+import java.security.cert.X509Certificate
 import java.util.concurrent.CopyOnWriteArraySet
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
+import javax.net.ssl.X509TrustManager
 
 /** Wraps a Smack [XMPPConnection]. */
 class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
@@ -53,8 +53,10 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         addContext("xmpp_connection", config.name)
     }
 
-    /** We need a retry strategy for the first connect attempt. Later those are handled by Smack internally. */
-    private val connectRetry = RetryStrategy(TaskPools.scheduledPool)
+    /** A task which will keep trying to connect to the XMPP server at a fixed 1-second delay. Smack's
+     *  ReconnectionManager only kicks in once a connection suceeds. */
+    private var connectTask: ScheduledFuture<*>? = null
+    private val connectSyncRoot = Any()
 
     /** A list of all listeners registered with this instance. */
     private val listeners = CopyOnWriteArraySet<Listener>()
@@ -94,15 +96,32 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             if (xmppConnection.isConnected) {
                 xmppConnection.disconnect()
 
-                // If there was an error reconnecting, do not give up, let's retry
-                // if we retry too quickly and prosody is not fully up ('invalid-namespace' error)
-                connectRetry.runRetryingTask(
-                    SimpleRetryTask(0, 1000L, true) {
-                        doConnect()
-                    }
-                )
+                // In some after cases with Stream Management Smack's ReconnectionManager gives up. Make sure we keep
+                // trying.
+                scheduleConnectTask()
             }
         }
+    }
+
+    /** Start/restart the connect task. */
+    private fun scheduleConnectTask() = synchronized(connectSyncRoot) {
+        val delay = 1L
+        connectTask?.cancel(true)
+        connectTask = TaskPools.scheduledPool.scheduleAtFixedRate({
+            try {
+                if (doConnect()) {
+                    logger.warn("Failed to connect, will re-try after $delay second")
+                } else {
+                    logger.info("Connected.")
+                    synchronized(connectSyncRoot) {
+                        connectTask?.cancel(false)
+                        connectTask = null
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Failed to connect: ${e.message}, will re-try after $delay second", e)
+            }
+        }, 0, delay, TimeUnit.SECONDS)
     }
 
     private val connectionListener = object : ConnectionListener {
@@ -145,11 +164,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         if (!started.compareAndSet(false, true)) {
             logger.info("Already started.")
         } else {
-            connectRetry.runRetryingTask(
-                SimpleRetryTask(0, 5000L, true) {
-                    this.doConnect()
-                }
-            )
+            scheduleConnectTask()
         }
     }
 
@@ -158,7 +173,6 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             logger.info("Already stopped or not started.")
         } else {
             synchronized(this) {
-                connectRetry.cancel()
                 xmppConnection.disconnect()
                 logger.info("Disconnected.")
                 xmppConnection.removeConnectionListener(connectionListener)
@@ -327,8 +341,12 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
         }
         if (config.disableCertificateVerification) {
             logger.warn("Disabling TLS certificate verification!")
-            setCustomX509TrustManager(TrustAllX509TrustManager())
-            setHostnameVerifier(TrustAllHostnameVerifier())
+            setCustomX509TrustManager(object : X509TrustManager {
+                override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+                override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+            })
+            setHostnameVerifier { _, _ -> true }
         }
     }
 

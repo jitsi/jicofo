@@ -43,7 +43,7 @@
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
-    <jicoco.version>1.1-143-g175c44b</jicoco.version>
+    <jicoco.version>1.1-SNAPSHOT</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
     <spotbugs.version>4.8.6</spotbugs.version>
     <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
@@ -144,12 +144,12 @@
       <!-- org.jitsi -->
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>jicoco</artifactId>
+        <artifactId>jicoco-config</artifactId>
         <version>${jicoco.version}</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
-        <artifactId>jicoco-config</artifactId>
+        <artifactId>jicoco-health-checker</artifactId>
         <version>${jicoco.version}</version>
       </dependency>
       <dependency>

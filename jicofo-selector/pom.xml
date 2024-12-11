@@ -46,10 +46,6 @@
     <!-- org.jitsi -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>jicoco-config</artifactId>
     </dependency>
     <dependency>
