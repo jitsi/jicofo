@@ -30,7 +30,7 @@ import org.jitsi.xmpp.extensions.colibri2.Sources
 import org.jitsi.xmpp.extensions.colibri2.Transport
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.util.createError
+import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
@@ -211,3 +211,18 @@ private fun buildFeedbackSources(localAudioSsrc: Long, localVideoSsrc: Long): So
             .build()
     )
 }.build()
+
+fun createError(
+    request: IQ,
+    errorCondition: StanzaError.Condition,
+    errorMessage: String? = null,
+    extension: ExtensionElement? = null
+): IQ {
+    val error = StanzaError.getBuilder(errorCondition)
+    errorMessage?.let { error.setDescriptiveEnText(it) }
+    extension?.let {
+        error.setExtensions(listOf(it))
+    }
+
+    return IQ.createErrorResponse(request, error.build())
+}
