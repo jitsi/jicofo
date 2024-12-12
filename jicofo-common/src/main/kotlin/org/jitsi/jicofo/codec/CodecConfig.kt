@@ -139,6 +139,9 @@ class Config {
     val av1DependencyDescriptor: RtpExtensionConfig =
         RtpExtensionConfig("jicofo.codec.rtp-extensions.av1-dependency-descriptor")
 
+    val videoLayersAllocation: RtpExtensionConfig =
+        RtpExtensionConfig("jicofo.codec.rtp-extensions.video-layers-allocation")
+
     @JvmField
     val tof: RtpExtensionConfig =
         RtpExtensionConfigWithLegacy("$LEGACY_BASE.ENABLE_TOF", "jicofo.codec.rtp-extensions.tof")
