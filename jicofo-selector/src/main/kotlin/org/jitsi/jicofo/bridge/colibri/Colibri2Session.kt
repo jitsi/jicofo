@@ -45,7 +45,6 @@ import org.jitsi.xmpp.extensions.jingle.ExtmapAllowMixedPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.StanzaCollector
-import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smackx.muc.MUCRole
 import java.util.Collections.singletonList
@@ -294,36 +293,43 @@ class Colibri2Session(
      */
     private fun sendRequest(iq: IQ, name: String) {
         logger.debug { "Sending $name request: ${iq.toStringOpt()}" }
-        xmppConnection.sendIqAndHandleResponseAsync(iq) {
-            when (it) {
-                is ConferenceModifiedIQ -> logger.debug { "Received $name response: ${it.toStringOpt()}" }
-                null -> logger.info("$name request timed out. Ignoring.")
-                else -> {
-                    if (it is ErrorIQ) {
-                        val reason = it.error?.getExtension<Colibri2Error>(
-                            Colibri2Error.ELEMENT,
-                            Colibri2Error.NAMESPACE
-                        )?.reason
-                        val endpointId = it.error?.getExtension<Colibri2Endpoint>(
-                            Colibri2Endpoint.ELEMENT,
-                            Colibri2Endpoint.NAMESPACE
-                        )?.id
-                        // If colibri2 error extension is present then the message came from
-                        // a jitsi-videobridge instance. Otherwise, it might come from another component
-                        // (e.g. the XMPP server or MUC component).
-                        val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
-                        if (reInvite) {
-                            logger.warn(
-                                "Endpoint [$endpointId] is not found, session failed: ${it.toStringOpt()}, " +
-                                    "request was: ${iq.toStringOpt()}"
-                            )
-                            colibriSessionManager.endpointFailed(endpointId!!)
-                            return@sendIqAndHandleResponseAsync
-                        }
-                    }
-                    logger.error("Received error response for $name, session failed: ${it.toStringOpt()}")
+        xmppConnection.sendIqAndHandleResponseAsync(iq) { response ->
+            if (response == null) {
+                logger.info("$name request timed out. Ignoring.")
+                return@sendIqAndHandleResponseAsync
+            }
+
+            response.error?.let { error ->
+                val reason = error.getExtension<Colibri2Error>(
+                    Colibri2Error.ELEMENT,
+                    Colibri2Error.NAMESPACE
+                )?.reason
+                val endpointId = error.getExtension<Colibri2Endpoint>(
+                    Colibri2Endpoint.ELEMENT,
+                    Colibri2Endpoint.NAMESPACE
+                )?.id
+                // If colibri2 error extension is present then the message came from
+                // a jitsi-videobridge instance. Otherwise, it might come from another component
+                // (e.g. the XMPP server or MUC component).
+                val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
+                if (reInvite) {
+                    logger.warn(
+                        "Endpoint [$endpointId] is not found, session failed: ${error.toStringOpt()}, " +
+                            "request was: ${iq.toStringOpt()}"
+                    )
+                    colibriSessionManager.endpointFailed(endpointId!!)
+                } else {
+                    logger.error("Received error response for $name, session failed: ${error.toStringOpt()}")
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                 }
+                return@sendIqAndHandleResponseAsync
+            }
+
+            if (response !is ConferenceModifiedIQ) {
+                logger.error("Received response with unexpected type ${response.javaClass.name}")
+                colibriSessionManager.sessionFailed(this@Colibri2Session)
+            } else {
+                logger.debug { "Received $name response: ${response.toStringOpt()}" }
             }
         }
     }

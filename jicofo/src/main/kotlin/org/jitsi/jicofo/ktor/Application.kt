@@ -53,7 +53,6 @@ import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
-import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.json.simple.JSONArray
@@ -164,16 +163,15 @@ class Application(
                     throw BadRequest(e.message)
                 }
 
-                if (response !is ConferenceIq) {
-                    if (response is ErrorIQ) {
-                        throw when (response.error.condition) {
-                            StanzaError.Condition.not_authorized -> Forbidden()
-                            StanzaError.Condition.not_acceptable -> BadRequest("invalid-session")
-                            else -> BadRequest(response.error.toString())
-                        }
-                    } else {
-                        throw InternalError()
+                response.error?.let {
+                    throw when (it.condition) {
+                        StanzaError.Condition.not_authorized -> Forbidden()
+                        StanzaError.Condition.not_acceptable -> BadRequest("invalid-session")
+                        else -> BadRequest(it.toString())
                     }
+                }
+                if (response !is ConferenceIq) {
+                    throw InternalError()
                 }
                 call.respond(ConferenceRequest.fromConferenceIq(response))
             }
