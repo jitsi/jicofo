@@ -45,7 +45,6 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.StanzaCollector
-import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
 import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
@@ -434,21 +433,22 @@ class ColibriV2SessionManager(
         if (response == null) {
             session.bridge.isOperational = false
             throw ColibriAllocationFailedException("Timeout", true)
-        } else if (response is ErrorIQ) {
+        }
+        response.error?.let { error ->
             // The reason in a colibri2 error extension, if one is present. If a reason is present we know the response
             // comes from a jitsi-videobridge instance. Otherwise, it might come from another component (e.g. the
             // XMPP server or MUC component).
-            val reason = response.error?.getExtension<Colibri2Error>(
+            val reason = error.getExtension<Colibri2Error>(
                 Colibri2Error.ELEMENT,
                 Colibri2Error.NAMESPACE
             )?.reason
             logger.info("Received error response: ${response.toStringOpt()}")
-            when (response.error?.condition) {
+            when (error.condition) {
                 bad_request -> {
                     // Most probably we sent a bad request.
                     // If we flag the bridge as non-operational we may disrupt other conferences.
                     // If we trigger a re-invite we may cause the same error repeating.
-                    throw ColibriAllocationFailedException("Bad request: ${response.error?.toStringOpt()}", false)
+                    throw ColibriAllocationFailedException("Bad request: ${error.toStringOpt()}", false)
                 }
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
@@ -467,7 +467,7 @@ class ColibriV2SessionManager(
                     if (reason == null) {
                         // An error NOT coming from the bridge.
                         throw ColibriAllocationFailedException(
-                            "XMPP error: ${response.error?.toStringOpt()}",
+                            "XMPP error: ${error.toStringOpt()}",
                             true
                         )
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
@@ -480,7 +480,7 @@ class ColibriV2SessionManager(
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We remove the bridge from the conference (expiring it) and re-invite the participants.
-                        throw ColibriAllocationFailedException("Colibri error: ${response.error?.toStringOpt()}", true)
+                        throw ColibriAllocationFailedException("Colibri error: ${error.toStringOpt()}", true)
                     }
                 }
                 service_unavailable -> {
@@ -496,14 +496,17 @@ class ColibriV2SessionManager(
                 }
                 else -> {
                     session.bridge.isOperational = false
-                    throw ColibriAllocationFailedException("Error: ${response.error?.toStringOpt()}", true)
+                    throw ColibriAllocationFailedException("Error: ${error.toStringOpt()}", true)
                 }
             }
         }
 
         if (response !is ConferenceModifiedIQ) {
             session.bridge.isOperational = false
-            throw ColibriAllocationFailedException("Response of wrong type: ${response::class.java.name}", false)
+            throw ColibriAllocationFailedException(
+                "Response of wrong type: ${response::class.java.name}: ${response.toXML()}",
+                false
+            )
         }
 
         if (created) {

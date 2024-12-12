@@ -30,7 +30,6 @@ import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
-import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
@@ -157,47 +156,46 @@ class JigasiIqHandler(
             return
         }
 
-        when (responseFromJigasi) {
-            null, is ErrorIQ -> {
-                if (responseFromJigasi == null) {
-                    logger.warn("Jigasi instance timed out: $jigasiJid")
-                    Stats.singleInstanceTimeouts.inc()
-                } else {
-                    logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toStringOpt()}")
-                    Stats.singleInstanceErrors.inc()
-                }
+        if (responseFromJigasi == null || responseFromJigasi.error != null) {
+            // Timeout or error.
+            if (responseFromJigasi == null) {
+                logger.warn("Jigasi instance timed out: $jigasiJid")
+                Stats.singleInstanceTimeouts.inc()
+            } else {
+                logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toStringOpt()}")
+                Stats.singleInstanceErrors.inc()
+            }
 
-                if (retryCount > 0) {
-                    logger.info("Will retry up to $retryCount more times.")
-                    Stats.retries.inc()
-                    // Do not try the same instance again.
-                    inviteJigasi(request, conference, retryCount - 1, exclude + jigasiJid)
+            if (retryCount > 0) {
+                logger.info("Will retry up to $retryCount more times.")
+                Stats.retries.inc()
+                // Do not try the same instance again.
+                inviteJigasi(request, conference, retryCount - 1, exclude + jigasiJid)
+            } else {
+                val condition = if (responseFromJigasi == null) {
+                    StanzaError.Condition.remote_server_timeout
                 } else {
-                    val condition = if (responseFromJigasi == null) {
-                        StanzaError.Condition.remote_server_timeout
-                    } else {
-                        StanzaError.Condition.undefined_condition
-                    }
-                    logger.warn("Request failed, all instances failed.")
-                    stats.allInstancesFailed()
-                    request.connection.tryToSendStanza(
-                        IQ.createErrorResponse(request.iq, StanzaError.getBuilder(condition).build())
-                    )
+                    StanzaError.Condition.undefined_condition
                 }
-            }
-            else -> {
-                logger.info("response from jigasi: ${responseFromJigasi.toStringOpt()}")
-                // Successful response from Jigasi, forward it as the response to the client.
+                logger.warn("Request failed, all instances failed.")
+                stats.allInstancesFailed()
                 request.connection.tryToSendStanza(
-                    responseFromJigasi.apply {
-                        from = null
-                        to = request.iq.from
-                        stanzaId = request.iq.stanzaId
-                    }
+                    IQ.createErrorResponse(request.iq, StanzaError.getBuilder(condition).build())
                 )
-                return
             }
+
+            return
         }
+
+        logger.info("Response from jigasi: ${responseFromJigasi.toStringOpt()}")
+        // Successful response from Jigasi, forward it as the response to the client.
+        request.connection.tryToSendStanza(
+            responseFromJigasi.apply {
+                from = null
+                to = request.iq.from
+                stanzaId = request.iq.stanzaId
+            }
+        )
     }
 
     companion object {
