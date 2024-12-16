@@ -185,7 +185,9 @@ class ChatRoomMemberImpl(
 
         var newRole: MemberRole = MemberRole.VISITOR
         chatRoom.getOccupant(this)?.let { newRole = fromSmack(it.role, it.affiliation) }
-        if (!firstPresence && (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)) {
+        if (!firstPresence && presence.type != Presence.Type.unavailable &&
+            (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)
+        ) {
             // This will mess up various member counts
             // TODO: Should we try to update them, instead?
             logger.warn("Member role changed from $role to $newRole - not supported!")
