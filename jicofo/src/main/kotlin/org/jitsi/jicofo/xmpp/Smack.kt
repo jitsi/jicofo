@@ -45,7 +45,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.MuteIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
-import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jitsi.xmpp.extensions.rayo.RayoIqProvider
@@ -126,13 +125,6 @@ fun registerXmppExtensions() {
         JitsiParticipantCodecList.ELEMENT,
         JitsiParticipantCodecList.NAMESPACE,
         DefaultPacketExtensionProvider(JitsiParticipantCodecList::class.java)
-    )
-
-    // The extension used for detecting a transcriber
-    ProviderManager.addExtensionProvider(
-        TranscriptionStatusExtension.ELEMENT,
-        TranscriptionStatusExtension.NAMESPACE,
-        DefaultPacketExtensionProvider(TranscriptionStatusExtension::class.java)
     )
 
     // register Jingle
