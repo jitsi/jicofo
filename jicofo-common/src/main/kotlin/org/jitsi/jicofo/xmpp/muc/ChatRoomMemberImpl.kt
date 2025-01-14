@@ -31,7 +31,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
-import org.jitsi.xmpp.extensions.jitsimeet.TranscriptionStatusExtension
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
@@ -162,9 +161,13 @@ class ChatRoomMemberImpl(
             val jidTrusted = domain != null && XmppConfig.config.trustedDomains.contains(domain)
             val jibriSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jibri" }
             val jigasiSignaled = features.featureExtensions.any { it.`var` == "http://jitsi.org/protocol/jigasi" }
+            val transcriberSignaled = features.featureExtensions.any {
+                it.`var` == "http://jitsi.org/protocol/transcriber"
+            }
 
             isJibri = jibriSignaled && jidTrusted
             isJigasi = jigasiSignaled && jidTrusted
+            isTranscriber = transcriberSignaled && jidTrusted
 
             if (jibriSignaled && !jidTrusted) {
                 logger.warn(
@@ -181,6 +184,7 @@ class ChatRoomMemberImpl(
         } else {
             isJigasi = false
             isJibri = false
+            isTranscriber = false
         }
 
         var newRole: MemberRole = MemberRole.VISITOR
@@ -194,8 +198,6 @@ class ChatRoomMemberImpl(
         } else {
             role = newRole
         }
-
-        isTranscriber = isJigasi && presence.getExtension(TranscriptionStatusExtension::class.java) != null
 
         presence.getExtension(JitsiParticipantRegionPacketExtension::class.java)?.let {
             region = it.regionId
