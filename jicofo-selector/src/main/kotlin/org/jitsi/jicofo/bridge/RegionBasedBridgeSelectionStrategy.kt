@@ -94,11 +94,9 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
             ?: notLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, participantProperties, region)
             ?: notLoadedInRegion(bridges, conferenceBridges, participantProperties, region)
             ?: notLoadedInRegionGroup(bridges, conferenceBridges, participantProperties, region)
-            ?: leastLoadedAlreadyInConferenceInRegion(bridges, conferenceBridges, participantProperties, region)
-            ?: leastLoadedAlreadyInConferenceInRegionGroup(bridges, conferenceBridges, participantProperties, region)
-            ?: leastLoadedInRegion(bridges, conferenceBridges, participantProperties, region)
-            ?: leastLoadedInRegionGroup(bridges, conferenceBridges, participantProperties, region)
-            ?: nonLoadedAlreadyInConference(bridges, conferenceBridges, participantProperties)
+            ?: notLoadedAlreadyInConference(bridges, conferenceBridges, participantProperties)
+            ?: notLoaded(bridges, conferenceBridges, participantProperties)
+            ?: leastLoadedNotMaxedAlreadyInConference(bridges, conferenceBridges, participantProperties)
             ?: leastLoaded(bridges, conferenceBridges, participantProperties)
     }
 

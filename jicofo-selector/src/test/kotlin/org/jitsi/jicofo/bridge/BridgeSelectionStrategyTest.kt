@@ -89,8 +89,9 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
             val propsNull = ParticipantProperties(null)
 
             val conferenceBridges = mutableMapOf<Bridge, ConferenceBridgeProperties>()
-            // Initial selection should select a bridge in the participant's region.
-            strategy.select(allBridges, conferenceBridges, highStressProps, true) shouldBe highStressBridge
+            // Initial selection should select a non-overloaded bridge in the participant's region if possible. If not,
+            // it should select the lowest loaded bridge.
+            strategy.select(allBridges, conferenceBridges, highStressProps, true) shouldBe lowStressBridge
             strategy.select(allBridges, conferenceBridges, mediumStressProps, true) shouldBe mediumStressBridge
             strategy.select(allBridges, conferenceBridges, propsInvalid, true) shouldBe lowStressBridge
 
@@ -135,8 +136,9 @@ class BridgeSelectionStrategyTest : ShouldSpec() {
 
             val conferenceBridges = mutableMapOf<Bridge, ConferenceBridgeProperties>()
 
-            // Initial selection should select a bridge in the participant's region.
-            strategy.select(allBridges, conferenceBridges, highStressProps, true) shouldBe highStressBridge
+            // Initial selection should select a non-overloaded bridge in the participant's region if possible. If not,
+            // it should select the lowest loaded bridge.
+            strategy.select(allBridges, conferenceBridges, highStressProps, true) shouldBe mediumStressBridge1
             strategy.select(allBridges, conferenceBridges, mediumStressProps2, true) shouldBe mediumStressBridge2
             strategy.select(allBridges, conferenceBridges, propsInvalid, true) shouldBe mediumStressBridge1
             strategy.select(allBridges, conferenceBridges, propsNull, true) shouldBe mediumStressBridge1
