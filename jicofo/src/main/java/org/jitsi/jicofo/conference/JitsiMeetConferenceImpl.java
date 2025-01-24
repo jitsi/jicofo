@@ -2327,21 +2327,13 @@ public class JitsiMeetConferenceImpl
         @Override
         public void bridgeFailedHealthCheck(@NotNull Bridge bridge)
         {
-            List<String> participantIdsToReinvite
-                    = colibriSessionManager != null
-                        ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
-            if (!participantIdsToReinvite.isEmpty())
-            {
-                logger.info("Bridge " + bridge.getJid() + "failed health check or removed, re-inviting "
-                    + participantIdsToReinvite);
-                reInviteParticipantsById(participantIdsToReinvite);
-            }
+            removeBridge(bridge, "failed health check");
         }
 
         @Override
         public void bridgeRemoved(@NotNull Bridge bridge)
         {
-            bridgeFailedHealthCheck(bridge);
+            removeBridge(bridge, "was removed");
         }
 
         @Override
@@ -2349,6 +2341,19 @@ public class JitsiMeetConferenceImpl
         {
             onBridgeUp(bridge.getJid());
         }
+
+        private void removeBridge(@NotNull Bridge bridge, @NotNull String reason)
+        {
+            List<String> participantIdsToReinvite
+                    = colibriSessionManager != null
+                    ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Re-inviting " + participantIdsToReinvite + " because " + bridge.getJid() + " " + reason);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
+        }
+
     }
 
     /**
