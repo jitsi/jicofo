@@ -16,63 +16,14 @@
 package org.jitsi.jicofo.bridge
 
 import org.jitsi.utils.logging2.Logger
-import org.jitsi.utils.logging2.LoggerImpl
-import org.json.simple.JSONObject
+import org.jitsi.utils.logging2.createLogger
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
  * Represents an algorithm for bridge selection.
  */
 abstract class BridgeSelectionStrategy {
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * already in the conference, in the desired region that was not
-     * overloaded.
-     */
-    private var totalNotLoadedAlreadyInConferenceInRegion = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * already in the conference, in the desired region group that was not
-     * overloaded.
-     */
-    private var totalNotLoadedAlreadyInConferenceInRegionGroup = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * in the desired region that was not overloaded.
-     */
-    private var totalNotLoadedInRegion = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * in the desired region group that was not overloaded.
-     */
-    private var totalNotLoadedInRegionGroup = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * already in the conference, in the desired region.
-     */
-    private var totalLeastLoadedAlreadyInConferenceInRegion = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * in the desired region.
-     */
-    private var totalLeastLoadedInRegion = 0
-
-    /**
-     * Total number of times selection succeeded because there was a bridge
-     * already in the conference.
-     */
-    private var totalLeastLoadedAlreadyInConference = 0
-
-    /**
-     * Total number of times selection succeeded because there was any bridge
-     * available.
-     */
-    private var totalLeastLoaded = 0
+    private val logger: Logger = createLogger()
 
     /**
      * Selects a bridge to be used for a new participant in a conference.
@@ -147,7 +98,6 @@ abstract class BridgeSelectionStrategy {
             .intersect(conferenceBridges.keys)
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
-            totalNotLoadedAlreadyInConferenceInRegion++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -165,7 +115,6 @@ abstract class BridgeSelectionStrategy {
             .intersect(conferenceBridges.keys)
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
-            totalNotLoadedAlreadyInConferenceInRegionGroup++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -205,7 +154,6 @@ abstract class BridgeSelectionStrategy {
             .filterNot { it.isOverloaded(conferenceBridges) }
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
-            totalNotLoadedInRegion++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -222,7 +170,6 @@ abstract class BridgeSelectionStrategy {
             .filterNot { it.isOverloaded(conferenceBridges) }
             .firstOrNull { regionGroup.contains(it.region) }
         if (result != null) {
-            totalNotLoadedInRegionGroup++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -235,7 +182,6 @@ abstract class BridgeSelectionStrategy {
     ): Bridge? {
         val result = bridges.firstOrNull { !it.isOverloaded }
         if (result != null) {
-            totalLeastLoadedAlreadyInConference++
             logSelection(result, conferenceBridges, participantProperties)
         }
         return result
@@ -263,7 +209,6 @@ abstract class BridgeSelectionStrategy {
             .intersect(conferenceBridges.keys)
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
-            totalLeastLoadedAlreadyInConferenceInRegion++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -278,7 +223,6 @@ abstract class BridgeSelectionStrategy {
             .intersect(conferenceBridges.keys)
             .firstOrNull { !it.hasMaxParticipantsInConference(conferenceBridges) }
         if (result != null) {
-            totalLeastLoadedAlreadyInConferenceInRegion++
             logSelection(result, conferenceBridges, participantProperties)
         }
         return result
@@ -302,7 +246,6 @@ abstract class BridgeSelectionStrategy {
         val result = bridges
             .firstOrNull { desiredRegion != null && it.region.equals(desiredRegion) }
         if (result != null) {
-            totalLeastLoadedInRegion++
             logSelection(result, conferenceBridges, participantProperties, desiredRegion)
         }
         return result
@@ -327,7 +270,6 @@ abstract class BridgeSelectionStrategy {
             .intersect(conferenceBridges.keys)
             .firstOrNull()
         if (result != null) {
-            totalLeastLoadedAlreadyInConference++
             logSelection(result, conferenceBridges, participantProperties)
         }
         return result
@@ -347,7 +289,6 @@ abstract class BridgeSelectionStrategy {
     ): Bridge? {
         val result = bridges.firstOrNull()
         if (result != null) {
-            totalLeastLoaded++
             logSelection(result, conferenceBridges, participantProperties)
         }
         return result
@@ -387,28 +328,5 @@ abstract class BridgeSelectionStrategy {
         return config.maxBridgeParticipants > 0 &&
             conferenceBridges.containsKey(this) &&
             conferenceBridges[this]!!.participantCount >= config.maxBridgeParticipants
-    }
-
-    val stats: JSONObject
-        get() {
-            val json = JSONObject()
-            json["total_not_loaded_in_region_in_conference"] = totalNotLoadedAlreadyInConferenceInRegion
-            json["total_not_loaded_in_region_group_in_conference"] = totalNotLoadedAlreadyInConferenceInRegionGroup
-            json["total_not_loaded_in_region"] = totalNotLoadedInRegion
-            json["total_not_loaded_in_region_group"] = totalNotLoadedInRegionGroup
-            json["total_least_loaded_in_region_in_conference"] = totalLeastLoadedAlreadyInConferenceInRegion
-            json["total_least_loaded_in_region"] = totalLeastLoadedInRegion
-            json["total_least_loaded_in_conference"] = totalLeastLoadedAlreadyInConference
-            json["total_least_loaded"] = totalLeastLoaded
-            return json
-        }
-
-    companion object {
-        /**
-         * The logger.
-         */
-        private val logger: Logger = LoggerImpl(
-            BridgeSelectionStrategy::class.java.name
-        )
     }
 }

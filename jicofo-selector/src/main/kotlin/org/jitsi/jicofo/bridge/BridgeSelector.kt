@@ -222,7 +222,7 @@ class BridgeSelector @JvmOverloads constructor(
 
     val stats: JSONObject
         @Synchronized
-        get() = bridgeSelectionStrategy.stats.apply {
+        get() = JSONObject().apply {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
             this["bridge_count"] = bridgeCount.get()
