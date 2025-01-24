@@ -93,7 +93,13 @@ public class JvbDoctor
     }
 
     @Override
-    public void bridgeRemoved(Bridge bridge)
+    public void bridgeFailedHealthCheck(@NotNull Bridge bridge)
+    {
+        // JvbDoctor is the source of these events, no need for additional handling.
+    }
+
+    @Override
+    public void bridgeRemoved(@NotNull Bridge bridge)
     {
         PeriodicHealthCheckTask healthTask = tasks.remove(bridge);
         if (healthTask == null)
@@ -108,7 +114,7 @@ public class JvbDoctor
     }
 
     @Override
-    public void bridgeAdded(Bridge bridge)
+    public void bridgeAdded(@NotNull Bridge bridge)
     {
         if (tasks.containsKey(bridge))
         {

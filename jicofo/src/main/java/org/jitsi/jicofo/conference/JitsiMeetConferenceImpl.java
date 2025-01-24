@@ -2325,16 +2325,23 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
-        public void bridgeRemoved(@NotNull Bridge bridge)
+        public void bridgeFailedHealthCheck(@NotNull Bridge bridge)
         {
             List<String> participantIdsToReinvite
                     = colibriSessionManager != null
                         ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
             if (!participantIdsToReinvite.isEmpty())
             {
-                logger.info("Removed " + bridge.getJid() + ", re-inviting " + participantIdsToReinvite);
+                logger.info("Bridge " + bridge.getJid() + "failed health check or removed, re-inviting "
+                    + participantIdsToReinvite);
                 reInviteParticipantsById(participantIdsToReinvite);
             }
+        }
+
+        @Override
+        public void bridgeRemoved(@NotNull Bridge bridge)
+        {
+            bridgeFailedHealthCheck(bridge);
         }
 
         @Override
