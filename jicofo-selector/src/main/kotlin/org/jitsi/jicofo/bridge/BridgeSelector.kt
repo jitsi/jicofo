@@ -125,7 +125,7 @@ class BridgeSelector @JvmOverloads constructor(
         // When a bridge returns a non-healthy status, we mark it as non-operational AND we move all conferences
         // away from it.
         it.isOperational = false
-        eventEmitter.fireEvent { bridgeRemoved(it) }
+        eventEmitter.fireEvent { bridgeFailedHealthCheck(it) }
     } ?: Unit
 
     override fun healthCheckTimedOut(bridgeJid: Jid) = bridges[bridgeJid]?.let {
@@ -276,6 +276,7 @@ class BridgeSelector @JvmOverloads constructor(
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)
         fun bridgeAdded(bridge: Bridge)
+        fun bridgeFailedHealthCheck(bridge: Bridge)
         fun bridgeIsShuttingDown(bridge: Bridge) {}
     }
 }
