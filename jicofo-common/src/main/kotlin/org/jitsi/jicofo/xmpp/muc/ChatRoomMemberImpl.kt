@@ -239,7 +239,7 @@ class ChatRoomMemberImpl(
                 }
         if (!firstPresence && newVideoCodecs != videoCodecs) {
             // Allowing this to change would mess up visitor codec preference counts, ignore the change
-            if (role == MemberRole.VISITOR) {
+            if (role == MemberRole.VISITOR && presence.type != Presence.Type.unavailable && newVideoCodecs != null) {
                 logger.warn("Visitor video codec list changed from $videoCodecs to $newVideoCodecs - not supported!")
             }
         } else {
