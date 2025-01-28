@@ -215,28 +215,28 @@ class ChatRoomMemberImpl(
         }
 
         val newVideoCodecs =
-        presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
-            if (!it.codecs.contains("vp8")) {
-                if (firstPresence) {
-                    logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
-                }
-                it.codecs + "vp8"
-            } else {
-                it.codecs
-            }
-        } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
-            presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
-                if (it is StandardExtensionElement) {
-                    val codec = it.text.lowercase()
-                    if (codec == "vp8") {
-                        listOf(codec)
-                    } else {
-                        listOf(codec, "vp8")
+            presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
+                if (!it.codecs.contains("vp8")) {
+                    if (firstPresence) {
+                        logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
                     }
+                    it.codecs + "vp8"
                 } else {
-                    null
+                    it.codecs
                 }
-            }
+            } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
+                presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
+                    if (it is StandardExtensionElement) {
+                        val codec = it.text.lowercase()
+                        if (codec == "vp8") {
+                            listOf(codec)
+                        } else {
+                            listOf(codec, "vp8")
+                        }
+                    } else {
+                        null
+                    }
+                }
         if (!firstPresence && newVideoCodecs != videoCodecs) {
             // Allowing this to change would mess up visitor codec preference counts, ignore the change
             if (role == MemberRole.VISITOR) {
