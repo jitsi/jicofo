@@ -189,12 +189,12 @@ class ChatRoomMemberImpl(
 
         var newRole: MemberRole = MemberRole.VISITOR
         chatRoom.getOccupant(this)?.let { newRole = fromSmack(it.role, it.affiliation) }
-        if (!firstPresence && presence.type != Presence.Type.unavailable &&
-            (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)
-        ) {
-            // This will mess up various member counts
+        if (!firstPresence && (role == MemberRole.VISITOR) != (newRole == MemberRole.VISITOR)) {
+            // Allowing this to change would mess up various member counts, ignore the change
             // TODO: Should we try to update them, instead?
-            logger.warn("Member role changed from $role to $newRole - not supported!")
+            if (presence.type != Presence.Type.unavailable) {
+                logger.warn("Member role changed from $role to $newRole - not supported!")
+            }
         } else {
             role = newRole
         }
@@ -214,35 +214,37 @@ class ChatRoomMemberImpl(
             statsId = it.statsId
         }
 
-        presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
-            if (!firstPresence && it.codecs != videoCodecs) {
-                logger.warn("Video codec list changed from $videoCodecs to ${it.codecs} - not supported!")
-            } else {
+        val newVideoCodecs =
+            presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
                 if (!it.codecs.contains("vp8")) {
                     if (firstPresence) {
                         logger.warn("Video codec list {${it.codecs}} does not contain vp8! Adding manually.")
                     }
-                    videoCodecs = it.codecs + "vp8"
+                    it.codecs + "vp8"
                 } else {
-                    videoCodecs = it.codecs
+                    it.codecs
                 }
-            }
-        } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
-            presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
-                if (it is StandardExtensionElement) {
-                    val codec = it.text.lowercase()
-                    val codecList = if (codec == "vp8") {
-                        listOf(codec)
+            } ?: // Older clients sent a single codec in codecType rather than all supported ones in codecList
+                presence.getExtensionElement("jitsi_participant_codecType", "jabber:client")?.let {
+                    if (it is StandardExtensionElement) {
+                        val codec = it.text.lowercase()
+                        if (codec == "vp8") {
+                            listOf(codec)
+                        } else {
+                            listOf(codec, "vp8")
+                        }
                     } else {
-                        listOf(codec, "vp8")
-                    }
-                    if (!firstPresence && codecList != videoCodecs) {
-                        logger.warn("Video codec list changed from $videoCodecs to $codecList - not supported!")
-                    } else {
-                        videoCodecs = codecList
+                        null
                     }
                 }
+        if (!firstPresence && newVideoCodecs != videoCodecs) {
+            // Allowing this to change would mess up visitor codec preference counts, ignore the change
+            if (role == MemberRole.VISITOR && presence.type != Presence.Type.unavailable && newVideoCodecs != null) {
+                logger.warn("Visitor video codec list changed from $videoCodecs to $newVideoCodecs - not supported!")
             }
+        } else {
+            videoCodecs = newVideoCodecs
+        }
     }
 
     override fun toString() = "ChatMember[id=$name role=$role]"
