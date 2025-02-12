@@ -58,6 +58,12 @@ class Bridge @JvmOverloads internal constructor(
         clock
     )
 
+    private val endpointRequestRestartRate = RateTracker(
+        config.endpointRestartRequestInterval,
+        Duration.ofMillis(100),
+        clock
+    )
+
     /** Number of endpoints currently allocated on this bridge by this jicofo instance. */
     val endpoints = AtomicInteger(0)
 
@@ -249,7 +255,27 @@ class Bridge @JvmOverloads internal constructor(
 
     fun endpointRemoved() = endpointsRemoved(1)
     fun endpointsRemoved(count: Int) {
-        endpoints.addAndGet(-count);
+        endpoints.addAndGet(-count)
+    }
+    fun endpointRequestedRestart() {
+        endpointRequestRestartRate.update(1)
+
+        if (config.endpointRestartRequestEnabled) {
+            val restartCount = endpointRequestRestartRate.getAccumulatedCount()
+            val endpoints = endpoints.get()
+            if (endpoints > config.endpointRestartRequestMinEndpoints &&
+                restartCount > endpoints * config.endpointRestartRequestThreshold
+            ) {
+                // Reset the timeout regardless of the previous state, but only log if the state changed.
+                if (isOperational) {
+                    logger.info(
+                        "Marking as non-operational because of endpoint restart requests. " +
+                            "Endpoints=$endpoints, restartCount=$restartCount"
+                    )
+                }
+                isOperational = false
+            }
+        }
     }
 
     /**

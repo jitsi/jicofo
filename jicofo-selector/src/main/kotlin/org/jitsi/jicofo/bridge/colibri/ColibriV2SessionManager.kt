@@ -585,8 +585,9 @@ class ColibriV2SessionManager(
         }
     }
 
-    override fun getBridgeSessionId(participantId: String): String? = synchronized(syncRoot) {
-        return participants[participantId]?.session?.id
+    override fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?> = synchronized(syncRoot) {
+        val session = participants[participantId]?.session
+        return Pair(session?.bridge, session?.id)
     }
 
     override fun removeBridge(bridge: Bridge): List<String> = synchronized(syncRoot) {

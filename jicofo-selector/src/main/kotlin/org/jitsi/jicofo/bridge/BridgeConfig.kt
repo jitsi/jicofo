@@ -156,6 +156,19 @@ class BridgeConfig private constructor() {
     fun getRegionGroup(region: String?): Set<String> =
         if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
+    val endpointRestartRequestEnabled: Boolean by config {
+        "$BASE.endpoint-restart-request.enabled".from(JitsiConfig.newConfig)
+    }
+    val endpointRestartRequestInterval: Duration by config {
+        "$BASE.endpoint-restart-request.interval".from(JitsiConfig.newConfig)
+    }
+    val endpointRestartRequestMinEndpoints: Int by config {
+        "$BASE.endpoint-restart-request.min-endpoints".from(JitsiConfig.newConfig)
+    }
+    val endpointRestartRequestThreshold: Int by config {
+        "$BASE.endpoint-restart-request.threshold".from(JitsiConfig.newConfig)
+    }
+
     companion object {
         const val BASE = "jicofo.bridge"
 
