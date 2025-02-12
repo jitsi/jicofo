@@ -290,20 +290,18 @@ class Bridge @JvmOverloads internal constructor(
         get() = stress >= config.stressThreshold
 
     val debugState: OrderedJsonObject
-        get() {
-            val o = OrderedJsonObject()
-            o["version"] = version.toString()
-            o["release"] = releaseId.toString()
-            o["stress"] = stress
-            o["operational"] = isOperational
-            o["region"] = region.toString()
-            o["drain"] = isDraining
-            o["graceful-shutdown"] = isInGracefulShutdown
-            o["shutting-down"] = isShuttingDown
-            o["overloaded"] = isOverloaded
-            o["relay-id"] = relayId.toString()
-            o["healthy"] = isHealthy
-            return o
+        get() = OrderedJsonObject().apply {
+            this["drain"] = isDraining
+            this["graceful-shutdown"] = isInGracefulShutdown
+            this["healthy"] = isHealthy
+            this["operational"] = isOperational
+            this["overloaded"] = isOverloaded
+            this["region"] = region.toString()
+            this["relay-id"] = relayId.toString()
+            this["release"] = releaseId.toString()
+            this["shutting-down"] = isShuttingDown
+            this["stress"] = stress
+            this["version"] = version.toString()
         }
 
     companion object {
