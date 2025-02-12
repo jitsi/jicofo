@@ -44,6 +44,7 @@ class BridgeSelectorTest : ShouldSpec() {
             val bridge = bridgeSelector.addJvbAddress(jid1).apply { setStats() }
             bridge.stress shouldBe 0
             bridgeSelector.selectBridge()
+            bridge.endpointAdded()
             // The stress should increase because it was recently selected.
             bridge.stress shouldNotBe 0
         }

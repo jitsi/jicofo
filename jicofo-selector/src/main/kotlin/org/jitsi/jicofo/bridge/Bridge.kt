@@ -27,6 +27,7 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
@@ -56,6 +57,9 @@ class Bridge @JvmOverloads internal constructor(
         Duration.ofMillis(100),
         clock
     )
+
+    /** Number of endpoints currently allocated on this bridge by this jicofo instance. */
+    val endpoints = AtomicInteger(0)
 
     /**
      * The last report stress level
@@ -237,11 +241,15 @@ class Bridge @JvmOverloads internal constructor(
         return compare(this, other)
     }
 
-    /**
-     * Notifies this [Bridge] that it was used for a new endpoint.
-     */
+    /** Notifies this [Bridge] that it was used for a new endpoint. */
     fun endpointAdded() {
         newEndpointsRate.update(1)
+        endpoints.incrementAndGet()
+    }
+
+    fun endpointRemoved() = endpointsRemoved(1)
+    fun endpointsRemoved(count: Int) {
+        endpoints.addAndGet(-count);
     }
 
     /**
@@ -292,6 +300,7 @@ class Bridge @JvmOverloads internal constructor(
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().apply {
             this["drain"] = isDraining
+            this["endpoints"] = endpoints.get()
             this["graceful-shutdown"] = isInGracefulShutdown
             this["healthy"] = isHealthy
             this["operational"] = isOperational
