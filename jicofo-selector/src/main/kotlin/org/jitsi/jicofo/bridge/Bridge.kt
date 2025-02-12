@@ -58,7 +58,7 @@ class Bridge @JvmOverloads internal constructor(
         clock
     )
 
-    private val endpointRequestRestartRate = RateTracker(
+    private val endpointRestartRequestRate = RateTracker(
         config.endpointRestartRequestInterval,
         Duration.ofMillis(100),
         clock
@@ -258,10 +258,10 @@ class Bridge @JvmOverloads internal constructor(
         endpoints.addAndGet(-count)
     }
     fun endpointRequestedRestart() {
-        endpointRequestRestartRate.update(1)
+        endpointRestartRequestRate.update(1)
 
         if (config.endpointRestartRequestEnabled) {
-            val restartCount = endpointRequestRestartRate.getAccumulatedCount()
+            val restartCount = endpointRestartRequestRate.getAccumulatedCount()
             val endpoints = endpoints.get()
             if (endpoints > config.endpointRestartRequestMinEndpoints &&
                 restartCount > endpoints * config.endpointRestartRequestThreshold
@@ -327,6 +327,7 @@ class Bridge @JvmOverloads internal constructor(
         get() = OrderedJsonObject().apply {
             this["drain"] = isDraining
             this["endpoints"] = endpoints.get()
+            this["endpoint-restart-requests"] = endpointRestartRequestRate.getAccumulatedCount()
             this["graceful-shutdown"] = isInGracefulShutdown
             this["healthy"] = isHealthy
             this["operational"] = isOperational
