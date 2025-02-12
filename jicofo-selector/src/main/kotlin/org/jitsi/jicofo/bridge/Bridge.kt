@@ -256,6 +256,10 @@ class Bridge @JvmOverloads internal constructor(
     fun endpointRemoved() = endpointsRemoved(1)
     fun endpointsRemoved(count: Int) {
         endpoints.addAndGet(-count)
+        if (endpoints.get() < 0) {
+            logger.error("Removed more endpoints than were allocated. Resetting to 0.", Throwable())
+            endpoints.set(0)
+        }
     }
     fun endpointRequestedRestart() {
         endpointRestartRequestRate.update(1)
