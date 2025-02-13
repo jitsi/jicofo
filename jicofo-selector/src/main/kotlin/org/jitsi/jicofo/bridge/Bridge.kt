@@ -60,7 +60,7 @@ class Bridge @JvmOverloads internal constructor(
 
     private val endpointRestartRequestRate = RateTracker(
         config.endpointRestartRequestInterval,
-        Duration.ofMillis(100),
+        Duration.ofSeconds(1),
         clock
     )
 
