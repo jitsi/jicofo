@@ -125,8 +125,9 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     /**
      * Used for av moderation, when we want to mute all participants.
      * @param mediaType the media type we want to mute.
+     * @param actor the entity that requested the mute.
      */
-    void muteAllParticipants(MediaType mediaType);
+    void muteAllParticipants(MediaType mediaType, EntityFullJid actor);
 
     /**
      * Return {@code true} if the user with the given JID should be allowed to invite jigasi to this conference.

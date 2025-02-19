@@ -89,8 +89,11 @@ class AvModerationHandler(
                             logger.info(
                                 "Moderation for $mediaType in $conferenceJid was enabled by ${incomingJson["actor"]}"
                             )
-                            // let's mute everyone
-                            conference.muteAllParticipants(mediaType)
+                            // let's mute everyone except the actor
+                            conference.muteAllParticipants(
+                                mediaType,
+                                JidCreate.entityFullFrom(incomingJson["actor"]?.toString())
+                            )
                         }
                     }
                     incomingJson["whitelists"]?.let {
