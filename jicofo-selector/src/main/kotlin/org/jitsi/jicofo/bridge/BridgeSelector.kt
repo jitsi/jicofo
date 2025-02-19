@@ -112,6 +112,7 @@ class BridgeSelector @JvmOverloads constructor(
                 logger.warn("Lost a bridge: $bridgeJid")
                 lostBridges.inc()
             }
+            it.markRemoved()
             bridgeCount.dec()
             eventEmitter.fireEvent { bridgeRemoved(it) }
         }

@@ -27,6 +27,7 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
@@ -163,6 +164,12 @@ class Bridge @JvmOverloads internal constructor(
     var relayId: String? = null
         private set
 
+    /**
+     * If this [Bridge] has been removed from the list of bridges. Once removed, the metrics specific to this instance
+     *  are cleared and no longer emitted. If the bridge re-connects, a new [Bridge] instance will be created.
+     */
+    val removed = AtomicBoolean(false)
+
     private val logger: Logger = LoggerImpl(Bridge::class.java.name)
 
     init {
@@ -251,18 +258,29 @@ class Bridge @JvmOverloads internal constructor(
     fun endpointAdded() {
         newEndpointsRate.update(1)
         endpoints.incrementAndGet()
+        BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
     }
 
     fun endpointRemoved() = endpointsRemoved(1)
     fun endpointsRemoved(count: Int) {
         endpoints.addAndGet(-count)
+        BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
         if (endpoints.get() < 0) {
             logger.error("Removed more endpoints than were allocated. Resetting to 0.", Throwable())
             endpoints.set(0)
         }
     }
+    internal fun markRemoved() {
+        if (removed.compareAndSet(false, true)) {
+            BridgeMetrics.restartRequestsMetric.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.endpoints.remove(listOf(jid.resourceOrEmpty.toString()))
+        }
+    }
     fun endpointRequestedRestart() {
         endpointRestartRequestRate.update(1)
+        if (!removed.get()) {
+            BridgeMetrics.restartRequestsMetric.inc(listOf(jid.resourceOrEmpty.toString()))
+        }
 
         if (config.endpointRestartRequestEnabled) {
             val restartCount = endpointRestartRequestRate.getAccumulatedCount()
