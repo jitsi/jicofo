@@ -1645,7 +1645,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Mutes all participants (except jibri or jigasi without "audioMute" support). Will block for colibri responses.
      */
-    public void muteAllParticipants(MediaType mediaType)
+    public void muteAllParticipants(MediaType mediaType, EntityFullJid actor)
     {
         Set<Participant> participantsToMute = new HashSet<>();
         synchronized (participantLock)
@@ -1656,6 +1656,12 @@ public class JitsiMeetConferenceImpl
                 {
                     logger.info("Will not mute a trusted participant without unmute support (jibri, jigasi): "
                             + participant);
+                    continue;
+                }
+
+                // we skip the participant that enabled the av moderation
+                if (participant.getMucJid().equals(actor))
+                {
                     continue;
                 }
 
