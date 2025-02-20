@@ -21,7 +21,6 @@ import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigValue
 import org.jitsi.config.JitsiConfig
-import org.jitsi.jicofo.bridge.BridgeConfig.Companion.BASE
 import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
