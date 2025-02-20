@@ -29,6 +29,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.max
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
@@ -58,7 +59,7 @@ class Bridge @JvmOverloads internal constructor(
     )
 
     private val endpointRestartRequestRate = RateTracker(
-        config.endpointRestartRequestInterval,
+        config.iceFailureDetection.interval,
         Duration.ofSeconds(1),
         clock
     )
@@ -144,6 +145,13 @@ class Bridge @JvmOverloads internal constructor(
      *  are cleared and no longer emitted. If the bridge re-connects, a new [Bridge] instance will be created.
      */
     val removed = AtomicBoolean(false)
+
+    /**
+     * The last instant at which we detected, based on restart requests from endpoints, that this bridge is failing ICE
+     */
+    private var lastIceFailed = Instant.MIN
+    private val failingIce: Boolean
+        get() = Duration.between(lastIceFailed, clock.instant()) < config.iceFailureDetection.timeout
 
     private val logger: Logger = LoggerImpl(Bridge::class.java.name)
 
@@ -251,26 +259,24 @@ class Bridge @JvmOverloads internal constructor(
             BridgeMetrics.endpoints.remove(listOf(jid.resourceOrEmpty.toString()))
         }
     }
+
     fun endpointRequestedRestart() {
         endpointRestartRequestRate.update(1)
         if (!removed.get()) {
             BridgeMetrics.restartRequestsMetric.inc(listOf(jid.resourceOrEmpty.toString()))
         }
 
-        if (config.endpointRestartRequestEnabled) {
+        if (config.iceFailureDetection.enabled) {
             val restartCount = endpointRestartRequestRate.getAccumulatedCount()
             val endpoints = endpoints.get()
-            if (endpoints > config.endpointRestartRequestMinEndpoints &&
-                restartCount > endpoints * config.endpointRestartRequestThreshold
+            if (endpoints >= config.iceFailureDetection.minEndpoints &&
+                restartCount > endpoints * config.iceFailureDetection.threshold
             ) {
                 // Reset the timeout regardless of the previous state, but only log if the state changed.
-                if (isOperational) {
-                    logger.info(
-                        "Marking as non-operational because of endpoint restart requests. " +
-                            "Endpoints=$endpoints, restartCount=$restartCount"
-                    )
+                if (!failingIce) {
+                    logger.info("Detected an ICE failing state.")
                 }
-                isOperational = false
+                lastIceFailed = clock.instant()
             }
         }
     }
@@ -300,11 +306,14 @@ class Bridge @JvmOverloads internal constructor(
      * @return this bridge's stress level
      */
     val correctedStress: Double
-        get() =
-            // While a stress of 1 indicates a bridge is fully loaded, we allow
-            // larger values to keep sorting correctly.
-            lastReportedStressLevel +
-                recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
+        get() {
+            // Correct for recently added endpoints.
+            // While a stress of 1 indicates a bridge is fully loaded, we allow larger values to keep sorting correctly.
+            val s = lastReportedStressLevel + recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
+
+            // Correct for failing ICE.
+            return if (failingIce) max(s, config.stressThreshold + 0.01) else s
+        }
 
     /** @return true if the stress of the bridge is greater-than-or-equal to the threshold. */
     val isOverloaded: Boolean
@@ -312,9 +321,11 @@ class Bridge @JvmOverloads internal constructor(
 
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().apply {
+            this["corrected-stress"] = correctedStress
             this["drain"] = isDraining
             this["endpoints"] = endpoints.get()
             this["endpoint-restart-requests"] = endpointRestartRequestRate.getAccumulatedCount()
+            this["failing-ice"] = failingIce
             this["graceful-shutdown"] = isInGracefulShutdown
             this["healthy"] = isHealthy
             this["operational"] = isOperational
@@ -323,7 +334,7 @@ class Bridge @JvmOverloads internal constructor(
             this["relay-id"] = relayId.toString()
             this["release"] = releaseId.toString()
             this["shutting-down"] = isShuttingDown
-            this["stress"] = correctedStress
+            this["stress"] = lastReportedStressLevel
             this["version"] = version.toString()
         }
 

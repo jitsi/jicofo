@@ -21,6 +21,7 @@ import com.typesafe.config.ConfigList
 import com.typesafe.config.ConfigObject
 import com.typesafe.config.ConfigValue
 import org.jitsi.config.JitsiConfig
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.BASE
 import org.jitsi.jicofo.xmpp.XmppConnectionEnum
 import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
@@ -156,23 +157,34 @@ class BridgeConfig private constructor() {
     fun getRegionGroup(region: String?): Set<String> =
         if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
-    val endpointRestartRequestEnabled: Boolean by config {
-        "$BASE.endpoint-restart-request.enabled".from(JitsiConfig.newConfig)
-    }
-    val endpointRestartRequestInterval: Duration by config {
-        "$BASE.endpoint-restart-request.interval".from(JitsiConfig.newConfig)
-    }
-    val endpointRestartRequestMinEndpoints: Int by config {
-        "$BASE.endpoint-restart-request.min-endpoints".from(JitsiConfig.newConfig)
-    }
-    val endpointRestartRequestThreshold: Int by config {
-        "$BASE.endpoint-restart-request.threshold".from(JitsiConfig.newConfig)
-    }
+    val iceFailureDetection = IceFailureDetectionConfig()
 
     companion object {
         const val BASE = "jicofo.bridge"
 
         @JvmField
         val config = BridgeConfig()
+    }
+}
+
+class IceFailureDetectionConfig {
+    val enabled: Boolean by config {
+        "$BASE.enabled".from(JitsiConfig.newConfig)
+    }
+    val interval: Duration by config {
+        "$BASE.interval".from(JitsiConfig.newConfig)
+    }
+    val minEndpoints: Int by config {
+        "$BASE.min-endpoints".from(JitsiConfig.newConfig)
+    }
+    val threshold: Double by config {
+        "$BASE.threshold".from(JitsiConfig.newConfig)
+    }
+    val timeout: Duration by config {
+        "$BASE.timeout".from(JitsiConfig.newConfig)
+    }
+
+    companion object {
+        const val BASE = "jicofo.bridge.ice-failure-detection"
     }
 }
