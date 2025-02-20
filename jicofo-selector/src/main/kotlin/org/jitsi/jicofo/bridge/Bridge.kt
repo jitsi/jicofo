@@ -285,12 +285,12 @@ class Bridge @JvmOverloads internal constructor(
 
     override fun toString(): String {
         return String.format(
-            "Bridge[jid=%s, version=%s, relayId=%s, region=%s, stress=%.2f]",
+            "Bridge[jid=%s, version=%s, relayId=%s, region=%s, correctedStress=%.2f]",
             jid.toString(),
             fullVersion,
             relayId,
             region,
-            stress
+            correctedStress
         )
     }
 
@@ -299,7 +299,7 @@ class Bridge @JvmOverloads internal constructor(
      * can exceed 1).
      * @return this bridge's stress level
      */
-    val stress: Double
+    val correctedStress: Double
         get() =
             // While a stress of 1 indicates a bridge is fully loaded, we allow
             // larger values to keep sorting correctly.
@@ -308,7 +308,7 @@ class Bridge @JvmOverloads internal constructor(
 
     /** @return true if the stress of the bridge is greater-than-or-equal to the threshold. */
     val isOverloaded: Boolean
-        get() = stress >= config.stressThreshold
+        get() = correctedStress >= config.stressThreshold
 
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().apply {
@@ -323,7 +323,7 @@ class Bridge @JvmOverloads internal constructor(
             this["relay-id"] = relayId.toString()
             this["release"] = releaseId.toString()
             this["shutting-down"] = isShuttingDown
-            this["stress"] = stress
+            this["stress"] = correctedStress
             this["version"] = version.toString()
         }
 
@@ -348,7 +348,7 @@ class Bridge @JvmOverloads internal constructor(
             return if (myPriority != otherPriority) {
                 myPriority - otherPriority
             } else {
-                b1.stress.compareTo(b2.stress)
+                b1.correctedStress.compareTo(b2.correctedStress)
             }
         }
 

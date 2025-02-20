@@ -35,7 +35,7 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
             cascade.getDistanceFrom(it) { node -> !node.visitor }
         }
 
-        val sortedNodes = nodesWithDistance.entries.sortedWith(compareBy({ it.value }, { it.key.bridge.stress }))
+        val sortedNodes = nodesWithDistance.entries.sortedWith(compareBy({ it.value }, { it.key.bridge.correctedStress }))
             .map { it.key }
 
         /* TODO: this logic looks a lot like bridge selection.  Do we want to try to share logic with that code? */

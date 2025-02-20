@@ -48,7 +48,7 @@ class RegionBasedSelectionTest : ShouldSpec() {
 
                 with(RegionBasedBridgeSelectionStrategy()) {
                     context("In a single region") {
-                        select()!!.stress shouldBe Low.stress
+                        select()!!.correctedStress shouldBe Low.stress
                         select(participantRegion = ApSouth) shouldBe bridges[ApSouth][Low]
                         select(
                             participantRegion = ApSouth,
@@ -175,11 +175,11 @@ val regionGroupsConfig = """
 
 private fun mockBridge(r: Regions, s: StressLevels) = mockk<Bridge> {
     every { region } returns r.region
-    every { stress } returns s.stress
+    every { correctedStress } returns s.stress
     every { isOverloaded } returns (s == High)
     every { lastReportedStressLevel } returns s.stress
     every { relayId } returns "dummy"
-    every { this@mockk.toString() } returns "MockBridge[region=$region, stress=$stress]"
+    every { this@mockk.toString() } returns "MockBridge[region=$region, stress=$correctedStress]"
 }
 
 // Create a Low, Medium and High stress bridge in each region.
