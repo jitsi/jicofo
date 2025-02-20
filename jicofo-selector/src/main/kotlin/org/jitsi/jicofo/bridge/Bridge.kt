@@ -263,6 +263,11 @@ class Bridge @JvmOverloads internal constructor(
             BridgeMetrics.endpoints.remove(listOf(jid.resourceOrEmpty.toString()))
         }
     }
+    internal fun updateMetrics() {
+        if (!removed.get()) {
+            BridgeMetrics.failingIce.set(failingIce, listOf(jid.resourceOrEmpty.toString()))
+        }
+    }
 
     fun endpointRequestedRestart() {
         endpointRestartRequestRate.update(1)

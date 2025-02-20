@@ -243,6 +243,7 @@ class BridgeSelector @JvmOverloads constructor(
         inShutdownBridgeCountMetric.set(bridges.values.count { it.isInGracefulShutdown }.toLong())
         operationalBridgeCountMetric.set(bridges.values.count { it.isOperational }.toLong())
         bridgeVersionCount.set(bridges.values.map { it.fullVersion }.toSet().size.toLong())
+        bridges.values.forEach { it.updateMetrics() }
     }
 
     companion object {

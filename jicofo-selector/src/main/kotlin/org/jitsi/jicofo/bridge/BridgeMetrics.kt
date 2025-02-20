@@ -14,5 +14,10 @@ class BridgeMetrics {
             "The number of endpoints on a bridge.",
             labelNames = listOf("jvb")
         )
+        val failingIce = metricsContainer.registerBooleanMetric(
+            "bridge_failing_ice",
+            "Whether a bridge is currently in the failing ICE state.",
+            labelNames = listOf("jvb")
+        )
     }
 }
