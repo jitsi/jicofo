@@ -50,9 +50,7 @@ class Bridge @JvmOverloads internal constructor(
     private val clock: Clock = Clock.systemUTC()
 ) : Comparable<Bridge> {
 
-    /**
-     * Keep track of the recently added endpoints.
-     */
+    /** Keep track of the recently added endpoints. */
     private val newEndpointsRate = RateTracker(
         config.participantRampupInterval,
         Duration.ofMillis(100),
@@ -68,27 +66,18 @@ class Bridge @JvmOverloads internal constructor(
     /** Number of endpoints currently allocated on this bridge by this jicofo instance. */
     val endpoints = AtomicInteger(0)
 
-    /**
-     * The last report stress level
-     */
+    /** The last report stress level */
     var lastReportedStressLevel = 0.0
         private set
 
-    /**
-     * Holds bridge version (if known - not all bridge version are capable of
-     * reporting it).
-     */
+    /** Holds bridge version (if known - not all bridge version are capable of reporting it). */
     private var version: String? = null
 
-    /**
-     * Whether the last received presence indicated the bridge is healthy.
-     */
+    /** Whether the last received presence indicated the bridge is healthy. */
     var isHealthy = true
         private set
 
-    /**
-     * Holds bridge release ID, or null if not known.
-     */
+    /** Holds bridge release ID, or null if not known. */
     private var releaseId: String? = null
 
     /**
@@ -119,25 +108,16 @@ class Bridge @JvmOverloads internal constructor(
             }
         }
 
-    /**
-     * Start out with the configured value, update if the bridge reports a value.
-     */
+    /** Start out with the configured value, update if the bridge reports a value. */
     private var averageParticipantStress = config.averageParticipantStress
 
-    /**
-     * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
-     */
+    /** Stores a boolean that indicates whether the bridge is in graceful shutdown mode. */
     var isInGracefulShutdown = false // we assume it is not shutting down
 
-    /**
-     * Whether the bridge is in SHUTTING_DOWN mode.
-     */
+    /** Whether the bridge is in SHUTTING_DOWN mode. */
     var isShuttingDown = false
         private set
 
-    /**
-     * @return true if the bridge is currently in drain mode
-     */
     /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
@@ -151,16 +131,11 @@ class Bridge @JvmOverloads internal constructor(
      */
     private var failureInstant: Instant? = null
 
-    /**
-     * @return the region of this [Bridge].
-     */
+    /** @return the region of this [Bridge]. */
     var region: String? = null
         private set
 
-    /**
-     * @return the relay ID advertised by the bridge, or `null` if
-     * none was advertised.
-     */
+    /** @return the relay ID advertised by the bridge, or `null` if none was advertised. */
     var relayId: String? = null
         private set
 
@@ -300,22 +275,14 @@ class Bridge @JvmOverloads internal constructor(
         }
     }
 
-    /**
-     * Returns the net number of video channels recently allocated or removed
-     * from this bridge.
-     */
+    /** Returns the net number of video channels recently allocated or removed from this bridge. */
     private val recentlyAddedEndpointCount: Long
         get() = newEndpointsRate.getAccumulatedCount()
 
-    /**
-     * The version of this bridge (with embedded release ID, if available).
-     */
+    /** The version of this bridge (with embedded release ID, if available). */
     val fullVersion: String?
         get() = if (version != null && releaseId != null) "$version-$releaseId" else version
 
-    /**
-     * {@inheritDoc}
-     */
     override fun toString(): String {
         return String.format(
             "Bridge[jid=%s, version=%s, relayId=%s, region=%s, stress=%.2f]",
@@ -339,9 +306,7 @@ class Bridge @JvmOverloads internal constructor(
             lastReportedStressLevel +
                 recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
 
-    /**
-     * @return true if the stress of the bridge is greater-than-or-equal to the threshold.
-     */
+    /** @return true if the stress of the bridge is greater-than-or-equal to the threshold. */
     val isOverloaded: Boolean
         get() = stress >= config.stressThreshold
 
