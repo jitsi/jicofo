@@ -241,13 +241,17 @@ class Bridge @JvmOverloads internal constructor(
     fun endpointAdded() {
         newEndpointsRate.update(1)
         endpoints.incrementAndGet()
-        BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        if (!removed.get()) {
+            BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        }
     }
 
     fun endpointRemoved() = endpointsRemoved(1)
     fun endpointsRemoved(count: Int) {
         endpoints.addAndGet(-count)
-        BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        if (!removed.get()) {
+            BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        }
         if (endpoints.get() < 0) {
             logger.error("Removed more endpoints than were allocated. Resetting to 0.", Throwable())
             endpoints.set(0)
