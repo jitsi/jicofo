@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
@@ -1169,13 +1170,18 @@ public class JitsiMeetConferenceImpl
      */
     public void iceFailed(@NotNull Participant participant, String bridgeSessionId)
     {
-        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, bridge-session ID: %s",
                     participant.getEndpointId(),
                     bridgeSessionId));
+            if (existingBridgeSession.getFirst() != null)
+            {
+                existingBridgeSession.getFirst().endpointRequestedRestart();
+            }
             reInviteParticipant(participant);
         }
         else
@@ -1203,10 +1209,16 @@ public class JitsiMeetConferenceImpl
     throws InvalidBridgeSessionIdException
     {
         // TODO: maybe move the bridgeSessionId logic to Participant
-        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (!Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
         {
             throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
+        }
+
+        if (reinvite && existingBridgeSession.getFirst() != null)
+        {
+            existingBridgeSession.getFirst().endpointRequestedRestart();
         }
 
         synchronized (participantLock)

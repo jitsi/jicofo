@@ -42,10 +42,11 @@ class BridgeSelectorTest : ShouldSpec() {
         context("Stress from new endpoints") {
             val bridgeSelector = BridgeSelector(clock)
             val bridge = bridgeSelector.addJvbAddress(jid1).apply { setStats() }
-            bridge.stress shouldBe 0
+            bridge.correctedStress shouldBe 0
             bridgeSelector.selectBridge()
+            bridge.endpointAdded()
             // The stress should increase because it was recently selected.
-            bridge.stress shouldNotBe 0
+            bridge.correctedStress shouldNotBe 0
         }
 
         context("Selection based on operational status") {

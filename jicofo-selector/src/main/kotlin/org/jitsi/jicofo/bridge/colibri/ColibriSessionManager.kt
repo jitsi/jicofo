@@ -57,7 +57,7 @@ interface ColibriSessionManager {
         suppressLocalBridgeUpdate: Boolean = false
     )
 
-    fun getBridgeSessionId(participantId: String): String?
+    fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?>
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).

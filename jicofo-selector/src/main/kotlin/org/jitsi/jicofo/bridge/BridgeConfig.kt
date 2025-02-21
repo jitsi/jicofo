@@ -156,10 +156,34 @@ class BridgeConfig private constructor() {
     fun getRegionGroup(region: String?): Set<String> =
         if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
+    val iceFailureDetection = IceFailureDetectionConfig()
+
     companion object {
         const val BASE = "jicofo.bridge"
 
         @JvmField
         val config = BridgeConfig()
+    }
+}
+
+class IceFailureDetectionConfig {
+    val enabled: Boolean by config {
+        "$BASE.enabled".from(JitsiConfig.newConfig)
+    }
+    val interval: Duration by config {
+        "$BASE.interval".from(JitsiConfig.newConfig)
+    }
+    val minEndpoints: Int by config {
+        "$BASE.min-endpoints".from(JitsiConfig.newConfig)
+    }
+    val threshold: Double by config {
+        "$BASE.threshold".from(JitsiConfig.newConfig)
+    }
+    val timeout: Duration by config {
+        "$BASE.timeout".from(JitsiConfig.newConfig)
+    }
+
+    companion object {
+        const val BASE = "jicofo.bridge.ice-failure-detection"
     }
 }

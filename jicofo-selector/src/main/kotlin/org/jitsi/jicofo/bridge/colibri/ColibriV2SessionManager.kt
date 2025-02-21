@@ -112,6 +112,7 @@ class ColibriV2SessionManager(
         logger.info("Expiring.")
         sessions.values.forEach { session ->
             logger.debug { "Expiring $session" }
+            session.bridge.endpointsRemoved(getSessionParticipants(session).size)
             session.expire()
         }
         sessions.clear()
@@ -134,6 +135,7 @@ class ColibriV2SessionManager(
 
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
+        session.bridge.endpointsRemoved(participants.size)
         session.expire()
         removeNode(session, ::repairMesh)
         sessions.remove(session.relayId)
@@ -162,6 +164,7 @@ class ColibriV2SessionManager(
                 sessionRemoved = true
             } else {
                 session.expire(sessionParticipantsToRemove)
+                session.bridge.endpointRemoved()
                 sessionParticipantsToRemove.forEach { remove(it) }
                 participantsRemoved.addAll(sessionParticipantsToRemove)
 
@@ -334,6 +337,7 @@ class ColibriV2SessionManager(
                 )
             }
             participantInfo = ParticipantInfo(participant, session)
+            session.bridge.endpointAdded()
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
@@ -581,8 +585,9 @@ class ColibriV2SessionManager(
         }
     }
 
-    override fun getBridgeSessionId(participantId: String): String? = synchronized(syncRoot) {
-        return participants[participantId]?.session?.id
+    override fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?> = synchronized(syncRoot) {
+        val session = participants[participantId]?.session
+        return Pair(session?.bridge, session?.id)
     }
 
     override fun removeBridge(bridge: Bridge): List<String> = synchronized(syncRoot) {
