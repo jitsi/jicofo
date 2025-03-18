@@ -42,6 +42,7 @@ import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.bridgeload.LoadRedistributor
 import org.jitsi.jicofo.ktor.exception.BadRequest
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.ktor.exception.Forbidden
@@ -67,13 +68,13 @@ class Application(
     private val healthChecker: HealthCheckService?,
     private val conferenceIqHandler: ConferenceIqHandler,
     private val conferenceStore: ConferenceStore,
-    bridgeSelector: BridgeSelector,
+    loadRedistributor: LoadRedistributor,
     private val getStatsJson: () -> OrderedJsonObject,
     private val getDebugState: (full: Boolean, confId: EntityBareJid?) -> OrderedJsonObject
 ) {
     private val logger = createLogger()
     private val server = start()
-    private val moveEndpointsHandler = MoveEndpoints(conferenceStore, bridgeSelector)
+    private val moveEndpointsHandler = MoveEndpoints(loadRedistributor)
 
     private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
         logger.info("Starting ktor on port ${config.port}, host ${config.host}")
