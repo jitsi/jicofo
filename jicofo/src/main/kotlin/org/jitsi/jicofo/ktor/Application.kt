@@ -41,7 +41,6 @@ import io.ktor.server.routing.routing
 import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridgeload.LoadRedistributor
 import org.jitsi.jicofo.ktor.exception.BadRequest
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler

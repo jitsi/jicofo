@@ -1,18 +1,62 @@
 package org.jitsi.jicofo.bridgeload
 
 import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
-import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConference
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlin.jvm.Throws
 import kotlin.math.min
 import kotlin.math.roundToInt
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
-class LoadRedistributor(val conferenceStore: ConferenceStore, val bridgeSelector: BridgeSelector) {
+class LoadRedistributor(private val conferenceStore: ConferenceStore, private val bridgeSelector: BridgeSelector) {
     val logger = createLogger()
+
+    init {
+        if (config.loadRedistribution.enabled) {
+            logger.info("Enabling automatic load redistribution: ${config.loadRedistribution}")
+            TaskPools.scheduledPool.scheduleAtFixedRate(
+                { run() },
+                config.loadRedistribution.interval.toMillis(),
+                config.loadRedistribution.interval.toMillis(),
+                TimeUnit.MILLISECONDS
+            )
+        }
+    }
+
+    private val bridgesInTimeout: MutableMap<Bridge, Instant> = mutableMapOf()
+
+    private fun run() {
+        logger.trace("Running load redistribution")
+        if (!bridgeSelector.hasNonOverloadedBridge()) {
+            logger.warn("No non-overloaded bridges, skipping load redistribution")
+            return
+        }
+
+        cleanupTimeouts()
+        bridgeSelector.getAll().filter { !bridgesInTimeout.containsKey(it) }.forEach(::runSingleBridge)
+    }
+
+    private fun runSingleBridge(bridge: Bridge) {
+        if (bridge.correctedStress >= config.loadRedistribution.stressThreshold) {
+            bridgesInTimeout[bridge] = Instant.now()
+            val result = moveEndpoints(bridge.jid.toString(), null, config.loadRedistribution.endpoints)
+            logger.info("Moved $result away from ${bridge.jid.resourceOrEmpty}")
+            bridge.endpointsMoved(result.movedEndpoints.toLong())
+            totalEndpointsMoved.add(result.movedEndpoints.toLong())
+        }
+    }
+
+    private fun cleanupTimeouts() {
+        val limit = Instant.now() - config.loadRedistribution.timeout
+        bridgesInTimeout.entries.removeIf { it.value.isBefore(limit) }
+    }
 
     /**
      * Move a specific endpoint in a specific conference.
@@ -123,7 +167,7 @@ class LoadRedistributor(val conferenceStore: ConferenceStore, val bridgeSelector
         bridgeSelector.get(bridgeJid)?.let { return it }
 
         val bridgeFullJid = try {
-            JidCreate.from("${BridgeConfig.config.breweryJid}/$bridge")
+            JidCreate.from("${config.breweryJid}/$bridge")
         } catch (e: Exception) {
             throw InvalidParameterException("bridge ID")
         }
@@ -146,12 +190,21 @@ class LoadRedistributor(val conferenceStore: ConferenceStore, val bridgeSelector
         logger.info("Moved $movedEndpoints endpoints from $conferences conferences.")
         return MoveResult(movedEndpoints, conferences)
     }
+
+    companion object {
+        val totalEndpointsMoved = JicofoMetricsContainer.instance.registerCounter(
+            "load_redistributor_endpoints_moved",
+            "Total number of endpoints moved away from any bridge for automatic load redistribution"
+        )
+    }
 }
 
 data class MoveResult(
     val movedEndpoints: Int,
     val conferences: Int
-)
+) {
+    override fun toString() = "$movedEndpoints endpoints from $conferences conferences"
+}
 
 /**
  * Select endpoints to move, e.g. with a map m={a: 1, b: 3, c: 3}:
@@ -178,7 +231,7 @@ private fun <T> List<Pair<T, Int>>.select(n: Int): Map<T, Int> {
 }
 
 sealed class MoveFailedException(msg: String) : Exception(msg)
-class MissingParameterException(name: String): MoveFailedException("Missing parameter: $name")
-class InvalidParameterException(name: String): MoveFailedException("Invalid parameter: $name")
+class MissingParameterException(name: String) : MoveFailedException("Missing parameter: $name")
+class InvalidParameterException(name: String) : MoveFailedException("Invalid parameter: $name")
 class BridgeNotFoundException(bridge: String) : MoveFailedException("Bridge not found: $bridge")
 class ConferenceNotFoundException(conference: String) : MoveFailedException("Conference not found: $conference")

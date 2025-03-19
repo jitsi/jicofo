@@ -66,6 +66,9 @@ class BridgeSelector @JvmOverloads constructor(
         JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
     }
 
+    fun hasNonOverloadedBridge(): Boolean = bridges.values.any { !it.isOverloaded }
+    fun getAll(): List<Bridge> = bridges.values.toList()
+
     val operationalBridgeCount: Int
         @Synchronized
         get() = bridges.values.count { it.isOperational && !it.isInGracefulShutdown }
