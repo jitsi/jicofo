@@ -258,7 +258,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     }
 
     @Throws(RoomExistsException::class)
-    fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name)
+    fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name, null)
     fun findOrCreateRoom(name: EntityBareJid, logLevel: Level): ChatRoom = muc.findOrCreateRoom(name, logLevel)
 
     fun discoverFeatures(jid: EntityFullJid): Set<Features> {
@@ -363,7 +363,7 @@ private class Muc(val xmppProvider: XmppProvider) {
     private val rooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
 
     @Throws(RoomExistsException::class)
-    fun createChatRoom(roomJid: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom {
+    fun createChatRoom(roomJid: EntityBareJid, logLevel: Level? = Level.ALL): ChatRoom {
         synchronized(rooms) {
             if (rooms.containsKey(roomJid)) {
                 throw RoomExistsException("Room '$roomJid' exists")
