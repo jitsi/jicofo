@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2024 - present 8x8, Inc
+ * Copyright @ 2021 - present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,35 +15,89 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.ktor
+package org.jitsi.jicofo.bridgeload
 
 import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
-import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConference
-import org.jitsi.jicofo.ktor.exception.BadRequest
-import org.jitsi.jicofo.ktor.exception.MissingParameter
-import org.jitsi.jicofo.ktor.exception.NotFound
+import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.logging2.createLogger
 import org.jxmpp.jid.impl.JidCreate
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+import kotlin.jvm.Throws
 import kotlin.math.min
 import kotlin.math.roundToInt
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
- * An API for moving (i.e. re-inviting) endpoints. The main goal is to facilitate reducing the load on a bridge. Note
- * that when re-inviting the normal bridge selection logic is used again, so it's possible that the same bridge is
- * selected (unless it's unhealthy/draining or overloaded and there are less loaded bridges).
+ * This class serves two purposes:
+ * 1. Provide an API that can be used externally (exposed via HTTP) to move endpoints away from a bridge:
+ *  - [moveEndpoint]
+ *  - [moveEndpoints]
+ *  - [moveFraction]
+ * 2. Optionally, automatically redistribute load from overloaded bridges to non-overloaded ones. This is controlled by
+ * the [config.loadRedistribution] configuration.
  */
-class MoveEndpoints(
-    val conferenceStore: ConferenceStore,
-    val bridgeSelector: BridgeSelector
-) {
+class LoadRedistributor(private val conferenceStore: ConferenceStore, private val bridgeSelector: BridgeSelector) {
     val logger = createLogger()
+
+    private var task = if (config.loadRedistribution.enabled) {
+        logger.info("Enabling automatic load redistribution: ${config.loadRedistribution}")
+        TaskPools.scheduledPool.scheduleAtFixedRate(
+            { run() },
+            config.loadRedistribution.interval.toMillis(),
+            config.loadRedistribution.interval.toMillis(),
+            TimeUnit.MILLISECONDS
+        )
+    } else {
+        null
+    }
+
+    fun shutdown() = task?.let {
+        logger.info("Stopping load redistribution")
+        it.cancel(true)
+        bridgesInTimeout.clear()
+    }
+
+    private val bridgesInTimeout: MutableMap<Bridge, Instant> = mutableMapOf()
+
+    private fun run() {
+        try {
+            logger.trace("Running load redistribution")
+            if (!bridgeSelector.hasNonOverloadedBridge()) {
+                logger.warn("No non-overloaded bridges, skipping load redistribution")
+                return
+            }
+
+            cleanupTimeouts()
+            bridgeSelector.getAll().filter { !bridgesInTimeout.containsKey(it) }.forEach(::runSingleBridge)
+        } catch (e: Exception) {
+            logger.error("Error running load redistribution", e)
+        }
+    }
+
+    private fun runSingleBridge(bridge: Bridge) {
+        if (bridge.correctedStress >= config.loadRedistribution.stressThreshold) {
+            bridgesInTimeout[bridge] = Instant.now()
+            val result = moveEndpoints(bridge.jid.toString(), null, config.loadRedistribution.endpoints)
+            logger.info("Moved $result away from ${bridge.jid.resourceOrEmpty}")
+            bridge.endpointsMoved(result.movedEndpoints.toLong())
+            totalEndpointsMoved.add(result.movedEndpoints.toLong())
+        }
+    }
+
+    private fun cleanupTimeouts() {
+        val limit = Instant.now() - config.loadRedistribution.timeout
+        bridgesInTimeout.entries.removeIf { it.value.isBefore(limit) }
+    }
 
     /**
      * Move a specific endpoint in a specific conference.
      */
+    @Throws(MoveFailedException::class)
     fun moveEndpoint(
         /** Conference JID, e.g room@conference.example.com. */
         conferenceId: String?,
@@ -53,19 +107,20 @@ class MoveEndpoints(
          * Optional bridge JID. If specified, the endpoint will only be moved it if is indeed connected to this bridge.
          */
         bridgeId: String?
-    ): Result {
-        if (conferenceId.isNullOrBlank()) throw MissingParameter("conference")
-        if (endpointId.isNullOrBlank()) throw MissingParameter("endpoint")
+    ): MoveResult {
+        if (conferenceId.isNullOrBlank()) throw MissingParameterException("conference")
+        if (endpointId.isNullOrBlank()) throw MissingParameterException("endpoint")
         val bridge = if (bridgeId.isNullOrBlank()) null else getBridge(bridgeId)
         val conference = getConference(conferenceId)
 
         logger.info("Moving conference=$conferenceId endpoint=$endpointId bridge=$bridgeId")
         return if (conference.moveEndpoint(endpointId, bridge)) {
             logger.info("Moved successfully")
-            Result(1, 1)
+            MoveResult(1, 1)
         } else {
+            // Should we throw?
             logger.info("Failed to move")
-            Result(0, 0)
+            MoveResult(0, 0)
         }
     }
 
@@ -79,6 +134,7 @@ class MoveEndpoints(
      * greedily from the list until we've selected the desired count. Note that this may need to be adjusted if it leads
      * to thundering horde issues (though the recentlyAddedEndpointCount correction should prevent them).
      */
+    @Throws(MoveFailedException::class)
     fun moveEndpoints(
         /** Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. */
         bridgeId: String?,
@@ -89,8 +145,8 @@ class MoveEndpoints(
         conferenceId: String?,
         /** Number of endpoints to move. */
         numEndpoints: Int
-    ): Result {
-        if (bridgeId.isNullOrBlank()) throw MissingParameter("bridge")
+    ): MoveResult {
+        if (bridgeId.isNullOrBlank()) throw MissingParameterException("bridge")
         val bridge = getBridge(bridgeId)
         val conference = if (conferenceId.isNullOrBlank()) null else getConference(conferenceId)
         val bridgeConferences = if (conference == null) {
@@ -98,7 +154,7 @@ class MoveEndpoints(
         } else {
             bridge.getConferences().filter { it.first == conference }
         }
-        logger.info("Moving $numEndpoints from bridge=${bridge.jid} (conference=$conference)")
+        logger.info("Moving $numEndpoints endpoints from bridge=${bridge.jid} (conference=$conference)")
         val endpointsToMove = bridgeConferences.select(numEndpoints)
         return doMove(bridge, endpointsToMove)
     }
@@ -111,13 +167,14 @@ class MoveEndpoints(
      * that this may need to be adjusted if it leads to thundering horde issues (though the recentlyAddedEndpointCount
      * correction should prevent them).
      */
+    @Throws(MoveFailedException::class)
     fun moveFraction(
         /** Bridge JID, e.g. jvbbrewery@muc.jvb.example.com/jvb1. */
         bridgeId: String?,
         /** The fraction of endpoints to move. */
         fraction: Double
-    ): Result {
-        if (bridgeId.isNullOrBlank()) throw MissingParameter("bridge")
+    ): MoveResult {
+        if (bridgeId.isNullOrBlank()) throw MissingParameterException("bridge")
         val bridge = getBridge(bridgeId)
         val bridgeConferences = bridge.getConferences()
         val totalEndpoints = bridgeConferences.sumOf { it.second }
@@ -127,7 +184,37 @@ class MoveEndpoints(
         return doMove(bridge, endpointsToMove)
     }
 
-    private fun doMove(bridge: Bridge, endpointsToMove: Map<JitsiMeetConference, Int>): Result {
+    private fun getConference(conferenceId: String): JitsiMeetConference {
+        val conferenceJid = try {
+            JidCreate.entityBareFrom(conferenceId)
+        } catch (e: Exception) {
+            throw InvalidParameterException("conference ID")
+        }
+        return conferenceStore.getConference(conferenceJid) ?: throw ConferenceNotFoundException(conferenceId)
+    }
+
+    private fun getBridge(bridge: String): Bridge {
+        val bridgeJid = try {
+            JidCreate.from(bridge)
+        } catch (e: Exception) {
+            throw InvalidParameterException("bridge ID")
+        }
+
+        bridgeSelector.get(bridgeJid)?.let { return it }
+
+        val bridgeFullJid = try {
+            JidCreate.from("${config.breweryJid}/$bridge")
+        } catch (e: Exception) {
+            throw InvalidParameterException("bridge ID")
+        }
+        return bridgeSelector.get(bridgeFullJid) ?: throw BridgeNotFoundException(bridge)
+    }
+
+    private fun Bridge.getConferences() = conferenceStore.getAllConferences().mapNotNull { conference ->
+        conference.bridges[this]?.participantCount?.let { Pair(conference, it) }
+    }.sortedByDescending { it.second }
+
+    private fun doMove(bridge: Bridge, endpointsToMove: Map<JitsiMeetConference, Int>): MoveResult {
         logger.info("Moving endpoints from bridge ${bridge.jid}: $endpointsToMove")
         var movedEndpoints = 0
         var conferences = 0
@@ -137,44 +224,23 @@ class MoveEndpoints(
             if (moved > 0) conferences++
         }
         logger.info("Moved $movedEndpoints endpoints from $conferences conferences.")
-        return Result(movedEndpoints, conferences)
+        return MoveResult(movedEndpoints, conferences)
     }
 
-    private fun getBridge(bridge: String): Bridge {
-        val bridgeJid = try {
-            JidCreate.from(bridge)
-        } catch (e: Exception) {
-            throw BadRequest("Invalid bridge ID")
-        }
-
-        bridgeSelector.get(bridgeJid)?.let { return it }
-
-        val bridgeFullJid = try {
-            JidCreate.from("${BridgeConfig.config.breweryJid}/$bridge")
-        } catch (e: Exception) {
-            throw BadRequest("Invalid bridge ID")
-        }
-        return bridgeSelector.get(bridgeFullJid) ?: throw NotFound("Bridge not found")
+    companion object {
+        val totalEndpointsMoved = JicofoMetricsContainer.instance.registerCounter(
+            "load_redistributor_endpoints_moved",
+            "Total number of endpoints moved away from any bridge for automatic load redistribution"
+        )
     }
-
-    private fun getConference(conferenceId: String): JitsiMeetConference {
-        val conferenceJid = try {
-            JidCreate.entityBareFrom(conferenceId)
-        } catch (e: Exception) {
-            throw BadRequest("Invalid conference ID")
-        }
-        return conferenceStore.getConference(conferenceJid) ?: throw NotFound("Conference not found")
-    }
-
-    private fun Bridge.getConferences() = conferenceStore.getAllConferences().mapNotNull { conference ->
-        conference.bridges[this]?.participantCount?.let { Pair(conference, it) }
-    }.sortedByDescending { it.second }
 }
 
-data class Result(
+data class MoveResult(
     val movedEndpoints: Int,
     val conferences: Int
-)
+) {
+    override fun toString() = "$movedEndpoints endpoints from $conferences conferences"
+}
 
 /**
  * Select endpoints to move, e.g. with a map m={a: 1, b: 3, c: 3}:
@@ -199,3 +265,9 @@ private fun <T> List<Pair<T, Int>>.select(n: Int): Map<T, Int> {
         }
     }
 }
+
+sealed class MoveFailedException(msg: String) : Exception(msg)
+class MissingParameterException(name: String) : MoveFailedException("Missing parameter: $name")
+class InvalidParameterException(name: String) : MoveFailedException("Invalid parameter: $name")
+class BridgeNotFoundException(bridge: String) : MoveFailedException("Bridge not found: $bridge")
+class ConferenceNotFoundException(conference: String) : MoveFailedException("Conference not found: $conference")

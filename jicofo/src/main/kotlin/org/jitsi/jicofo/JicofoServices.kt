@@ -26,6 +26,7 @@ import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeMucDetector
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.JvbDoctor
+import org.jitsi.jicofo.bridgeload.LoadRedistributor
 import org.jitsi.jicofo.health.HealthConfig
 import org.jitsi.jicofo.health.JicofoHealthChecker
 import org.jitsi.jicofo.jibri.JibriConfig
@@ -83,6 +84,8 @@ class JicofoServices {
         null
     }
 
+    private val loadRedistributor = LoadRedistributor(focusManager, bridgeSelector)
+
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(
             xmppServices.getXmppConnectionByName(BridgeConfig.config.xmppConnectionName),
@@ -138,7 +141,7 @@ class JicofoServices {
             healthChecker,
             xmppServices.conferenceIqHandler,
             focusManager,
-            bridgeSelector,
+            loadRedistributor,
             { getStats() }
         ) { full, confId ->
             if (confId == null) {
@@ -169,6 +172,7 @@ class JicofoServices {
             bridgeSelector.removeHandler(it)
             it.shutdown()
         }
+        loadRedistributor.shutdown()
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()

@@ -246,6 +246,10 @@ class Bridge @JvmOverloads internal constructor(
         }
     }
 
+    /** Updates the "endpoints moved" metric for this bridge. */
+    fun endpointsMoved(count: Long) {
+        BridgeMetrics.endpointsMoved.add(count, listOf(jid.resourceOrEmpty.toString()))
+    }
     fun endpointRemoved() = endpointsRemoved(1)
     fun endpointsRemoved(count: Int) {
         endpoints.addAndGet(-count)
@@ -261,6 +265,8 @@ class Bridge @JvmOverloads internal constructor(
         if (removed.compareAndSet(false, true)) {
             BridgeMetrics.restartRequestsMetric.remove(listOf(jid.resourceOrEmpty.toString()))
             BridgeMetrics.endpoints.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.failingIce.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.endpointsMoved.remove(listOf(jid.resourceOrEmpty.toString()))
         }
     }
     internal fun updateMetrics() {

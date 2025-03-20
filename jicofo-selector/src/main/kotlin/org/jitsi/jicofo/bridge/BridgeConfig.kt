@@ -157,6 +157,7 @@ class BridgeConfig private constructor() {
         if (region == null) emptySet() else regionGroups[region] ?: setOf(region)
 
     val iceFailureDetection = IceFailureDetectionConfig()
+    val loadRedistribution = LoadRedistributionConfig()
 
     companion object {
         const val BASE = "jicofo.bridge"
@@ -166,7 +167,7 @@ class BridgeConfig private constructor() {
     }
 }
 
-class IceFailureDetectionConfig {
+class IceFailureDetectionConfig internal constructor() {
     val enabled: Boolean by config {
         "$BASE.enabled".from(JitsiConfig.newConfig)
     }
@@ -185,5 +186,31 @@ class IceFailureDetectionConfig {
 
     companion object {
         const val BASE = "jicofo.bridge.ice-failure-detection"
+    }
+}
+
+class LoadRedistributionConfig internal constructor() {
+    val enabled: Boolean by config {
+        "$BASE.enabled".from(JitsiConfig.newConfig)
+    }
+    val interval: Duration by config {
+        "$BASE.interval".from(JitsiConfig.newConfig)
+    }
+    val timeout: Duration by config {
+        "$BASE.timeout".from(JitsiConfig.newConfig)
+    }
+    val stressThreshold: Double by config {
+        "$BASE.stress-threshold".from(JitsiConfig.newConfig)
+    }
+    val endpoints: Int by config {
+        "$BASE.endpoints".from(JitsiConfig.newConfig)
+    }
+
+    override fun toString(): String =
+        "LoadRedistributionConfig(enabled=$enabled, interval=$interval, timeout=$timeout, " +
+            "stressThreshold=$stressThreshold, endpoints=$endpoints)"
+
+    companion object {
+        const val BASE = "jicofo.bridge.load-redistribution"
     }
 }

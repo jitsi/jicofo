@@ -19,5 +19,10 @@ class BridgeMetrics {
             "Whether a bridge is currently in the failing ICE state.",
             labelNames = listOf("jvb")
         )
+        val endpointsMoved = metricsContainer.registerCounter(
+            "bridge_endpoints_moved",
+            "Total number of endpoints moved away from a bridge for automatic load redistribution.",
+            labelNames = listOf("jvb")
+        )
     }
 }
