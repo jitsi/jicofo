@@ -47,7 +47,7 @@ abstract class BridgeSelectionStrategy {
             if (bridge != null) {
                 logger.info(
                     "Selected initial bridge $bridge with reported stress=${bridge.lastReportedStressLevel} " +
-                        "for participantProperties=$participantProperties using strategy ${this.javaClass.simpleName}"
+                        "for participantProperties=$participantProperties"
                 )
             } else {
                 logger.warn(

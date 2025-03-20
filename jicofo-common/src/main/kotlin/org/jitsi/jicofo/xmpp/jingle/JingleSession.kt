@@ -156,7 +156,7 @@ class JingleSession(
         /** Whether to send a session-terminate IQ, or only terminate the session locally. */
         sendIq: Boolean
     ) {
-        logger.info("Terminating session with $remoteJid, reason=$reason, sendIq=$sendIq")
+        logger.debug("Terminating session with $remoteJid, reason=$reason, sendIq=$sendIq")
         val oldState = state
         state = State.ENDED
 

@@ -120,7 +120,7 @@ class ColibriV2SessionManager(
         logger.debug { "Asked to remove $participantId" }
 
         participants[participantId]?.let {
-            logger.info("Removing ${it.id}")
+            logger.debug("Removing ${it.id}")
             removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
         } ?: logger.warn("Can not remove $participantId, no participantInfo")
         Unit
@@ -323,7 +323,7 @@ class ColibriV2SessionManager(
                 created = it.second
             }
             logger.info(
-                "Selected ${bridge.jid.resourceOrNull} for $${participant.id} " +
+                "Selected ${bridge.jid.resourceOrNull} for ${participant.id} " +
                     "(visitor=${participant.visitor}, session exists: ${!created})"
             )
             if (visitor != session.visitor) {
@@ -556,7 +556,7 @@ class ColibriV2SessionManager(
         initialLastN: InitialLastN?,
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
-        logger.info("Updating $participantId with transport=$transport, sources=$sources")
+        logger.debug("Updating $participantId with transport=$transport, sources=$sources")
 
         val participantInfo = participants[participantId]
             ?: run {
