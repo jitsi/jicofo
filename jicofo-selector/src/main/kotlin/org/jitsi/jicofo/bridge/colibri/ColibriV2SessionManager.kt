@@ -22,7 +22,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
-import org.jitsi.jicofo.bridge.BridgeConfig
+import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.Cascade
 import org.jitsi.jicofo.bridge.CascadeRepair
@@ -76,10 +76,6 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
-    private val topologySelectionStrategy = BridgeConfig.config.topologyStrategy.also {
-        logger.info("Using ${it.javaClass.name}")
-    }
-
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
@@ -124,14 +120,14 @@ class ColibriV2SessionManager(
         logger.debug { "Asked to remove $participantId" }
 
         participants[participantId]?.let {
-            logger.info("Removing ${it.id}")
+            logger.debug("Removing ${it.id}")
             removeParticipantInfosBySession(mapOf(it.session to singletonList(it)))
         } ?: logger.warn("Can not remove $participantId, no participantInfo")
         Unit
     }
 
     private fun repairMesh(cascade: ColibriV2SessionManager, disconnectedMeshes: Set<Set<Colibri2Session>>) =
-        topologySelectionStrategy.repairMesh(cascade, disconnectedMeshes)
+        config.topologyStrategy.repairMesh(cascade, disconnectedMeshes)
 
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
@@ -327,7 +323,7 @@ class ColibriV2SessionManager(
                 created = it.second
             }
             logger.info(
-                "Selected ${bridge.jid.resourceOrNull} for $${participant.id} " +
+                "Selected ${bridge.jid.resourceOrNull} for ${participant.id} " +
                     "(visitor=${participant.visitor}, session exists: ${!created})"
             )
             if (visitor != session.visitor) {
@@ -341,7 +337,7 @@ class ColibriV2SessionManager(
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
-                val topologySelectionResult = topologySelectionStrategy.connectNode(
+                val topologySelectionResult = config.topologyStrategy.connectNode(
                     this,
                     session
                 )
@@ -560,7 +556,7 @@ class ColibriV2SessionManager(
         initialLastN: InitialLastN?,
         suppressLocalBridgeUpdate: Boolean
     ) = synchronized(syncRoot) {
-        logger.info("Updating $participantId with transport=$transport, sources=$sources")
+        logger.debug("Updating $participantId with transport=$transport, sources=$sources")
 
         val participantInfo = participants[participantId]
             ?: run {
