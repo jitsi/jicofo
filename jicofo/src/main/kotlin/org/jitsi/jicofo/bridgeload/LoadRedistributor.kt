@@ -154,7 +154,7 @@ class LoadRedistributor(private val conferenceStore: ConferenceStore, private va
         } else {
             bridge.getConferences().filter { it.first == conference }
         }
-        logger.info("Moving $numEndpoints from bridge=${bridge.jid} (conference=$conference)")
+        logger.info("Moving $numEndpoints endpoints from bridge=${bridge.jid} (conference=$conference)")
         val endpointsToMove = bridgeConferences.select(numEndpoints)
         return doMove(bridge, endpointsToMove)
     }
