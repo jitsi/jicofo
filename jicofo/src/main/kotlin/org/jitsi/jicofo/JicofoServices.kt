@@ -84,7 +84,7 @@ class JicofoServices {
         null
     }
 
-    val loadRedistributor = LoadRedistributor(focusManager, bridgeSelector)
+    private val loadRedistributor = LoadRedistributor(focusManager, bridgeSelector)
 
     private val bridgeDetector: BridgeMucDetector? = BridgeConfig.config.breweryJid?.let { breweryJid ->
         BridgeMucDetector(
@@ -172,6 +172,7 @@ class JicofoServices {
             bridgeSelector.removeHandler(it)
             it.shutdown()
         }
+        loadRedistributor.shutdown()
         bridgeDetector?.shutdown()
         jibriDetector?.shutdown()
         sipJibriDetector?.shutdown()

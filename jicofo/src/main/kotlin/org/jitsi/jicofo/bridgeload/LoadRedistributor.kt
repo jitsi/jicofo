@@ -27,16 +27,22 @@ import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 class LoadRedistributor(private val conferenceStore: ConferenceStore, private val bridgeSelector: BridgeSelector) {
     val logger = createLogger()
 
-    init {
-        if (config.loadRedistribution.enabled) {
-            logger.info("Enabling automatic load redistribution: ${config.loadRedistribution}")
-            TaskPools.scheduledPool.scheduleAtFixedRate(
-                { run() },
-                config.loadRedistribution.interval.toMillis(),
-                config.loadRedistribution.interval.toMillis(),
-                TimeUnit.MILLISECONDS
-            )
-        }
+    private var task = if (config.loadRedistribution.enabled) {
+        logger.info("Enabling automatic load redistribution: ${config.loadRedistribution}")
+        TaskPools.scheduledPool.scheduleAtFixedRate(
+            { run() },
+            config.loadRedistribution.interval.toMillis(),
+            config.loadRedistribution.interval.toMillis(),
+            TimeUnit.MILLISECONDS
+        )
+    } else {
+        null
+    }
+
+    fun shutdown() = task?.let {
+        logger.info("Stopping load redistribution")
+        it.cancel(true)
+        bridgesInTimeout.clear()
     }
 
     private val bridgesInTimeout: MutableMap<Bridge, Instant> = mutableMapOf()
