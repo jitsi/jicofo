@@ -15,6 +15,15 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
+/**
+ * This class serves two purposes:
+ * 1. Provide an API that can be used externally (exposed via HTTP) to move endpoints away from a bridge:
+ *  - [moveEndpoint]
+ *  - [moveEndpoints]
+ *  - [moveFraction]
+ * 2. Optionally, automatically redistribute load from overloaded bridges to non-overloaded ones. This is controlled by
+ * the [config.loadRedistribution] configuration.
+ */
 class LoadRedistributor(private val conferenceStore: ConferenceStore, private val bridgeSelector: BridgeSelector) {
     val logger = createLogger()
 
