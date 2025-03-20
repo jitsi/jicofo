@@ -42,14 +42,18 @@ class LoadRedistributor(private val conferenceStore: ConferenceStore, private va
     private val bridgesInTimeout: MutableMap<Bridge, Instant> = mutableMapOf()
 
     private fun run() {
-        logger.trace("Running load redistribution")
-        if (!bridgeSelector.hasNonOverloadedBridge()) {
-            logger.warn("No non-overloaded bridges, skipping load redistribution")
-            return
-        }
+        try {
+            logger.trace("Running load redistribution")
+            if (!bridgeSelector.hasNonOverloadedBridge()) {
+                logger.warn("No non-overloaded bridges, skipping load redistribution")
+                return
+            }
 
-        cleanupTimeouts()
-        bridgeSelector.getAll().filter { !bridgesInTimeout.containsKey(it) }.forEach(::runSingleBridge)
+            cleanupTimeouts()
+            bridgeSelector.getAll().filter { !bridgesInTimeout.containsKey(it) }.forEach(::runSingleBridge)
+        } catch (e: Exception) {
+            logger.error("Error running load redistribution", e)
+        }
     }
 
     private fun runSingleBridge(bridge: Bridge) {
