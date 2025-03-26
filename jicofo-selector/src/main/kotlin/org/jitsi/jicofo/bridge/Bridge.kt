@@ -27,6 +27,9 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.max
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
 
 /**
@@ -48,36 +51,34 @@ class Bridge @JvmOverloads internal constructor(
     private val clock: Clock = Clock.systemUTC()
 ) : Comparable<Bridge> {
 
-    /**
-     * Keep track of the recently added endpoints.
-     */
+    /** Keep track of the recently added endpoints. */
     private val newEndpointsRate = RateTracker(
         config.participantRampupInterval,
         Duration.ofMillis(100),
         clock
     )
 
-    /**
-     * The last report stress level
-     */
+    private val endpointRestartRequestRate = RateTracker(
+        config.iceFailureDetection.interval,
+        Duration.ofSeconds(1),
+        clock
+    )
+
+    /** Number of endpoints currently allocated on this bridge by this jicofo instance. */
+    val endpoints = AtomicInteger(0)
+
+    /** The last report stress level */
     var lastReportedStressLevel = 0.0
         private set
 
-    /**
-     * Holds bridge version (if known - not all bridge version are capable of
-     * reporting it).
-     */
+    /** Holds bridge version (if known - not all bridge version are capable of reporting it). */
     private var version: String? = null
 
-    /**
-     * Whether the last received presence indicated the bridge is healthy.
-     */
+    /** Whether the last received presence indicated the bridge is healthy. */
     var isHealthy = true
         private set
 
-    /**
-     * Holds bridge release ID, or null if not known.
-     */
+    /** Holds bridge release ID, or null if not known. */
     private var releaseId: String? = null
 
     /**
@@ -108,25 +109,16 @@ class Bridge @JvmOverloads internal constructor(
             }
         }
 
-    /**
-     * Start out with the configured value, update if the bridge reports a value.
-     */
+    /** Start out with the configured value, update if the bridge reports a value. */
     private var averageParticipantStress = config.averageParticipantStress
 
-    /**
-     * Stores a boolean that indicates whether the bridge is in graceful shutdown mode.
-     */
+    /** Stores a boolean that indicates whether the bridge is in graceful shutdown mode. */
     var isInGracefulShutdown = false // we assume it is not shutting down
 
-    /**
-     * Whether the bridge is in SHUTTING_DOWN mode.
-     */
+    /** Whether the bridge is in SHUTTING_DOWN mode. */
     var isShuttingDown = false
         private set
 
-    /**
-     * @return true if the bridge is currently in drain mode
-     */
     /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
@@ -140,18 +132,26 @@ class Bridge @JvmOverloads internal constructor(
      */
     private var failureInstant: Instant? = null
 
-    /**
-     * @return the region of this [Bridge].
-     */
+    /** @return the region of this [Bridge]. */
     var region: String? = null
         private set
 
-    /**
-     * @return the relay ID advertised by the bridge, or `null` if
-     * none was advertised.
-     */
+    /** @return the relay ID advertised by the bridge, or `null` if none was advertised. */
     var relayId: String? = null
         private set
+
+    /**
+     * If this [Bridge] has been removed from the list of bridges. Once removed, the metrics specific to this instance
+     *  are cleared and no longer emitted. If the bridge re-connects, a new [Bridge] instance will be created.
+     */
+    val removed = AtomicBoolean(false)
+
+    /**
+     * The last instant at which we detected, based on restart requests from endpoints, that this bridge is failing ICE
+     */
+    private var lastIceFailed = Instant.MIN
+    private val failingIce: Boolean
+        get() = Duration.between(lastIceFailed, clock.instant()) < config.iceFailureDetection.timeout
 
     private val logger: Logger = LoggerImpl(Bridge::class.java.name)
 
@@ -237,37 +237,81 @@ class Bridge @JvmOverloads internal constructor(
         return compare(this, other)
     }
 
-    /**
-     * Notifies this [Bridge] that it was used for a new endpoint.
-     */
+    /** Notifies this [Bridge] that it was used for a new endpoint. */
     fun endpointAdded() {
         newEndpointsRate.update(1)
+        endpoints.incrementAndGet()
+        if (!removed.get()) {
+            BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        }
     }
 
-    /**
-     * Returns the net number of video channels recently allocated or removed
-     * from this bridge.
-     */
+    /** Updates the "endpoints moved" metric for this bridge. */
+    fun endpointsMoved(count: Long) {
+        BridgeMetrics.endpointsMoved.add(count, listOf(jid.resourceOrEmpty.toString()))
+    }
+    fun endpointRemoved() = endpointsRemoved(1)
+    fun endpointsRemoved(count: Int) {
+        endpoints.addAndGet(-count)
+        if (!removed.get()) {
+            BridgeMetrics.endpoints.set(endpoints.get().toLong(), listOf(jid.resourceOrEmpty.toString()))
+        }
+        if (endpoints.get() < 0) {
+            logger.error("Removed more endpoints than were allocated. Resetting to 0.", Throwable())
+            endpoints.set(0)
+        }
+    }
+    internal fun markRemoved() {
+        if (removed.compareAndSet(false, true)) {
+            BridgeMetrics.restartRequestsMetric.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.endpoints.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.failingIce.remove(listOf(jid.resourceOrEmpty.toString()))
+            BridgeMetrics.endpointsMoved.remove(listOf(jid.resourceOrEmpty.toString()))
+        }
+    }
+    internal fun updateMetrics() {
+        if (!removed.get()) {
+            BridgeMetrics.failingIce.set(failingIce, listOf(jid.resourceOrEmpty.toString()))
+        }
+    }
+
+    fun endpointRequestedRestart() {
+        endpointRestartRequestRate.update(1)
+        if (!removed.get()) {
+            BridgeMetrics.restartRequestsMetric.inc(listOf(jid.resourceOrEmpty.toString()))
+        }
+
+        if (config.iceFailureDetection.enabled) {
+            val restartCount = endpointRestartRequestRate.getAccumulatedCount()
+            val endpoints = endpoints.get()
+            if (endpoints >= config.iceFailureDetection.minEndpoints &&
+                restartCount > endpoints * config.iceFailureDetection.threshold
+            ) {
+                // Reset the timeout regardless of the previous state, but only log if the state changed.
+                if (!failingIce) {
+                    logger.info("Detected an ICE failing state.")
+                }
+                lastIceFailed = clock.instant()
+            }
+        }
+    }
+
+    /** Returns the net number of video channels recently allocated or removed from this bridge. */
     private val recentlyAddedEndpointCount: Long
         get() = newEndpointsRate.getAccumulatedCount()
 
-    /**
-     * The version of this bridge (with embedded release ID, if available).
-     */
+    /** The version of this bridge (with embedded release ID, if available). */
     val fullVersion: String?
         get() = if (version != null && releaseId != null) "$version-$releaseId" else version
 
-    /**
-     * {@inheritDoc}
-     */
     override fun toString(): String {
         return String.format(
-            "Bridge[jid=%s, version=%s, relayId=%s, region=%s, stress=%.2f]",
+            "Bridge[jid=%s, version=%s, relayId=%s, region=%s, correctedStress=%.2f]",
             jid.toString(),
             fullVersion,
             relayId,
             region,
-            stress
+            correctedStress
         )
     }
 
@@ -276,34 +320,37 @@ class Bridge @JvmOverloads internal constructor(
      * can exceed 1).
      * @return this bridge's stress level
      */
-    val stress: Double
-        get() =
-            // While a stress of 1 indicates a bridge is fully loaded, we allow
-            // larger values to keep sorting correctly.
-            lastReportedStressLevel +
-                recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
+    val correctedStress: Double
+        get() {
+            // Correct for recently added endpoints.
+            // While a stress of 1 indicates a bridge is fully loaded, we allow larger values to keep sorting correctly.
+            val s = lastReportedStressLevel + recentlyAddedEndpointCount.coerceAtLeast(0) * averageParticipantStress
 
-    /**
-     * @return true if the stress of the bridge is greater-than-or-equal to the threshold.
-     */
+            // Correct for failing ICE.
+            return if (failingIce) max(s, config.stressThreshold + 0.01) else s
+        }
+
+    /** @return true if the stress of the bridge is greater-than-or-equal to the threshold. */
     val isOverloaded: Boolean
-        get() = stress >= config.stressThreshold
+        get() = correctedStress >= config.stressThreshold
 
     val debugState: OrderedJsonObject
-        get() {
-            val o = OrderedJsonObject()
-            o["version"] = version.toString()
-            o["release"] = releaseId.toString()
-            o["stress"] = stress
-            o["operational"] = isOperational
-            o["region"] = region.toString()
-            o["drain"] = isDraining
-            o["graceful-shutdown"] = isInGracefulShutdown
-            o["shutting-down"] = isShuttingDown
-            o["overloaded"] = isOverloaded
-            o["relay-id"] = relayId.toString()
-            o["healthy"] = isHealthy
-            return o
+        get() = OrderedJsonObject().apply {
+            this["corrected-stress"] = correctedStress
+            this["drain"] = isDraining
+            this["endpoints"] = endpoints.get()
+            this["endpoint-restart-requests"] = endpointRestartRequestRate.getAccumulatedCount()
+            this["failing-ice"] = failingIce
+            this["graceful-shutdown"] = isInGracefulShutdown
+            this["healthy"] = isHealthy
+            this["operational"] = isOperational
+            this["overloaded"] = isOverloaded
+            this["region"] = region.toString()
+            this["relay-id"] = relayId.toString()
+            this["release"] = releaseId.toString()
+            this["shutting-down"] = isShuttingDown
+            this["stress"] = lastReportedStressLevel
+            this["version"] = version.toString()
         }
 
     companion object {
@@ -327,7 +374,7 @@ class Bridge @JvmOverloads internal constructor(
             return if (myPriority != otherPriority) {
                 myPriority - otherPriority
             } else {
-                b1.stress.compareTo(b2.stress)
+                b1.correctedStress.compareTo(b2.correctedStress)
             }
         }
 

@@ -41,11 +41,18 @@ import io.ktor.server.routing.routing
 import org.jitsi.health.HealthCheckService
 import org.jitsi.jicofo.ConferenceRequest
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.bridge.BridgeSelector
+import org.jitsi.jicofo.bridgeload.BridgeNotFoundException
+import org.jitsi.jicofo.bridgeload.ConferenceNotFoundException
+import org.jitsi.jicofo.bridgeload.InvalidParameterException
+import org.jitsi.jicofo.bridgeload.LoadRedistributor
+import org.jitsi.jicofo.bridgeload.MissingParameterException
+import org.jitsi.jicofo.bridgeload.MoveFailedException
+import org.jitsi.jicofo.bridgeload.MoveResult
 import org.jitsi.jicofo.ktor.exception.BadRequest
 import org.jitsi.jicofo.ktor.exception.ExceptionHandler
 import org.jitsi.jicofo.ktor.exception.Forbidden
 import org.jitsi.jicofo.ktor.exception.MissingParameter
+import org.jitsi.jicofo.ktor.exception.NotFound
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
@@ -67,13 +74,12 @@ class Application(
     private val healthChecker: HealthCheckService?,
     private val conferenceIqHandler: ConferenceIqHandler,
     private val conferenceStore: ConferenceStore,
-    bridgeSelector: BridgeSelector,
+    private val loadRedistributor: LoadRedistributor,
     private val getStatsJson: () -> OrderedJsonObject,
     private val getDebugState: (full: Boolean, confId: EntityBareJid?) -> OrderedJsonObject
 ) {
     private val logger = createLogger()
     private val server = start()
-    private val moveEndpointsHandler = MoveEndpoints(conferenceStore, bridgeSelector)
 
     private fun start(): EmbeddedServer<NettyApplicationEngine, NettyApplicationEngine.Configuration> {
         logger.info("Starting ktor on port ${config.port}, host ${config.host}")
@@ -198,28 +204,34 @@ class Application(
             route("/move-endpoints") {
                 get("move-endpoint") {
                     call.respond(
-                        moveEndpointsHandler.moveEndpoint(
-                            call.request.queryParameters["conference"],
-                            call.request.queryParameters["endpoint"],
-                            call.request.queryParameters["bridge"],
-                        )
+                        translateException {
+                            loadRedistributor.moveEndpoint(
+                                call.request.queryParameters["conference"],
+                                call.request.queryParameters["endpoint"],
+                                call.request.queryParameters["bridge"],
+                            )
+                        }
                     )
                 }
                 get("move-endpoints") {
                     call.respond(
-                        moveEndpointsHandler.moveEndpoints(
-                            call.request.queryParameters["bridge"],
-                            call.request.queryParameters["conference"],
-                            call.request.queryParameters["numEndpoints"]?.toInt() ?: 1
-                        )
+                        translateException {
+                            loadRedistributor.moveEndpoints(
+                                call.request.queryParameters["bridge"],
+                                call.request.queryParameters["conference"],
+                                call.request.queryParameters["numEndpoints"]?.toInt() ?: 1
+                            )
+                        }
                     )
                 }
                 get("move-fraction") {
                     call.respond(
-                        moveEndpointsHandler.moveFraction(
-                            call.request.queryParameters["bridge"],
-                            call.request.queryParameters["fraction"]?.toDouble() ?: 0.1
-                        )
+                        translateException {
+                            loadRedistributor.moveFraction(
+                                call.request.queryParameters["bridge"],
+                                call.request.queryParameters["fraction"]?.toDouble() ?: 0.1
+                            )
+                        }
                     )
                 }
             }
@@ -326,4 +338,16 @@ private suspend fun RoutingCall.respondJson(json: JSONObject) {
 }
 private suspend fun RoutingCall.respondJson(json: OrderedJsonObject) {
     respondText(ContentType.Application.Json, HttpStatusCode.OK) { json.toJSONString() }
+}
+
+private fun translateException(block: () -> MoveResult): MoveResult {
+    return try {
+        block()
+    } catch (e: MoveFailedException) {
+        throw when (e) {
+            is BridgeNotFoundException -> NotFound("Bridge not found")
+            is ConferenceNotFoundException -> NotFound("Conference not found")
+            is MissingParameterException, is InvalidParameterException -> BadRequest(e.message)
+        }
+    }
 }

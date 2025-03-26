@@ -31,13 +31,13 @@ class BridgeTest : ShouldSpec({
             val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
-                every { stress } returns 10.0
+                every { correctedStress } returns 10.0
             }
 
             val bridge2: Bridge = mockk {
                 every { isOperational } returns false
                 every { isInGracefulShutdown } returns true
-                every { stress } returns .1
+                every { correctedStress } returns .1
             }
             Bridge.compare(bridge1, bridge2) shouldBeLessThan 0
         }
@@ -46,13 +46,13 @@ class BridgeTest : ShouldSpec({
             val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
-                every { stress } returns 10.0
+                every { correctedStress } returns 10.0
             }
 
             val bridge2: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns true
-                every { stress } returns .1
+                every { correctedStress } returns .1
             }
             Bridge.compare(bridge1, bridge2) shouldBeLessThan 0
         }
@@ -61,13 +61,13 @@ class BridgeTest : ShouldSpec({
             val bridge1: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
-                every { stress } returns 10.0
+                every { correctedStress } returns 10.0
             }
 
             val bridge2: Bridge = mockk {
                 every { isOperational } returns true
                 every { isInGracefulShutdown } returns false
-                every { stress } returns .1
+                every { correctedStress } returns .1
             }
             Bridge.compare(bridge2, bridge1) shouldBeLessThan 0
         }
@@ -103,21 +103,21 @@ class BridgeTest : ShouldSpec({
         // This mostly makes sure the test framework works as expected.
         val bridge = Bridge(JidCreate.from("bridge"))
 
-        bridge.stress shouldBe 0
+        bridge.correctedStress shouldBe 0
         bridge.region shouldBe null
 
         bridge.setStats(stress = 0.1)
-        bridge.stress shouldBe 0.1
+        bridge.correctedStress shouldBe 0.1
         bridge.region shouldBe null
 
         // The different stats should be updated independently.
         bridge.setStats(region = "region")
-        bridge.stress shouldBe 0.1
+        bridge.correctedStress shouldBe 0.1
         bridge.region shouldBe "region"
 
         // The different stats should be updated independently.
         bridge.setStats(stress = 0.2)
-        bridge.stress shouldBe 0.2
+        bridge.correctedStress shouldBe 0.2
         bridge.region shouldBe "region"
     }
 })

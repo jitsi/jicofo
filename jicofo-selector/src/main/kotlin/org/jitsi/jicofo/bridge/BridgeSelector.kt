@@ -66,6 +66,9 @@ class BridgeSelector @JvmOverloads constructor(
         JicofoMetricsContainer.instance.metricsUpdater.addUpdateTask { updateMetrics() }
     }
 
+    fun hasNonOverloadedBridge(): Boolean = bridges.values.any { !it.isOverloaded }
+    fun getAll(): List<Bridge> = bridges.values.toList()
+
     val operationalBridgeCount: Int
         @Synchronized
         get() = bridges.values.count { it.isOperational && !it.isInGracefulShutdown }
@@ -112,6 +115,7 @@ class BridgeSelector @JvmOverloads constructor(
                 logger.warn("Lost a bridge: $bridgeJid")
                 lostBridges.inc()
             }
+            it.markRemoved()
             bridgeCount.dec()
             eventEmitter.fireEvent { bridgeRemoved(it) }
         }
@@ -125,7 +129,7 @@ class BridgeSelector @JvmOverloads constructor(
         // When a bridge returns a non-healthy status, we mark it as non-operational AND we move all conferences
         // away from it.
         it.isOperational = false
-        eventEmitter.fireEvent { bridgeRemoved(it) }
+        eventEmitter.fireEvent { bridgeFailedHealthCheck(it) }
     } ?: Unit
 
     override fun healthCheckTimedOut(bridgeJid: Jid) = bridges[bridgeJid]?.let {
@@ -214,15 +218,12 @@ class BridgeSelector @JvmOverloads constructor(
             conferenceBridges,
             participantProperties,
             OctoConfig.config.enabled
-        ).also {
-            // The bridge was selected for an endpoint, increment its counter.
-            it?.endpointAdded()
-        }
+        )
     }
 
     val stats: JSONObject
         @Synchronized
-        get() = bridgeSelectionStrategy.stats.apply {
+        get() = JSONObject().apply {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
             this["bridge_count"] = bridgeCount.get()
@@ -245,6 +246,7 @@ class BridgeSelector @JvmOverloads constructor(
         inShutdownBridgeCountMetric.set(bridges.values.count { it.isInGracefulShutdown }.toLong())
         operationalBridgeCountMetric.set(bridges.values.count { it.isOperational }.toLong())
         bridgeVersionCount.set(bridges.values.map { it.fullVersion }.toSet().size.toLong())
+        bridges.values.forEach { it.updateMetrics() }
     }
 
     companion object {
@@ -276,6 +278,7 @@ class BridgeSelector @JvmOverloads constructor(
     interface EventHandler {
         fun bridgeRemoved(bridge: Bridge)
         fun bridgeAdded(bridge: Bridge)
+        fun bridgeFailedHealthCheck(bridge: Bridge)
         fun bridgeIsShuttingDown(bridge: Bridge) {}
     }
 }

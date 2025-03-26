@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference;
 
+import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.auth.*;
@@ -1178,13 +1179,18 @@ public class JitsiMeetConferenceImpl
      */
     public void iceFailed(@NotNull Participant participant, String bridgeSessionId)
     {
-        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        if (Objects.equals(bridgeSessionId, existingBridgeSessionId))
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
         {
             logger.info(String.format(
                     "Received ICE failed notification from %s, bridge-session ID: %s",
                     participant.getEndpointId(),
                     bridgeSessionId));
+            if (existingBridgeSession.getFirst() != null)
+            {
+                existingBridgeSession.getFirst().endpointRequestedRestart();
+            }
             reInviteParticipant(participant);
         }
         else
@@ -1212,10 +1218,16 @@ public class JitsiMeetConferenceImpl
     throws InvalidBridgeSessionIdException
     {
         // TODO: maybe move the bridgeSessionId logic to Participant
-        String existingBridgeSessionId = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
-        if (!Objects.equals(bridgeSessionId, existingBridgeSessionId))
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (!Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
         {
             throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
+        }
+
+        if (reinvite && existingBridgeSession.getFirst() != null)
+        {
+            existingBridgeSession.getFirst().endpointRequestedRestart();
         }
 
         synchronized (participantLock)
@@ -1654,7 +1666,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Mutes all participants (except jibri or jigasi without "audioMute" support). Will block for colibri responses.
      */
-    public void muteAllParticipants(MediaType mediaType)
+    public void muteAllParticipants(MediaType mediaType, EntityFullJid actor)
     {
         Set<Participant> participantsToMute = new HashSet<>();
         synchronized (participantLock)
@@ -1665,6 +1677,12 @@ public class JitsiMeetConferenceImpl
                 {
                     logger.info("Will not mute a trusted participant without unmute support (jibri, jigasi): "
                             + participant);
+                    continue;
+                }
+
+                // we skip the participant that enabled the av moderation
+                if (participant.getMucJid().equals(actor))
+                {
                     continue;
                 }
 
@@ -2334,16 +2352,15 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
+        public void bridgeFailedHealthCheck(@NotNull Bridge bridge)
+        {
+            removeBridge(bridge, "failed health check");
+        }
+
+        @Override
         public void bridgeRemoved(@NotNull Bridge bridge)
         {
-            List<String> participantIdsToReinvite
-                    = colibriSessionManager != null
-                        ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
-            if (!participantIdsToReinvite.isEmpty())
-            {
-                logger.info("Removed " + bridge.getJid() + ", re-inviting " + participantIdsToReinvite);
-                reInviteParticipantsById(participantIdsToReinvite);
-            }
+            removeBridge(bridge, "was removed");
         }
 
         @Override
@@ -2351,6 +2368,19 @@ public class JitsiMeetConferenceImpl
         {
             onBridgeUp(bridge.getJid());
         }
+
+        private void removeBridge(@NotNull Bridge bridge, @NotNull String reason)
+        {
+            List<String> participantIdsToReinvite
+                    = colibriSessionManager != null
+                    ? colibriSessionManager.removeBridge(bridge) : Collections.emptyList();
+            if (!participantIdsToReinvite.isEmpty())
+            {
+                logger.info("Re-inviting " + participantIdsToReinvite + " because " + bridge.getJid() + " " + reason);
+                reInviteParticipantsById(participantIdsToReinvite);
+            }
+        }
+
     }
 
     /**

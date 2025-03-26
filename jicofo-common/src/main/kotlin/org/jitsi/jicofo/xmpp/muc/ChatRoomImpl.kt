@@ -68,12 +68,12 @@ import java.util.logging.Level
 class ChatRoomImpl(
     override val xmppProvider: XmppProvider,
     override val roomJid: EntityBareJid,
-    logLevel: Level,
+    logLevel: Level?,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
     private val logger = createLogger().apply {
-        level = logLevel
+        logLevel?.let { level = it }
         addContext("room", roomJid.toString())
     }
 
