@@ -68,7 +68,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
-    private val audioRecordUrl: URI?,
+    private var audioRecordUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -255,6 +255,13 @@ class ColibriV2SessionManager(
             }
             return Pair(session, true)
         }
+
+    override fun sendAudioRecordUrl(url: URI?) {
+        audioRecordUrl = url
+
+        // TODO: we need to create or update sessionForAudioRecording here
+        sessionForAudioRecording?.updateAudioRecordUrl(url)
+    }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {

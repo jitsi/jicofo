@@ -58,7 +58,7 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
-    val audioRecordUrl: URI?,
+    var audioRecordUrl: URI?,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -210,6 +210,13 @@ class Colibri2Session(
                 )
             }
         }
+    }
+
+    fun updateAudioRecordUrl(url: URI?) {
+        audioRecordUrl = url
+
+        // TODO: we need here to send the audio record url to the bridge
+        // or disconnect it if the new url is null
     }
 
     /**

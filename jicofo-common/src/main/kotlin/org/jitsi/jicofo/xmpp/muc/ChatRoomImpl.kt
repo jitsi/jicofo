@@ -290,6 +290,8 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
+
+        eventEmitter.fireEvent { metadataChanged(roomMetadata) }
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
