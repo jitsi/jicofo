@@ -2540,16 +2540,16 @@ public class JitsiMeetConferenceImpl
         @Override
         public void metadataChanged(@NotNull RoomMetadata metadata)
         {
+            String meetingId = Objects.requireNonNull(JitsiMeetConferenceImpl.this.meetingId);
+
             if (RecordingConfig.config.multiTrackRecorderUrl(meetingId) == null)
             {
                 return;
             }
 
-            if (metadata.getMetadata().getRecording() != null
+            if (metadata.getMetadata() != null && metadata.getMetadata().getRecording() != null
                 && Boolean.TRUE.equals(metadata.getMetadata().getRecording().isTranscribingEnabled()))
             {
-                String meetingId = Objects.requireNonNull(JitsiMeetConferenceImpl.this.meetingId);
-
                 multiTrackRecorderUrl = RecordingConfig.config.multiTrackRecorderUrl(meetingId);
 
                 if (multiTrackRecorderUrl != null)
