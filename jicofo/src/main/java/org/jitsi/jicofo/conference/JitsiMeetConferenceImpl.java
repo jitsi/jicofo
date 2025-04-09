@@ -49,6 +49,7 @@ import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -226,6 +227,8 @@ public class JitsiMeetConferenceImpl
 
     @NotNull private final JicofoServices jicofoServices;
 
+    private URI multiTrackRecorderUrl;
+
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
@@ -339,12 +342,14 @@ public class JitsiMeetConferenceImpl
         {
             // We initialize colibriSessionManager only after having joined the room, so meetingId must be set.
             String meetingId = Objects.requireNonNull(this.meetingId);
+
             colibriSessionManager = new ColibriV2SessionManager(
                     jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
                     jicofoServices.getBridgeSelector(),
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
+                    multiTrackRecorderUrl,
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
@@ -2530,6 +2535,44 @@ public class JitsiMeetConferenceImpl
         public void numVideoSendersChanged(int numVideoSenders)
         {
             onNumVideoSendersChanged(numVideoSenders);
+        }
+
+        @Override
+        public void metadataChanged(@NotNull RoomMetadata metadata)
+        {
+            String meetingId = Objects.requireNonNull(JitsiMeetConferenceImpl.this.meetingId);
+
+            if (RecordingConfig.config.multiTrackRecorderUrl(meetingId) == null)
+            {
+                return;
+            }
+
+            if (metadata.getMetadata() != null && metadata.getMetadata().getRecording() != null
+                && Boolean.TRUE.equals(metadata.getMetadata().getRecording().isTranscribingEnabled()))
+            {
+                multiTrackRecorderUrl = RecordingConfig.config.multiTrackRecorderUrl(meetingId);
+
+                if (multiTrackRecorderUrl != null)
+                {
+                    if (colibriSessionManager != null)
+                    {
+                        colibriSessionManager.sendAudioRecordUrl(multiTrackRecorderUrl);
+                    }
+
+                    setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, Boolean.TRUE.toString());
+                }
+            }
+            else
+            {
+                if (multiTrackRecorderUrl == null)
+                {
+                    // was never set
+                    return;
+                }
+
+                colibriSessionManager.sendAudioRecordUrl(null);
+                setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, Boolean.FALSE.toString());
+            }
         }
     }
 

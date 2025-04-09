@@ -35,9 +35,10 @@ data class RoomMetadata(
     val metadata: Metadata?
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Metadata(val visitors: Visitors?) {
+    data class Metadata(val visitors: Visitors?, val recording: Recording?) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
+        data class Recording(val isTranscribingEnabled: Boolean?)
     }
 
     companion object {

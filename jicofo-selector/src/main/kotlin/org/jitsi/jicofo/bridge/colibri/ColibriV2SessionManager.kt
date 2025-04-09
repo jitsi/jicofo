@@ -51,6 +51,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.net.URI
 import java.util.Collections.singletonList
 
 /**
@@ -67,6 +68,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
+    private var audioRecordUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -75,6 +77,8 @@ class ColibriV2SessionManager(
     private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
+
+    private var sessionForAudioRecording: Colibri2Session? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -239,9 +243,25 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            session = Colibri2Session(this, bridge, visitor, logger)
+            session = Colibri2Session(
+                this,
+                bridge,
+                visitor,
+                if (audioRecordUrl != null && sessionForAudioRecording == null) audioRecordUrl else null,
+                logger
+            )
+            if (audioRecordUrl != null && sessionForAudioRecording == null) {
+                sessionForAudioRecording = session
+            }
             return Pair(session, true)
         }
+
+    override fun sendAudioRecordUrl(url: URI?) {
+        audioRecordUrl = url
+
+        // TODO: we need to create or update sessionForAudioRecording here
+        sessionForAudioRecording?.updateAudioRecordUrl(url)
+    }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
