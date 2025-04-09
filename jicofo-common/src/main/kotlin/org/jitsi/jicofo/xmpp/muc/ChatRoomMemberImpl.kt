@@ -29,7 +29,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantCodecList
 import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
-import org.jitsi.xmpp.extensions.jitsimeet.StartMutedPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
@@ -201,13 +200,6 @@ class ChatRoomMemberImpl(
 
         presence.getExtension(JitsiParticipantRegionPacketExtension::class.java)?.let {
             region = it.regionId
-        }
-
-        presence.getExtension(StartMutedPacketExtension::class.java)?.let {
-            // XXX Is this intended to be allowed for moderators or not?
-            if (role.hasAdministratorRights()) {
-                chatRoom.setStartMuted(it.audioMuted, it.videoMuted)
-            }
         }
 
         presence.getExtension(StatsId::class.java)?.let {

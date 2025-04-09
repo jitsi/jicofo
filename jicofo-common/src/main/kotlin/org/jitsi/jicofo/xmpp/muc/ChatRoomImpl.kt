@@ -218,10 +218,6 @@ class ChatRoomImpl(
     override fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean =
         avModeration(mediaType).isAllowedToUnmute(jid)
 
-    internal fun setStartMuted(startAudioMuted: Boolean, startVideoMuted: Boolean) = eventEmitter.fireEvent {
-        startMutedChanged(startAudioMuted, startVideoMuted)
-    }
-
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     override fun join(): ChatRoomInfo {
         // TODO: clean-up the way we figure out what nickname to use.
@@ -290,6 +286,9 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
+        roomMetadata.metadata?.startMuted?.let {
+            eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
+        }
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
