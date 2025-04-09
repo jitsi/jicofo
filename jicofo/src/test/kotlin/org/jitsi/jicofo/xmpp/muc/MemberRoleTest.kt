@@ -23,7 +23,6 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.xmpp.muc.MemberRole.ADMINISTRATOR
 import org.jitsi.jicofo.xmpp.muc.MemberRole.MODERATOR
 import org.jitsi.jicofo.xmpp.muc.MemberRole.OWNER
 import org.jitsi.jicofo.xmpp.muc.MemberRole.PARTICIPANT
@@ -36,40 +35,27 @@ class MemberRoleTest : ShouldSpec() {
         context("Order") {
             (VISITOR > PARTICIPANT) shouldBe true
             (PARTICIPANT > MODERATOR) shouldBe true
-            (MODERATOR > ADMINISTRATOR) shouldBe true
-            (ADMINISTRATOR > OWNER) shouldBe true
 
             VISITOR.compareTo(PARTICIPANT) shouldBeGreaterThan 0
             PARTICIPANT.compareTo(MODERATOR) shouldBeGreaterThan 0
-            MODERATOR.compareTo(ADMINISTRATOR) shouldBeGreaterThan 0
-            ADMINISTRATOR.compareTo(OWNER) shouldBeGreaterThan 0
         }
         context("hasModeratorRights") {
             VISITOR.hasModeratorRights().shouldBeFalse()
             PARTICIPANT.hasModeratorRights().shouldBeFalse()
             MODERATOR.hasModeratorRights().shouldBeTrue()
-            ADMINISTRATOR.hasModeratorRights().shouldBeTrue()
             OWNER.hasModeratorRights().shouldBeTrue()
-        }
-        context("hasAdministratorRights") {
-            VISITOR.hasAdministratorRights().shouldBeFalse()
-            PARTICIPANT.hasAdministratorRights().shouldBeFalse()
-            MODERATOR.hasAdministratorRights().shouldBeFalse()
-            ADMINISTRATOR.hasAdministratorRights().shouldBeTrue()
-            OWNER.hasAdministratorRights().shouldBeTrue()
         }
         context("hasOwnerRights") {
             VISITOR.hasOwnerRights().shouldBeFalse()
             PARTICIPANT.hasOwnerRights().shouldBeFalse()
             MODERATOR.hasOwnerRights().shouldBeFalse()
-            ADMINISTRATOR.hasOwnerRights().shouldBeFalse()
             OWNER.hasOwnerRights().shouldBeTrue()
         }
         context("From Smack role and affiliation") {
             enumPairsWithNull<MUCRole, MUCAffiliation>().forEach { (mucRole, mucAffiliation) ->
                 withClue("mucRole=$mucRole, mucAffiliation=$mucAffiliation") {
                     MemberRole.fromSmack(mucRole, mucAffiliation) shouldBe when (mucAffiliation) {
-                        MUCAffiliation.admin -> ADMINISTRATOR
+                        MUCAffiliation.admin -> MODERATOR
                         MUCAffiliation.owner -> OWNER
                         else -> when (mucRole) {
                             MUCRole.moderator -> MODERATOR

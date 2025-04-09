@@ -20,39 +20,24 @@ package org.jitsi.jicofo.xmpp.muc
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
 
-/**
- * Indicates roles that a chat room member detains in its containing chat room.
- */
+/** Indicates roles that a chat room member detains in its containing chat room. */
 enum class MemberRole {
-    /**
-     * A role implying the full set of chat room permissions
-     */
+    /** A role implying the full set of chat room permissions */
     OWNER,
 
-    /**
-     * A role implying administrative permissions.
-     */
-    ADMINISTRATOR,
-
-    /**
-     * A role implying moderator permissions.
-     */
+    /** A role implying moderator permissions. */
     MODERATOR,
 
-    /**
-     * A role implying the ability to send to a chat room
-     */
+    /** A role implying the ability to send to a chat room */
     PARTICIPANT,
 
-    /**
-     * A role implying only the ability to watch a chat room.
-     */
+    /** A role implying only the ability to watch a chat room. */
     VISITOR;
 
     companion object {
         @JvmStatic
         fun fromSmack(mucRole: MUCRole?, mucAffiliation: MUCAffiliation?) = when (mucAffiliation) {
-            MUCAffiliation.admin -> ADMINISTRATOR
+            MUCAffiliation.admin -> MODERATOR
             MUCAffiliation.owner -> OWNER
             else -> when (mucRole) {
                 MUCRole.moderator -> MODERATOR
@@ -63,9 +48,6 @@ enum class MemberRole {
     }
 }
 
-/**
- * Has sufficient rights to moderate (i.e. is MODERATOR, ADMINISTRATOR or OWNER).
- */
+/** Has sufficient rights to moderate (i.e. is MODERATOR or OWNER). */
 fun MemberRole?.hasModeratorRights() = this != null && this <= MemberRole.MODERATOR
-fun MemberRole?.hasAdministratorRights() = this != null && this <= MemberRole.ADMINISTRATOR
 fun MemberRole?.hasOwnerRights() = this != null && this <= MemberRole.OWNER
