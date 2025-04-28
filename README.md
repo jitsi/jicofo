@@ -2,7 +2,7 @@
 
 JItsi COnference FOcus is a signaling server, one of the backend components in the [Jitsi Meet] stack.
 
-[Jitsi Meet]: https://github.com/jitsi/jitsi-meet
+[Jitsi Meet](https://github.com/jitsi/jitsi-meet)
 
 ## Overview
 
@@ -14,7 +14,7 @@ Jicofo joins the conference MUC and is then responsible for initiating a
 [Jingle](https://xmpp.org/extensions/xep-0166.html) session with each participant (in this sense it is the "focus" of the
 conference, which is where its name comes from). While Jicofo manages and terminates Jingle sessions, it does not
 process any of the media (audio/video). Instead, it uses one or more
-[Jitsi Videobridge](github.com/jitsi/jitsi-videobridge/) instances.
+[Jitsi Videobridge](https://github.com/jitsi/jitsi-videobridge/) instances.
 
 Jicofo is responsible for selecting a Jitsi Videobridge for each participant, and manages the set of videobridges for 
 the conference with the COLIBRI protocol (colibri version 2 is now used, the format in XEP-0340 is now deprecated).
