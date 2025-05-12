@@ -770,11 +770,11 @@ public class JitsiMeetConferenceImpl
             cancelSingleParticipantTimeout();
 
             // Invite all not invited yet
-            if (participants.size() == 0)
+            if (participants.isEmpty())
             {
                 for (final ChatRoomMember member : chatRoom.getMembers())
                 {
-                    inviteChatMember(member, member == chatRoomMember);
+                    inviteChatMember(member);
                 }
                 for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
                 {
@@ -782,7 +782,7 @@ public class JitsiMeetConferenceImpl
                     {
                         if (member.getRole() == MemberRole.VISITOR)
                         {
-                            inviteChatMember(member, member == chatRoomMember);
+                            inviteChatMember(member);
                         }
                     }
                 }
@@ -790,7 +790,7 @@ public class JitsiMeetConferenceImpl
             // Only the one who has just joined
             else
             {
-                inviteChatMember(chatRoomMember, true);
+                inviteChatMember(chatRoomMember);
             }
         }
     }
@@ -801,11 +801,8 @@ public class JitsiMeetConferenceImpl
      * established and videobridge channels being allocated.
      *
      * @param chatRoomMember the chat member to be invited into the conference.
-     * @param justJoined whether the chat room member should be invited as a
-     * result of just having joined (as opposed to e.g. another participant
-     * joining triggering the invite).
      */
-    private void inviteChatMember(ChatRoomMember chatRoomMember, boolean justJoined)
+    private void inviteChatMember(ChatRoomMember chatRoomMember)
     {
         synchronized (participantLock)
         {
@@ -843,7 +840,7 @@ public class JitsiMeetConferenceImpl
                 }
             }
 
-            inviteParticipant(participant, false, justJoined);
+            inviteParticipant(participant, false, true);
         }
     }
 
