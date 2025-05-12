@@ -43,7 +43,7 @@
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
-    <jicoco.version>1.1-156-g4ea1d28</jicoco.version>
+    <jicoco.version>1.1-157-gb20b38c</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
     <spotbugs.version>4.8.6</spotbugs.version>
     <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
@@ -170,7 +170,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-92-g2d110a0</version>
+        <version>1.0-93-ge089d84</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
