@@ -33,6 +33,7 @@ import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
+import java.lang.Boolean.parseBoolean
 
 /**
  * Handles XMPP requests for a new conference ([ConferenceIq]).
@@ -88,7 +89,12 @@ class ConferenceIqHandler(
         conferenceRequestCounter.inc()
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
-        if (!roomExists) newConferenceRequestCounter.inc()
+        if (!roomExists) {
+            newConferenceRequestCounter.inc()
+            if (!parseBoolean(query.propertiesMap.getOrDefault("rtcstatsEnabled", "true"))) {
+                logger.info("New room with rtcstats disabled: $room")
+            }
+        }
 
         // Authentication logic
         val error: IQ? = processExtensions(query, room, response, roomExists)

@@ -49,6 +49,12 @@ class ConferenceMetrics {
         )
 
         @JvmField
+        val participantsNoStartMutedRmd = metricsContainer.registerCounter(
+            "participants_no_start_muted_rmd",
+            "The number of participants with no support for start muted via room-metadata."
+        )
+
+        @JvmField
         val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"
