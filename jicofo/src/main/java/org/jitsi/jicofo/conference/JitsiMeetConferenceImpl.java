@@ -826,6 +826,10 @@ public class JitsiMeetConferenceImpl
                     features);
 
             ConferenceMetrics.participants.inc();
+            if (!features.contains(Features.START_MUTED_RMD))
+            {
+                ConferenceMetrics.participantsNoStartMutedRmd.inc();
+            }
 
             boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
             if (added)
