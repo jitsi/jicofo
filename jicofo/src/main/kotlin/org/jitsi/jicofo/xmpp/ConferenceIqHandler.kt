@@ -33,7 +33,6 @@ import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
-
 import java.lang.Boolean.parseBoolean
 
 /**
