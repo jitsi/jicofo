@@ -31,7 +31,6 @@ import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.observableWhenChanged
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -562,15 +561,15 @@ class ChatRoomImpl(
      */
     override fun processPresence(presence: Presence?) {
         if (presence == null || presence.error != null) {
-            logger.warn("Unable to handle packet: ${presence?.toXML()?.toStringOpt()}")
+            logger.warn("Unable to handle packet: ${presence?.toXML()}")
             return
         }
-        logger.trace { "Presence received ${presence.toXML().toStringOpt()}" }
+        logger.trace { "Presence received ${presence.toXML()}" }
 
         // Should never happen, but log if something is broken
         val myOccupantJid = this.myOccupantJid
         if (myOccupantJid == null) {
-            logger.error("Processing presence when myOccupantJid is not set: ${presence.toXML().toStringOpt()}")
+            logger.error("Processing presence when myOccupantJid is not set: ${presence.toXML()}")
         }
         if (myOccupantJid != null && myOccupantJid.equals(presence.from)) {
             processOwnPresence(presence)
