@@ -31,7 +31,6 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import java.lang.Exception
@@ -73,7 +72,7 @@ abstract class BaseJibri internal constructor(
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
     fun handleJibriRequest(request: JibriRequest): IqProcessingResult = if (accept(request.iq)) {
-        logger.info("Accepted jibri request: ${request.iq.toStringOpt()}")
+        logger.info("Accepted jibri request: ${request.iq.toXML()}")
         incomingIqQueue.add(request)
         AcceptedWithNoResponse()
     } else {
@@ -149,7 +148,7 @@ abstract class BaseJibri internal constructor(
      * @return the IQ to be sent back as a response ('result' or 'error').
      */
     private fun doHandleIQRequest(iq: JibriIq): IQ {
-        logger.debug { "Jibri request. IQ: ${iq.toStringOpt()}" }
+        logger.debug { "Jibri request. IQ: ${iq.toXML()}" }
 
         // Coming from a Jibri instance.
         val session = getJibriSessionForMeetIq(iq)
@@ -178,7 +177,7 @@ abstract class BaseJibri internal constructor(
             }
             Action.STOP -> when (session) {
                 null -> {
-                    logger.warn("Rejecting STOP request for an unknown session.: ${iq.toStringOpt()}")
+                    logger.warn("Rejecting STOP request for an unknown session.: ${iq.toXML()}")
                     error(iq, StanzaError.Condition.item_not_found, "Unknown session")
                 }
                 else -> {
@@ -187,7 +186,7 @@ abstract class BaseJibri internal constructor(
                 }
             }
             Action.UNDEFINED, null -> {
-                return error(iq, StanzaError.Condition.bad_request, "undefined action ${iq.toStringOpt()}")
+                return error(iq, StanzaError.Condition.bad_request, "undefined action ${iq.toXML()}")
             }
         }
     }

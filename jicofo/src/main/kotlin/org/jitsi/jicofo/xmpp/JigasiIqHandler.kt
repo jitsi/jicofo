@@ -27,7 +27,6 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
@@ -88,7 +87,7 @@ class JigasiIqHandler(
             }
         }
 
-        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toStringOpt()}")
+        logger.info("Accepted jigasi request from ${request.iq.from}: ${request.iq.toXML()}")
         Stats.acceptedRequests.inc()
 
         TaskPools.ioPool.execute {
@@ -116,7 +115,7 @@ class JigasiIqHandler(
     ) {
         val selector = if (request.iq.destination == "jitsi_meet_transcribe") {
             if (conference.hasTranscriber()) {
-                logger.warn("Request failed, transcriber already available: ${request.iq.toStringOpt()}")
+                logger.warn("Request failed, transcriber already available: ${request.iq.toXML()}")
                 IQ.createErrorResponse(
                     request.iq,
                     StanzaError.getBuilder(StanzaError.Condition.conflict).build()
@@ -130,7 +129,7 @@ class JigasiIqHandler(
 
         // Check if Jigasi is available
         val jigasiJid = selector(exclude, conference.bridgeRegions) ?: run {
-            logger.warn("Request failed, no instances available: ${request.iq.toStringOpt()}")
+            logger.warn("Request failed, no instances available: ${request.iq.toXML()}")
             request.connection.tryToSendStanza(
                 IQ.createErrorResponse(
                     request.iq,
@@ -151,7 +150,7 @@ class JigasiIqHandler(
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
         } catch (e: SmackException.NotConnectedException) {
-            logger.error("Request failed,  XMPP not connected: ${request.iq.toStringOpt()}")
+            logger.error("Request failed,  XMPP not connected: ${request.iq.toXML()}")
             stats.xmppNotConnected()
             return
         }
@@ -162,7 +161,7 @@ class JigasiIqHandler(
                 logger.warn("Jigasi instance timed out: $jigasiJid")
                 Stats.singleInstanceTimeouts.inc()
             } else {
-                logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toStringOpt()}")
+                logger.warn("Jigasi instance returned error ($jigasiJid): ${responseFromJigasi.toXML()}")
                 Stats.singleInstanceErrors.inc()
             }
 
@@ -187,7 +186,7 @@ class JigasiIqHandler(
             return
         }
 
-        logger.info("Response from jigasi: ${responseFromJigasi.toStringOpt()}")
+        logger.info("Response from jigasi: ${responseFromJigasi.toXML()}")
         // Successful response from Jigasi, forward it as the response to the client.
         request.connection.tryToSendStanza(
             responseFromJigasi.apply {

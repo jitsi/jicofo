@@ -25,7 +25,6 @@ import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -352,7 +351,7 @@ public class JibriSession
         stopRequest.setAction(JibriIq.Action.STOP);
         stopRequest.setSessionId(this.sessionId);
 
-        logger.info("Trying to stop: " + XmlStringBuilderUtil.toStringOpt(stopRequest));
+        logger.info("Trying to stop: " + stopRequest.toXML());
 
         SmackFuture<IQ, Exception> future =
             jibriDetector.getXmppConnection().sendIqRequestAsync(stopRequest, 60000);
@@ -367,7 +366,7 @@ public class JibriSession
             {
                 logger.error(
                     "Unexpected response to stop iq: "
-                        + (stanza != null ? XmlStringBuilderUtil.toStringOpt(stanza) : "null"));
+                        + (stanza != null ? stanza.toXML() : "null"));
                 stopError(stopRequest.getTo());
             }
         }).onError(exception ->
@@ -435,7 +434,7 @@ public class JibriSession
         JibriIq.Status status = iq.getStatus();
         if (!JibriIq.Status.UNDEFINED.equals(status))
         {
-            logger.info("Updating status from JIBRI: " + XmlStringBuilderUtil.toStringOpt(iq) + " for " + roomName);
+            logger.info("Updating status from JIBRI: " + iq.toXML() + " for " + roomName);
 
             handleJibriStatusUpdate(iq.getFrom(), status, iq.getFailureReason(), iq.getShouldRetry());
         }
@@ -542,7 +541,7 @@ public class JibriSession
         }
         if (!(reply instanceof JibriIq))
         {
-            logger.error("Unexpected response to start request: " + XmlStringBuilderUtil.toStringOpt(reply));
+            logger.error("Unexpected response to start request: " + reply.toXML());
 
             throw new StartException.UnexpectedResponse();
         }
@@ -556,7 +555,7 @@ public class JibriSession
         if (!isPendingResponse(jibriIq))
         {
             logger.error(
-                "Unexpected status received in response to the start IQ: " + XmlStringBuilderUtil.toStringOpt(jibriIq));
+                "Unexpected status received in response to the start IQ: " + jibriIq.toXML());
 
             throw new StartException.UnexpectedResponse();
         }

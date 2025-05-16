@@ -22,7 +22,6 @@ import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIq
 import org.jitsi.xmpp.extensions.jitsimeet.LogoutIq
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
@@ -47,7 +46,7 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
             stanzaId = loginUrlIq.stanzaId
             to = loginUrlIq.from
             url = authAuthority.createLoginUrl(machineUID, peerFullJid, roomName, popup)
-            logger.info("Sending url: ${toStringOpt()}")
+            logger.info("Sending url: ${toXML()}")
         }
     }
 

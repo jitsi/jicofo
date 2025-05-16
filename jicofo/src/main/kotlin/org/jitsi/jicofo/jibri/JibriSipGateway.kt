@@ -26,7 +26,6 @@ import org.jitsi.jicofo.jibri.JibriSession.StartException.NotAvailable
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.SipCallState
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import java.util.UUID
@@ -141,7 +140,7 @@ class JibriSipGateway(
             sipAddress = session.sipAddress
             sessionId = session.sessionId
         }
-        logger.info("Publishing new state: ${session.sipAddress} ${sipCallState.toStringOpt()}")
+        logger.info("Publishing new state: ${session.sipAddress} ${sipCallState.toXML()}")
 
         // Publish that in the presence
         conference.chatRoom?.setPresenceExtension(sipCallState) ?: logger.warn("chatRoom is null")

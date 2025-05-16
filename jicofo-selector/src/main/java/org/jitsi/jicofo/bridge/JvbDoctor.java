@@ -23,7 +23,6 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.xmpp.extensions.health.*;
 
-import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 
@@ -274,16 +273,14 @@ public class JvbDoctor
                         || StanzaError.Condition.service_unavailable.equals(condition))
                     {
                         // Health check failure
-                        logger.warn(
-                                "Health check failed for: " + bridge + ": " + XmlStringBuilderUtil.toStringOpt(error)
-                        );
+                        logger.warn("Health check failed for: " + bridge + ": " + error.toXML());
                         listener.healthCheckFailed(bridge.getJid());
                     }
                     else
                     {
                         logger.error(
-                                "Unexpected error returned by the bridge: " + bridge + ", err: "
-                                        + XmlStringBuilderUtil.toStringOpt(response));
+                                "Unexpected error returned by the bridge: " + bridge + ", err: " + response.toXML()
+                        );
                     }
                 }
             }
