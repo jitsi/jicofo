@@ -21,7 +21,6 @@ import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.util.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.packet.*;
 import org.jivesoftware.smack.tcp.*;
@@ -327,7 +326,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             instance.status = extension;
         }
 
-        logger.debug(() -> "New presence from " + jid + ": " + XmlStringBuilderUtil.toStringOpt(extension));
+        logger.debug(() -> "New presence from " + jid + ": " + extension.toXML());
         onInstanceStatusChanged(jid, extension);
     }
 
