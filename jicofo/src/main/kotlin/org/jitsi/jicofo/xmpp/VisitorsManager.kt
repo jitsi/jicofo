@@ -22,7 +22,6 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.visitors.VisitorsIq
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.StanzaFilter
 import org.jivesoftware.smack.packet.ExtensionElement
@@ -78,9 +77,9 @@ class VisitorsManager(
             when {
                 response == null -> logger.warn("Timeout waiting for VisitorsIq response.")
                 response.type == IQ.Type.result -> {
-                    logger.info("Received VisitorsIq response: ${response.toStringOpt()}")
+                    logger.info("Received VisitorsIq response: ${response.toXML()}")
                 }
-                else -> logger.warn("Received error response: ${response.toStringOpt()}")
+                else -> logger.warn("Received error response: ${response.toXML()}")
             }
         }
     }
@@ -108,7 +107,7 @@ class VisitorsManager(
             logger.warn("Ignoring VisitorsIq for unknown conference ${stanza.room}.")
             return
         }
-        logger.info("Received VisitorsIq: ${stanza.toStringOpt()}")
+        logger.info("Received VisitorsIq: ${stanza.toXML()}")
         // TODO pass to the conference
     }
 }

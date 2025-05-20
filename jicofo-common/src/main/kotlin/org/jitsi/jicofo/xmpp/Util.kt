@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.utils.logging2.LoggerImpl
-import org.jitsi.xmpp.util.XmlStringBuilderUtil.Companion.toStringOpt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -62,9 +61,9 @@ fun parseJidFromClientProxyJid(
 fun XMPPConnection.tryToSendStanza(stanza: Stanza) = try {
     sendStanza(stanza)
 } catch (e: SmackException.NotConnectedException) {
-    logger.error("No connection - unable to send packet: ${stanza.toXML().toStringOpt()}", e)
+    logger.error("No connection - unable to send packet: ${stanza.toXML()}", e)
 } catch (e: InterruptedException) {
-    logger.error("Failed to send packet: ${stanza.toXML().toStringOpt()}", e)
+    logger.error("Failed to send packet: ${stanza.toXML()}", e)
 }
 
 @Throws(SmackException.NotConnectedException::class)
