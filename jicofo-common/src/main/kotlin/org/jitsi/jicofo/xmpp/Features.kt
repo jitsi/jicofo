@@ -59,7 +59,7 @@ enum class Features(val value: String) {
     RAYO("urn:xmpp:rayo:client:1"),
 
     // Supports handling "start muted" via room metadata (instead of via jingle).
-    START_MUTED_RMD("start-muted-room-metadata"),
+    START_MUTED_RMD("http://jitsi.org/start-muted-room-metadata"),
     VISITORS_V1("http://jitsi.org/visitors-1");
 
     companion object {
