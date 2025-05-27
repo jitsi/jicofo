@@ -259,12 +259,6 @@ class ChatRoomImpl(
         val config = muc.configurationForm
         parseConfigForm(config)
 
-        // We only read the initial metadata from the config form. Setting room metadata after a config form reload may
-        // race with updates coming via [RoomMetadataHandler].
-        config.getRoomMetadata()?.let {
-            setRoomMetadata(it)
-        }
-
         // Make the room non-anonymous, so that others can recognize focus JID
         val answer = config.fillableForm
         answer.setAnswer(MucConfigFields.WHOIS, "anyone")
@@ -296,18 +290,6 @@ class ChatRoomImpl(
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
         visitorsEnabled = configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
         participantsSoftLimit = configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
-    }
-
-    private fun Form.getRoomMetadata(): RoomMetadata? {
-        getField("muc#roominfo_jitsimetadata")?.firstValue?.let {
-            try {
-                return RoomMetadata.parse(it)
-            } catch (e: Exception) {
-                logger.warn("Invalid room metadata content", e)
-                return null
-            }
-        }
-        return null
     }
 
     override fun leave() {
