@@ -85,7 +85,7 @@ class ConferenceIqHandler(
             focusJid = focusAuthJid
         }
 
-        logger.info("Conference request for room $room, from ${query.from}")
+        logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
         conferenceRequestCounter.inc()
         val conference = focusManager.getConference(room)
         val roomExists = conference != null

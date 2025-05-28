@@ -33,6 +33,7 @@ import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.RoutingCall
+import io.ktor.server.routing.RoutingRequest
 import io.ktor.server.routing.get
 import io.ktor.server.routing.options
 import io.ktor.server.routing.post
@@ -160,8 +161,10 @@ class Application(
                     throw BadRequest(e.message)
                 }
 
+                val token = call.request.getToken()
+
                 val response: IQ = try {
-                    conferenceIqHandler.handleConferenceIq(request.toConferenceIq())
+                    conferenceIqHandler.handleConferenceIq(request.toConferenceIq(token))
                 } catch (e: XmppStringprepException) {
                     throw BadRequest("Invalid room name: ${e.message}")
                 } catch (e: Exception) {
@@ -348,6 +351,16 @@ private fun translateException(block: () -> MoveResult): MoveResult {
             is BridgeNotFoundException -> NotFound("Bridge not found")
             is ConferenceNotFoundException -> NotFound("Conference not found")
             is MissingParameterException, is InvalidParameterException -> BadRequest(e.message)
+        }
+    }
+}
+
+private fun RoutingRequest.getToken(): String? {
+    return this.headers["Authorization"]?.let {
+        if (it.startsWith("Bearer ")) {
+            it.substring("Bearer ".length)
+        } else {
+            it
         }
     }
 }

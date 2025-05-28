@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
@@ -30,6 +31,7 @@ import kotlin.jvm.Throws
  * The initial request to create or join a conference, a generic version of [ConferenceIq].
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
+@JsonIgnoreProperties(ignoreUnknown = true)
 class ConferenceRequest(
     var room: String? = null,
     var ready: Boolean? = null,
@@ -41,7 +43,7 @@ class ConferenceRequest(
     val properties: MutableMap<String, String> = mutableMapOf()
 ) {
     @Throws(XmppStringprepException::class)
-    fun toConferenceIq() = ConferenceIq().apply {
+    fun toConferenceIq(token: String? = null) = ConferenceIq().apply {
         this@ConferenceRequest.room?.let {
             room = JidCreate.entityBareFrom(it)
         }
@@ -62,6 +64,9 @@ class ConferenceRequest(
         }
         this@ConferenceRequest.vnode?.let {
             vnode = it
+        }
+        token?.let {
+            setToken(it)
         }
         this@ConferenceRequest.properties.forEach { (k, v) -> addProperty(k, v) }
     }
