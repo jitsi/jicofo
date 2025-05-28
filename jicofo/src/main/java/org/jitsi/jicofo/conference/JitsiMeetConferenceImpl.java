@@ -1799,7 +1799,7 @@ public class JitsiMeetConferenceImpl
      * @return the name of the visitor node if it should be redirected, and null otherwise.
      */
     @Nullable
-    public String redirectVisitor(boolean visitorRequested)
+    public String redirectVisitor(boolean visitorRequested, @Nullable String userId)
         throws Exception
     {
         if (!VisitorsConfig.config.getEnabled())
@@ -1809,9 +1809,14 @@ public class JitsiMeetConferenceImpl
 
         // We don't support both visitors and a lobby. Once a lobby is enabled we don't use visitors anymore.
         ChatRoom chatRoom = this.chatRoom;
-        if (chatRoom != null && (chatRoom.getLobbyEnabled() || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())))
+        if (chatRoom != null)
         {
-            return null;
+            if (chatRoom.getLobbyEnabled()
+                    || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())
+                    || (userId != null && chatRoom.getMainRoomParticipants().contains(userId)))
+            {
+                return null;
+            }
         }
         if (VisitorsConfig.config.getRequireMucConfigFlag())
         {

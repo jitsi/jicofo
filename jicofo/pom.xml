@@ -84,19 +84,23 @@
     <!-- org.jitsi -->
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco-health-checker</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>jicoco-config</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>jicoco-metrics</artifactId>
+      <artifactId>jicoco-health-checker</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-jwt</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-metaconfig</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-metrics</artifactId>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -117,7 +121,6 @@
     <dependency>
         <groupId>com.fasterxml.jackson.module</groupId>
         <artifactId>jackson-module-kotlin</artifactId>
-        <version>2.14.1</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
     <dependency>
