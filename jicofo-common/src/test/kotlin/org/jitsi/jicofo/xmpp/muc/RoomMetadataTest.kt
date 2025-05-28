@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp.muc
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 
@@ -60,6 +61,44 @@ class RoomMetadataTest : ShouldSpec() {
                 )
                 parsed.shouldBeInstanceOf<RoomMetadata>()
                 parsed.metadata!!.visitors shouldBe null
+            }
+            context("With visitors, mainMeetingParticipants, and startMuted") {
+                RoomMetadata.parse(
+                    """
+                    {
+                        "metadata": {
+                            "transcriberType": "EGHT_WHISPER",
+                            "visitors": {
+                                "live": true
+                            },
+                            "mainMeetingParticipants": [
+                                "user_id_1",
+                                "user_id_2"
+                            ],
+                            "startMuted": {
+                                "audio": true
+                            }
+                        },
+                        "type": "room_metadata"
+                    }
+                    """.trimIndent()
+                ).apply {
+                    shouldBeInstanceOf<RoomMetadata>()
+                    metadata.apply {
+                        shouldNotBeNull()
+                        visitors.apply {
+                            shouldNotBeNull()
+                            live shouldBe true
+                        }
+                        mainMeetingParticipants shouldBe listOf("user_id_1", "user_id_2")
+                        startMuted.apply {
+                            shouldNotBeNull()
+                            audio shouldBe true
+                            video shouldBe null
+                        }
+                    }
+                    type shouldBe "room_metadata"
+                }
             }
         }
         context("Invalid") {

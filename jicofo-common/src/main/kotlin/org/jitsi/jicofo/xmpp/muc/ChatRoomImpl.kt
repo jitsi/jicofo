@@ -163,6 +163,9 @@ class ChatRoomImpl(
             }
         }
 
+    override var mainRoomParticipants: List<String> = emptyList()
+        private set
+
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
     /** The emitter used to fire events. */
@@ -279,6 +282,7 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
+        mainRoomParticipants = roomMetadata.metadata?.mainMeetingParticipants ?: emptyList()
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
