@@ -23,6 +23,7 @@ import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.visitors.VisitorsConfig
+import org.jitsi.jwt.JitsiToken
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
@@ -85,7 +86,7 @@ class ConferenceIqHandler(
             focusJid = focusAuthJid
         }
 
-        logger.info("Conference request for room $room, from ${query.from}")
+        logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
         conferenceRequestCounter.inc()
         val conference = focusManager.getConference(room)
         val roomExists = conference != null
@@ -110,7 +111,7 @@ class ConferenceIqHandler(
             return response
         }
         val vnode = if (visitorSupported && visitorsManager.enabled) {
-            conference?.redirectVisitor(visitorRequested)
+            conference?.redirectVisitor(visitorRequested, query.token.readUserId())
         } else {
             null
         }
@@ -234,5 +235,19 @@ class ConferenceIqHandler(
             "conference_requests_new",
             "Number of conference requests received for new conferences."
         )
+    }
+}
+
+/**
+ * Read context.user.id from an unparsed token. Note that no validation is performed on the token, this is intentional.
+ * Validation will be performed when the user attempts to login to XMPP.
+ */
+private fun String?.readUserId(): String? = if (this.isNullOrEmpty()) {
+    null
+} else {
+    try {
+        JitsiToken.parseWithoutValidation(this).context?.user?.id
+    } catch (e: Throwable) {
+        null
     }
 }

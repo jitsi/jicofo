@@ -35,7 +35,11 @@ data class RoomMetadata(
     val metadata: Metadata?
 ) {
     @JsonIgnoreProperties(ignoreUnknown = true)
-    data class Metadata(val visitors: Visitors?, val startMuted: StartMuted?) {
+    data class Metadata(
+        val visitors: Visitors?,
+        val startMuted: StartMuted?,
+        val mainMeetingParticipants: List<String>?
+    ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
 

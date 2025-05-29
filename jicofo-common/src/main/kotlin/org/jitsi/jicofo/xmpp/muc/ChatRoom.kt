@@ -73,6 +73,8 @@ interface ChatRoom {
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
 
+    val mainRoomParticipants: List<String>
+
     /**
      * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after
      * joining.

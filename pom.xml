@@ -42,8 +42,9 @@
     <ktor.version>3.0.0</ktor.version>
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
+    <jackson.version>2.19.0</jackson.version>
     <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
-    <jicoco.version>1.1-159-gf9c2712</jicoco.version>
+    <jicoco.version>1.1-160-g4ad2288</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
     <spotbugs.version>4.8.6</spotbugs.version>
     <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
@@ -154,6 +155,11 @@
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
+        <artifactId>jicoco-jwt</artifactId>
+        <version>${jicoco.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
         <artifactId>jicoco-metrics</artifactId>
         <version>${jicoco.version}</version>
       </dependency>
@@ -170,7 +176,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-95-ge113e35</version>
+        <version>1.0-96-gb0509fc</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -185,7 +191,7 @@
       <dependency>
           <groupId>com.fasterxml.jackson.module</groupId>
           <artifactId>jackson-module-kotlin</artifactId>
-          <version>2.14.1</version>
+          <version>${jackson.version}</version>
       </dependency>
       <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
       <dependency>
