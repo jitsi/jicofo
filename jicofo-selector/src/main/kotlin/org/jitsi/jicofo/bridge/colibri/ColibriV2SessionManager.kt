@@ -50,6 +50,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.net.URI
 import java.util.Collections.singletonList
 
 /**
@@ -66,6 +67,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
+    private var transcriberUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -74,6 +76,9 @@ class ColibriV2SessionManager(
     private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
+
+    /** The session currently used for transcription, if any */
+    private var transcriberSession: Colibri2Session? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -138,6 +143,15 @@ class ColibriV2SessionManager(
         participants.forEach { remove(it) }
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
+        }
+        if (session == transcriberSession) {
+            logger.info("Removing transcriber session: $session")
+            transcriberSession = null
+            transcriberUrl?.let {
+                // Trigger selection of a new session for transcribing.
+                transcriberUrl = null
+                setTranscriberUrl(it)
+            }
         }
         return participants.toSet()
     }
@@ -238,9 +252,52 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            session = Colibri2Session(this, bridge, visitor, logger)
+            val enableTranscriber = transcriberUrl != null && transcriberSession == null
+            session = Colibri2Session(
+                this,
+                bridge,
+                visitor,
+                if (enableTranscriber) transcriberUrl else null,
+                logger
+            )
+            if (enableTranscriber) {
+                transcriberSession = session
+            }
             return Pair(session, true)
         }
+
+    override fun setTranscriberUrl(url: URI?) = synchronized(syncRoot) {
+        if (transcriberUrl == url) {
+            return
+        }
+        if (transcriberUrl != null && url != null) {
+            logger.error("Changing to a different URL is not supported")
+            return
+        }
+
+        val enable = url != null
+        transcriberUrl = url
+
+        if (enable) {
+            if (transcriberSession != null) {
+                transcriberSession?.setTranscriberUrl(url)
+            } else {
+                if (sessions.isEmpty()) {
+                    logger.info("No session available for transcribing, will enable it once a session is created")
+                } else {
+                    // Use the first session.
+                    transcriberSession = sessions.values.first()
+                    logger.info("Using ${transcriberSession?.id} for transcribing")
+                    transcriberSession?.setTranscriberUrl(url)
+                }
+            }
+        } else {
+            transcriberSession?.setTranscriberUrl(null)
+            transcriberSession = null
+        }
+
+        Unit
+    }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {

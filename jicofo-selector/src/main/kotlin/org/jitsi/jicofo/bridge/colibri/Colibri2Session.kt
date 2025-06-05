@@ -35,6 +35,7 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -46,6 +47,7 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smackx.muc.MUCRole
+import java.net.URI
 import java.util.Collections.singletonList
 import java.util.UUID
 
@@ -55,6 +57,7 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
+    private var transcriberUrl: URI?,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -194,6 +197,27 @@ class Colibri2Session(
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
+            transcriberUrl?.let {
+                logger.info("Adding connect for transcriber, url=$it")
+                addConnect(createConnect(it))
+            }
+        }
+    }
+
+    fun setTranscriberUrl(url: URI?) {
+        if (transcriberUrl != url) {
+            transcriberUrl = url
+            val request = createRequest(create = false)
+            if (url != null) {
+                logger.info("Adding connect, url=$url")
+                request.addConnect(createConnect(url))
+            } else {
+                logger.info("Removing connects")
+                request.setEmptyConnects()
+            }
+            sendRequest(request.build(), "setTranscriberUrl")
+        } else {
+            logger.info("No change in audio record URL.")
         }
     }
 
@@ -547,4 +571,11 @@ private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoi
         setId(endpointId)
         setExpire(true)
     }.build()
+)
+
+private fun createConnect(url: URI) = Connect(
+    url = url,
+    type = Connect.Types.RECORDER,
+    protocol = Connect.Protocols.MEDIAJSON,
+    audio = true
 )

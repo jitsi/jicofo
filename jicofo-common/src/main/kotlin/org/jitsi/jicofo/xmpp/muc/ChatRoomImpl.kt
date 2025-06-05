@@ -286,6 +286,9 @@ class ChatRoomImpl(
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
+        eventEmitter.fireEvent {
+            transcribingEnabledChanged(roomMetadata.metadata?.recording?.isTranscribingEnabled == true)
+        }
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
