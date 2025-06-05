@@ -49,6 +49,7 @@ import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -226,6 +227,9 @@ public class JitsiMeetConferenceImpl
 
     @NotNull private final JicofoServices jicofoServices;
 
+    /** Whether to enable transcription via a colibri export. */
+    private boolean enableTranscription = false;
+
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
@@ -345,6 +349,7 @@ public class JitsiMeetConferenceImpl
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
+                    enableTranscription ? RecordingConfig.config.getUrl(meetingId) : null,
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
@@ -2283,6 +2288,37 @@ public class JitsiMeetConferenceImpl
         return config.getRtcStatsEnabled();
     }
 
+    private void setEnableTranscribing(boolean enable)
+    {
+        if (enableTranscription == enable)
+        {
+            return;
+        }
+
+        logger.info("Setting enableTranscribing=" + enable);
+        enableTranscription = enable;
+        setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, enable ? "true" : "false");
+
+        String meetingId = JitsiMeetConferenceImpl.this.meetingId;
+        ColibriSessionManager colibriSessionManager = JitsiMeetConferenceImpl.this.colibriSessionManager;
+
+        if (meetingId == null || colibriSessionManager == null)
+        {
+            // The new value will take effect when colibriSessionManager is initialized (after the room is joined and
+            // meetingId is set).
+            return;
+        }
+
+        URI uri = enable ? RecordingConfig.config.getUrl(meetingId) : null;
+        if (enable && uri == null)
+        {
+            logger.info("Transcription enabled, but no URL is configured.");
+            return;
+        }
+
+        colibriSessionManager.setRecordingUrl(uri);
+    }
+
     /**
      * The interface used to listen for conference events.
      */
@@ -2536,6 +2572,12 @@ public class JitsiMeetConferenceImpl
         public void numVideoSendersChanged(int numVideoSenders)
         {
             onNumVideoSendersChanged(numVideoSenders);
+        }
+
+        @Override
+        public void transcribingEnabledChanged(boolean enabled)
+        {
+            setEnableTranscribing(enabled);
         }
     }
 

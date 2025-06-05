@@ -50,6 +50,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
+import java.net.URI
 import java.util.Collections.singletonList
 
 /**
@@ -66,6 +67,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
+    private var recordingUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -74,6 +76,8 @@ class ColibriV2SessionManager(
     private val eventEmitter = AsyncEventEmitter<ColibriSessionManager.Listener>(TaskPools.ioPool)
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
+
+    private var sessionForRecording: Colibri2Session? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -238,9 +242,51 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            session = Colibri2Session(this, bridge, visitor, logger)
+            val enableRecording = recordingUrl != null && sessionForRecording == null
+            session = Colibri2Session(
+                this,
+                bridge,
+                visitor,
+                if (enableRecording) recordingUrl else null,
+                logger
+            )
+            if (enableRecording) {
+                sessionForRecording = session
+            }
             return Pair(session, true)
         }
+
+    override fun setRecordingUrl(url: URI?) = synchronized(syncRoot) {
+        if (recordingUrl == url) {
+            return
+        }
+        if (recordingUrl != null && url != null) {
+            logger.error("Changing to a different URL is not supported")
+            return
+        }
+
+        val enable = url != null
+        recordingUrl = url
+
+        if (enable) {
+            if (sessionForRecording != null) {
+                sessionForRecording?.setRecordingUrl(url)
+            } else {
+                if (sessions.isEmpty()) {
+                    logger.info("No session available for audio recording, will enable it once a session is created")
+                } else {
+                    // Use the first session.
+                    sessionForRecording = sessions.values.first()
+                    sessionForRecording?.setRecordingUrl(url)
+                }
+            }
+        } else {
+            sessionForRecording?.setRecordingUrl(null)
+            sessionForRecording = null
+        }
+
+        Unit
+    }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {
