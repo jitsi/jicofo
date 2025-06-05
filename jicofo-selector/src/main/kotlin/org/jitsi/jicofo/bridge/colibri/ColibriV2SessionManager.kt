@@ -143,6 +143,15 @@ class ColibriV2SessionManager(
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
+        if (session == sessionForRecording) {
+            logger.info("Removing session for recording: $session")
+            sessionForRecording = null
+            recordingUrl?.let {
+                // Trigger selection of a new session for recording.
+                recordingUrl = null
+                setRecordingUrl(it)
+            }
+        }
         return participants.toSet()
     }
 
@@ -277,6 +286,7 @@ class ColibriV2SessionManager(
                 } else {
                     // Use the first session.
                     sessionForRecording = sessions.values.first()
+                    logger.info("Using ${sessionForRecording?.id} for audio recording")
                     sessionForRecording?.setRecordingUrl(url)
                 }
             }
