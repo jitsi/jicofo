@@ -60,7 +60,7 @@ interface ColibriSessionManager {
 
     fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?>
 
-    fun setRecordingUrl(url: URI?)
+    fun setTranscriberUrl(url: URI?)
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).

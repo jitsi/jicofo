@@ -67,7 +67,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
-    private var recordingUrl: URI?,
+    private var transcriberUrl: URI?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -77,7 +77,8 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
-    private var sessionForRecording: Colibri2Session? = null
+    /** The session currently used for transcription, if any */
+    private var transcriberSession: Colibri2Session? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -143,13 +144,13 @@ class ColibriV2SessionManager(
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
-        if (session == sessionForRecording) {
-            logger.info("Removing session for recording: $session")
-            sessionForRecording = null
-            recordingUrl?.let {
-                // Trigger selection of a new session for recording.
-                recordingUrl = null
-                setRecordingUrl(it)
+        if (session == transcriberSession) {
+            logger.info("Removing transcriber session: $session")
+            transcriberSession = null
+            transcriberUrl?.let {
+                // Trigger selection of a new session for transcribing.
+                transcriberUrl = null
+                setTranscriberUrl(it)
             }
         }
         return participants.toSet()
@@ -251,48 +252,48 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            val enableRecording = recordingUrl != null && sessionForRecording == null
+            val enableTranscriber = transcriberUrl != null && transcriberSession == null
             session = Colibri2Session(
                 this,
                 bridge,
                 visitor,
-                if (enableRecording) recordingUrl else null,
+                if (enableTranscriber) transcriberUrl else null,
                 logger
             )
-            if (enableRecording) {
-                sessionForRecording = session
+            if (enableTranscriber) {
+                transcriberSession = session
             }
             return Pair(session, true)
         }
 
-    override fun setRecordingUrl(url: URI?) = synchronized(syncRoot) {
-        if (recordingUrl == url) {
+    override fun setTranscriberUrl(url: URI?) = synchronized(syncRoot) {
+        if (transcriberUrl == url) {
             return
         }
-        if (recordingUrl != null && url != null) {
+        if (transcriberUrl != null && url != null) {
             logger.error("Changing to a different URL is not supported")
             return
         }
 
         val enable = url != null
-        recordingUrl = url
+        transcriberUrl = url
 
         if (enable) {
-            if (sessionForRecording != null) {
-                sessionForRecording?.setRecordingUrl(url)
+            if (transcriberSession != null) {
+                transcriberSession?.setTranscriberUrl(url)
             } else {
                 if (sessions.isEmpty()) {
-                    logger.info("No session available for audio recording, will enable it once a session is created")
+                    logger.info("No session available for transcribing, will enable it once a session is created")
                 } else {
                     // Use the first session.
-                    sessionForRecording = sessions.values.first()
-                    logger.info("Using ${sessionForRecording?.id} for audio recording")
-                    sessionForRecording?.setRecordingUrl(url)
+                    transcriberSession = sessions.values.first()
+                    logger.info("Using ${transcriberSession?.id} for transcribing")
+                    transcriberSession?.setTranscriberUrl(url)
                 }
             }
         } else {
-            sessionForRecording?.setRecordingUrl(null)
-            sessionForRecording = null
+            transcriberSession?.setTranscriberUrl(null)
+            transcriberSession = null
         }
 
         Unit

@@ -349,7 +349,7 @@ public class JitsiMeetConferenceImpl
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
-                    enableTranscription ? RecordingConfig.config.getUrl(meetingId) : null,
+                    enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null,
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
@@ -2309,14 +2309,14 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        URI uri = enable ? RecordingConfig.config.getUrl(meetingId) : null;
+        URI uri = enable ? TranscriptionConfig.config.getUrl(meetingId) : null;
         if (enable && uri == null)
         {
             logger.info("Transcription enabled, but no URL is configured.");
             return;
         }
 
-        colibriSessionManager.setRecordingUrl(uri);
+        colibriSessionManager.setTranscriberUrl(uri);
     }
 
     /**

@@ -57,7 +57,7 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
-    private var recordingUrl: URI?,
+    private var transcriberUrl: URI?,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -197,16 +197,16 @@ class Colibri2Session(
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
-            recordingUrl?.let {
-                logger.info("Adding connect, url=$it")
+            transcriberUrl?.let {
+                logger.info("Adding connect for transcriber, url=$it")
                 addConnect(createConnect(it))
             }
         }
     }
 
-    fun setRecordingUrl(url: URI?) {
-        if (recordingUrl != url) {
-            recordingUrl = url
+    fun setTranscriberUrl(url: URI?) {
+        if (transcriberUrl != url) {
+            transcriberUrl = url
             val request = createRequest(create = false)
             if (url != null) {
                 logger.info("Adding connect, url=$url")
@@ -215,7 +215,7 @@ class Colibri2Session(
                 logger.info("Removing connects")
                 request.setEmptyConnects()
             }
-            sendRequest(request.build(), "setRecordingUrl")
+            sendRequest(request.build(), "setTranscriberUrl")
         } else {
             logger.info("No change in audio record URL.")
         }

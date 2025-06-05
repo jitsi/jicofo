@@ -22,13 +22,13 @@ import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.logging2.createLogger
 import java.net.URI
 
-class RecordingConfig private constructor() {
+class TranscriptionConfig private constructor() {
     val logger = createLogger()
 
     private val urlTemplate: String? by optionalconfig {
-        "jicofo.recording.url-template".from(JitsiConfig.newConfig).transformedBy {
+        "jicofo.transcription.url-template".from(JitsiConfig.newConfig).transformedBy {
             if (!it.contains(MEETING_ID_TEMPLATE)) {
-                logger.warn("Recording URL template does not contain $MEETING_ID_TEMPLATE")
+                logger.warn("Transcriber URL template does not contain $MEETING_ID_TEMPLATE")
             }
             it
         }
@@ -40,7 +40,7 @@ class RecordingConfig private constructor() {
 
     companion object {
         @JvmField
-        val config = RecordingConfig()
+        val config = TranscriptionConfig()
 
         const val MEETING_ID_TEMPLATE = "MEETING_ID"
     }
