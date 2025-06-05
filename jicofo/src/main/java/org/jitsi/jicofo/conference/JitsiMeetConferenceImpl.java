@@ -602,7 +602,13 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (updatePresence && chatRoom != null && !value.equals(oldValue))
         {
-            chatRoom.setPresenceExtension(createConferenceProperties());
+            ConferenceProperties newProps = createConferenceProperties();
+            chatRoom.setPresenceExtension(newProps);
+
+            for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
+            {
+                visitorChatRoom.setPresenceExtension(newProps);
+            }
         }
     }
 
