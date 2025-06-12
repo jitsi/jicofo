@@ -22,10 +22,10 @@ import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import java.net.URI
 
 interface ColibriSessionManager {
     fun addListener(listener: Listener)
@@ -60,7 +60,7 @@ interface ColibriSessionManager {
 
     fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?>
 
-    fun setTranscriberUrl(url: URI?)
+    fun setTranscriberUrl(url: TemplatedUrl?)
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
