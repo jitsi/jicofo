@@ -35,6 +35,7 @@ import org.jitsi.jicofo.bridge.removeNode
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -50,7 +51,6 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.json.simple.JSONArray
-import java.net.URI
 import java.util.Collections.singletonList
 
 /**
@@ -67,7 +67,7 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
-    private var transcriberUrl: URI?,
+    private var transcriberUrl: TemplatedUrl?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -266,7 +266,7 @@ class ColibriV2SessionManager(
             return Pair(session, true)
         }
 
-    override fun setTranscriberUrl(url: URI?) = synchronized(syncRoot) {
+    override fun setTranscriberUrl(url: TemplatedUrl?) = synchronized(syncRoot) {
         if (transcriberUrl == url) {
             return
         }
