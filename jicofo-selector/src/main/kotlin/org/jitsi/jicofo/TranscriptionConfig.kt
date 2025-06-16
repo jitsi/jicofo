@@ -27,7 +27,7 @@ class TranscriptionConfig private constructor() {
 
     private val urlTemplate: String? by optionalconfig {
         "jicofo.transcription.url-template".from(JitsiConfig.newConfig).transformedBy {
-            if (!it.contains(MEETING_ID_TEMPLATE)) {
+            if (!it.contains("{{${MEETING_ID_TEMPLATE}}}")) {
                 logger.warn("Transcriber URL template does not contain $MEETING_ID_TEMPLATE")
             }
             it
@@ -35,7 +35,9 @@ class TranscriptionConfig private constructor() {
     }
 
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
-        TemplatedUrl(it).apply { set(MEETING_ID_TEMPLATE, meetingId) }
+        TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
+            set(MEETING_ID_TEMPLATE, meetingId)
+        }
     }
 
     companion object {
