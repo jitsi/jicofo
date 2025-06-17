@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import org.jitsi.jicofo.OctoConfig
+import org.jitsi.jicofo.TranscriptionConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
@@ -27,6 +28,7 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
@@ -57,7 +59,7 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
-    private var transcriberUrl: URI?,
+    private var transcriberUrl: TemplatedUrl?,
     parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -198,17 +200,23 @@ class Colibri2Session(
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
             transcriberUrl?.let {
-                logger.info("Adding connect for transcriber, url=$it")
-                addConnect(createConnect(it))
+                val url = resolveTranscriberUrl(it)
+                logger.info("Adding connect for transcriber, url=$url")
+                addConnect(createConnect(url))
             }
         }
     }
 
-    fun setTranscriberUrl(url: URI?) {
-        if (transcriberUrl != url) {
-            transcriberUrl = url
+    private fun resolveTranscriberUrl(urlTemplate: TemplatedUrl): URI {
+        return urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, bridge.region ?: "")
+    }
+
+    fun setTranscriberUrl(urlTemplate: TemplatedUrl?) {
+        if (transcriberUrl != urlTemplate) {
+            transcriberUrl = urlTemplate
             val request = createRequest(create = false)
-            if (url != null) {
+            if (urlTemplate != null) {
+                val url = resolveTranscriberUrl(urlTemplate)
                 logger.info("Adding connect, url=$url")
                 request.addConnect(createConnect(url))
             } else {

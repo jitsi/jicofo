@@ -19,23 +19,25 @@ package org.jitsi.jicofo
 
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.optionalconfig
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
-import java.net.URI
 
 class TranscriptionConfig private constructor() {
     val logger = createLogger()
 
     private val urlTemplate: String? by optionalconfig {
         "jicofo.transcription.url-template".from(JitsiConfig.newConfig).transformedBy {
-            if (!it.contains(MEETING_ID_TEMPLATE)) {
+            if (!it.contains("{{${MEETING_ID_TEMPLATE}}}")) {
                 logger.warn("Transcriber URL template does not contain $MEETING_ID_TEMPLATE")
             }
             it
         }
     }
 
-    fun getUrl(meetingId: String): URI? = urlTemplate?.let {
-        URI(it.replace(MEETING_ID_TEMPLATE, meetingId))
+    fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
+        TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
+            set(MEETING_ID_TEMPLATE, meetingId)
+        }
     }
 
     companion object {
@@ -43,5 +45,6 @@ class TranscriptionConfig private constructor() {
         val config = TranscriptionConfig()
 
         const val MEETING_ID_TEMPLATE = "MEETING_ID"
+        const val REGION_TEMPLATE = "REGION"
     }
 }

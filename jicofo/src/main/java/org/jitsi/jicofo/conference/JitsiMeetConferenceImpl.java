@@ -2315,7 +2315,7 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        URI uri = enable ? TranscriptionConfig.config.getUrl(meetingId) : null;
+        TemplatedUrl uri = enable ? TranscriptionConfig.config.getUrl(meetingId) : null;
         if (enable && uri == null)
         {
             logger.info("Transcription enabled, but no URL is configured.");

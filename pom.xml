@@ -43,7 +43,7 @@
     <kotest.version>5.7.2</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
     <jackson.version>2.19.0</jackson.version>
-    <jitsi.utils.version>1.0-127-g6c65524</jitsi.utils.version>
+    <jitsi.utils.version>1.0-140-g16ddce7</jitsi.utils.version>
     <jicoco.version>1.1-160-g4ad2288</jicoco.version>
     <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
     <spotbugs.version>4.8.6</spotbugs.version>
