@@ -208,12 +208,7 @@ class Colibri2Session(
     }
 
     private fun resolveTranscriberUrl(urlTemplate: TemplatedUrl): URI {
-        val region = bridge.region
-        return if (region.isNullOrEmpty()) {
-            urlTemplate.resolve()
-        } else {
-            urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, region)
-        }
+        return urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, bridge.region ?: "")
     }
 
     fun setTranscriberUrl(urlTemplate: TemplatedUrl?) {
