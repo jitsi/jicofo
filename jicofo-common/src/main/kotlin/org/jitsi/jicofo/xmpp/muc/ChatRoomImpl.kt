@@ -287,7 +287,10 @@ class ChatRoomImpl(
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
         eventEmitter.fireEvent {
-            transcribingEnabledChanged(roomMetadata.metadata?.recording?.isTranscribingEnabled == true)
+            transcribingEnabledChanged(
+                roomMetadata.metadata?.recording?.isTranscribingEnabled == true &&
+                    roomMetadata.metadata.asyncTranscription == true
+            )
         }
     }
 
