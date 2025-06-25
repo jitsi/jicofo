@@ -506,6 +506,44 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Initialize {@link #meetingId}, given an optional value coming from the chat room configuration. If no valid
+     * meeting ID is provided, a random UUID will be generated.
+     * @param chatRoomMeetingId the meeting ID that was set in the chat room configuration.
+     */
+    private void setMeetingId(String chatRoomMeetingId)
+    {
+        if (meetingId != null)
+        {
+            logger.error("Meeting ID is already set: " + meetingId + ", will not replace.");
+            return;
+        }
+
+        String meetingId;
+        if (org.apache.commons.lang3.StringUtils.isBlank(chatRoomMeetingId))
+        {
+            meetingId = UUID.randomUUID().toString();
+            logger.warn("No meetingId set for the MUC. Generating one locally.");
+        }
+        else
+        {
+            meetingId = chatRoomMeetingId;
+        }
+
+        int attempts = 0;
+        while (!listener.meetingIdSet(this, meetingId) && attempts++ < 100) {
+            logger.warn("Meeting ID " + meetingId + " is already in use, generating a new one.");
+            meetingId = UUID.randomUUID().toString();
+        }
+        if (attempts >= 100)
+        {
+            logger.error("Failed to set a unique meeting ID after 100 attempts, giving up.");
+            throw new RuntimeException("Failed to set a unique meeting ID.");
+        }
+
+        this.meetingId = meetingId;
+        logger.addContext("meeting_id", meetingId);
+    }
+    /**
      * Joins the conference room.
      *
      * @throws Exception if we have failed to join the room for any reason
@@ -520,16 +558,7 @@ public class JitsiMeetConferenceImpl
         chatRoom.addListener(chatRoomListener);
 
         ChatRoomInfo chatRoomInfo = chatRoom.join();
-        if (org.apache.commons.lang3.StringUtils.isBlank(chatRoomInfo.getMeetingId()))
-        {
-            meetingId = UUID.randomUUID().toString();
-            logger.warn("No meetingId set for the MUC. Generating one locally.");
-        }
-        else
-        {
-            this.meetingId = chatRoomInfo.getMeetingId();
-        }
-        logger.addContext("meeting_id", meetingId);
+        setMeetingId(chatRoomInfo.getMeetingId());
 
         mainRoomJid = chatRoomInfo.getMainRoomJid();
 
@@ -2333,7 +2362,17 @@ public class JitsiMeetConferenceImpl
          * Event fired when conference has ended.
          * @param conference the conference instance that has ended.
          */
-        void conferenceEnded(JitsiMeetConferenceImpl conference);
+        void conferenceEnded(@NotNull JitsiMeetConferenceImpl conference);
+
+        /**
+         * Fire an event attempting to set the meeting ID for the conference. The implementation should return `false`
+         * in case another meeting with the same ID already exists, which will result in a new randomly generated
+         * meeting ID to be attempted.
+         * @param conference the conference.
+         * @param meetingId the meetindId to attempt.
+         * @return true if the given meetingId was free and was associated with the conference, false otherwise.
+         */
+        boolean meetingIdSet(@NotNull JitsiMeetConferenceImpl conference, @NotNull String meetingId);
     }
 
     /**
