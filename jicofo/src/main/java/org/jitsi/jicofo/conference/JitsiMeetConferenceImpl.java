@@ -531,7 +531,7 @@ public class JitsiMeetConferenceImpl
 
         if (!listener.meetingIdSet(this, meetingId))
         {
-            logger.error("Failed to set a unique meeting ID after 100 attempts, giving up.");
+            logger.error("Failed to set a unique meeting ID.");
             throw new RuntimeException("Failed to set a unique meeting ID.");
         }
 
