@@ -243,7 +243,7 @@ class ChatRoomImpl(
         }
         synchronized(this) {
             lastPresenceSent = null
-            logger.addContext("meeting_id", "")
+            logger.removeContext("meeting_id")
             avModerationByMediaType.values.forEach { it.reset() }
         }
     }

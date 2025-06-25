@@ -71,6 +71,7 @@ class ConferenceTest : ShouldSpec() {
         roomName,
         mockk {
             every { conferenceEnded(any()) } answers { ended = true }
+            every { meetingIdSet(any(), any()) } returns true
         },
         HashMap(),
         Level.INFO,

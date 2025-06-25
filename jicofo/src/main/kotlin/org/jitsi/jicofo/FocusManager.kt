@@ -63,6 +63,7 @@ class FocusManager(
      */
     private val conferences: MutableMap<EntityBareJid, JitsiMeetConferenceImpl> = ConcurrentHashMap()
     private val conferencesCache: MutableList<JitsiMeetConference> = CopyOnWriteArrayList()
+    private val conferencesByMeetingId: MutableMap<String, JitsiMeetConferenceImpl> = ConcurrentHashMap()
 
     /** The object used to synchronize access to [.conferences]. */
     private val conferencesSyncRoot = Any()
@@ -149,6 +150,7 @@ class FocusManager(
         synchronized(conferencesSyncRoot) {
             conferences.remove(roomName)
             conferencesCache.remove(conference)
+            conferencesByMeetingId.remove(conference.meetingId)
             if (conference.includeInStatistics()) {
                 ConferenceMetrics.conferenceCount.dec()
             }
@@ -170,6 +172,19 @@ class FocusManager(
             }
         }
     }
+
+    override fun meetingIdSet(conference: JitsiMeetConferenceImpl, meetingId: String): Boolean =
+        synchronized(conferencesSyncRoot) {
+            conferencesByMeetingId[meetingId]?.let {
+                // If there is already a conference with this meeting ID, we don't allow setting it.
+                logger.warn("Meeting ID $meetingId already exists for ${it.roomName}.")
+                false
+            } ?: run {
+                // Otherwise, we set the meeting ID and register the conference.
+                conferencesByMeetingId[meetingId] = conference
+                true
+            }
+        }
 
     /** {@inheritDoc} */
     override fun getConference(jid: EntityBareJid): JitsiMeetConferenceImpl? = synchronized(conferencesSyncRoot) {
