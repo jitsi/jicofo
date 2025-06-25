@@ -529,12 +529,7 @@ public class JitsiMeetConferenceImpl
             meetingId = chatRoomMeetingId;
         }
 
-        int attempts = 0;
-        while (!listener.meetingIdSet(this, meetingId) && attempts++ < 100) {
-            logger.warn("Meeting ID " + meetingId + " is already in use, generating a new one.");
-            meetingId = UUID.randomUUID().toString();
-        }
-        if (attempts >= 100)
+        if (!listener.meetingIdSet(this, meetingId))
         {
             logger.error("Failed to set a unique meeting ID after 100 attempts, giving up.");
             throw new RuntimeException("Failed to set a unique meeting ID.");
