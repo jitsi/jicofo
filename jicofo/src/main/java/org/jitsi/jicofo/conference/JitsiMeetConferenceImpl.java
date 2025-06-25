@@ -521,7 +521,7 @@ public class JitsiMeetConferenceImpl
         chatRoom.addListener(chatRoomListener);
 
         ChatRoomInfo chatRoomInfo = chatRoom.join();
-        if (chatRoomInfo.getMeetingId() == null)
+        if (org.apache.commons.lang3.StringUtils.isBlank(chatRoomInfo.getMeetingId()))
         {
             meetingId = UUID.randomUUID().toString();
             logger.warn("No meetingId set for the MUC. Generating one locally.");
