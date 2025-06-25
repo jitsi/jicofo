@@ -49,7 +49,6 @@ import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
 import java.time.*;
-import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -257,7 +256,7 @@ public class JitsiMeetConferenceImpl
      * Whether broadcasting to visitors is currently enabled.
      * TODO: support changing it.
      */
-    private boolean visitorsBroadcastEnabled = VisitorsConfig.config.getAutoEnableBroadcast();
+    private final boolean visitorsBroadcastEnabled = VisitorsConfig.config.getAutoEnableBroadcast();
 
     @NotNull private final Instant createdInstant = Instant.now();
 
@@ -998,7 +997,7 @@ public class JitsiMeetConferenceImpl
             {
                 rescheduleSingleParticipantTimeout();
             }
-            else if (participants.size() == 0)
+            else if (participants.isEmpty())
             {
                 expireBridgeSessions();
             }
@@ -1098,7 +1097,7 @@ public class JitsiMeetConferenceImpl
     }
 
     @Override
-    public void componentsChanged(Set<XmppProvider.Component> components)
+    public void componentsChanged(@NotNull Set<XmppProvider.Component> components)
     {
     }
 
@@ -1903,7 +1902,7 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Selects a visitor node for a new participant, and joins the associated chat room if not already joined
-     * @return
+     * @return the ID of the selected node, or null if the endpoint is to be sent to the main room.
      * @throws Exception if joining the chat room failed.
      */
     private String selectVisitorNode()
