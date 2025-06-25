@@ -57,6 +57,7 @@ import java.util.stream.*;
 
 import static org.jitsi.jicofo.conference.ConferenceUtilKt.getVisitorMucJid;
 import static org.jitsi.jicofo.xmpp.IqProcessingResult.*;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * Represents a Jitsi Meet conference. Manages the Jingle sessions with the
@@ -509,6 +510,7 @@ public class JitsiMeetConferenceImpl
      * Initialize {@link #meetingId}, given an optional value coming from the chat room configuration. If no valid
      * meeting ID is provided, a random UUID will be generated.
      * @param chatRoomMeetingId the meeting ID that was set in the chat room configuration.
+     * @throws RuntimeException if the meeting ID is already in use by another conference.
      */
     private void setMeetingId(String chatRoomMeetingId)
     {
@@ -519,7 +521,7 @@ public class JitsiMeetConferenceImpl
         }
 
         String meetingId;
-        if (org.apache.commons.lang3.StringUtils.isBlank(chatRoomMeetingId))
+        if (isBlank(chatRoomMeetingId))
         {
             meetingId = UUID.randomUUID().toString();
             logger.warn("No meetingId set for the MUC. Generating one locally.");
@@ -1929,6 +1931,7 @@ public class JitsiMeetConferenceImpl
      * @return the ID of the selected node, or null if the endpoint is to be sent to the main room.
      * @throws Exception if joining the chat room failed.
      */
+    @Nullable
     private String selectVisitorNode()
             throws Exception
     {
@@ -2361,10 +2364,9 @@ public class JitsiMeetConferenceImpl
 
         /**
          * Fire an event attempting to set the meeting ID for the conference. The implementation should return `false`
-         * in case another meeting with the same ID already exists, which will result in a new randomly generated
-         * meeting ID to be attempted.
+         * in case another meeting with the same ID already exists, which will result in an exception.
          * @param conference the conference.
-         * @param meetingId the meetindId to attempt.
+         * @param meetingId the meetingId to attempt.
          * @return true if the given meetingId was free and was associated with the conference, false otherwise.
          */
         boolean meetingIdSet(@NotNull JitsiMeetConferenceImpl conference, @NotNull String meetingId);
