@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPException

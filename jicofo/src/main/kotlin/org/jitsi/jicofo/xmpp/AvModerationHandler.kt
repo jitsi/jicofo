@@ -76,7 +76,7 @@ class AvModerationHandler(
                 val chatRoom = conference.chatRoom
                     ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
-                val mediaType = message.mediaType?.toJitsiUtilsMediaType()
+                val mediaType = message.mediaType
                 val enabled = message.enabled
                 if (enabled != null && mediaType != null) {
                     val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
@@ -87,14 +87,14 @@ class AvModerationHandler(
                         )
                         // let's mute everyone except the actor
                         conference.muteAllParticipants(
-                            mediaType,
+                            mediaType.toJitsiUtilsMediaType(),
                             JidCreate.entityFullFrom(message.actor ?: "")
                         )
                     }
                 }
                 message.whitelists?.let { whitelists ->
                     whitelists.forEach { (mediaType, whitelist) ->
-                        chatRoom.setAvModerationWhitelist(mediaType.toJitsiUtilsMediaType(), whitelist)
+                        chatRoom.setAvModerationWhitelist(mediaType, whitelist)
                     }
                 }
             } catch (e: Exception) {

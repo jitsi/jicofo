@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.JicofoConfig
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
 import org.jitsi.jicofo.util.PendingCount
 import org.jitsi.jicofo.xmpp.RoomMetadata
@@ -26,7 +27,6 @@ import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter

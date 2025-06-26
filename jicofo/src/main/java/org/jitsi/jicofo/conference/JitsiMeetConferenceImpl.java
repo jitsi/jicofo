@@ -1570,6 +1570,9 @@ public class JitsiMeetConferenceImpl
         // process unmuting
         if (!doMute)
         {
+            org.jitsi.jicofo.MediaType jicofoMediaType = mediaType == MediaType.AUDIO
+                ? org.jitsi.jicofo.MediaType.AUDIO
+                : org.jitsi.jicofo.MediaType.VIDEO;
             // do not allow unmuting other participants even for the moderator
             if (!muterJid.equals(toBeMutedJid))
             {
@@ -1578,7 +1581,7 @@ public class JitsiMeetConferenceImpl
             }
             // Moderators are allowed to unmute without being in the whitelist
             else if (!participant.hasModeratorRights()
-                && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
+                && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, jicofoMediaType))
             {
                 logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
