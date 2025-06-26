@@ -31,6 +31,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
+import org.jitsi.utils.MediaType;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.jitsi.xmpp.extensions.colibri2.*;

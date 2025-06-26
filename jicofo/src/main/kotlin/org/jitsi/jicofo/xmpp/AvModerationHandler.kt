@@ -19,19 +19,15 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
 import org.jivesoftware.smack.packet.Stanza
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.IllegalArgumentException
-import kotlin.jvm.Throws
 
 /**
  * Adds the A/V moderation handling. Process incoming messages and when audio or video moderation is enabled,
@@ -69,37 +65,36 @@ class AvModerationHandler(
 
         TaskPools.ioPool.execute {
             try {
-                val incomingJson = JSONParser().parse(jsonMessage.json) as JSONObject
-                if (incomingJson["type"] == "av_moderation") {
-                    val conferenceJid = JidCreate.entityBareFrom(incomingJson["room"]?.toString())
+                val message = JsonMessage.parse(jsonMessage.json)
+                if (message !is AvModerationMessage) {
+                    throw IllegalArgumentException("Expected AvModerationMessage, got ${message.type}")
+                }
+                val conferenceJid = JidCreate.entityBareFrom(message.room)
 
-                    val conference = conferenceStore.getConference(conferenceJid)
-                        ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
-                    val chatRoom = conference.chatRoom
-                        ?: throw IllegalStateException("Conference has no associated chatRoom.")
+                val conference = conferenceStore.getConference(conferenceJid)
+                    ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
+                val chatRoom = conference.chatRoom
+                    ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
-                    incomingJson["enabled"]?.let { enabled ->
-                        if (enabled !is Boolean) {
-                            throw IllegalArgumentException("Invalid value for the 'enabled' attribute: $enabled")
-                        }
-                        val mediaType = MediaType.parseString(incomingJson["mediaType"] as String)
-                        val oldEnabledValue = chatRoom.isAvModerationEnabled(mediaType)
-                        chatRoom.setAvModerationEnabled(mediaType, enabled)
-                        if (oldEnabledValue != enabled && enabled) {
-                            logger.info(
-                                "Moderation for $mediaType in $conferenceJid was enabled by ${incomingJson["actor"]}"
-                            )
-                            // let's mute everyone except the actor
-                            conference.muteAllParticipants(
-                                mediaType,
-                                JidCreate.entityFullFrom(incomingJson["actor"]?.toString())
-                            )
-                        }
+                val mediaType = message.mediaType?.toJitsiUtilsMediaType()
+                val enabled = message.enabled
+                if (enabled != null && mediaType != null) {
+                    val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
+                    chatRoom.setAvModerationEnabled(mediaType, enabled)
+                    if (enabled && !wasEnabled) {
+                        logger.info(
+                            "Moderation for ${message.mediaType} in $conferenceJid was enabled by ${message.actor}"
+                        )
+                        // let's mute everyone except the actor
+                        conference.muteAllParticipants(
+                            mediaType,
+                            JidCreate.entityFullFrom(message.actor ?: "")
+                        )
                     }
-                    incomingJson["whitelists"]?.let {
-                        parseWhitelists(it).forEach { (mediaType, whitelist) ->
-                            chatRoom.setAvModerationWhitelist(mediaType, whitelist)
-                        }
+                }
+                message.whitelists?.let { whitelists ->
+                    whitelists.forEach { (mediaType, whitelist) ->
+                        chatRoom.setAvModerationWhitelist(mediaType.toJitsiUtilsMediaType(), whitelist)
                     }
                 }
             } catch (e: Exception) {
@@ -123,25 +118,4 @@ class AvModerationHandler(
     fun shutdown() {
         xmppProvider.xmppConnection.removeSyncStanzaListener(this)
     }
-}
-
-/**
- * Parses the given object (expected to be a [JSONObject]) as a Map<MediaType, List<String>>. Throws
- * [IllegalArgumentException] if [o] is not of the expected type.
- * @return a map that is guaranteed to have a runtime type of Map<MediaType, List<String>>.
- */
-@Throws(IllegalArgumentException::class)
-private fun parseWhitelists(o: Any): Map<MediaType, List<String>> {
-    val jsonObject: JSONObject = o as? JSONObject ?: throw IllegalArgumentException("Not a JSONObject")
-    val map = mutableMapOf<MediaType, List<String>>()
-    jsonObject.forEach { (k, v) ->
-        k as? String ?: throw IllegalArgumentException("Key is not a string")
-        v as? List<*> ?: throw IllegalArgumentException("Value is not a list")
-        val mediaType = MediaType.parseString(k)
-        if (mediaType != MediaType.AUDIO && mediaType != MediaType.VIDEO) {
-            throw IllegalArgumentException("Invalid mediaType: $k")
-        }
-        map[mediaType] = v.map { it.toString() }
-    }
-    return map
 }

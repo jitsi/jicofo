@@ -19,7 +19,6 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
-import org.jitsi.jicofo.xmpp.muc.RoomMetadata
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.PacketQueue
@@ -64,7 +63,11 @@ class RoomMetadataHandler(
     private fun doProcess(jsonMessage: JsonMessageExtension) {
         try {
             val conferenceJid = JidCreate.entityBareFrom(jsonMessage.getAttribute("room")?.toString())
-            val roomMetadata = RoomMetadata.parse(jsonMessage.json)
+            val roomMetadata = JsonMessage.parse(jsonMessage.json)
+
+            if (roomMetadata !is RoomMetadata) {
+                throw IllegalArgumentException("Received invalid message type: ${jsonMessage.json}")
+            }
 
             val conference = conferenceStore.getConference(conferenceJid)
                 ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
