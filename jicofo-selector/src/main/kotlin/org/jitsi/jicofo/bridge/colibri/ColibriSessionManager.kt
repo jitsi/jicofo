@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN

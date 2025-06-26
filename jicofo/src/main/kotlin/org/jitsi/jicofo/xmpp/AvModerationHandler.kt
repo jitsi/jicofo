@@ -87,7 +87,7 @@ class AvModerationHandler(
                         )
                         // let's mute everyone except the actor
                         conference.muteAllParticipants(
-                            mediaType.toJitsiUtilsMediaType(),
+                            mediaType,
                             JidCreate.entityFullFrom(message.actor ?: "")
                         )
                     }

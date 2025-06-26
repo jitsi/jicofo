@@ -20,6 +20,7 @@ package org.jitsi.jicofo.conference;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.MediaType;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
@@ -31,7 +32,6 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
-import org.jitsi.utils.MediaType;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
 import org.jitsi.xmpp.extensions.colibri2.*;
@@ -1570,9 +1570,6 @@ public class JitsiMeetConferenceImpl
         // process unmuting
         if (!doMute)
         {
-            org.jitsi.jicofo.MediaType jicofoMediaType = mediaType == MediaType.AUDIO
-                ? org.jitsi.jicofo.MediaType.AUDIO
-                : org.jitsi.jicofo.MediaType.VIDEO;
             // do not allow unmuting other participants even for the moderator
             if (!muterJid.equals(toBeMutedJid))
             {
@@ -1581,7 +1578,7 @@ public class JitsiMeetConferenceImpl
             }
             // Moderators are allowed to unmute without being in the whitelist
             else if (!participant.hasModeratorRights()
-                && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, jicofoMediaType))
+                && !this.chatRoom.isMemberAllowedToUnmute(toBeMutedJid, mediaType))
             {
                 logger.warn("Unmute not allowed due to av moderation for jid=" + toBeMutedJid);
                 return MuteResult.NOT_ALLOWED;
@@ -1703,6 +1700,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Mutes all participants (except jibri or jigasi without "audioMute" support). Will block for colibri responses.
      */
+    @Override
     public void muteAllParticipants(MediaType mediaType, EntityFullJid actor)
     {
         Set<Participant> participantsToMute = new HashSet<>();

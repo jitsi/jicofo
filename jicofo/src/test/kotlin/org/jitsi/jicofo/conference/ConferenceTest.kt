@@ -258,8 +258,18 @@ class ConferenceTest : ShouldSpec() {
             val members = addParticipants(2)
             val muter = members[0].getParticipant()!!
             val mutee = members[1].getParticipant()!!
-            fun mute() = conference.handleMuteRequest(muter.mucJid, mutee.mucJid, true, MediaType.AUDIO)
-            fun unmute() = conference.handleMuteRequest(muter.mucJid, mutee.mucJid, false, MediaType.VIDEO)
+            fun mute() = conference.handleMuteRequest(
+                muter.mucJid,
+                mutee.mucJid,
+                true,
+                org.jitsi.jicofo.MediaType.AUDIO
+            )
+            fun unmute() = conference.handleMuteRequest(
+                muter.mucJid,
+                mutee.mucJid,
+                false,
+                org.jitsi.jicofo.MediaType.VIDEO
+            )
 
             context("When the muter is an owner") {
                 every { muter.chatMember.role } returns MemberRole.OWNER

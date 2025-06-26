@@ -19,12 +19,5 @@ package org.jitsi.jicofo
 
 enum class MediaType {
     AUDIO,
-    VIDEO;
-
-    fun toJitsiUtilsMediaType(): org.jitsi.utils.MediaType {
-        return when (this) {
-            AUDIO -> org.jitsi.utils.MediaType.AUDIO
-            VIDEO -> org.jitsi.utils.MediaType.VIDEO
-        }
-    }
+    VIDEO
 }
