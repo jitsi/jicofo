@@ -21,6 +21,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.packet.IQ
@@ -31,7 +32,10 @@ class ConferenceIqHandlerTest : ShouldSpec() {
         xmppProvider = mockk(relaxed = true),
         focusManager = mockk {
             every { getConference(any()) } returns null
-            every { conferenceRequest(any(), any()) } returns true
+            every { conferenceRequest(any(), any()) } returns mockk<JitsiMeetConference> {
+                every { isStarted() } returns true
+                every { chatRoom } returns null
+            }
         },
         focusAuthJid = "",
         authAuthority = null,

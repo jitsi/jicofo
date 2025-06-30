@@ -501,6 +501,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Returns <tt>true</tt> if the conference has been successfully started.
      */
+    @Override
     public boolean isStarted()
     {
         return started.get();
@@ -1834,6 +1835,7 @@ public class JitsiMeetConferenceImpl
      * Checks whether a request for a new endpoint to join this conference should be redirected to a visitor node.
      * @return the name of the visitor node if it should be redirected, and null otherwise.
      */
+    @Override
     @Nullable
     public String redirectVisitor(boolean visitorRequested, @Nullable String userId)
         throws Exception

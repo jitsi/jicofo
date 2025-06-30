@@ -22,7 +22,6 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.jwt.JitsiToken
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -35,6 +34,7 @@ import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.Boolean.parseBoolean
+import org.jitsi.jicofo.visitors.VisitorsConfig.Companion.config as visitorsConfig
 
 /**
  * Handles XMPP requests for a new conference ([ConferenceIq]).
@@ -88,7 +88,7 @@ class ConferenceIqHandler(
 
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
         conferenceRequestCounter.inc()
-        val conference = focusManager.getConference(room)
+        var conference = focusManager.getConference(room)
         val roomExists = conference != null
         if (!roomExists) {
             newConferenceRequestCounter.inc()
@@ -105,13 +105,32 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
-        if (visitorRequested && VisitorsConfig.config.enableLiveRoom && conference?.chatRoom?.visitorsLive != true) {
+        // Here we return early without creating a conference.
+        if (visitorRequested && visitorsConfig.enableLiveRoom && conference?.chatRoom?.visitorsLive != true) {
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
             return response
         }
+
+        // If the conference didn't exist previously, it will be created and the MUC will be joined here (blocking).
+        conference = focusManager.conferenceRequest(room, query.propertiesMap)
+        response.isReady = conference.isStarted
+
+        // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants. If
+        // mainRoomParticipants is configured, this implies that users with no token aren't able to join the main room,
+        // and should be redirected as a visitor (even when they haven't included the "visitor" flag in their request).
+        val mainRoomRequiresToken = conference.chatRoom?.mainRoomParticipants?.isNotEmpty() ?: false
+
+        if (visitorsConfig.enableLiveRoom &&
+            mainRoomRequiresToken && query.token == null && conference.chatRoom?.visitorsLive != true
+        ) {
+            response.isReady = false
+            response.addProperty(ConferenceIq.Property("live", "false"))
+            return response
+        }
+
         val vnode = if (visitorSupported && visitorsManager.enabled) {
-            conference?.redirectVisitor(visitorRequested, query.token.readUserId())
+            conference.redirectVisitor(visitorRequested || mainRoomRequiresToken, query.token.readUserId())
         } else {
             null
         }
@@ -128,8 +147,6 @@ class ConferenceIqHandler(
                 logger.error("No XmppConnectionConfig for vnode=$vnode")
             }
         }
-
-        response.isReady = focusManager.conferenceRequest(room, query.propertiesMap)
 
         // Authentication module enabled?
         if (authAuthority != null) {
