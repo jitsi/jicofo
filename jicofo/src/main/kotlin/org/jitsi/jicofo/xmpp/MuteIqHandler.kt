@@ -24,6 +24,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.jitsimeet.MuteDesktopIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIq
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -82,6 +83,31 @@ class VideoMuteIqHandler(
     }
 }
 
+class DesktopMuteIqHandler(
+    connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore
+) :
+    AbstractIqHandler<MuteDesktopIq>(
+        connections,
+        MuteDesktopIq.ELEMENT,
+        MuteDesktopIq.NAMESPACE,
+        setOf(IQ.Type.set),
+        IQRequestHandler.Mode.sync
+    ) {
+    override fun handleRequest(request: IqRequest<MuteDesktopIq>): IqProcessingResult {
+        return handleRequest(
+            MuteRequest(
+                request.iq,
+                request.connection,
+                conferenceStore,
+                request.iq.mute,
+                request.iq.jid,
+                MediaType.DESKTOP
+            )
+        )
+    }
+}
+
 private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.MuteIqHandler")
 
 private fun handleRequest(request: MuteRequest): IqProcessingResult {
@@ -113,8 +139,15 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                                     to = request.jidToMute
                                     mute = request.doMute
                                 }
-                            } else {
+                            } else if (request.mediaType == MediaType.VIDEO) {
                                 MuteVideoIq().apply {
+                                    actor = request.iq.from
+                                    type = IQ.Type.set
+                                    to = request.jidToMute
+                                    mute = request.doMute
+                                }
+                            } else {
+                                MuteDesktopIq().apply {
                                     actor = request.iq.from
                                     type = IQ.Type.set
                                     to = request.jidToMute

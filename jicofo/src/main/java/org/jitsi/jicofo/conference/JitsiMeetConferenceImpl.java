@@ -1593,7 +1593,12 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
+        // we ignore desktop as for that we use some signaling restrictions in prosody
+        if (mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO)
+        {
+            getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
+        }
+
         return MuteResult.SUCCESS;
     }
 
