@@ -130,7 +130,10 @@ class ConferenceIqHandler(
         }
 
         val vnode = if (visitorSupported && visitorsManager.enabled) {
-            conference.redirectVisitor(visitorRequested || (mainRoomRequiresToken && query.token == null), query.token.readUserId())
+            conference.redirectVisitor(
+                visitorRequested || (mainRoomRequiresToken && query.token == null),
+                query.token?.readUserId()
+            )
         } else {
             null
         }
@@ -259,7 +262,7 @@ class ConferenceIqHandler(
  * Read context.user.id from an unparsed token. Note that no validation is performed on the token, this is intentional.
  * Validation will be performed when the user attempts to login to XMPP.
  */
-private fun String?.readUserId(): String? = if (this.isNullOrEmpty()) {
+private fun String.readUserId(): String? = if (this.isEmpty()) {
     null
 } else {
     try {
