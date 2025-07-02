@@ -58,6 +58,8 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 
 @SuppressFBWarnings(
@@ -82,6 +84,8 @@ class ChatRoomImpl(
     private val pendingVisitorsCounter = PendingCount(
         JicofoConfig.config.vnodeJoinLatencyInterval
     )
+
+    private val roomMetadataLatch = CountDownLatch(1)
 
     override fun visitorInvited() {
         pendingVisitorsCounter.eventPending()
@@ -274,6 +278,15 @@ class ChatRoomImpl(
             null
         }
 
+        if (config.getField(MucConfigFields.CONFERENCE_PRESET_ENABLED)?.firstValue?.toBoolean() == true) {
+            logger.info("Conference presets service is enabled. Will block until RoomMetadata is set.")
+            if (roomMetadataLatch.await(10, TimeUnit.SECONDS)) {
+                logger.info("RoomMetadata is set, room is fully joined.")
+            } else {
+                logger.warn("Timed out waiting for RoomMetadata to be set. Will continue without it.")
+            }
+        }
+
         return ChatRoomInfo(
             meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
             mainRoomJid = if (mainRoomStr == null) null else JidCreate.entityBareFrom(mainRoomStr)
@@ -292,6 +305,7 @@ class ChatRoomImpl(
                     roomMetadata.metadata.asyncTranscription == true
             )
         }
+        roomMetadataLatch.countDown()
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
@@ -585,6 +599,7 @@ class ChatRoomImpl(
         const val WHOIS = "muc#roomconfig_whois"
         const val PARTICIPANTS_SOFT_LIMIT = "muc#roominfo_participantsSoftLimit"
         const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
+        const val CONFERENCE_PRESET_ENABLED = "muc#roominfo_conference_presets_service_enabled"
     }
 
     private inner class MemberListener {

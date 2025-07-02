@@ -122,7 +122,7 @@ class JicofoHealthChecker(
                     emptyMap(),
                     loggingLevel = Level.WARNING,
                     includeInStatistics = false
-                )
+                ).isStarted
             ) {
                 return Result(success = false, hardFailure = true, message = "Test conference failed to start.")
             }
