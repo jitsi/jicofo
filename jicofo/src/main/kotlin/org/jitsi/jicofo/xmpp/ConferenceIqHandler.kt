@@ -130,7 +130,7 @@ class ConferenceIqHandler(
         }
 
         val vnode = if (visitorSupported && visitorsManager.enabled) {
-            conference.redirectVisitor(visitorRequested || mainRoomRequiresToken, query.token.readUserId())
+            conference.redirectVisitor(visitorRequested || (mainRoomRequiresToken && query.token == null), query.token.readUserId())
         } else {
             null
         }
