@@ -525,7 +525,10 @@ public class JitsiMeetConferenceImpl
         if (isBlank(chatRoomMeetingId))
         {
             meetingId = UUID.randomUUID().toString();
-            logger.warn("No meetingId set for the MUC. Generating one locally.");
+            if (includeInStatistics)
+            {
+                logger.warn("No meetingId set for the MUC. Generating one locally.");
+            }
         }
         else
         {
