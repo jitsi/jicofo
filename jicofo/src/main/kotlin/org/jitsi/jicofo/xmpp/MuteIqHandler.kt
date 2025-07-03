@@ -24,6 +24,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.jitsimeet.AbstractMuteIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteDesktopIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIq
@@ -39,7 +40,7 @@ class AudioMuteIqHandler(
 ) :
     AbstractIqHandler<MuteIq>(
         connections,
-        MuteIq.ELEMENT,
+        AbstractMuteIq.ELEMENT,
         MuteIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -64,7 +65,7 @@ class VideoMuteIqHandler(
 ) :
     AbstractIqHandler<MuteVideoIq>(
         connections,
-        MuteVideoIq.ELEMENT,
+        AbstractMuteIq.ELEMENT,
         MuteVideoIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -89,7 +90,7 @@ class DesktopMuteIqHandler(
 ) :
     AbstractIqHandler<MuteDesktopIq>(
         connections,
-        MuteDesktopIq.ELEMENT,
+        AbstractMuteIq.ELEMENT,
         MuteDesktopIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -102,7 +103,8 @@ class DesktopMuteIqHandler(
                 conferenceStore,
                 request.iq.mute,
                 request.iq.jid,
-                MediaType.DESKTOP
+                // TODO
+                MediaType.VIDEO
             )
         )
     }
