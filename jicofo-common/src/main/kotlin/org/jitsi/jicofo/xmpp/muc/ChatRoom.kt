@@ -61,6 +61,9 @@ interface ChatRoom {
     /** Whether the visitorsLive flag is enabled for the room. Read from the MUC config form. */
     val visitorsLive: Boolean
 
+    /** Whether the room was ever live = false */
+    val wasNonLive: Boolean
+
     /** The number of participants in the room after which new endpoints should be redirected to visitors.
      *  Read from the MUC config form. */
     val participantsSoftLimit: Int?

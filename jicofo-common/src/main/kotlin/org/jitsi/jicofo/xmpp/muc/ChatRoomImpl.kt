@@ -156,8 +156,14 @@ class ChatRoomImpl(
             if (value != field) {
                 logger.info("VisitorsLive is now: $value")
                 field = value
+                if (!value) {
+                    wasNonLive = true
+                }
             }
         }
+
+    /** Whether the room was ever live = false */
+    override var wasNonLive: Boolean = false
 
     override var participantsSoftLimit: Int? = null
         private set(value) {
@@ -294,7 +300,8 @@ class ChatRoomImpl(
     }
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
-        visitorsLive = roomMetadata.metadata?.visitors?.live == true
+        visitorsLive = roomMetadata.metadata?.visitors?.live ?: true
+
         mainRoomParticipants = roomMetadata.metadata?.mainMeetingParticipants ?: emptyList()
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }

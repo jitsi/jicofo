@@ -119,10 +119,14 @@ class ConferenceIqHandler(
         // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants. If
         // mainRoomParticipants is configured, this implies that users with no token aren't able to join the main room,
         // and should be redirected as a visitor (even when they haven't included the "visitor" flag in their request).
+        // Users that are not in the list of main participants and the room was at some point not live also needs to be
+        // redirected as visitors
         val mainRoomRequiresToken = conference.chatRoom?.mainRoomParticipants?.isNotEmpty() ?: false
+        val isInMainParticipants = query.token?.readUserId() != null &&
+            conference.chatRoom?.mainRoomParticipants?.contains(query.token.readUserId()) == true
 
         if (visitorsConfig.enableLiveRoom &&
-            mainRoomRequiresToken && query.token == null && conference.chatRoom?.visitorsLive != true
+            mainRoomRequiresToken && conference.chatRoom?.visitorsLive == false && !isInMainParticipants
         ) {
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
@@ -131,7 +135,8 @@ class ConferenceIqHandler(
 
         val vnode = if (visitorSupported && visitorsManager.enabled) {
             conference.redirectVisitor(
-                visitorRequested || (mainRoomRequiresToken && query.token == null),
+                visitorRequested ||
+                    (mainRoomRequiresToken && conference.chatRoom?.wasNonLive == true && !isInMainParticipants),
                 query.token?.readUserId()
             )
         } else {
