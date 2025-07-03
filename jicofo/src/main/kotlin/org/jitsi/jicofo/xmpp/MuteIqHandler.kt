@@ -103,8 +103,7 @@ class DesktopMuteIqHandler(
                 conferenceStore,
                 request.iq.mute,
                 request.iq.jid,
-                // TODO
-                MediaType.VIDEO
+                MediaType.DESKTOP
             )
         )
     }

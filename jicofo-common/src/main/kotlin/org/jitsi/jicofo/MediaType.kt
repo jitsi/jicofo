@@ -19,5 +19,6 @@ package org.jitsi.jicofo
 
 enum class MediaType {
     AUDIO,
-    VIDEO
+    VIDEO,
+    DESKTOP
 }
