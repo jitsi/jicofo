@@ -100,6 +100,7 @@ class XmppServices(
     val roomMetadataHandler = RoomMetadataHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
+    private val desktopMuteHandler = DesktopMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     val jingleHandler = JingleIqRequestHandler(
         visitorConnections.map { it.xmppConnection }.toSet() + clientConnection.xmppConnection
     )
@@ -135,6 +136,7 @@ class XmppServices(
         jigasiIqHandler?.shutdown()
         audioMuteHandler.shutdown()
         videoMuteHandler.shutdown()
+        desktopMuteHandler.shutdown()
         avModerationHandler.shutdown()
         jingleHandler.shutdown()
 
