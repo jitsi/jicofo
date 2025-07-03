@@ -41,8 +41,6 @@ import org.jitsi.xmpp.extensions.jitsimeet.JitsiParticipantRegionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jitsi.xmpp.extensions.jitsimeet.LoginUrlIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.LogoutIqProvider
-import org.jitsi.xmpp.extensions.jitsimeet.MuteIqProvider
-import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StartMutedProvider
 import org.jitsi.xmpp.extensions.jitsimeet.StatsId
 import org.jitsi.xmpp.extensions.jitsimeet.UserInfoPacketExt
@@ -149,8 +147,7 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )
     RayoIqProvider().registerRayoIQs()
-    MuteIqProvider.registerMuteIqProvider()
-    MuteVideoIqProvider.registerMuteVideoIqProvider()
+    org.jitsi.xmpp.Smack.registerMuteIqProviders()
     StartMutedProvider.registerStartMutedProvider()
 
     ProviderManager.addExtensionProvider(

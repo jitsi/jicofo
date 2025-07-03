@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.conference;
 
 import org.jetbrains.annotations.*;
+import org.jitsi.jicofo.MediaType;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;

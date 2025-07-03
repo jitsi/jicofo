@@ -18,12 +18,14 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.MuteResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.jitsimeet.AbstractMuteIq
+import org.jitsi.xmpp.extensions.jitsimeet.MuteDesktopIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteIq
 import org.jitsi.xmpp.extensions.jitsimeet.MuteVideoIq
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -38,7 +40,7 @@ class AudioMuteIqHandler(
 ) :
     AbstractIqHandler<MuteIq>(
         connections,
-        MuteIq.ELEMENT,
+        AbstractMuteIq.ELEMENT,
         MuteIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -63,7 +65,7 @@ class VideoMuteIqHandler(
 ) :
     AbstractIqHandler<MuteVideoIq>(
         connections,
-        MuteVideoIq.ELEMENT,
+        AbstractMuteIq.ELEMENT,
         MuteVideoIq.NAMESPACE,
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
@@ -77,6 +79,31 @@ class VideoMuteIqHandler(
                 request.iq.mute,
                 request.iq.jid,
                 MediaType.VIDEO
+            )
+        )
+    }
+}
+
+class DesktopMuteIqHandler(
+    connections: Set<AbstractXMPPConnection>,
+    private val conferenceStore: ConferenceStore
+) :
+    AbstractIqHandler<MuteDesktopIq>(
+        connections,
+        AbstractMuteIq.ELEMENT,
+        MuteDesktopIq.NAMESPACE,
+        setOf(IQ.Type.set),
+        IQRequestHandler.Mode.sync
+    ) {
+    override fun handleRequest(request: IqRequest<MuteDesktopIq>): IqProcessingResult {
+        return handleRequest(
+            MuteRequest(
+                request.iq,
+                request.connection,
+                conferenceStore,
+                request.iq.mute,
+                request.iq.jid,
+                MediaType.DESKTOP
             )
         )
     }
@@ -113,8 +140,15 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                                     to = request.jidToMute
                                     mute = request.doMute
                                 }
-                            } else {
+                            } else if (request.mediaType == MediaType.VIDEO) {
                                 MuteVideoIq().apply {
+                                    actor = request.iq.from
+                                    type = IQ.Type.set
+                                    to = request.jidToMute
+                                    mute = request.doMute
+                                }
+                            } else {
+                                MuteDesktopIq().apply {
                                     actor = request.iq.from
                                     type = IQ.Type.set
                                     to = request.jidToMute

@@ -20,6 +20,7 @@ package org.jitsi.jicofo.conference;
 import kotlin.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.MediaType;
 import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
@@ -1597,7 +1598,12 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
+        // we ignore desktop as for that we use some signaling restrictions in prosody
+        if (mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO)
+        {
+            getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
+        }
+
         return MuteResult.SUCCESS;
     }
 
@@ -1698,6 +1704,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Mutes all participants (except jibri or jigasi without "audioMute" support). Will block for colibri responses.
      */
+    @Override
     public void muteAllParticipants(MediaType mediaType, EntityFullJid actor)
     {
         Set<Participant> participantsToMute = new HashSet<>();
