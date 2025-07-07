@@ -76,6 +76,9 @@ class ConferenceIqHandler(
             query,
             StanzaError.from(StanzaError.Condition.bad_request, "No 'room' specified.").build()
         )
+        val token = parseToken(query.token)
+        val userId = token?.context?.user?.id
+        val groupId = token?.context?.group
 
         val response = ConferenceIq().apply {
             type = IQ.Type.result
@@ -116,14 +119,10 @@ class ConferenceIqHandler(
         conference = focusManager.conferenceRequest(room, query.propertiesMap)
         response.isReady = conference.isStarted
 
-        // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants. If
-        // mainRoomParticipants is configured, this implies that users with no token aren't able to join the main room,
-        // and should be redirected as a visitor (even when they haven't included the "visitor" flag in their request).
-        val mainRoomRequiresToken = conference.chatRoom?.mainRoomParticipants?.isNotEmpty() ?: false
+        // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants.
+        val allowedInMainRoom = conference.chatRoom?.isAllowedInMainRoom(userId, groupId) == true
 
-        if (visitorsConfig.enableLiveRoom &&
-            mainRoomRequiresToken && query.token == null && conference.chatRoom?.visitorsLive != true
-        ) {
+        if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && conference.chatRoom?.visitorsLive != true) {
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
             return response
@@ -131,8 +130,9 @@ class ConferenceIqHandler(
 
         val vnode = if (visitorSupported && visitorsManager.enabled) {
             conference.redirectVisitor(
-                visitorRequested || (mainRoomRequiresToken && query.token == null),
-                query.token?.readUserId()
+                visitorRequested || !allowedInMainRoom,
+                userId,
+                groupId
             )
         } else {
             null
@@ -262,12 +262,9 @@ class ConferenceIqHandler(
  * Read context.user.id from an unparsed token. Note that no validation is performed on the token, this is intentional.
  * Validation will be performed when the user attempts to login to XMPP.
  */
-private fun String.readUserId(): String? = if (this.isEmpty()) {
+private fun parseToken(token: String?): JitsiToken? = try {
+    token?.let { return JitsiToken.parseWithoutValidation(it) }
     null
-} else {
-    try {
-        JitsiToken.parseWithoutValidation(this).context?.user?.id
-    } catch (e: Throwable) {
-        null
-    }
+} catch (e: Throwable) {
+    null
 }

@@ -71,9 +71,12 @@ class RoomMetadataTest : ShouldSpec() {
                             "visitors": {
                                 "live": true
                             },
-                            "mainMeetingParticipants": [
+                            "participants": [
                                 "user_id_1",
                                 "user_id_2"
+                            ],
+                            "moderators": [
+                                "user_id_3"
                             ],
                             "startMuted": {
                                 "audio": true
@@ -90,7 +93,8 @@ class RoomMetadataTest : ShouldSpec() {
                             shouldNotBeNull()
                             live shouldBe true
                         }
-                        mainMeetingParticipants shouldBe listOf("user_id_1", "user_id_2")
+                        participants shouldBe listOf("user_id_1", "user_id_2")
+                        moderators shouldBe listOf("user_id_3")
                         startMuted.apply {
                             shouldNotBeNull()
                             audio shouldBe true
