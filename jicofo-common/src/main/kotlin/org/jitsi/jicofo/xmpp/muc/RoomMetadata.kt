@@ -38,7 +38,8 @@ data class RoomMetadata(
     data class Metadata(
         val visitors: Visitors?,
         val startMuted: StartMuted?,
-        val mainMeetingParticipants: List<String>?,
+        val moderators: List<String>?,
+        val participants: List<String>?,
         val recording: Recording?,
         val asyncTranscription: Boolean? = null,
     ) {

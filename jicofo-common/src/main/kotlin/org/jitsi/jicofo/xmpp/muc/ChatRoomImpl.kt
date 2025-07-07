@@ -167,8 +167,34 @@ class ChatRoomImpl(
             }
         }
 
-    override var mainRoomParticipants: List<String> = emptyList()
-        private set
+    /**
+     * List of user IDs which the room is configured to allow to be moderators.
+     */
+    private var moderators: List<String> = emptyList()
+
+    /**
+     * List of user IDs which the room is configured to allow to be moderators.
+     * When [null], the feature is not used, meaning that the room is open to participants.
+     * When empty, the feature is used and no participants are explicitly allowed (so the room requires a token,
+     * and users without a token should be redirected as visitors.
+     */
+    private var participants: List<String>? = null
+
+    override fun isAllowedInMainRoom(userId: String?, groupId: String?): Boolean {
+        if (participants == null) {
+            // The room is open to participants.
+            return true
+        }
+        if (userId != null && (moderators.contains(userId) || participants?.contains(userId) == true)) {
+            // The user is explicitly allowed to join the main room.
+            return true
+        }
+        if (groupId != null && (moderators.contains(groupId) || participants?.contains(groupId) == true)) {
+            // The user is explicitly allowed to join the main room based on their group ID.
+            return true
+        }
+        return false
+    }
 
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
@@ -295,7 +321,8 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
-        mainRoomParticipants = roomMetadata.metadata?.mainMeetingParticipants ?: emptyList()
+        moderators = roomMetadata.metadata?.moderators ?: emptyList()
+        participants = roomMetadata.metadata?.participants
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }

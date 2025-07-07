@@ -177,5 +177,6 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     boolean isStarted();
 
     @Nullable
-    String redirectVisitor(boolean visitorRequested, @Nullable String userId) throws Exception;
+    String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
+            throws Exception;
 }

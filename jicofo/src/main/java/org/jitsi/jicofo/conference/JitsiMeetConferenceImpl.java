@@ -1840,7 +1840,7 @@ public class JitsiMeetConferenceImpl
      */
     @Override
     @Nullable
-    public String redirectVisitor(boolean visitorRequested, @Nullable String userId)
+    public String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
         throws Exception
     {
         if (!VisitorsConfig.config.getEnabled())
@@ -1854,7 +1854,7 @@ public class JitsiMeetConferenceImpl
         {
             if (chatRoom.getLobbyEnabled()
                     || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())
-                    || (userId != null && chatRoom.getMainRoomParticipants().contains(userId)))
+                    || chatRoom.isAllowedInMainRoom(userId, groupId))
             {
                 return null;
             }
