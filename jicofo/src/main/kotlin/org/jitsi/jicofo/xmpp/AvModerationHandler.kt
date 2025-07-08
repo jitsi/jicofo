@@ -78,6 +78,11 @@ class AvModerationHandler(
 
                 val mediaType = message.mediaType
                 val enabled = message.enabled
+                message.whitelists?.let { whitelists ->
+                    whitelists.forEach { (mediaType, whitelist) ->
+                        chatRoom.setAvModerationWhitelist(mediaType, whitelist)
+                    }
+                }
                 if (enabled != null && mediaType != null) {
                     val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
                     chatRoom.setAvModerationEnabled(mediaType, enabled)
@@ -90,11 +95,6 @@ class AvModerationHandler(
                             mediaType,
                             JidCreate.entityFullFrom(message.actor ?: "")
                         )
-                    }
-                }
-                message.whitelists?.let { whitelists ->
-                    whitelists.forEach { (mediaType, whitelist) ->
-                        chatRoom.setAvModerationWhitelist(mediaType, whitelist)
                     }
                 }
             } catch (e: Exception) {

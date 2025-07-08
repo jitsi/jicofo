@@ -133,27 +133,11 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                     // If this was a remote mute, notify the participant that was muted.
                     if (request.iq.from != request.jidToMute) {
                         request.connection.tryToSendStanza(
-                            if (request.mediaType == MediaType.AUDIO) {
-                                MuteIq().apply {
-                                    actor = request.iq.from
-                                    type = IQ.Type.set
-                                    to = request.jidToMute
-                                    mute = request.doMute
-                                }
-                            } else if (request.mediaType == MediaType.VIDEO) {
-                                MuteVideoIq().apply {
-                                    actor = request.iq.from
-                                    type = IQ.Type.set
-                                    to = request.jidToMute
-                                    mute = request.doMute
-                                }
-                            } else {
-                                MuteDesktopIq().apply {
-                                    actor = request.iq.from
-                                    type = IQ.Type.set
-                                    to = request.jidToMute
-                                    mute = request.doMute
-                                }
+                            createMuteIq(mediaType).apply {
+                                actor = request.iq.from
+                                type = IQ.Type.set
+                                to = request.jidToMute
+                                mute = request.doMute
                             }
                         )
                     }
@@ -190,3 +174,10 @@ private data class MuteRequest(
     val jidToMute: Jid?,
     val mediaType: MediaType
 )
+
+fun createMuteIq(mediaType: MediaType) = when (mediaType) {
+    MediaType.AUDIO -> MuteIq()
+    MediaType.VIDEO -> MuteVideoIq()
+    MediaType.DESKTOP -> MuteDesktopIq()
+    else -> throw IllegalArgumentException("Unsupported media type: $mediaType")
+}
