@@ -81,6 +81,12 @@ interface ChatRoom {
     fun isAllowedInMainRoom(userId: String?, groupId: String?): Boolean
 
     /**
+     * Whether a user with a certain ID and a certain group ID is preferred in the main room, i.e. is explicitly listed
+     * in the list of participants or moderators for the main room.
+     */
+    fun isPreferredInMainRoom(userId: String?, groupId: String?): Boolean
+
+    /**
      * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after
      * joining.
      */

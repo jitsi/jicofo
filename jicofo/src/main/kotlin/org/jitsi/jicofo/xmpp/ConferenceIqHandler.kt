@@ -121,6 +121,7 @@ class ConferenceIqHandler(
 
         // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants.
         val allowedInMainRoom = conference.chatRoom?.isAllowedInMainRoom(userId, groupId) == true
+        val preferredInMainRoom = conference.chatRoom?.isPreferredInMainRoom(userId, groupId) == true
 
         if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && conference.chatRoom?.visitorsLive != true) {
             response.isReady = false
@@ -128,7 +129,7 @@ class ConferenceIqHandler(
             return response
         }
 
-        val vnode = if (visitorSupported && visitorsManager.enabled) {
+        val vnode = if (visitorSupported && visitorsManager.enabled && !preferredInMainRoom) {
             conference.redirectVisitor(
                 visitorRequested || !allowedInMainRoom,
                 userId,

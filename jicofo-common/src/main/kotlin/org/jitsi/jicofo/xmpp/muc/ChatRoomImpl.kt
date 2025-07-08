@@ -185,6 +185,10 @@ class ChatRoomImpl(
             // The room is open to participants.
             return true
         }
+        return isPreferredInMainRoom(userId, groupId)
+    }
+
+    override fun isPreferredInMainRoom(userId: String?, groupId: String?): Boolean {
         if (userId != null && (moderators.contains(userId) || participants?.contains(userId) == true)) {
             // The user is explicitly allowed to join the main room.
             return true
@@ -227,6 +231,7 @@ class ChatRoomImpl(
             this["av_moderation"] = OrderedJsonObject().apply {
                 avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
             }
+
         }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)

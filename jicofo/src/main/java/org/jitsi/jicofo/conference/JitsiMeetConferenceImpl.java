@@ -1852,9 +1852,7 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (chatRoom != null)
         {
-            if (chatRoom.getLobbyEnabled()
-                    || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())
-                    || chatRoom.isAllowedInMainRoom(userId, groupId))
+            if (chatRoom.getLobbyEnabled() || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled()))
             {
                 return null;
             }
