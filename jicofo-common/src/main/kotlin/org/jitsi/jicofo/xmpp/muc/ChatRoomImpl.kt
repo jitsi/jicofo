@@ -239,7 +239,6 @@ class ChatRoomImpl(
             this["av_moderation"] = OrderedJsonObject().apply {
                 avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
             }
-
         }
 
     override fun addListener(listener: ChatRoomListener) = eventEmitter.addHandler(listener)
