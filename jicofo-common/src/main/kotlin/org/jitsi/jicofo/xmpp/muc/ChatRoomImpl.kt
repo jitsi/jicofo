@@ -228,6 +228,14 @@ class ChatRoomImpl(
             this["members"] = membersJson
             this["audio_senders_count"] = audioSendersCount
             this["video_senders_count"] = videoSendersCount
+            this["lobby_enabled"] = lobbyEnabled
+            this["participants_soft_limit"] = participantsSoftLimit ?: -1
+            participants?.let {
+                this["participants"] = it
+            }
+            this["moderators"] = moderators
+            this["visitors_enabled"] = visitorsEnabled?.toString() ?: "null"
+            this["visitors_live"] = visitorsLive
             this["av_moderation"] = OrderedJsonObject().apply {
                 avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
             }
