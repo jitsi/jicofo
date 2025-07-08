@@ -198,6 +198,9 @@ class ColibriV2SessionManager(
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
+        require(mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO) {
+            "Unsupported media type: $mediaType"
+        }
         synchronized(syncRoot) {
             val participantsToMuteBySession = mutableMapOf<Colibri2Session, MutableSet<ParticipantInfo>>()
 

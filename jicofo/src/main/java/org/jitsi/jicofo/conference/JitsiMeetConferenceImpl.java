@@ -1594,11 +1594,20 @@ public class JitsiMeetConferenceImpl
         logger.info("Will " + (doMute ? "mute" : "unmute") + " " + toBeMutedJid + " on behalf of " + muterJid
             + " for " + mediaType);
 
-        // we ignore desktop as for that we use some signaling restrictions in prosody
-        if (mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO)
+        boolean colibriMuteState;
+        MediaType colibriMediaType;
+        if (mediaType == MediaType.AUDIO)
         {
-            getColibriSessionManager().mute(participant.getEndpointId(), doMute, mediaType);
+            colibriMuteState = !chatRoom.isMemberAllowedToUnmute(toBeMutedJid, MediaType.AUDIO);
+            colibriMediaType = MediaType.AUDIO;
         }
+        else
+        {
+            colibriMuteState = !chatRoom.isMemberAllowedToUnmute(toBeMutedJid, MediaType.VIDEO) &&
+                !chatRoom.isMemberAllowedToUnmute(toBeMutedJid, MediaType.DESKTOP);
+            colibriMediaType = MediaType.VIDEO;
+        }
+        getColibriSessionManager().mute(participant.getEndpointId(), colibriMuteState, colibriMediaType);
 
         return MuteResult.SUCCESS;
     }
