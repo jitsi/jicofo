@@ -90,6 +90,7 @@ class ConferenceIqHandler(
         }
 
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
+        logger.debug { "User ID: $userId, Group ID: $groupId" }
         conferenceRequestCounter.inc()
         var conference = focusManager.getConference(room)
         val roomExists = conference != null
@@ -108,8 +109,13 @@ class ConferenceIqHandler(
 
         val visitorSupported = query.properties.any { it.name == "visitors-version" }
         val visitorRequested = query.properties.any { it.name == "visitor" && it.value == "true" }
+        var visitorsLive = conference?.chatRoom?.visitorsLive ?: false
+        logger.debug {
+            "visitorSupported=$visitorSupported, visitorRequested=$visitorRequested, visitorsLive=$visitorsLive"
+        }
         // Here we return early without creating a conference.
-        if (visitorRequested && visitorsConfig.enableLiveRoom && conference?.chatRoom?.visitorsLive != true) {
+        if (visitorRequested && visitorsConfig.enableLiveRoom && !visitorsLive) {
+            logger.debug("Sending to queue")
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
             return response
@@ -119,16 +125,22 @@ class ConferenceIqHandler(
         conference = focusManager.conferenceRequest(room, query.propertiesMap)
         response.isReady = conference.isStarted
 
-        // This is awkward, because we need to have joined to MUC in order to read mainRoomParticipants.
+        // We've now joined the MUC and room metadata has been set.
+        visitorsLive = conference.chatRoom?.visitorsLive ?: false
         val allowedInMainRoom = conference.chatRoom?.isAllowedInMainRoom(userId, groupId) == true
+        val preferredInMainRoom = conference.chatRoom?.isPreferredInMainRoom(userId, groupId) == true
 
-        if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && conference.chatRoom?.visitorsLive != true) {
+        logger.debug {
+            "allowedInMainRoom=$allowedInMainRoom, preferredInMainRoom=$preferredInMainRoom, visitorsLive=$visitorsLive"
+        }
+        if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && !visitorsLive) {
+            logger.debug("Sending to queue")
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
             return response
         }
 
-        val vnode = if (visitorSupported && visitorsManager.enabled) {
+        val vnode = if (visitorSupported && visitorsManager.enabled && !preferredInMainRoom) {
             conference.redirectVisitor(
                 visitorRequested || !allowedInMainRoom,
                 userId,

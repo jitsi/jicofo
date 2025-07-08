@@ -185,6 +185,10 @@ class ChatRoomImpl(
             // The room is open to participants.
             return true
         }
+        return isPreferredInMainRoom(userId, groupId)
+    }
+
+    override fun isPreferredInMainRoom(userId: String?, groupId: String?): Boolean {
         if (userId != null && (moderators.contains(userId) || participants?.contains(userId) == true)) {
             // The user is explicitly allowed to join the main room.
             return true
@@ -224,6 +228,14 @@ class ChatRoomImpl(
             this["members"] = membersJson
             this["audio_senders_count"] = audioSendersCount
             this["video_senders_count"] = videoSendersCount
+            this["lobby_enabled"] = lobbyEnabled
+            this["participants_soft_limit"] = participantsSoftLimit ?: -1
+            participants?.let {
+                this["participants"] = it
+            }
+            this["moderators"] = moderators
+            this["visitors_enabled"] = visitorsEnabled?.toString() ?: "null"
+            this["visitors_live"] = visitorsLive
             this["av_moderation"] = OrderedJsonObject().apply {
                 avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
             }
