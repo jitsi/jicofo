@@ -59,6 +59,8 @@ import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 
 @SuppressFBWarnings(
@@ -83,6 +85,8 @@ class ChatRoomImpl(
     private val pendingVisitorsCounter = PendingCount(
         JicofoConfig.config.vnodeJoinLatencyInterval
     )
+
+    private val roomMetadataLatch = CountDownLatch(1)
 
     override fun visitorInvited() {
         pendingVisitorsCounter.eventPending()
@@ -164,8 +168,38 @@ class ChatRoomImpl(
             }
         }
 
-    override var mainRoomParticipants: List<String> = emptyList()
-        private set
+    /**
+     * List of user IDs which the room is configured to allow to be moderators.
+     */
+    private var moderators: List<String> = emptyList()
+
+    /**
+     * List of user IDs which the room is configured to allow to be moderators.
+     * When [null], the feature is not used, meaning that the room is open to participants.
+     * When empty, the feature is used and no participants are explicitly allowed (so the room requires a token,
+     * and users without a token should be redirected as visitors.
+     */
+    private var participants: List<String>? = null
+
+    override fun isAllowedInMainRoom(userId: String?, groupId: String?): Boolean {
+        if (participants == null) {
+            // The room is open to participants.
+            return true
+        }
+        return isPreferredInMainRoom(userId, groupId)
+    }
+
+    override fun isPreferredInMainRoom(userId: String?, groupId: String?): Boolean {
+        if (userId != null && (moderators.contains(userId) || participants?.contains(userId) == true)) {
+            // The user is explicitly allowed to join the main room.
+            return true
+        }
+        if (groupId != null && (moderators.contains(groupId) || participants?.contains(groupId) == true)) {
+            // The user is explicitly allowed to join the main room based on their group ID.
+            return true
+        }
+        return false
+    }
 
     private val avModerationByMediaType = ConcurrentHashMap<MediaType, AvModerationForMediaType>()
 
@@ -195,6 +229,14 @@ class ChatRoomImpl(
             this["members"] = membersJson
             this["audio_senders_count"] = audioSendersCount
             this["video_senders_count"] = videoSendersCount
+            this["lobby_enabled"] = lobbyEnabled
+            this["participants_soft_limit"] = participantsSoftLimit ?: -1
+            participants?.let {
+                this["participants"] = it
+            }
+            this["moderators"] = moderators
+            this["visitors_enabled"] = visitorsEnabled?.toString() ?: "null"
+            this["visitors_live"] = visitorsLive
             this["av_moderation"] = OrderedJsonObject().apply {
                 avModerationByMediaType.forEach { (k, v) -> this[k.toString()] = v.debugState }
             }
@@ -274,6 +316,15 @@ class ChatRoomImpl(
             null
         }
 
+        if (config.getField(MucConfigFields.CONFERENCE_PRESET_ENABLED)?.firstValue?.toBoolean() == true) {
+            logger.info("Conference presets service is enabled. Will block until RoomMetadata is set.")
+            if (roomMetadataLatch.await(10, TimeUnit.SECONDS)) {
+                logger.info("RoomMetadata is set, room is fully joined.")
+            } else {
+                logger.warn("Timed out waiting for RoomMetadata to be set. Will continue without it.")
+            }
+        }
+
         return ChatRoomInfo(
             meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
             mainRoomJid = if (mainRoomStr == null) null else JidCreate.entityBareFrom(mainRoomStr)
@@ -282,7 +333,8 @@ class ChatRoomImpl(
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
-        mainRoomParticipants = roomMetadata.metadata?.mainMeetingParticipants ?: emptyList()
+        moderators = roomMetadata.metadata?.moderators ?: emptyList()
+        participants = roomMetadata.metadata?.participants
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
@@ -292,6 +344,7 @@ class ChatRoomImpl(
                     roomMetadata.metadata.asyncTranscription == true
             )
         }
+        roomMetadataLatch.countDown()
     }
 
     /** Read the fields we care about from [configForm] and update local state. */
@@ -585,6 +638,7 @@ class ChatRoomImpl(
         const val WHOIS = "muc#roomconfig_whois"
         const val PARTICIPANTS_SOFT_LIMIT = "muc#roominfo_participantsSoftLimit"
         const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
+        const val CONFERENCE_PRESET_ENABLED = "muc#roominfo_conference_presets_service_enabled"
     }
 
     private inner class MemberListener {

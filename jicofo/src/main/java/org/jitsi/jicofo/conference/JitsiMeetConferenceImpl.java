@@ -502,6 +502,7 @@ public class JitsiMeetConferenceImpl
     /**
      * Returns <tt>true</tt> if the conference has been successfully started.
      */
+    @Override
     public boolean isStarted()
     {
         return started.get();
@@ -525,7 +526,10 @@ public class JitsiMeetConferenceImpl
         if (isBlank(chatRoomMeetingId))
         {
             meetingId = UUID.randomUUID().toString();
-            logger.warn("No meetingId set for the MUC. Generating one locally.");
+            if (includeInStatistics)
+            {
+                logger.warn("No meetingId set for the MUC. Generating one locally.");
+            }
         }
         else
         {
@@ -1850,10 +1854,13 @@ public class JitsiMeetConferenceImpl
      * Checks whether a request for a new endpoint to join this conference should be redirected to a visitor node.
      * @return the name of the visitor node if it should be redirected, and null otherwise.
      */
+    @Override
     @Nullable
-    public String redirectVisitor(boolean visitorRequested, @Nullable String userId)
+    public String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
         throws Exception
     {
+        logger.debug("redirectVisitor visitorRequested=" + visitorRequested + ", userId=" + userId
+            + ", groupId=" + groupId);
         if (!VisitorsConfig.config.getEnabled())
         {
             return null;
@@ -1863,23 +1870,28 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (chatRoom != null)
         {
-            if (chatRoom.getLobbyEnabled()
-                    || Boolean.FALSE.equals(chatRoom.getVisitorsEnabled())
-                    || (userId != null && chatRoom.getMainRoomParticipants().contains(userId)))
+            if (chatRoom.getLobbyEnabled())
             {
+                logger.debug("Lobby enabled, not redirecting.");
                 return null;
+            }
+            if (Boolean.FALSE.equals(chatRoom.getVisitorsEnabled()))
+            {
+                logger.debug("Visitors are disabled, not redirecting.");
             }
         }
         if (VisitorsConfig.config.getRequireMucConfigFlag())
         {
             if (chatRoom == null || !Boolean.TRUE.equals(chatRoom.getVisitorsEnabled()))
             {
+                logger.debug("RequireMucConfigFlag is set, and the room does not have the flag, not redirecting.");
                 return null;
             }
         }
         // We don't support visitors in breakout rooms.
         if (mainRoomJid != null)
         {
+            logger.debug("This is a breakout room, not redirecting.");
             return null;
         }
 
@@ -1896,6 +1908,11 @@ public class JitsiMeetConferenceImpl
             participantsSoftLimit = chatRoom.getParticipantsSoftLimit();
         }
 
+        logger.debug("redirectVisitor: participantsSoftLimit=" + participantsSoftLimit
+            + ", visitorsAlreadyUsed=" + visitorsAlreadyUsed
+            + ", visitorRequested=" + visitorRequested
+            + ", participantCount=" + participantCount
+            + ", participantsSoftLimit=" + participantsSoftLimit);
         if (visitorsAlreadyUsed || visitorRequested || participantCount >= participantsSoftLimit)
         {
             return selectVisitorNode();

@@ -174,4 +174,10 @@ public interface JitsiMeetConference extends XmppProvider.Listener
 
     /** Get information about the bridges currently used by this conference. */
     Map<Bridge, ConferenceBridgeProperties> getBridges();
+
+    boolean isStarted();
+
+    @Nullable
+    String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
+            throws Exception;
 }

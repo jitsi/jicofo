@@ -96,7 +96,7 @@ class FocusManager(
         loggingLevel: Level = Level.ALL,
         /** Whether this conference should be included in statistics. */
         includeInStatistics: Boolean = true
-    ): Boolean {
+    ): JitsiMeetConference {
         var conference: JitsiMeetConferenceImpl
         var isConferenceCreator: Boolean
         synchronized(conferencesSyncRoot) {
@@ -112,7 +112,7 @@ class FocusManager(
             logger.warn("Exception while trying to start the conference", e)
             throw e
         }
-        return conference.isStarted
+        return conference
     }
 
     /** Creates a new conference and registers it in [conferences]. */
@@ -187,7 +187,7 @@ class FocusManager(
         }
 
     /** {@inheritDoc} */
-    override fun getConference(jid: EntityBareJid): JitsiMeetConferenceImpl? = synchronized(conferencesSyncRoot) {
+    override fun getConference(jid: EntityBareJid): JitsiMeetConference? = synchronized(conferencesSyncRoot) {
         return conferences[jid]
     }
 

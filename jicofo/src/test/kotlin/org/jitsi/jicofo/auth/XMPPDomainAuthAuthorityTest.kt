@@ -85,7 +85,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 3: guest domain, no session-id, room exists") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val query = ConferenceIq().apply {
                 to = JidCreate.from("jicofo@example.com")
                 from = user2GuestJid
@@ -196,7 +196,7 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         }
 
         context("CASE 10: same user, different machine UID - assign separate session") {
-            every { focusManager.getConference(any()) } returns mockk()
+            every { focusManager.getConference(any()) } returns mockk(relaxed = true)
             val user3MachineUID = "user3machineUID"
             val query = ConferenceIq().apply {
                 room = room3

@@ -74,7 +74,18 @@ interface ChatRoom {
     /** Returns the number of members that currently have their video sources unmuted. */
     var videoSendersCount: Int
 
-    val mainRoomParticipants: List<String>
+    /**
+     * Whether a user with a certain ID and a certain group ID would be allowed to join the main room. Note that this
+     * does not actually perform authentication (i.e. if the user has a valid claim for the user ID and group ID),
+     * just checks the MUC configuration.
+     */
+    fun isAllowedInMainRoom(userId: String?, groupId: String?): Boolean
+
+    /**
+     * Whether a user with a certain ID and a certain group ID is preferred in the main room, i.e. is explicitly listed
+     * in the list of participants or moderators for the main room.
+     */
+    fun isPreferredInMainRoom(userId: String?, groupId: String?): Boolean
 
     /**
      * Joins this chat room with the preconfigured nickname. Returns the fields read from the MUC config form after

@@ -74,9 +74,13 @@ class JsonMessageTest : ShouldSpec() {
                                     "visitors": {
                                         "live": true
                                     },
-                                    "mainMeetingParticipants": [
+                                    "moderators": [
                                         "user_id_1",
                                         "user_id_2"
+                                    ],
+                                    "participants": [
+                                        "user_id_3",
+                                        "user_id_4"
                                     ],
                                     "startMuted": {
                                         "audio": true
@@ -93,7 +97,8 @@ class JsonMessageTest : ShouldSpec() {
                                 shouldNotBeNull()
                                 live shouldBe true
                             }
-                            mainMeetingParticipants shouldBe listOf("user_id_1", "user_id_2")
+                            moderators shouldBe listOf("user_id_1", "user_id_2")
+                            participants shouldBe listOf("user_id_3", "user_id_4")
                             startMuted.apply {
                                 shouldNotBeNull()
                                 audio shouldBe true
