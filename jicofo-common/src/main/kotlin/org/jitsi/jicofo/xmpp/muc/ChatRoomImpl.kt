@@ -335,6 +335,14 @@ class ChatRoomImpl(
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
         moderators = roomMetadata.metadata?.moderators ?: emptyList()
         participants = roomMetadata.metadata?.participants
+        // We read these fields from both the config form (for backwards compatibility) and the room metadata. Only
+        // override if they are set.
+        roomMetadata.metadata?.visitorsEnabled?.let {
+            visitorsEnabled = it
+        }
+        roomMetadata.metadata?.participantsSoftLimit?.let {
+            participantsSoftLimit = it
+        }
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
@@ -351,8 +359,14 @@ class ChatRoomImpl(
     private fun parseConfigForm(configForm: Form) {
         lobbyEnabled =
             configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
-        visitorsEnabled = configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.toBoolean()
-        participantsSoftLimit = configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.toInt()
+        // We read these fields from both the config form (for backwards compatibility) and the room metadata. Only
+        // override if they are set.
+        configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.let {
+            visitorsEnabled = it.toBoolean()
+        }
+        configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.let {
+            participantsSoftLimit = it.toInt()
+        }
     }
 
     override fun leave() {

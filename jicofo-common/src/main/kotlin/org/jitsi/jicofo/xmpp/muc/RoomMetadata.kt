@@ -42,6 +42,8 @@ data class RoomMetadata(
         val participants: List<String>?,
         val recording: Recording?,
         val asyncTranscription: Boolean? = null,
+        val participantsSoftLimit: Int? = null,
+        val visitorsEnabled: Boolean? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
