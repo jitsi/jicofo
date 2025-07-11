@@ -1,7 +1,7 @@
 /*
  * Jicofo, the Jitsi Conference Focus.
  *
- * Copyright @ 2024-Present 8x8, Inc.
+ * Copyright @ 2025-Present 8x8, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,60 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.xmpp.muc
+package org.jitsi.jicofo.xmpp
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import org.jitsi.jicofo.MediaType
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes(
+    JsonSubTypes.Type(value = AvModerationMessage::class, name = AvModerationMessage.TYPE),
+    JsonSubTypes.Type(value = RoomMetadata::class, name = RoomMetadata.TYPE)
+)
+@JsonIgnoreProperties(ignoreUnknown = true)
+sealed class JsonMessage(val type: String) {
+    companion object {
+        private val mapper = jacksonObjectMapper().apply {
+            enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+            enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+        }
+
+        @JvmStatic
+        @Throws(JsonProcessingException::class, JsonMappingException::class)
+        fun parse(string: String): JsonMessage {
+            return mapper.readValue(string)
+        }
+    }
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class AvModerationMessage(
+    val room: String?,
+    val enabled: Boolean? = null,
+    val mediaType: MediaType? = null,
+    val actor: String? = null,
+    val whitelists: Map<MediaType, List<String>>? = null
+) : JsonMessage(TYPE) {
+
+    companion object {
+        const val TYPE = "av_moderation"
+    }
+}
 
 /**
  * The JSON structure included in the MUC config form from the room_metadata prosody module in jitsi-meet. Includes
  * only the fields that we need here in jicofo.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class RoomMetadata(
-    val type: String,
-    val metadata: Metadata?
-) {
+data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
     @JsonIgnoreProperties(ignoreUnknown = true)
     data class Metadata(
         val visitors: Visitors?,
@@ -56,14 +91,6 @@ data class RoomMetadata(
     }
 
     companion object {
-        private val mapper = jacksonObjectMapper().apply {
-            enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-            enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
-        }
-
-        @Throws(JsonProcessingException::class, JsonMappingException::class)
-        fun parse(string: String): RoomMetadata {
-            return mapper.readValue(string)
-        }
+        const val TYPE = "room_metadata"
     }
 }

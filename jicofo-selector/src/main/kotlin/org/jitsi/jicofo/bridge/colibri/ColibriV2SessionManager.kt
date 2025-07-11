@@ -19,6 +19,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
@@ -33,7 +34,6 @@ import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
 import org.jitsi.jicofo.bridge.removeNode
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -198,6 +198,9 @@ class ColibriV2SessionManager(
     }
 
     override fun mute(participantIds: Set<String>, doMute: Boolean, mediaType: MediaType): Boolean {
+        require(mediaType == MediaType.AUDIO || mediaType == MediaType.VIDEO) {
+            "Unsupported media type: $mediaType"
+        }
         synchronized(syncRoot) {
             val participantsToMuteBySession = mutableMapOf<Colibri2Session, MutableSet<ParticipantInfo>>()
 

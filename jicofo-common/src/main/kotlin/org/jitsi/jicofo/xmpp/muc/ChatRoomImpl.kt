@@ -19,13 +19,14 @@ package org.jitsi.jicofo.xmpp.muc
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.JicofoConfig
+import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.TaskPools.Companion.ioPool
 import org.jitsi.jicofo.util.PendingCount
+import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
-import org.jitsi.utils.MediaType
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
@@ -247,7 +248,6 @@ class ChatRoomImpl(
     // Use toList to avoid concurrent modification. TODO: add a removeAll to EventEmitter.
     override fun removeAllListeners() = eventEmitter.eventHandlers.toList().forEach { eventEmitter.removeHandler(it) }
 
-    /** In practice we only use AUDIO and VIDEO, so polluting the map is not a problem. */
     private fun avModeration(mediaType: MediaType): AvModerationForMediaType =
         avModerationByMediaType.computeIfAbsent(mediaType) { AvModerationForMediaType(mediaType) }
     override fun isAvModerationEnabled(mediaType: MediaType) = avModeration(mediaType).enabled
