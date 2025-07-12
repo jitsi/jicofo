@@ -1742,11 +1742,15 @@ public class JitsiMeetConferenceImpl
         // Sync the colibri force mute state with the AV moderation state.
         // We assume this is successful. If for some reason it wasn't the colibri layer should handle it (e.g. remove a
         // broken bridge).
+        MediaType colibriMediaType = mediaType == MediaType.AUDIO ? MediaType.AUDIO : MediaType.VIDEO;
+        Set<MediaType> mediaTypes = mediaType == MediaType.AUDIO
+            ? Collections.singleton(MediaType.AUDIO)
+            : EnumSet.of(MediaType.VIDEO, MediaType.DESKTOP);
         Set<String> participantIdsToMute = new HashSet<>();
         Set<String> participantIdsToUnmute = new HashSet<>();
         for (Participant p : participantsToMute)
         {
-            if (chatRoom.isMemberAllowedToUnmute(p.getMucJid(), mediaType))
+            if (ChatRoomKt.isMemberAllowedToUnmute(chatRoom, p.getMucJid(), mediaTypes))
             {
                 participantIdsToUnmute.add(p.getEndpointId());
             }
@@ -1761,14 +1765,14 @@ public class JitsiMeetConferenceImpl
             getColibriSessionManager().mute(
                     participantIdsToMute,
                     true,
-                    mediaType);
+                    colibriMediaType);
         }
         if (!participantIdsToUnmute.isEmpty())
         {
             getColibriSessionManager().mute(
                     participantIdsToUnmute,
                     false,
-                    mediaType);
+                    colibriMediaType);
         }
 
         // Signal to the participants that they are being muted.
