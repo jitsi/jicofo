@@ -26,7 +26,6 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.util.Cancelable
-import org.jitsi.jicofo.util.RateLimit
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
 import org.jitsi.jicofo.xmpp.jingle.JingleRequestHandler
@@ -35,6 +34,7 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.utils.OrderedJsonObject
+import org.jitsi.utils.RateLimit
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
