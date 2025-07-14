@@ -171,3 +171,7 @@ data class ChatRoomInfo(
     /** The JID of the main room if this is a breakout room, otherwise null. */
     val mainRoomJid: EntityBareJid?
 )
+
+/** Whether a user with a certain JID is allowed to unmute with any of [mediaTypes]. */
+fun ChatRoom.isMemberAllowedToUnmute(jid: Jid, mediaTypes: Set<MediaType>): Boolean =
+    mediaTypes.any { isMemberAllowedToUnmute(jid, it) }
