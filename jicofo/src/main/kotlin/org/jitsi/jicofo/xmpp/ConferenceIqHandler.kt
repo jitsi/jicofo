@@ -114,7 +114,7 @@ class ConferenceIqHandler(
             "visitorSupported=$visitorSupported, visitorRequested=$visitorRequested, visitorsLive=$visitorsLive"
         }
         // Here we return early without creating a conference.
-        if (visitorRequested && visitorsConfig.enableLiveRoom && !visitorsLive) {
+        if (visitorSupported && visitorRequested && visitorsConfig.enableLiveRoom && !visitorsLive) {
             logger.debug("Sending to queue")
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
@@ -133,7 +133,7 @@ class ConferenceIqHandler(
         logger.debug {
             "allowedInMainRoom=$allowedInMainRoom, preferredInMainRoom=$preferredInMainRoom, visitorsLive=$visitorsLive"
         }
-        if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && !visitorsLive) {
+        if (visitorsConfig.enableLiveRoom && !allowedInMainRoom && !visitorsLive && visitorSupported) {
             logger.debug("Sending to queue")
             response.isReady = false
             response.addProperty(ConferenceIq.Property("live", "false"))
