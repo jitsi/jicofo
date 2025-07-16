@@ -188,6 +188,6 @@ class JibriRecorder(
             "Publishing new jibri-recording-status: ${recordingStatus.toXML()} in: ${conference.roomName}"
         )
 
-        conference.chatRoom?.setPresenceExtension(recordingStatus)
+        conference.setPresenceExtension(recordingStatus)
     }
 }

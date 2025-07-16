@@ -49,6 +49,7 @@ import org.jivesoftware.smackx.caps.*;
 import org.jivesoftware.smackx.caps.packet.*;
 import org.jxmpp.jid.*;
 
+import javax.xml.namespace.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -270,6 +271,9 @@ public class JitsiMeetConferenceImpl
      */
     @Nullable
     private String meetingId;
+
+    /** Presence extensions set from the outside which are to be added to the presence in each MUC. */
+    private final Map<QName, ExtensionElement> presenceExtensions = new ConcurrentHashMap<>();
 
     /**
      * Creates new instance of {@link JitsiMeetConferenceImpl}.
@@ -606,6 +610,13 @@ public class JitsiMeetConferenceImpl
         }
 
         presenceExtensions.add(createConferenceProperties());
+        this.presenceExtensions.forEach((qName, extension) ->
+        {
+            if (extension != null)
+            {
+                presenceExtensions.add(extension);
+            }
+        });
 
         // updates presence with presenceExtensions and sends it
         chatRoom.addPresenceExtensions(presenceExtensions);
@@ -645,6 +656,22 @@ public class JitsiMeetConferenceImpl
             {
                 visitorChatRoom.setPresenceExtension(newProps);
             }
+        }
+    }
+
+    @Override
+    public void setPresenceExtension(@NotNull ExtensionElement extension)
+    {
+        presenceExtensions.put(extension.getQName(), extension);
+
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom != null)
+        {
+            chatRoom.setPresenceExtension(extension);
+        }
+        for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
+        {
+            visitorChatRoom.setPresenceExtension(extension);
         }
     }
 
@@ -2039,6 +2066,13 @@ public class JitsiMeetConferenceImpl
         // properties up to date?
         presenceExtensions.add(createConferenceProperties());
 
+        this.presenceExtensions.forEach((qName, extension) ->
+        {
+            if (extension != null)
+            {
+                presenceExtensions.add(extension);
+            }
+        });
         // updates presence with presenceExtensions and sends it
         chatRoomToJoin.addPresenceExtensions(presenceExtensions);
 
