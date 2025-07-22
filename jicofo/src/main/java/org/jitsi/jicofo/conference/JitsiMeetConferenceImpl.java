@@ -610,13 +610,7 @@ public class JitsiMeetConferenceImpl
         }
 
         presenceExtensions.add(createConferenceProperties());
-        this.presenceExtensions.forEach((qName, extension) ->
-        {
-            if (extension != null)
-            {
-                presenceExtensions.add(extension);
-            }
-        });
+        this.presenceExtensions.forEach((qName, extension) -> presenceExtensions.add(extension));
 
         // updates presence with presenceExtensions and sends it
         chatRoom.addPresenceExtensions(presenceExtensions);
@@ -2066,13 +2060,7 @@ public class JitsiMeetConferenceImpl
         // properties up to date?
         presenceExtensions.add(createConferenceProperties());
 
-        this.presenceExtensions.forEach((qName, extension) ->
-        {
-            if (extension != null)
-            {
-                presenceExtensions.add(extension);
-            }
-        });
+        this.presenceExtensions.forEach((qName, extension) -> presenceExtensions.add(extension));
         // updates presence with presenceExtensions and sends it
         chatRoomToJoin.addPresenceExtensions(presenceExtensions);
 
