@@ -25,6 +25,7 @@ import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.*;
 import org.jitsi.xmpp.extensions.jibri.*;
+import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
 
 import java.util.*;
@@ -180,4 +181,6 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     @Nullable
     String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
             throws Exception;
+
+    void setPresenceExtension(@NotNull ExtensionElement extension);
 }
