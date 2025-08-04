@@ -3,7 +3,9 @@ name: Build & Debian package
 
 on:
  push:
-  branches: [master]
+  branches:
+  - master
+  - feature/test
 
 jobs:
  build:
@@ -13,23 +15,21 @@ jobs:
    image: maven:3.9.9-amazoncorretto-21-debian
 
   steps:
+   - uses: actions/checkouts@4
+   - run: echo "This will never run"
    - uses: actions/checkout@v4
    - name: Compile, test & report coverage
      env:
       MAVEN_OPTS: "-Xmx4096m"
      run: |
-       mvn -B -Dktlint.skip=true \
-       clean org.jacoco:jacoco-maven-plugin:prepare-agent \
-       install org.jacoco:jacoco-maven-plugin:report -U
+       mvn -B -Dmaven.test.failure.ignore=false \
+       clean install
+       exit 17
 
    - name: Set release version and persist it
      id: version
      run: |
-      set -e -x
-      mvn versions:set -DremoveSnapshot
-      VERSION=$(mvn help:evaluate -q -Dexpression=project.version -DforceStdout)
-      echo "projectVersion=$VERSION" >> "$GITHUB_OUTPUT"
-      echo "$VERSION" > version.txt
+      echo "projectVersion=1.2.3" >> "$GITHUB_OUTPUT"
    - name: Upload version.txt as artifact
      uses: actions/upload-artifact@v4
      with:
