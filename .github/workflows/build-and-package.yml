@@ -4,6 +4,9 @@ name: Build & Debian package
 on:
  push:
   branches: [master]
+ schedule:
+  - cron: '*/5 * * * *'
+ workflow_dispatch:
 
 jobs:
  build:
