@@ -138,6 +138,8 @@ class XmppServices(
         videoMuteHandler.shutdown()
         desktopMuteHandler.shutdown()
         avModerationHandler.shutdown()
+        roomMetadataHandler.shutdown()
+        configurationChangeHandler.shutdown()
         jingleHandler.shutdown()
 
         clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
