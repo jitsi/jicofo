@@ -654,6 +654,7 @@ class ChatRoomImpl(
     private fun doProcessPresence(presence: Presence): Boolean {
         if (presence.error != null) {
             logger.warn("Received presence with error: ${presence.toXML()}")
+            return true
         }
         logger.trace { "Presence received ${presence.toXML()}" }
 
