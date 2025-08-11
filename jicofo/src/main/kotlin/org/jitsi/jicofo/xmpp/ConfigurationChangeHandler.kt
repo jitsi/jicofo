@@ -64,4 +64,8 @@ class ConfigurationChangeHandler(
             }
         }
     }
+
+    fun shutdown() {
+        xmppProvider.xmppConnection.removeSyncStanzaListener(this)
+    }
 }
