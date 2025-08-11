@@ -32,6 +32,7 @@ import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.observableWhenChanged
+import org.jitsi.utils.queue.PacketQueue
 import org.jivesoftware.smack.PresenceListener
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
@@ -86,11 +87,31 @@ class ChatRoomImpl(
         JicofoConfig.config.vnodeJoinLatencyInterval
     )
 
+    /**
+     * Latch that is counted down when the room metadata is set.
+     * This is used to block the join until the room metadata is available.
+     */
     private val roomMetadataLatch = CountDownLatch(1)
+
+    /**
+     * Latch that is counted down when the room is joined. Processing presence blocks until this latch is counted down.
+     */
+    private val roomJoinedLatch = CountDownLatch(1)
 
     override fun visitorInvited() {
         pendingVisitorsCounter.eventPending()
     }
+
+    /**
+     * Process presence from smack in order in the IO pool.
+     */
+    private val presenceQueue = PacketQueue<Presence>(
+        Integer.MAX_VALUE,
+        false,
+        "ChatRoomImpl presence queue",
+        { doProcessPresence(it) },
+        ioPool
+    )
 
     private val membersMap: MutableMap<EntityFullJid, ChatRoomMemberImpl> = ConcurrentHashMap()
     override val members: List<ChatRoomMember>
@@ -324,6 +345,7 @@ class ChatRoomImpl(
                 logger.warn("Timed out waiting for RoomMetadata to be set. Will continue without it.")
             }
         }
+        roomJoinedLatch.countDown()
 
         return ChatRoomInfo(
             meetingId = config.getField(MucConfigFields.MEETING_ID)?.firstValue,
@@ -374,6 +396,11 @@ class ChatRoomImpl(
         muc.removeUserStatusListener(userListener)
         muc.removeParticipantListener(this)
         leaveCallback(this)
+
+        // Unblock any threads waiting on the latches
+        roomMetadataLatch.countDown()
+        roomJoinedLatch.countDown()
+        presenceQueue.close()
 
         // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
         // from the XMPP server (and we want ChatRoom#leave to return immediately).
@@ -614,16 +641,27 @@ class ChatRoomImpl(
     }
 
     /**
-     * Processes an incoming presence packet.
-     *
-     * @param presence the incoming presence.
+     * Offload processing presence for the room from Smack's thread to a queue running in the jicofo IO pool.
      */
     override fun processPresence(presence: Presence?) {
-        if (presence == null || presence.error != null) {
-            logger.warn("Unable to handle packet: ${presence?.toXML()}")
+        if (presence == null) {
+            logger.warn("Received null presence packet")
             return
         }
+        presenceQueue.add(presence)
+    }
+
+    private fun doProcessPresence(presence: Presence): Boolean {
+        if (presence.error != null) {
+            logger.warn("Received presence with error: ${presence.toXML()}")
+            return true
+        }
         logger.trace { "Presence received ${presence.toXML()}" }
+
+        if (roomJoinedLatch.count > 0) {
+            logger.info("Received presence before roomJoinedLatch was counted down, waiting.")
+            roomJoinedLatch.await()
+        }
 
         // Should never happen, but log if something is broken
         val myOccupantJid = this.myOccupantJid
@@ -635,6 +673,7 @@ class ChatRoomImpl(
         } else {
             processOtherPresence(presence)
         }
+        return true
     }
 
     override fun reloadConfiguration() {
