@@ -23,8 +23,11 @@ import org.jitsi.config.*;
 import org.jitsi.metaconfig.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
+import sun.misc.*;
 
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 
 /**
@@ -83,6 +86,29 @@ public class Main
             return;
         }
 
+        AtomicInteger exitStatus = new AtomicInteger();
+
+        /* Catch signals and cause them to trigger a clean shutdown. */
+        for (String signalName : List.of("TERM", "HUP", "INT"))
+        {
+            try
+            {
+                Signal.handle(new Signal(signalName), signal ->
+                {
+                    // Matches java.lang.Terminator
+                    exitStatus.set(signal.getNumber() + 128);
+                    logger.info("Caught signal " + signal + ", shutting down.");
+
+                    shutdownLatch.countDown();
+                });
+            }
+            catch (IllegalArgumentException e)
+            {
+                /* Unknown signal on this platform, or not allowed to register this signal; that's fine. */
+                logger.warn("Unable to register signal " + signalName, e);
+            }
+        }
+
 
         try
         {
@@ -97,6 +123,8 @@ public class Main
         jicofoServices.shutdown();
         TaskPools.shutdown();
         JicofoServices.setJicofoServicesSingleton(null);
+        logger.info("Jicofo has been stopped, exiting with exit code " + exitStatus.get());
+        System.exit(exitStatus.get());
     }
 
     private static void setupMetaconfigLogger()
