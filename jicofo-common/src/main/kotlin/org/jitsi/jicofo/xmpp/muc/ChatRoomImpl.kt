@@ -113,7 +113,7 @@ class ChatRoomImpl(
             try {
                 it.run()
             } catch (e: Exception) {
-                logger.warn("Error processing ", e)
+                logger.warn("Error processing XMPP task", e)
             }
             true
         },
@@ -418,9 +418,9 @@ class ChatRoomImpl(
         leaveCallback(this)
 
         // Unblock any threads waiting on the latches
+        xmppTaskQueue.close()
         roomMetadataLatch.countDown()
         roomJoinedLatch.countDown()
-        xmppTaskQueue.close()
 
         // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
         // from the XMPP server (and we want ChatRoom#leave to return immediately).
