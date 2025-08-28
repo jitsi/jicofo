@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
@@ -63,42 +62,53 @@ class AvModerationHandler(
             logger.warn("Skip processing stanza without JsonMessageExtension")
         }
 
-        TaskPools.ioPool.execute {
-            try {
-                val message = JsonMessage.parse(jsonMessage.json)
-                if (message !is AvModerationMessage) {
-                    throw IllegalArgumentException("Expected AvModerationMessage, got ${message.type}")
-                }
-                val conferenceJid = JidCreate.entityBareFrom(message.room)
+        val message = try {
+            val m = JsonMessage.parse(jsonMessage.json)
+            if (m !is AvModerationMessage) {
+                throw IllegalArgumentException("Expected AvModerationMessage, got ${m.type}")
+            }
+            m
+        } catch (e: Exception) {
+            logger.warn("Failed to process av_moderation request from ${stanza.from}", e)
+            return
+        }
 
-                val conference = conferenceStore.getConference(conferenceJid)
-                    ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
-                val chatRoom = conference.chatRoom
-                    ?: throw IllegalStateException("Conference has no associated chatRoom.")
+        val (conference, chatRoom) = try {
+            val conferenceJid = JidCreate.entityBareFrom(message.room)
+            val conference = conferenceStore.getConference(conferenceJid)
+                ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
 
-                val mediaType = message.mediaType
-                val enabled = message.enabled
-                message.whitelists?.let { whitelists ->
-                    whitelists.forEach { (mediaType, whitelist) ->
-                        chatRoom.setAvModerationWhitelist(mediaType, whitelist)
-                    }
+            Pair(
+                conference,
+                conference.chatRoom ?: throw IllegalStateException("Conference has no associated chatRoom.")
+            )
+        } catch (e: Exception) {
+            logger.warn("Failed to process av_moderation request from ${stanza.from}", e)
+            return
+        }
+
+        chatRoom.queueXmppTask {
+            val mediaType = message.mediaType
+            val enabled = message.enabled
+            message.whitelists?.let { whitelists ->
+                whitelists.forEach { (mediaType, whitelist) ->
+                    chatRoom.setAvModerationWhitelist(mediaType, whitelist)
                 }
-                if (enabled != null && mediaType != null) {
-                    val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
-                    chatRoom.setAvModerationEnabled(mediaType, enabled)
-                    if (enabled && !wasEnabled) {
-                        logger.info(
-                            "Moderation for ${message.mediaType} in $conferenceJid was enabled by ${message.actor}"
-                        )
-                        // let's mute everyone except the actor
-                        conference.muteAllParticipants(
-                            mediaType,
-                            JidCreate.entityFullFrom(message.actor ?: "")
-                        )
-                    }
+            }
+            if (enabled != null && mediaType != null) {
+                val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
+                chatRoom.setAvModerationEnabled(mediaType, enabled)
+                if (enabled && !wasEnabled) {
+                    logger.info(
+                        "Moderation for ${message.mediaType} in ${conference.mainRoomJid} was enabled by " +
+                            "${message.actor}"
+                    )
+                    // let's mute everyone except the actor
+                    conference.muteAllParticipants(
+                        mediaType,
+                        JidCreate.entityFullFrom(message.actor ?: "")
+                    )
                 }
-            } catch (e: Exception) {
-                logger.warn("Failed to process av_moderation request from ${stanza.from}", e)
             }
         }
     }
