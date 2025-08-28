@@ -73,13 +73,14 @@ class AvModerationHandler(
             return
         }
 
-        val (conference, chatRoom) = try {
+        val (conference, conferenceJid, chatRoom) = try {
             val conferenceJid = JidCreate.entityBareFrom(message.room)
             val conference = conferenceStore.getConference(conferenceJid)
                 ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
 
-            Pair(
+            Triple(
                 conference,
+                conferenceJid,
                 conference.chatRoom ?: throw IllegalStateException("Conference has no associated chatRoom.")
             )
         } catch (e: Exception) {
@@ -99,10 +100,7 @@ class AvModerationHandler(
                 val wasEnabled = chatRoom.isAvModerationEnabled(mediaType)
                 chatRoom.setAvModerationEnabled(mediaType, enabled)
                 if (enabled && !wasEnabled) {
-                    logger.info(
-                        "Moderation for ${message.mediaType} in ${conference.mainRoomJid} was enabled by " +
-                            "${message.actor}"
-                    )
+                    logger.info("Moderation for ${message.mediaType} in $conferenceJid was enabled by ${message.actor}")
                     // let's mute everyone except the actor
                     conference.muteAllParticipants(
                         mediaType,
