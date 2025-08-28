@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.logging2.createLogger
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
@@ -57,7 +56,11 @@ class ConfigurationChangeHandler(
                 }
                 logger.info("Configuration changed for $roomJid")
                 conferenceStore.getConference(roomJid)?.let { conference ->
-                    TaskPools.ioPool.submit { conference.mucConfigurationChanged() }
+                    conference.chatRoom?.let { chatRoom ->
+                        chatRoom.queueXmppTask { chatRoom.reloadConfiguration() }
+                    } ?: run {
+                        logger.info("Configuration changed, but we don't have a chat room for ${conference.roomName}")
+                    }
                 } ?: run {
                     logger.info("Configuration changed for unknown conference.")
                 }

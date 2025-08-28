@@ -19,7 +19,6 @@ package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.MediaType
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.MuteResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
@@ -125,7 +124,12 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
             logger.warn("Mute request for unknown conference: ${request.iq.toXML()}")
         }
 
-    TaskPools.ioPool.execute {
+    val chatRoom = conference.chatRoom
+        ?: return RejectedWithError(request.iq, StanzaError.Condition.item_not_found).also {
+            logger.warn("Mute request for conference with no chat room: ${request.iq.toXML()}")
+        }
+
+    chatRoom.queueXmppTask {
         try {
             when (conference.handleMuteRequest(request.iq.from, jidToMute, doMute, mediaType)) {
                 MuteResult.SUCCESS -> {

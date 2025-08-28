@@ -1095,16 +1095,6 @@ public class JitsiMeetConferenceImpl
         maybeStop(null);
     }
 
-    @Override
-    public void mucConfigurationChanged()
-    {
-        ChatRoom chatRoom = this.chatRoom;
-        if (chatRoom != null)
-        {
-            chatRoom.reloadConfiguration();
-        }
-    }
-
     private void terminateParticipant(
             Participant participant,
             @NotNull Reason reason,

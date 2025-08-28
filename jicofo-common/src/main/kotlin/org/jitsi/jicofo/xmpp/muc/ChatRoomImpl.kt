@@ -103,13 +103,20 @@ class ChatRoomImpl(
     }
 
     /**
-     * Process presence from smack in order in the IO pool.
+     * A queue for tasks originating from XMPP for this room which need to be processed in order.
      */
-    private val presenceQueue = PacketQueue<Presence>(
+    private val xmppTaskQueue = PacketQueue<Runnable>(
         Integer.MAX_VALUE,
         false,
         "ChatRoomImpl presence queue",
-        { doProcessPresence(it) },
+        {
+            try {
+                it.run()
+            } catch (e: Exception) {
+                logger.warn("Error processing XMPP task", e)
+            }
+            true
+        },
         ioPool
     )
 
@@ -313,6 +320,9 @@ class ChatRoomImpl(
 
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     private fun joinAs(nickname: Resourcepart): ChatRoomInfo {
+        // The queue should block until the room is fully joined.
+        xmppTaskQueue.add { roomJoinedLatch.await() }
+
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
         synchronized(muc) {
             if (muc.isJoined) {
@@ -354,6 +364,16 @@ class ChatRoomImpl(
     }
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
+        // The initial RoomMetadata is required to consider the room fully joined. The queue will block until that
+        // happens, so handle it outside the queue
+        if (roomJoinedLatch.count > 0L) {
+            ioPool.submit { doSetRoomMetadata(roomMetadata) }
+        } else {
+            queueXmppTask { doSetRoomMetadata(roomMetadata) }
+        }
+    }
+
+    private fun doSetRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
         moderators = roomMetadata.metadata?.moderators ?: emptyList()
         participants = roomMetadata.metadata?.participants
@@ -398,9 +418,9 @@ class ChatRoomImpl(
         leaveCallback(this)
 
         // Unblock any threads waiting on the latches
+        xmppTaskQueue.close()
         roomMetadataLatch.countDown()
         roomJoinedLatch.countDown()
-        presenceQueue.close()
 
         // Call MultiUserChat.leave() in an IO thread, because it now (with Smack 4.4.3) blocks waiting for a response
         // from the XMPP server (and we want ChatRoom#leave to return immediately).
@@ -648,20 +668,15 @@ class ChatRoomImpl(
             logger.warn("Received null presence packet")
             return
         }
-        presenceQueue.add(presence)
+        xmppTaskQueue.add { doProcessPresence(presence) }
     }
 
-    private fun doProcessPresence(presence: Presence): Boolean {
+    private fun doProcessPresence(presence: Presence) {
         if (presence.error != null) {
             logger.warn("Received presence with error: ${presence.toXML()}")
-            return true
+            return
         }
         logger.trace { "Presence received ${presence.toXML()}" }
-
-        if (roomJoinedLatch.count > 0) {
-            logger.info("Received presence before roomJoinedLatch was counted down, waiting.")
-            roomJoinedLatch.await()
-        }
 
         // Should never happen, but log if something is broken
         val myOccupantJid = this.myOccupantJid
@@ -673,7 +688,6 @@ class ChatRoomImpl(
         } else {
             processOtherPresence(presence)
         }
-        return true
     }
 
     override fun reloadConfiguration() {
@@ -683,6 +697,8 @@ class ChatRoomImpl(
             parseConfigForm(config)
         }
     }
+
+    override fun queueXmppTask(runnable: () -> Unit) = xmppTaskQueue.add(runnable)
 
     private object MucConfigFields {
         const val IS_BREAKOUT_ROOM = "muc#roominfo_isbreakout"

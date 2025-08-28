@@ -162,6 +162,9 @@ interface ChatRoom {
     /** Notify the chatroom that a visitor has been redirected to this room.
      */
     fun visitorInvited()
+
+    /** Queue a task to be executed sequentially with respect to other tasks queued through this method. */
+    fun queueXmppTask(runnable: () -> Unit)
 }
 
 /** Holds fields read from the MUC config form at join time, which never change. */

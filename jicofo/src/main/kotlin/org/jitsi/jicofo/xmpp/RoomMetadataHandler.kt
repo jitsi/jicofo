@@ -18,10 +18,8 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
-import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
 import org.jivesoftware.smack.filter.MessageTypeFilter
@@ -36,18 +34,6 @@ class RoomMetadataHandler(
     private var componentAddress: DomainBareJid? = null
     private val logger = createLogger()
 
-    /** Queue to process requests in order in the IO pool */
-    private val queue = PacketQueue<JsonMessageExtension>(
-        Integer.MAX_VALUE,
-        false,
-        "room_metadata queue",
-        {
-            doProcess(it)
-            return@PacketQueue true
-        },
-        TaskPools.ioPool
-    )
-
     init {
         xmppProvider.xmppConnection.addSyncStanzaListener(this, MessageTypeFilter.NORMAL)
         xmppProvider.addListener(this)
@@ -61,7 +47,7 @@ class RoomMetadataHandler(
         }
 
     private fun doProcess(jsonMessage: JsonMessageExtension) {
-        try {
+        val (chatRoom, roomMetadata) = try {
             val conferenceJid = JidCreate.entityBareFrom(jsonMessage.getAttribute("room")?.toString())
             val roomMetadata = JsonMessage.parse(jsonMessage.json)
 
@@ -71,13 +57,17 @@ class RoomMetadataHandler(
 
             val conference = conferenceStore.getConference(conferenceJid)
                 ?: throw IllegalStateException("Conference $conferenceJid does not exist.")
-            val chatRoom = conference.chatRoom
-                ?: throw IllegalStateException("Conference has no associated chatRoom.")
 
-            chatRoom.setRoomMetadata(roomMetadata)
+            Pair(
+                conference.chatRoom ?: throw IllegalStateException("Conference has no associated chatRoom."),
+                roomMetadata
+            )
         } catch (e: Exception) {
             logger.info("Failed to process room_metadata request: ${jsonMessage.toXML()}")
+            return
         }
+
+        chatRoom.setRoomMetadata(roomMetadata)
     }
 
     override fun processStanza(stanza: Stanza) {
@@ -89,7 +79,7 @@ class RoomMetadataHandler(
             logger.warn("Skip processing stanza without JsonMessageExtension.")
         }
 
-        queue.add(jsonMessage)
+        doProcess(jsonMessage)
     }
 
     override fun componentsChanged(components: Set<XmppProvider.Component>) {
