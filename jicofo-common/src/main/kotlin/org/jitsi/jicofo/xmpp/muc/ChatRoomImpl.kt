@@ -364,6 +364,16 @@ class ChatRoomImpl(
     }
 
     override fun setRoomMetadata(roomMetadata: RoomMetadata) {
+        // The initial RoomMetadata is required to consider the room fully joined. The queue will block until that
+        // happens, so handle it outside the queue
+        if (roomJoinedLatch.count > 0L) {
+            ioPool.submit { doSetRoomMetadata(roomMetadata) }
+        } else {
+            queueXmppTask { doSetRoomMetadata(roomMetadata) }
+        }
+    }
+
+    private fun doSetRoomMetadata(roomMetadata: RoomMetadata) {
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
         moderators = roomMetadata.metadata?.moderators ?: emptyList()
         participants = roomMetadata.metadata?.participants

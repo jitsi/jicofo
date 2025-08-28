@@ -67,7 +67,7 @@ class RoomMetadataHandler(
             return
         }
 
-        chatRoom.queueXmppTask { chatRoom.setRoomMetadata(roomMetadata) }
+        chatRoom.setRoomMetadata(roomMetadata)
     }
 
     override fun processStanza(stanza: Stanza) {
