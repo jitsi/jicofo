@@ -123,7 +123,7 @@ class ConferenceIqHandler(
 
         // If the conference didn't exist previously, it will be created and the MUC will be joined here (blocking).
         conference = focusManager.conferenceRequest(room, query.propertiesMap)
-        response.isReady = conference.isStarted
+        response.isReady = conference.isStarted && (conference.chatRoom?.isJoined == true)
 
         // We've now joined the MUC and room metadata has been set.
         visitorsLive = conference.chatRoom?.visitorsLive ?: false

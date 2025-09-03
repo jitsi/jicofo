@@ -160,7 +160,7 @@ class ChatRoomImpl(
         }
 
     override val isJoined
-        get() = muc.isJoined
+        get() = muc.isJoined && roomJoinedLatch.count <= 0
 
     /** Our full Multi User Chat XMPP address. */
     private var myOccupantJid: EntityFullJid? = null
@@ -429,7 +429,7 @@ class ChatRoomImpl(
             try {
                 // FIXME smack4: there used to be a custom dispose() method if leave() fails, there might still be some
                 // listeners lingering around
-                if (isJoined) {
+                if (muc.isJoined) {
                     muc.leave()
                 } else {
                     // If the join attempt timed out the XMPP server might have processed it and created the MUC, and
