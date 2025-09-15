@@ -57,6 +57,7 @@ enum class Features(val value: String) {
     RTCPMUX("urn:ietf:rfc:5761"),
     BUNDLE("urn:ietf:rfc:5888"),
     RAYO("urn:xmpp:rayo:client:1"),
+    REMOTECONTROL("http://jitsi.org/meet/remotecontrol"),
 
     // Supports handling "start muted" via room metadata (instead of via jingle).
     START_MUTED_RMD("http://jitsi.org/start-muted-room-metadata"),
