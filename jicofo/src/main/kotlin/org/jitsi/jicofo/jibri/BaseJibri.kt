@@ -18,17 +18,16 @@
 package org.jitsi.jicofo.jibri
 
 import org.jitsi.jicofo.ConferenceConfig
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
 import org.jitsi.jicofo.xmpp.IqProcessingResult
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.NotProcessed
+import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.logging2.Logger
-import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.packet.IQ
@@ -48,32 +47,28 @@ abstract class BaseJibri internal constructor(
     val jibriDetector: JibriDetector
 ) : StateListener {
 
-    private val incomingIqQueue = PacketQueue<JibriRequest>(
-        Integer.MAX_VALUE,
-        true,
-        "jibri-iq-queue",
-        { jibriRequest ->
-            val response = try {
-                doHandleIQRequest(jibriRequest.iq)
-            } catch (e: Exception) {
-                logger.warn("Failed to handle request: ${jibriRequest.iq}", e)
-                jibriRequest.connection.tryToSendStanza(
-                    IQ.createErrorResponse(jibriRequest.iq, StanzaError.Condition.internal_server_error)
-                )
-                return@PacketQueue true
-            }
-            jibriRequest.connection.tryToSendStanza(response)
-
-            return@PacketQueue true
-        },
-        TaskPools.ioPool
-    )
-
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
 
     fun handleJibriRequest(request: JibriRequest): IqProcessingResult = if (accept(request.iq)) {
         logger.info("Accepted jibri request: ${request.iq.toXML()}")
-        incomingIqQueue.add(request)
+        // Handle the request in the room's queue. This keeps the request from racing with e.g., member presence.
+        val chatRoom = conference.chatRoom ?: run {
+            logger.warn("No chat room found for conference ${conference.roomName}")
+            return RejectedWithError(request.iq, StanzaError.Condition.internal_server_error)
+        }
+
+        chatRoom.queueXmppTask {
+            val response = try {
+                doHandleIQRequest(request.iq)
+            } catch (e: Exception) {
+                logger.warn("Failed to handle request: ${request.iq}", e)
+                request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
+                )
+                null
+            }
+            response?.let { request.connection.tryToSendStanza(it) }
+        }
         AcceptedWithNoResponse()
     } else {
         NotProcessed()
@@ -129,14 +124,8 @@ abstract class BaseJibri internal constructor(
         if (!acceptType(iq)) {
             return false
         }
-        val from = iq.from
-        val roomName = from.asBareJid()
-        if (!conference.roomName.equals(roomName)) {
-            return false
-        }
-        return conference.hasMember(from).apply {
-            if (!this) logger.warn("No chat member found for: $from")
-        }
+
+        return conference.roomName.equals(iq.from.asBareJid())
     }
 
     protected abstract fun acceptType(packet: JibriIq): Boolean
