@@ -87,6 +87,7 @@ class ConferenceIqHandler(
             to = query.from
             this.room = query.room
             focusJid = focusAuthJid
+            addProperty("visitors-supported", visitorsManager.enabled.toString())
         }
 
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
@@ -140,7 +141,7 @@ class ConferenceIqHandler(
             return response
         }
 
-        val vnode = if (visitorSupported && visitorsManager.enabled && !preferredInMainRoom) {
+        val vnode = if (visitorSupported && visitorsManager.enabled && (visitorRequested || !preferredInMainRoom)) {
             conference.redirectVisitor(
                 visitorRequested || !allowedInMainRoom,
                 userId,
