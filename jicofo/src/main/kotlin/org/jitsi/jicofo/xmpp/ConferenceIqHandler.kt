@@ -87,7 +87,6 @@ class ConferenceIqHandler(
             to = query.from
             this.room = query.room
             focusJid = focusAuthJid
-            addProperty("visitors-supported", visitorsManager.enabled.toString())
         }
 
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
@@ -128,6 +127,9 @@ class ConferenceIqHandler(
 
         // We've now joined the MUC and room metadata has been set.
         visitorsLive = conference.chatRoom?.visitorsLive ?: false
+        val visitorsSupported = visitorsManager.enabled &&
+            (conference.chatRoom?.visitorsEnabled == true || !visitorsConfig.requireMucConfigFlag)
+        response.addProperty("visitors-supported", visitorsSupported.toString())
         val allowedInMainRoom = conference.chatRoom?.isAllowedInMainRoom(userId, groupId) == true
         val preferredInMainRoom = conference.chatRoom?.isPreferredInMainRoom(userId, groupId) == true
 
