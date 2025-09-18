@@ -127,6 +127,9 @@ class ConferenceIqHandler(
 
         // We've now joined the MUC and room metadata has been set.
         visitorsLive = conference.chatRoom?.visitorsLive ?: false
+        val visitorsSupported = visitorsManager.enabled &&
+            (conference.chatRoom?.visitorsEnabled == true || !visitorsConfig.requireMucConfigFlag)
+        response.addProperty("visitors-supported", visitorsSupported.toString())
         val allowedInMainRoom = conference.chatRoom?.isAllowedInMainRoom(userId, groupId) == true
         val preferredInMainRoom = conference.chatRoom?.isPreferredInMainRoom(userId, groupId) == true
 
@@ -140,7 +143,7 @@ class ConferenceIqHandler(
             return response
         }
 
-        val vnode = if (visitorSupported && visitorsManager.enabled && !preferredInMainRoom) {
+        val vnode = if (visitorSupported && visitorsManager.enabled && (visitorRequested || !preferredInMainRoom)) {
             conference.redirectVisitor(
                 visitorRequested || !allowedInMainRoom,
                 userId,
