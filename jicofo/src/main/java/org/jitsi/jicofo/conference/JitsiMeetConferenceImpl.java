@@ -1897,7 +1897,8 @@ public class JitsiMeetConferenceImpl
             }
             if (Boolean.FALSE.equals(chatRoom.getVisitorsEnabled()))
             {
-                logger.debug("Visitors are disabled, not redirecting.");
+                logger.warn("Visitors are disabled, not redirecting.");
+                return null;
             }
         }
         if (VisitorsConfig.config.getRequireMucConfigFlag())
