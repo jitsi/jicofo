@@ -103,6 +103,7 @@ class FocusManager(
             val existingConference = conferences[room]
             conference = existingConference ?: createConference(room, properties, loggingLevel, includeInStatistics)
             isConferenceCreator = existingConference == null
+            if (!isConferenceCreator) conference.rescheduleConferenceStartTimeout()
         }
         try {
             if (isConferenceCreator) {

@@ -183,6 +183,8 @@ public class JitsiMeetConferenceImpl
      */
     private Future<?> conferenceStartTimeout;
 
+    private final Object conferenceStartTimeoutLock = new Object();
+
     /**
      * Reconnect timer. Used to stop the conference if XMPP connection is not restored in a given time.
      */
@@ -304,7 +306,7 @@ public class JitsiMeetConferenceImpl
         this.jicofoServices = jicofoServices;
         this.jvbVersion = jvbVersion;
 
-        rescheduleConferenceStartTimeout();
+        scheduleConferenceStartTimeout();
 
         visitorCodecs = new PreferenceAggregator(
             logger,
@@ -784,11 +786,7 @@ public class JitsiMeetConferenceImpl
 
         synchronized (participantLock)
         {
-            if (conferenceStartTimeout != null)
-            {
-                conferenceStartTimeout.cancel(true);
-                conferenceStartTimeout = null;
-            }
+            cancelConferenceStartTimeout();
             // Make sure it's still a member of the room.
             if (chatRoomMember.getChatRoom().getChatMember(chatRoomMember.getOccupantJid()) != chatRoomMember)
             {
@@ -1077,7 +1075,7 @@ public class JitsiMeetConferenceImpl
                     && BREAKOUT_SWITCHING_STATUS.equals(chatRoomMember.getPresence().getStatus()))
             {
                 logger.info("Member moving to breakout room, will not stop.");
-                rescheduleConferenceStartTimeout();
+                scheduleConferenceStartTimeout();
             }
             else
             {
@@ -2241,30 +2239,62 @@ public class JitsiMeetConferenceImpl
         logger.info("Scheduled single person timeout.");
     }
 
-    /**
-     * (Re)schedules conference start timeout.
-     */
-    private void rescheduleConferenceStartTimeout()
+    private void cancelConferenceStartTimeout()
     {
-        conferenceStartTimeout = TaskPools.getScheduledPool().schedule(
-                () ->
-                {
-                    if (includeInStatistics)
-                    {
-                        logger.info("Expiring due to initial timeout.");
-                    }
+        synchronized (conferenceStartTimeoutLock)
+        {
+            if (conferenceStartTimeout != null)
+            {
+                conferenceStartTimeout.cancel(true);
+                conferenceStartTimeout = null;
+            }
+        }
+    }
 
-                    // in case of last participant leaving to join a breakout room, we want to skip destroy
-                    if (jicofoServices.getFocusManager().hasBreakoutRooms(roomName))
-                    {
-                        logger.info("Breakout rooms present, will not stop.");
-                        return;
-                    }
+    /**
+     * If there is a scheduled "conference start" timeout, cancel it and re-schedule with the configured delay. If
+     * there isn't one scheduled, doesn't do anything.
+     */
+    public void rescheduleConferenceStartTimeout()
+    {
+        synchronized (conferenceStartTimeoutLock)
+        {
+            if (conferenceStartTimeout != null)
+            {
+                cancelConferenceStartTimeout();
+                scheduleConferenceStartTimeout();
+            }
+        }
+    }
 
-                    stop();
-                },
-                ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
-                TimeUnit.MILLISECONDS);
+    /**
+     * Schedules conference start timeout.
+     */
+    private void scheduleConferenceStartTimeout()
+    {
+        synchronized (conferenceStartTimeoutLock)
+        {
+            cancelConferenceStartTimeout();
+            conferenceStartTimeout = TaskPools.getScheduledPool().schedule(
+                    () ->
+                    {
+                        if (includeInStatistics)
+                        {
+                            logger.info("Expiring due to initial timeout.");
+                        }
+
+                        // in case of last participant leaving to join a breakout room, we want to skip destroy
+                        if (jicofoServices.getFocusManager().hasBreakoutRooms(roomName))
+                        {
+                            logger.info("Breakout rooms present, will not stop.");
+                            return;
+                        }
+
+                        stop();
+                    },
+                    ConferenceConfig.config.getConferenceStartTimeout().toMillis(),
+                    TimeUnit.MILLISECONDS);
+        }
     }
 
     /** Called when a new visitor has been added to the conference. */
