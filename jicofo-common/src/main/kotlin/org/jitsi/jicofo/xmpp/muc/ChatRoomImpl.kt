@@ -44,7 +44,6 @@ import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
-import org.jivesoftware.smackx.muc.MucConfigFormManager
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -374,6 +373,8 @@ class ChatRoomImpl(
     }
 
     private fun doSetRoomMetadata(roomMetadata: RoomMetadata) {
+        logger.info("Setting room metadata: $roomMetadata")
+        lobbyEnabled = roomMetadata.metadata?.lobbyEnabled == true
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
         moderators = roomMetadata.metadata?.moderators ?: emptyList()
         participants = roomMetadata.metadata?.participants
@@ -399,8 +400,6 @@ class ChatRoomImpl(
 
     /** Read the fields we care about from [configForm] and update local state. */
     private fun parseConfigForm(configForm: Form) {
-        lobbyEnabled =
-            configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
         // We read these fields from both the config form (for backwards compatibility) and the room metadata. Only
         // override if they are set.
         configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.let {
