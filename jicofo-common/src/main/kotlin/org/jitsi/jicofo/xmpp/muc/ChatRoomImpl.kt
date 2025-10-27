@@ -675,9 +675,6 @@ class ChatRoomImpl(
         }
     }
 
-    override fun reloadConfiguration() {
-    }
-
     override fun queueXmppTask(runnable: () -> Unit) = xmppTaskQueue.add(runnable)
 
     private object MucConfigFields {

@@ -96,7 +96,6 @@ class XmppServices(
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
     val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)
-    val configurationChangeHandler = ConfigurationChangeHandler(clientConnection, conferenceStore)
     val roomMetadataHandler = RoomMetadataHandler(clientConnection, conferenceStore)
     private val audioMuteHandler = AudioMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
     private val videoMuteHandler = VideoMuteIqHandler(setOf(clientConnection.xmppConnection), conferenceStore)
@@ -139,7 +138,6 @@ class XmppServices(
         desktopMuteHandler.shutdown()
         avModerationHandler.shutdown()
         roomMetadataHandler.shutdown()
-        configurationChangeHandler.shutdown()
         jingleHandler.shutdown()
 
         clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
