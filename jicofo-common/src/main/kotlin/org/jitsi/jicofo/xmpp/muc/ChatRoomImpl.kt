@@ -44,7 +44,6 @@ import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
-import org.jivesoftware.smackx.muc.MucConfigFormManager
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -53,7 +52,6 @@ import org.jivesoftware.smackx.muc.packet.MUCAdmin
 import org.jivesoftware.smackx.muc.packet.MUCInitialPresence
 import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
-import org.jivesoftware.smackx.xdata.form.Form
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -333,7 +331,6 @@ class ChatRoomImpl(
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
         val config = muc.configurationForm
-        parseConfigForm(config)
 
         // Make the room non-anonymous, so that others can recognize focus JID
         val answer = config.fillableForm
@@ -374,6 +371,8 @@ class ChatRoomImpl(
     }
 
     private fun doSetRoomMetadata(roomMetadata: RoomMetadata) {
+        logger.info("Setting room metadata: $roomMetadata")
+        lobbyEnabled = roomMetadata.metadata?.lobbyEnabled == true
         visitorsLive = roomMetadata.metadata?.visitors?.live == true
         moderators = roomMetadata.metadata?.moderators ?: emptyList()
         participants = roomMetadata.metadata?.participants
@@ -395,20 +394,6 @@ class ChatRoomImpl(
             )
         }
         roomMetadataLatch.countDown()
-    }
-
-    /** Read the fields we care about from [configForm] and update local state. */
-    private fun parseConfigForm(configForm: Form) {
-        lobbyEnabled =
-            configForm.getField(MucConfigFormManager.MUC_ROOMCONFIG_MEMBERSONLY)?.firstValue?.toBoolean() ?: false
-        // We read these fields from both the config form (for backwards compatibility) and the room metadata. Only
-        // override if they are set.
-        configForm.getField(MucConfigFields.VISITORS_ENABLED)?.firstValue?.let {
-            visitorsEnabled = it.toBoolean()
-        }
-        configForm.getField(MucConfigFields.PARTICIPANTS_SOFT_LIMIT)?.firstValue?.let {
-            participantsSoftLimit = it.toInt()
-        }
     }
 
     override fun leave() {
@@ -690,14 +675,6 @@ class ChatRoomImpl(
         }
     }
 
-    override fun reloadConfiguration() {
-        if (muc.isJoined) {
-            // Request the form from the MUC service.
-            val config = muc.configurationForm
-            parseConfigForm(config)
-        }
-    }
-
     override fun queueXmppTask(runnable: () -> Unit) = xmppTaskQueue.add(runnable)
 
     private object MucConfigFields {
@@ -705,8 +682,6 @@ class ChatRoomImpl(
         const val MAIN_ROOM = "muc#roominfo_breakout_main_room"
         const val MEETING_ID = "muc#roominfo_meetingId"
         const val WHOIS = "muc#roomconfig_whois"
-        const val PARTICIPANTS_SOFT_LIMIT = "muc#roominfo_participantsSoftLimit"
-        const val VISITORS_ENABLED = "muc#roominfo_visitorsEnabled"
         const val CONFERENCE_PRESET_ENABLED = "muc#roominfo_conference_presets_service_enabled"
     }
 

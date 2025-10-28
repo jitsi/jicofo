@@ -156,9 +156,6 @@ interface ChatRoom {
     /** whether the current A/V moderation setting allow the member [jid] to unmute (for a specific [mediaType]). */
     fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean
 
-    /** Re-load the MUC configuration form, updating local state if relevant fields have changed. */
-    fun reloadConfiguration()
-
     /** Notify the chatroom that a visitor has been redirected to this room.
      */
     fun visitorInvited()
