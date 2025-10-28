@@ -73,8 +73,7 @@ class ChatRoomImpl(
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
-    private val logger = createLogger().apply {
-        logLevel?.let { level = it }
+    private val logger = createLogger(minLogLevel = logLevel ?: Level.ALL).apply {
         addContext("room", roomJid.toString())
     }
 
