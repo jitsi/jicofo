@@ -895,11 +895,7 @@ public class JitsiMeetConferenceImpl
             boolean added = (participants.put(chatRoomMember.getOccupantJid(), participant) == null);
             if (added)
             {
-                if (participant.isUserParticipant())
-                {
-                    userParticipantAdded();
-                }
-                else if (participant.getChatMember().getRole() == MemberRole.VISITOR)
+                if (participant.getChatMember().getRole() == MemberRole.VISITOR)
                 {
                     visitorAdded(participant.getChatMember().getVideoCodecs());
                 }
@@ -1123,11 +1119,7 @@ public class JitsiMeetConferenceImpl
                 {
                     ConferenceMetrics.endpointSeconds.addAndGet(participant.durationSeconds());
                 }
-                if (removed.isUserParticipant())
-                {
-                    userParticipantRemoved();
-                }
-                else if (removed.getChatMember().getRole() == MemberRole.VISITOR)
+                if (removed.getChatMember().getRole() == MemberRole.VISITOR)
                 {
                     visitorRemoved(removed.getChatMember().getVideoCodecs());
                 }
@@ -1940,42 +1932,22 @@ public class JitsiMeetConferenceImpl
         return null;
     }
 
-    private long userParticipantCount = 0;
-
-    private void userParticipantAdded()
-    {
-        synchronized (participantLock)
-        {
-            userParticipantCount++;
-        }
-    }
-
-    private void userParticipantRemoved()
-    {
-        synchronized(participantLock)
-        {
-            if (userParticipantCount <= 0)
-            {
-                logger.error("userParticipantCount out of sync - trying to reduce when value is " +
-                    userParticipantCount);
-            }
-            else
-            {
-                userParticipantCount--;
-            }
-        }
-    }
-
     /**
-     * Get the number of participants for the purpose of visitor node selection. Exclude participants for jibri and
-     * transcribers, because they shouldn't count towards the max participant limit.
+     * Get the number of participants in the main room for the purpose of visitor node selection. Exclude participants
+     * for jibri and transcribers, because they shouldn't count towards the max participant limit.
      */
     private long getUserParticipantCount()
     {
-        synchronized (participantLock)
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom == null)
         {
-            return userParticipantCount;
+            return 0;
         }
+
+        return chatRoom.getMembers()
+                .stream()
+                .filter(m -> !m.isJibri() && !m.isTranscriber())
+                .count();
     }
 
     /**

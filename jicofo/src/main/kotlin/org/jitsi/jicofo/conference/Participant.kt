@@ -135,13 +135,6 @@ open class Participant @JvmOverloads constructor(
     private val signalQueuedSourcesTaskSyncRoot = Any()
 
     /**
-     * Whether this participant is a "user participant" for the purposes of
-     * [JitsiMeetConferenceImpl.getUserParticipantCount].
-     * Needs to be unchanging so counts don't get out of sync.
-     */
-    val isUserParticipant = !chatMember.isJibri && !chatMember.isTranscriber && chatMember.role != MemberRole.VISITOR
-
-    /**
      * Replaces the channel allocator thread, which is currently allocating channels for this participant (if any)
      * with the specified channel allocator (if any).
      * @param inviteRunnable the channel allocator to set, or `null` to clear it.
