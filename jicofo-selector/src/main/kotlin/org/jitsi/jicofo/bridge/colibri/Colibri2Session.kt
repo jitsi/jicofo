@@ -583,7 +583,7 @@ private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoi
 
 private fun createConnect(url: URI) = Connect(
     url = url,
-    type = Connect.Types.RECORDER,
+    type = Connect.Types.TRANSCRIBER,
     protocol = Connect.Protocols.MEDIAJSON,
     audio = true
 )
