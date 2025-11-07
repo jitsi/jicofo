@@ -87,6 +87,17 @@ class ConferenceIqHandler(
             to = query.from
             this.room = query.room
             focusJid = focusAuthJid
+
+            if (authAuthority != null) {
+                addProperty(ConferenceIq.Property("authentication", "true"))
+                addProperty(ConferenceIq.Property("externalAuth", authAuthority.isExternal.toString()))
+            } else {
+                addProperty(ConferenceIq.Property("authentication", "false"))
+            }
+
+            if (jigasiEnabled) {
+                addProperty(ConferenceIq.Property("sipGatewayEnabled", "true"))
+            }
         }
 
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
@@ -166,17 +177,6 @@ class ConferenceIqHandler(
             }
         }
 
-        // Authentication module enabled?
-        if (authAuthority != null) {
-            response.addProperty(ConferenceIq.Property("authentication", "true"))
-            response.addProperty(ConferenceIq.Property("externalAuth", authAuthority.isExternal.toString()))
-        } else {
-            response.addProperty(ConferenceIq.Property("authentication", "false"))
-        }
-
-        if (jigasiEnabled) {
-            response.addProperty(ConferenceIq.Property("sipGatewayEnabled", "true"))
-        }
         return response
     }
 
