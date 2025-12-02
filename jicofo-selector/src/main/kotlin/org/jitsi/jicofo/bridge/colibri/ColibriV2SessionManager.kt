@@ -290,7 +290,7 @@ class ColibriV2SessionManager(
                 } else {
                     // Use the first session.
                     transcriberSession = sessions.values.first()
-                    logger.info("Using ${transcriberSession?.id} for transcribing")
+                    logger.info("Using ${transcriberSession?.bridge} for transcribing")
                     transcriberSession?.setTranscriberUrl(url)
                 }
             }
