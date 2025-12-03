@@ -202,7 +202,7 @@ class Colibri2Session(
             transcriberUrl?.let {
                 val url = resolveTranscriberUrl(it)
                 logger.info("Adding connect for transcriber, url=$url")
-                addConnect(createConnect(url))
+                addConnect(createConnect(url, TranscriptionConfig.config.httpHeaders))
             }
         }
     }
@@ -218,7 +218,7 @@ class Colibri2Session(
             if (urlTemplate != null) {
                 val url = resolveTranscriberUrl(urlTemplate)
                 logger.info("Adding connect, url=$url")
-                request.addConnect(createConnect(url))
+                request.addConnect(createConnect(url, TranscriptionConfig.config.httpHeaders))
             } else {
                 logger.info("Removing connects")
                 request.setEmptyConnects()
@@ -581,9 +581,13 @@ private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoi
     }.build()
 )
 
-private fun createConnect(url: URI) = Connect(
+private fun createConnect(url: URI, httpHeaders: Map<String, String> = emptyMap()) = Connect(
     url = url,
     type = Connect.Types.TRANSCRIBER,
     protocol = Connect.Protocols.MEDIAJSON,
     audio = true
-)
+).apply {
+    httpHeaders.forEach { (name, value) ->
+        addHttpHeader(name, value)
+    }
+}

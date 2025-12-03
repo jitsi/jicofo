@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import com.typesafe.config.ConfigObject
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.TemplatedUrl
@@ -33,6 +34,18 @@ class TranscriptionConfig private constructor() {
             it
         }
     }
+
+    private val httpHeadersProp: Map<String, String>? by optionalconfig {
+        "jicofo.transcription.http-headers".from(JitsiConfig.newConfig)
+            .convertFrom<ConfigObject> { cfg ->
+                cfg.entries.associate { entry ->
+                    entry.key to entry.value.unwrapped().toString()
+                }
+            }
+    }
+
+    val httpHeaders: Map<String, String>
+        get() = httpHeadersProp ?: emptyMap()
 
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
         TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
