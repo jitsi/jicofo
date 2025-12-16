@@ -202,7 +202,15 @@ class Colibri2Session(
             transcriberUrl?.let {
                 val url = resolveTranscriberUrl(it)
                 logger.info("Adding connect for transcriber, url=$url")
-                addConnect(createConnect(url, TranscriptionConfig.config.httpHeaders))
+                addConnect(
+                    createConnect(
+                        url,
+                        TranscriptionConfig.config.httpHeaders,
+                        TranscriptionConfig.config.pingEnabled,
+                        TranscriptionConfig.config.pingInterval.toMillis().toInt(),
+                        TranscriptionConfig.config.pingTimeout.toMillis().toInt()
+                    )
+                )
             }
         }
     }
@@ -218,7 +226,15 @@ class Colibri2Session(
             if (urlTemplate != null) {
                 val url = resolveTranscriberUrl(urlTemplate)
                 logger.info("Adding connect, url=$url")
-                request.addConnect(createConnect(url, TranscriptionConfig.config.httpHeaders))
+                request.addConnect(
+                    createConnect(
+                        url,
+                        TranscriptionConfig.config.httpHeaders,
+                        TranscriptionConfig.config.pingEnabled,
+                        TranscriptionConfig.config.pingInterval.toMillis().toInt(),
+                        TranscriptionConfig.config.pingTimeout.toMillis().toInt()
+                    )
+                )
             } else {
                 logger.info("Removing connects")
                 request.setEmptyConnects()
@@ -581,7 +597,13 @@ private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoi
     }.build()
 )
 
-private fun createConnect(url: URI, httpHeaders: Map<String, String> = emptyMap()) = Connect(
+private fun createConnect(
+    url: URI,
+    httpHeaders: Map<String, String> = emptyMap(),
+    pingEnabled: Boolean = false,
+    pingInterval: Int = 0,
+    pingTimeout: Int = 0
+) = Connect(
     url = url,
     type = Connect.Types.TRANSCRIBER,
     protocol = Connect.Protocols.MEDIAJSON,
@@ -589,5 +611,8 @@ private fun createConnect(url: URI, httpHeaders: Map<String, String> = emptyMap(
 ).apply {
     httpHeaders.forEach { (name, value) ->
         addHttpHeader(name, value)
+    }
+    if (pingEnabled) {
+        setPing(pingInterval, pingTimeout)
     }
 }

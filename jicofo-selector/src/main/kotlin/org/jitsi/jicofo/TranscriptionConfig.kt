@@ -19,9 +19,11 @@ package org.jitsi.jicofo
 
 import com.typesafe.config.ConfigObject
 import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
+import java.time.Duration
 
 class TranscriptionConfig private constructor() {
     val logger = createLogger()
@@ -46,6 +48,18 @@ class TranscriptionConfig private constructor() {
 
     val httpHeaders: Map<String, String>
         get() = httpHeadersProp ?: emptyMap()
+
+    val pingEnabled: Boolean by config {
+        "jicofo.transcription.ping.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val pingInterval: Duration by config {
+        "jicofo.transcription.ping.interval".from(JitsiConfig.newConfig)
+    }
+
+    val pingTimeout: Duration by config {
+        "jicofo.transcription.ping.timeout".from(JitsiConfig.newConfig)
+    }
 
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
         TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
