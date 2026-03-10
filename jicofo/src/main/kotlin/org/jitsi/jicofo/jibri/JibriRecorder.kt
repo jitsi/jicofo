@@ -59,9 +59,7 @@ class JibriRecorder(
     private var jibriSession: JibriSession? = null
 
     fun shutdown() {
-        jibriSession?.let {
-            TaskPools.ioPool.submit { it.stop(null) }
-        }
+        jibriSession?.stop(null)
         jibriSession = null
     }
 

@@ -333,7 +333,10 @@ public class JibriSession
     }
 
     /**
-     * Stops this session if it's not already stopped.
+     * Stops this session if it's not already stopped. Sends a stop IQ to the jibri instance and immediately
+     * cleans up without waiting for or processing any response. This prevents any retry logic from being
+     * triggered and ensures back references are broken immediately.
+     *
      * @param initiator The jid of the initiator of the stop request.
      */
     synchronized public void stop(Jid initiator)
@@ -344,47 +347,40 @@ public class JibriSession
         }
         this.terminator = initiator;
 
-        JibriIq stopRequest = new JibriIq();
+        logger.info("Stopping session for room: " + roomName);
 
+        // Remove the detector event handler immediately to prevent any presence/offline events from
+        // triggering retry logic
+        jibriDetector.removeHandler(jibriEventHandler);
+
+        // Clear the pending timeout task
+        clearPendingTimeout(true);
+
+        // Send a fire-and-forget stop IQ to the jibri instance
+        JibriIq stopRequest = new JibriIq();
         stopRequest.setType(IQ.Type.set);
         stopRequest.setTo(currentJibriJid);
         stopRequest.setAction(JibriIq.Action.STOP);
         stopRequest.setSessionId(this.sessionId);
 
-        logger.info("Trying to stop: " + stopRequest.toXML());
+        logger.info("Sending stop IQ (fire-and-forget): " + stopRequest.toXML());
 
-        SmackFuture<IQ, Exception> future =
-            jibriDetector.getXmppConnection().sendIqRequestAsync(stopRequest, 60000);
-
-        future.onSuccess(stanza ->
+        try
         {
-            if (stanza instanceof JibriIq)
-            {
-                processJibriIqFromJibri((JibriIq) stanza);
-            }
-            else
-            {
-                logger.error(
-                    "Unexpected response to stop iq: "
-                        + (stanza != null ? stanza.toXML() : "null"));
-                stopError(stopRequest.getTo());
-            }
-        }).onError(exception ->
+            jibriDetector.getXmppConnection().trySendStanza(stopRequest);
+        }
+        catch (Exception e)
         {
-            logger.error("Error from stop request: " + exception.toString());
-            stopError(stopRequest.getTo());
-        });
-    }
+            logger.warn("Failed to send stop IQ: " + e);
+        }
 
-    private void stopError(Jid jibriJid)
-    {
-        JibriIq error = new JibriIq();
+        // Immediately notify the listener that the session is stopped (this will publish status to MUC for
+        // user-initiated stops, or be a no-op for conference shutdown since jibriSession is set to null)
+        dispatchSessionStateChanged(Status.OFF, null);
 
-        error.setFrom(jibriJid);
-        error.setFailureReason(FailureReason.ERROR);
-        error.setStatus(Status.OFF);
-
-        processJibriIqFromJibri(error);
+        // Clean up immediately - this makes any in-flight callbacks from previous operations ignore this session
+        currentJibriJid = null;
+        numRetries = 0;
     }
 
     private void cleanupSession()
