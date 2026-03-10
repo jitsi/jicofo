@@ -18,7 +18,6 @@
 package org.jitsi.jicofo.jibri
 
 import org.apache.commons.lang3.StringUtils
-import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
