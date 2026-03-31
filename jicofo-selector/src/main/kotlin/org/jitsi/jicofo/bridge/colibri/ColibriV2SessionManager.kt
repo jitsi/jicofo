@@ -67,7 +67,6 @@ class ColibriV2SessionManager(
      */
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
-    private var transcriberUrl: TemplatedUrl?,
     private val bridgeVersion: String?,
     parentLogger: Logger
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
@@ -79,6 +78,15 @@ class ColibriV2SessionManager(
 
     /** The session currently used for transcription, if any */
     private var transcriberSession: Colibri2Session? = null
+
+    /** The transcriber URL template */
+    private var transcriberUrl: TemplatedUrl? = null
+
+    /** Custom HTTP headers for transcription */
+    private var transcriberCustomHeaders: Map<String, String>? = null
+
+    /** Custom URL parameters for transcription */
+    private var transcriberUrlParams: Map<String, String>? = null
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -149,8 +157,11 @@ class ColibriV2SessionManager(
             transcriberSession = null
             transcriberUrl?.let {
                 // Trigger selection of a new session for transcribing.
+                val savedUrl = it
+                val savedHeaders = transcriberCustomHeaders
+                val savedParams = transcriberUrlParams
                 transcriberUrl = null
-                setTranscriberUrl(it)
+                setTranscriberUrl(savedUrl, savedHeaders, savedParams)
             }
         }
         return participants.toSet()
@@ -269,7 +280,11 @@ class ColibriV2SessionManager(
             return Pair(session, true)
         }
 
-    override fun setTranscriberUrl(url: TemplatedUrl?) = synchronized(syncRoot) {
+    override fun setTranscriberUrl(
+        url: TemplatedUrl?,
+        customHeaders: Map<String, String>?,
+        urlParams: Map<String, String>?
+    ) = synchronized(syncRoot) {
         if (transcriberUrl == url) {
             return
         }
@@ -280,10 +295,12 @@ class ColibriV2SessionManager(
 
         val enable = url != null
         transcriberUrl = url
+        transcriberCustomHeaders = customHeaders
+        transcriberUrlParams = urlParams
 
         if (enable) {
             if (transcriberSession != null) {
-                transcriberSession?.setTranscriberUrl(url)
+                transcriberSession?.setTranscriberUrl(url, customHeaders, urlParams)
             } else {
                 if (sessions.isEmpty()) {
                     logger.info("No session available for transcribing, will enable it once a session is created")
@@ -291,11 +308,11 @@ class ColibriV2SessionManager(
                     // Use the first session.
                     transcriberSession = sessions.values.first()
                     logger.info("Using ${transcriberSession?.bridge} for transcribing")
-                    transcriberSession?.setTranscriberUrl(url)
+                    transcriberSession?.setTranscriberUrl(url, customHeaders, urlParams)
                 }
             }
         } else {
-            transcriberSession?.setTranscriberUrl(null)
+            transcriberSession?.setTranscriberUrl(null, null, null)
             transcriberSession = null
         }
 

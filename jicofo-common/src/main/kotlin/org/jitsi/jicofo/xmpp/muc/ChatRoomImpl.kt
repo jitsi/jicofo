@@ -193,6 +193,10 @@ class ChatRoomImpl(
             }
         }
 
+    /** Transcription configuration from room metadata. */
+    override var transcription: RoomMetadata.Metadata.Transcription? = null
+        private set
+
     /**
      * List of user IDs which the room is configured to allow to be moderators.
      */
@@ -386,6 +390,7 @@ class ChatRoomImpl(
         roomMetadata.metadata?.startMuted?.let {
             eventEmitter.fireEvent { startMutedChanged(it.audio == true, it.video == true) }
         }
+        transcription = roomMetadata.metadata?.transcription
         eventEmitter.fireEvent {
             transcribingEnabledChanged(
                 roomMetadata.metadata?.recording?.isTranscribingEnabled == true &&

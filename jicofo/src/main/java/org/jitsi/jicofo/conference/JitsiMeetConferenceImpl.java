@@ -357,10 +357,26 @@ public class JitsiMeetConferenceImpl
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
-                    enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null,
                     jvbVersion,
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
+
+            // Configure transcription if enabled, including custom headers and URL params
+            if (enableTranscription)
+            {
+                TemplatedUrl uri = TranscriptionConfig.config.getUrl(meetingId);
+                if (uri != null)
+                {
+                    Pair<Map<String, String>, Map<String, String>> transcriptionParams =
+                        TranscriptionConfig.processTranscriptionMetadata(
+                            chatRoom != null ? chatRoom.getTranscription() : null,
+                            TranscriptionConfig.config.getHttpHeaders());
+                    colibriSessionManager.setTranscriberUrl(
+                        uri,
+                        transcriptionParams.getFirst(),
+                        transcriptionParams.getSecond());
+                }
+            }
         }
         return colibriSessionManager;
     }
@@ -2405,7 +2421,16 @@ public class JitsiMeetConferenceImpl
             return;
         }
 
-        colibriSessionManager.setTranscriberUrl(uri);
+        Pair<Map<String, String>, Map<String, String>> transcriptionParams = enable && chatRoom != null
+            ? TranscriptionConfig.processTranscriptionMetadata(
+                chatRoom.getTranscription(),
+                TranscriptionConfig.config.getHttpHeaders())
+            : new Pair<>(null, null);
+
+        colibriSessionManager.setTranscriberUrl(
+            uri,
+            transcriptionParams.getFirst(),
+            transcriptionParams.getSecond());
     }
 
     /**
