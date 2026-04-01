@@ -80,6 +80,7 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         val participantsSoftLimit: Int? = null,
         val visitorsEnabled: Boolean? = null,
         val lobbyEnabled: Boolean? = null,
+        val transcription: Transcription? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
@@ -89,6 +90,12 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Recording(val isTranscribingEnabled: Boolean?)
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Transcription(
+            val urlParams: Map<String, String>? = null,
+            val httpHeaders: Map<String, String>? = null
+        )
     }
 
     companion object {

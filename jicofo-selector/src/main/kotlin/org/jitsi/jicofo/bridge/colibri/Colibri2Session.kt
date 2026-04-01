@@ -219,17 +219,30 @@ class Colibri2Session(
         return urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, bridge.region ?: "")
     }
 
-    fun setTranscriberUrl(urlTemplate: TemplatedUrl?) {
+    fun setTranscriberUrl(
+        urlTemplate: TemplatedUrl?,
+        customHeaders: Map<String, String>?,
+        urlParams: Map<String, String>?
+    ) {
         if (transcriberUrl != urlTemplate) {
             transcriberUrl = urlTemplate
             val request = createRequest(create = false)
             if (urlTemplate != null) {
-                val url = resolveTranscriberUrl(urlTemplate)
+                var url = resolveTranscriberUrl(urlTemplate)
+                // Append URL params if provided
+                if (urlParams != null && urlParams.isNotEmpty()) {
+                    val queryString = urlParams.entries.joinToString("&") { (key, value) ->
+                        "${java.net.URLEncoder.encode(key, "UTF-8")}=${java.net.URLEncoder.encode(value, "UTF-8")}"
+                    }
+                    val separator = if (url.query == null) "?" else "&"
+                    url = java.net.URI(url.toString() + separator + queryString)
+                }
+                val headers = customHeaders ?: TranscriptionConfig.config.httpHeaders
                 logger.info("Adding connect, url=$url")
                 request.addConnect(
                     createConnect(
                         url,
-                        TranscriptionConfig.config.httpHeaders,
+                        headers,
                         TranscriptionConfig.config.pingEnabled,
                         TranscriptionConfig.config.pingInterval.toMillis().toInt(),
                         TranscriptionConfig.config.pingTimeout.toMillis().toInt()

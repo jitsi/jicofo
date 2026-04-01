@@ -73,5 +73,34 @@ class TranscriptionConfig private constructor() {
 
         const val MEETING_ID_TEMPLATE = "MEETING_ID"
         const val REGION_TEMPLATE = "REGION"
+
+        /**
+         * Process transcription metadata to extract custom headers and URL params.
+         * Merges custom headers with base headers, with custom headers taking precedence.
+         *
+         * @param transcription The transcription metadata from room metadata
+         * @param baseHeaders The base headers from configuration
+         * @return A Pair of (merged headers, url params), where either can be null
+         */
+        @JvmStatic
+        fun processTranscriptionMetadata(
+            transcription: org.jitsi.jicofo.xmpp.RoomMetadata.Metadata.Transcription?,
+            baseHeaders: Map<String, String>
+        ): Pair<Map<String, String>?, Map<String, String>?> {
+            if (transcription == null) {
+                return Pair(null, null)
+            }
+
+            val customHeaders = transcription.httpHeaders
+            val mergedHeaders = if (customHeaders != null) {
+                baseHeaders.toMutableMap().apply {
+                    putAll(customHeaders)
+                }
+            } else {
+                null
+            }
+
+            return Pair(mergedHeaders, transcription.urlParams)
+        }
     }
 }
