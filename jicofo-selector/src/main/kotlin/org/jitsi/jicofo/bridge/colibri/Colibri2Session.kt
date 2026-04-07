@@ -60,7 +60,9 @@ class Colibri2Session(
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
     private var transcriberUrl: TemplatedUrl?,
-    parentLogger: Logger
+    parentLogger: Logger,
+    private var transcriberCustomHeaders: Map<String, String>? = null,
+    private var transcriberUrlParams: Map<String, String>? = null
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
@@ -200,12 +202,21 @@ class Colibri2Session(
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
             transcriberUrl?.let {
-                val url = resolveTranscriberUrl(it)
+                var url = resolveTranscriberUrl(it)
+                val urlParams = transcriberUrlParams
+                if (urlParams != null && urlParams.isNotEmpty()) {
+                    val queryString = urlParams.entries.joinToString("&") { (key, value) ->
+                        "${java.net.URLEncoder.encode(key, "UTF-8")}=${java.net.URLEncoder.encode(value, "UTF-8")}"
+                    }
+                    val separator = if (url.query == null) "?" else "&"
+                    url = java.net.URI(url.toString() + separator + queryString)
+                }
+                val headers = transcriberCustomHeaders ?: TranscriptionConfig.config.httpHeaders
                 logger.info("Adding connect for transcriber, url=$url")
                 addConnect(
                     createConnect(
                         url,
-                        TranscriptionConfig.config.httpHeaders,
+                        headers,
                         TranscriptionConfig.config.pingEnabled,
                         TranscriptionConfig.config.pingInterval.toMillis().toInt(),
                         TranscriptionConfig.config.pingTimeout.toMillis().toInt()
@@ -226,6 +237,8 @@ class Colibri2Session(
     ) {
         if (transcriberUrl != urlTemplate) {
             transcriberUrl = urlTemplate
+            transcriberCustomHeaders = customHeaders
+            transcriberUrlParams = urlParams
             val request = createRequest(create = false)
             if (urlTemplate != null) {
                 var url = resolveTranscriberUrl(urlTemplate)
