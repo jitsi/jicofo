@@ -20,6 +20,7 @@ package org.jitsi.jicofo
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.config.withNewConfig
+import org.jitsi.jicofo.xmpp.RoomMetadata
 import java.time.Duration
 
 class TranscriptionConfigTest : ShouldSpec() {
@@ -102,6 +103,68 @@ class TranscriptionConfigTest : ShouldSpec() {
                         "Content-Type" to "application/json"
                     )
                 }
+            }
+        }
+
+        context("processTranscriptionMetadata") {
+            val baseHeaders = mapOf("Base-Header" to "base-value", "Shared-Header" to "base-shared")
+
+            context("With null transcription") {
+                val (headers, params) = TranscriptionConfig.processTranscriptionMetadata(null, baseHeaders)
+                should("return null headers") { headers shouldBe null }
+                should("return null params") { params shouldBe null }
+            }
+
+            context("With transcription having no headers or params") {
+                val (headers, params) = TranscriptionConfig.processTranscriptionMetadata(
+                    RoomMetadata.Metadata.Transcription(),
+                    baseHeaders
+                )
+                should("return null headers") { headers shouldBe null }
+                should("return null params") { params shouldBe null }
+            }
+
+            context("With URL params only") {
+                val urlParams = mapOf("key1" to "value1", "key2" to "value2")
+                val (headers, params) = TranscriptionConfig.processTranscriptionMetadata(
+                    RoomMetadata.Metadata.Transcription(urlParams = urlParams),
+                    baseHeaders
+                )
+                should("return null headers") { headers shouldBe null }
+                should("return the URL params") { params shouldBe urlParams }
+            }
+
+            context("With custom headers only") {
+                val customHeaders = mapOf("X-Custom" to "custom-value", "Shared-Header" to "custom-shared")
+                val (headers, params) = TranscriptionConfig.processTranscriptionMetadata(
+                    RoomMetadata.Metadata.Transcription(httpHeaders = customHeaders),
+                    baseHeaders
+                )
+                should("return merged headers with custom taking precedence") {
+                    headers shouldBe mapOf(
+                        "Base-Header" to "base-value",
+                        "Shared-Header" to "custom-shared",
+                        "X-Custom" to "custom-value"
+                    )
+                }
+                should("return null params") { params shouldBe null }
+            }
+
+            context("With both custom headers and URL params") {
+                val customHeaders = mapOf("X-Custom" to "custom-value")
+                val urlParams = mapOf("param1" to "v1")
+                val (headers, params) = TranscriptionConfig.processTranscriptionMetadata(
+                    RoomMetadata.Metadata.Transcription(urlParams = urlParams, httpHeaders = customHeaders),
+                    baseHeaders
+                )
+                should("return merged headers") {
+                    headers shouldBe mapOf(
+                        "Base-Header" to "base-value",
+                        "Shared-Header" to "base-shared",
+                        "X-Custom" to "custom-value"
+                    )
+                }
+                should("return URL params") { params shouldBe urlParams }
             }
         }
 

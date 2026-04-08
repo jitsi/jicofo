@@ -272,7 +272,9 @@ class ColibriV2SessionManager(
                 bridge,
                 visitor,
                 if (enableTranscriber) transcriberUrl else null,
-                logger
+                logger,
+                if (enableTranscriber) transcriberCustomHeaders else null,
+                if (enableTranscriber) transcriberUrlParams else null
             )
             if (enableTranscriber) {
                 transcriberSession = session
