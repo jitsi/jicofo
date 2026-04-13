@@ -79,11 +79,6 @@
     </dependency>
     <!-- runtime -->
     <dependency>
-      <groupId>rusv</groupId>
-      <artifactId>agafua-syslog</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
       <groupId>io.sentry</groupId>
       <artifactId>sentry</artifactId>
       <scope>runtime</scope>
