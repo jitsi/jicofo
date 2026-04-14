@@ -146,11 +146,11 @@ class CodecUtilTest : ShouldSpec() {
             context("MID") {
                 val midUri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
 
-                CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
-                CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
-                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=true") {
-                    CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
-                    CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
+                CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
+                CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
+                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=false") {
+                    CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
+                    CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
                 }
             }
             context("TCC") {
