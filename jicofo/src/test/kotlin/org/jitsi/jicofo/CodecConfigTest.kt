@@ -73,7 +73,7 @@ class CodecConfigTest : ShouldSpec() {
             config.audioLevel.enabled shouldBe true
             config.audioLevel.id shouldBe 1
 
-            config.mid.enabled shouldBe false
+            config.mid.enabled shouldBe true
             config.mid.id shouldBe 10
 
             config.av1DependencyDescriptor.enabled shouldBe true
