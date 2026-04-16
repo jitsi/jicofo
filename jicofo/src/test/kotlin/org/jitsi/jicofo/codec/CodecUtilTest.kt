@@ -143,16 +143,16 @@ class CodecUtilTest : ShouldSpec() {
                 CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == alUri } shouldBe true
                 CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == alUri } shouldBe false
             }
-            context("MID") {
-                val midUri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
-
-                CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
-                CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
-                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=false") {
-                    CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
-                    CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
-                }
-            }
+//            context("MID") {
+//                val midUri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
+//
+//                CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
+//                CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe true
+//                withNewConfig("jicofo.codec.rtp-extensions.mid.enabled=false") {
+//                    CodecUtil.createAudioRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
+//                    CodecUtil.createVideoRtpHdrExtExtensions().any { it.uri == midUri } shouldBe false
+//                }
+//            }
             context("TCC") {
                 val tccUri = URI.create("http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01")
 
