@@ -190,10 +190,10 @@ class CodecUtil {
             }
             if (config.mid.enabled()) {
                 // a=extmap:10 rn:ietf:params:rtp-hdrext:sdes:mid
-                val mid = RTPHdrExtPacketExtension()
-                mid.id = config.mid.id().toString()
-                mid.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
-                add(mid)
+                //val mid = RTPHdrExtPacketExtension()
+                //mid.id = config.mid.id().toString()
+                //mid.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
+                //add(mid)
             }
             if (config.tcc.enabled() && options.tcc) {
                 // a=extmap:5 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01
@@ -235,10 +235,10 @@ class CodecUtil {
 
             if (config.mid.enabled()) {
                 // a=extmap:10 rn:ietf:params:rtp-hdrext:sdes:mid
-                val mid = RTPHdrExtPacketExtension()
-                mid.id = config.mid.id().toString()
-                mid.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
-                add(mid)
+                //val mid = RTPHdrExtPacketExtension()
+                //mid.id = config.mid.id().toString()
+                //mid.uri = URI.create("urn:ietf:params:rtp-hdrext:sdes:mid")
+                //add(mid)
             }
 
             if (config.absSendTime.enabled()) {
