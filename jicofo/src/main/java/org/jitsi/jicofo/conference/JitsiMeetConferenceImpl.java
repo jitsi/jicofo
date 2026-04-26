@@ -846,28 +846,32 @@ public class JitsiMeetConferenceImpl
             // Cancel single participant timeout when someone joins ?
             cancelSingleParticipantTimeout();
 
-            // Invite all not invited yet
             if (participants.isEmpty())
             {
-                for (final ChatRoomMember member : chatRoom.getMembers())
-                {
-                    inviteChatMember(member);
-                }
-                for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
-                {
-                    for (final ChatRoomMember member : visitorChatRoom.getMembers())
-                    {
-                        if (member.getRole() == MemberRole.VISITOR)
-                        {
-                            inviteChatMember(member);
-                        }
-                    }
-                }
+                inviteAllChatMembers();
             }
             // Only the one who has just joined
             else
             {
                 inviteChatMember(chatRoomMember);
+            }
+        }
+    }
+
+    private void inviteAllChatMembers()
+    {
+        for (final ChatRoomMember member : chatRoom.getMembers())
+        {
+            inviteChatMember(member);
+        }
+        for (final ChatRoom visitorChatRoom: visitorChatRooms.values())
+        {
+            for (final ChatRoomMember member : visitorChatRoom.getMembers())
+            {
+                if (member.getRole() == MemberRole.VISITOR)
+                {
+                    inviteChatMember(member);
+                }
             }
         }
     }
@@ -1002,6 +1006,11 @@ public class JitsiMeetConferenceImpl
             return false;
         }
         int minParticipants = ConferenceConfig.config.getMinParticipants();
+        // When transcribing is enabled, start sessions immediately without waiting for min-participants.
+        if (enableTranscription)
+        {
+            minParticipants = 1;
+        }
         int memberCount = chatRoom.getMemberCount()
                 + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum();
         return memberCount >= minParticipants;
@@ -2403,6 +2412,20 @@ public class JitsiMeetConferenceImpl
         logger.info("Setting enableTranscribing=" + enable);
         enableTranscription = enable;
         setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, enable ? "true" : "false");
+
+        // If transcription just got enabled and we have members but no invited participants yet (e.g. we were waiting
+        // for min-participants), trigger invitations now.
+        if (enable && chatRoom != null && chatRoom.getMemberCount() > 0)
+        {
+            synchronized (participantLock)
+            {
+                if (participants.isEmpty())
+                {
+                    logger.info("Transcribing enabled with existing participants, starting sessions.");
+                    inviteAllChatMembers();
+                }
+            }
+        }
 
         String meetingId = JitsiMeetConferenceImpl.this.meetingId;
         ColibriSessionManager colibriSessionManager = JitsiMeetConferenceImpl.this.colibriSessionManager;
