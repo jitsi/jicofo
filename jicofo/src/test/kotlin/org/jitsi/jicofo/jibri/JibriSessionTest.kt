@@ -78,6 +78,7 @@ class JibriSessionTest : ShouldSpec({
         "youTubeBroadcastId",
         "sessionId",
         "applicationData",
+        true,
         logger
     )
 

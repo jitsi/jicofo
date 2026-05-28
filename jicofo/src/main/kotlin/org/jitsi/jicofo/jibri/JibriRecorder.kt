@@ -108,6 +108,7 @@ class JibriRecorder(
                     config.numRetries,
                     jibriDetector,
                     false, null, iq.displayName, iq.streamId, iq.youtubeBroadcastId, sessionId, iq.appData,
+                    conference.isRtcStatsEnabled,
                     logger
                 )
                 this.jibriSession = jibriSession
