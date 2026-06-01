@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
@@ -26,9 +28,6 @@ import org.jitsi.utils.MediaType.VIDEO
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
-import org.json.simple.JSONArray
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
 
 @Suppress("NAME_SHADOWING")
 class EndpointSourceSetTest : ShouldSpec() {
@@ -92,12 +91,12 @@ class EndpointSourceSetTest : ShouldSpec() {
             }
             context("Compact JSON") {
                 // See the documentation of [EndpointSourceSet.compactJson] for the expected JSON format.
-                val json = JSONParser().parse(sourceSet.compactJson)
-                json.shouldBeInstanceOf<JSONArray>()
+                val json = jacksonObjectMapper().readTree(sourceSet.compactJson)
+                json.shouldBeInstanceOf<ArrayNode>()
 
                 val videoSourceList = json[0]
-                videoSourceList.shouldBeInstanceOf<JSONArray>()
-                videoSourceList.map { (it as JSONObject).toMap() }.toSet() shouldBe setOf(
+                videoSourceList.shouldBeInstanceOf<ArrayNode>()
+                videoSourceList.map { node -> mapOf("s" to node["s"].asLong()) }.toSet() shouldBe setOf(
                     mapOf("s" to 1L),
                     mapOf("s" to 2L),
                     mapOf("s" to 3L),
@@ -107,8 +106,10 @@ class EndpointSourceSetTest : ShouldSpec() {
                 )
 
                 val videoSsrcGroups = json[1]
-                videoSsrcGroups.shouldBeInstanceOf<JSONArray>()
-                videoSsrcGroups.map { (it as JSONArray).toList() }.toSet() shouldBe setOf(
+                videoSsrcGroups.shouldBeInstanceOf<ArrayNode>()
+                videoSsrcGroups.map { groupNode ->
+                    groupNode.map { if (it.isTextual) it.asText() else it.asInt() }
+                }.toSet() shouldBe setOf(
                     listOf("s", 1, 2, 3),
                     listOf("f", 1, 4),
                     listOf("f", 2, 5),
@@ -116,13 +117,13 @@ class EndpointSourceSetTest : ShouldSpec() {
                 )
 
                 val audioSourceList = json[2]
-                audioSourceList.shouldBeInstanceOf<JSONArray>()
-                audioSourceList.map { (it as JSONObject).toMap() }.toSet() shouldBe setOf(
+                audioSourceList.shouldBeInstanceOf<ArrayNode>()
+                audioSourceList.map { node -> mapOf("s" to node["s"].asLong()) }.toSet() shouldBe setOf(
                     mapOf("s" to 7L)
                 )
 
                 // No audio source groups encoded.
-                json.size shouldBe 3
+                json.size() shouldBe 3
             }
         }
     }

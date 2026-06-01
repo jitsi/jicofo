@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TranscriptionConfig
 import org.jitsi.jicofo.bridge.Bridge
@@ -409,15 +410,15 @@ class Colibri2Session(
 
     override fun toString() = "Colibri2Session[bridge=${bridge.jid.resourceOrNull}, id=$id]"
 
-    fun toJson() = OrderedJsonObject().apply {
-        put("bridge", bridge.debugState)
+    fun toJson(): ObjectNode = OrderedJsonObject().apply {
+        set<ObjectNode>("bridge", bridge.debugState)
         put("id", id)
-        put("feedback_sources", feedbackSources.toJson())
+        set<ObjectNode>("feedback_sources", feedbackSources.toJson())
         put("created", created)
-        put(
+        set<ObjectNode>(
             "relays",
             OrderedJsonObject().apply {
-                relays.values.forEach { put(it.relayId, it.toJson()) }
+                relays.values.forEach { set<ObjectNode>(it.relayId, it.toJson()) }
             }
         )
     }

@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
@@ -29,7 +30,6 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.SourceInfo
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.mins
 import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
@@ -145,7 +145,7 @@ class JibriChatRoomMember(
     override val statsId: String? get() = TODO("Not yet implemented")
     override val videoCodecs: List<String>? get() = TODO("Not yet implemented")
     override val features: Set<Features> get() = TODO("Not yet implemented")
-    override val debugState: OrderedJsonObject get() = TODO("Not yet implemented")
+    override val debugState: ObjectNode get() = TODO("Not yet implemented")
 
     var idle: Boolean = true
     var healthy: Boolean = true

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.AuthenticationListener
@@ -40,7 +41,7 @@ sealed class ChatRoomRoleManager(
     open fun stop() {}
     open fun grantOwnership() {}
 
-    open val debugState: OrderedJsonObject = OrderedJsonObject()
+    open val debugState: ObjectNode = OrderedJsonObject()
 
     protected val queue = PacketQueue<Runnable>(
         Integer.MAX_VALUE,
@@ -105,7 +106,7 @@ class AutoOwnerRoleManager(chatRoom: ChatRoom) : ChatRoomRoleManager(chatRoom) {
         }
     }
 
-    override val debugState
+    override val debugState: ObjectNode
         get() = OrderedJsonObject().apply {
             put("class", this@AutoOwnerRoleManager.javaClass.simpleName)
             put("owner", owner?.jid?.toString() ?: "null")
@@ -164,7 +165,7 @@ class AuthenticationRoleManager(
 
     override fun stop() = authenticationAuthority.removeAuthenticationListener(authenticationListener)
 
-    override val debugState = OrderedJsonObject().apply {
+    override val debugState: ObjectNode = OrderedJsonObject().apply {
         put("class", this@AuthenticationRoleManager.javaClass.simpleName)
     }
 }

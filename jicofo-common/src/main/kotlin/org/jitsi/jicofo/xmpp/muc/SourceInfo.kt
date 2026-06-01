@@ -15,10 +15,11 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
 
 /** The information about a source contained in a jitsi-meet SourceInfo extension. */
 data class SourceInfo(
@@ -30,24 +31,28 @@ data class SourceInfo(
 
 /**
  *  Parse the JSON string encoded in a SourceInfo XML extension as a set of [SourceInfo]s.
- *  @throws ParseException if the string is not valid JSON.
- *  @throws IllegalArgumentException if the JSON in not in the expected format.
+ *  @throws IllegalArgumentException if the string is not valid JSON or not in the expected format.
  */
 @kotlin.jvm.Throws(IllegalArgumentException::class)
 fun parseSourceInfoJson(s: String): Set<SourceInfo> {
-    val json = JSONParser().parse(s) as? JSONObject ?: throw IllegalArgumentException("Illegal SourceInfo JSON: $s")
+    val json = try {
+        jacksonObjectMapper().readTree(s)
+    } catch (e: JsonProcessingException) {
+        throw IllegalArgumentException("Illegal SourceInfo JSON: $s", e)
+    }
+    if (json !is ObjectNode) throw IllegalArgumentException("Illegal SourceInfo JSON: $s")
 
-    return json.map {
-        val name = it.key as? String ?: throw IllegalArgumentException("Invalid source name ${it.key}")
-        val sourceJson = it.value as? JSONObject ?: throw IllegalArgumentException("Invalid source value: ${it.value}")
-        val muted = sourceJson["muted"] as? Boolean ?: true
-        val videoType = when (val videoTypeValue = sourceJson["videoType"]) {
-            null -> null
-            !is String -> throw IllegalArgumentException("Invalid videoType: $it")
-            else -> VideoType.parseString(videoTypeValue)
+    return json.fields().asSequence().map { (name, sourceNode) ->
+        val sourceJson = sourceNode as? ObjectNode
+            ?: throw IllegalArgumentException("Invalid source value: $sourceNode")
+        val muted = sourceJson.get("muted")?.asBoolean() ?: true
+        val videoTypeNode = sourceJson.get("videoType")
+        val videoType = when {
+            videoTypeNode == null || videoTypeNode.isNull -> null
+            !videoTypeNode.isTextual -> throw IllegalArgumentException("Invalid videoType: $videoTypeNode")
+            else -> VideoType.parseString(videoTypeNode.asText())
         }
-
-        val mediaTypeField = sourceJson["mediaType"] as? String
+        val mediaTypeField = sourceJson.get("mediaType")?.takeIf { it.isTextual }?.asText()
         val mediaType = when {
             "audio".equals(mediaTypeField, ignoreCase = true) -> MediaType.AUDIO
             "video".equals(mediaTypeField, ignoreCase = true) -> MediaType.VIDEO

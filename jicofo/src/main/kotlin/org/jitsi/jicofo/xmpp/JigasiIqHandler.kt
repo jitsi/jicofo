@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConference
@@ -51,7 +52,7 @@ class JigasiIqHandler(
     private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
 
     private val stats = Stats()
-    val statsJson: OrderedJsonObject
+    val statsJson: ObjectNode
         get() = stats.toJson()
 
     override fun handleRequest(request: IqRequest<DialIq>): IqProcessingResult {
@@ -216,8 +217,8 @@ class JigasiIqHandler(
         fun allInstancesFailed() = requestsFailedAllInstancesFailed.incrementAndGet()
 
         fun toJson() = statsJson().apply {
-            this["requests_failed_no_instance"] = requestsFailedNoInstanceAvailable.get()
-            this["requests_failed_xmpp_not_connected"] = requestsFailedXmppNotConnected.get()
+            put("requests_failed_no_instance", requestsFailedNoInstanceAvailable.get())
+            put("requests_failed_xmpp_not_connected", requestsFailedXmppNotConnected.get())
         }
 
         companion object {

@@ -20,15 +20,14 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.conference.source.VideoType
 import org.jitsi.utils.MediaType
-import org.json.simple.parser.ParseException
 
 class SourceInfoTest : ShouldSpec() {
     init {
         context("Parsing invalid strings") {
-            shouldThrow<ParseException> {
+            shouldThrow<IllegalArgumentException> {
                 parseSourceInfoJson("")
             }
-            shouldThrow<ParseException> {
+            shouldThrow<IllegalArgumentException> {
                 parseSourceInfoJson("{")
             }
             shouldThrow<IllegalArgumentException> {

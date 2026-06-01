@@ -17,12 +17,13 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppCapsStats
 import org.jitsi.jicofo.xmpp.XmppConfig
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
@@ -34,9 +35,10 @@ import org.jitsi.xmpp.extensions.jitsimeet.VideoMutedExtension
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.StandardExtensionElement
 import org.jivesoftware.smackx.caps.packet.CapsExtension
-import org.json.simple.JSONArray
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
+
+private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Stripped Smack implementation of [ChatRoomMember].
@@ -251,20 +253,23 @@ class ChatRoomMemberImpl(
         features
     }
 
-    override val debugState: OrderedJsonObject
-        get() = OrderedJsonObject().apply {
-            this["region"] = region.toString()
-            this["occupant_jid"] = occupantJid.toString()
-            this["jid"] = jid.toString()
-            this["is_jibri"] = isJibri
-            this["is_jigasi"] = isJigasi
-            this["is_transcriber"] = isTranscriber
-            this["role"] = role.toString()
-            this["video_codecs"] = JSONArray().apply { videoCodecs?.let { addAll(it) } }
-            this["stats_id"] = statsId.toString()
-            this["is_audio_muted"] = isAudioMuted
-            this["is_video_muted"] = isVideoMuted
-            this["features"] = features.map { it.name }
-            this["capsNodeVer"] = capsNodeVer.toString()
+    override val debugState: ObjectNode
+        get() = jsonMapper.createObjectNode().apply {
+            put("region", region.toString())
+            put("occupant_jid", occupantJid.toString())
+            put("jid", jid.toString())
+            put("is_jibri", isJibri)
+            put("is_jigasi", isJigasi)
+            put("is_transcriber", isTranscriber)
+            put("role", role.toString())
+            set<ObjectNode>(
+                "video_codecs",
+                jsonMapper.createArrayNode().apply { videoCodecs?.forEach { add(it) } }
+            )
+            put("stats_id", statsId.toString())
+            put("is_audio_muted", isAudioMuted)
+            put("is_video_muted", isVideoMuted)
+            set<ObjectNode>("features", jsonMapper.valueToTree(features.map { it.name }))
+            put("capsNodeVer", capsNodeVer.toString())
         }
 }

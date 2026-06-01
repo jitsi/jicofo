@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.packet.ExtensionElement
@@ -69,7 +69,7 @@ interface ChatRoom {
     /** Transcription configuration from room metadata. */
     val transcription: RoomMetadata.Metadata.Transcription?
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
 
     /** Returns the number of members that currently have their audio sources unmuted. */
     var audioSendersCount: Int

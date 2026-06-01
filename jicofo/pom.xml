@@ -23,18 +23,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <!-- json-simple 1.1.1 incorrectly listed junit as a compile dependency rather than a test dependency.
-       This has been fixed in its github repo but a new release hasn't been pushed to maven. -->
-      <exclusions>
-        <exclusion>
-          <groupId>junit</groupId>
-          <artifactId>junit</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>

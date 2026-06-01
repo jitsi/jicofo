@@ -23,7 +23,7 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.jibri.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.muc.*;
-import org.jitsi.utils.*;
+import com.fasterxml.jackson.databind.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jivesoftware.smack.packet.*;
 import org.jxmpp.jid.*;
@@ -151,11 +151,11 @@ public interface JitsiMeetConference extends XmppProvider.Listener
             @NotNull MediaType mediaType);
 
     @NotNull
-    OrderedJsonObject getDebugState();
+    JsonNode getDebugState();
 
     /** Get the stats for this conference that should be exported to rtcstats. */
     @NotNull
-    OrderedJsonObject getRtcstatsState();
+    JsonNode getRtcstatsState();
 
     /** Move (reinvite) an endpoint in this conference. Return true if the endpoint was moved. */
     boolean moveEndpoint(@NotNull String endpointId, Bridge bridge);

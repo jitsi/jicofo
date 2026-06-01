@@ -17,12 +17,15 @@
  */
 package org.jitsi.jicofo.conference
 
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.utils.MediaType
-import org.json.simple.JSONArray
-import org.json.simple.JSONObject
+
+private val jsonMapper = jacksonObjectMapper()
 
 class SourceSignaling(
     audio: Boolean = true,
@@ -75,11 +78,14 @@ class SourceSignaling(
         }
     }
 
-    val debugState: JSONObject
-        get() = JSONObject().apply {
-            this["signaled_sources"] = signaledSources.toJson()
-            this["sources"] = updatedSources.toJson()
-            this["supported_media_types"] = JSONArray().apply { supportedMediaTypes.forEach { add(it.toString()) } }
+    val debugState: ObjectNode
+        get() = jsonMapper.createObjectNode().apply {
+            set<ObjectNode>("signaled_sources", signaledSources.toJson())
+            set<ObjectNode>("sources", updatedSources.toJson())
+            set<ArrayNode>(
+                "supported_media_types",
+                jsonMapper.createArrayNode().apply { supportedMediaTypes.forEach { add(it.toString()) } }
+            )
         }
 
     fun reset(s: ConferenceSourceMap): ConferenceSourceMap {

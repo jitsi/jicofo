@@ -18,6 +18,8 @@
 
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
@@ -34,7 +36,6 @@ import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
 import org.jitsi.jicofo.bridge.removeNode
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.Logger
@@ -50,8 +51,9 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
 import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
-import org.json.simple.JSONArray
 import java.util.Collections.singletonList
+
+private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Implements [ColibriSessionManager] using colibri2.
@@ -675,22 +677,28 @@ class ColibriV2SessionManager(
         participantsToRemove.map { it.id }
     }
 
-    override val debugState
-        get() = OrderedJsonObject().apply {
+    override val debugState: ObjectNode
+        get() = jsonMapper.createObjectNode().apply {
             synchronized(syncRoot) {
-                val participantsJson = OrderedJsonObject()
-                participants.values.forEach { participantsJson[it.id] = it.toJson() }
-                put("participants", participantsJson)
+                val participantsJson = jsonMapper.createObjectNode()
+                participants.values.forEach { participantsJson.set<ObjectNode>(it.id, it.toJson()) }
+                set<ObjectNode>("participants", participantsJson)
 
-                val sessionsJson = OrderedJsonObject()
+                val sessionsJson = jsonMapper.createObjectNode()
                 sessions.values.forEach {
-                    sessionsJson[it.bridge.jid.resourceOrNull.toString()] = it.toJson().also { sessionJson ->
-                        sessionJson["participants"] = JSONArray().apply {
-                            getSessionParticipants(it).forEach { participant -> add(participant.id) }
+                    sessionsJson.set<ObjectNode>(
+                        it.bridge.jid.resourceOrNull.toString(),
+                        it.toJson().also { sessionJson ->
+                            sessionJson.set<ObjectNode>(
+                                "participants",
+                                jsonMapper.createArrayNode().apply {
+                                    getSessionParticipants(it).forEach { participant -> add(participant.id) }
+                                }
+                            )
                         }
-                    }
+                    )
                 }
-                put("sessions", sessionsJson)
+                set<ObjectNode>("sessions", sessionsJson)
             }
         }
 

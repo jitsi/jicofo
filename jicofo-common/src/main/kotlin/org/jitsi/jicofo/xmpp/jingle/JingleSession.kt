@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.xmpp.IqProcessingResult
@@ -283,7 +284,7 @@ class JingleSession(
         }
     }
 
-    fun debugState() = OrderedJsonObject().apply {
+    fun debugState(): ObjectNode = OrderedJsonObject().apply {
         put("sid", sid)
         put("remoteJid", remoteJid.toString())
         put("state", state.toString())

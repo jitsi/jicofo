@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
@@ -62,12 +63,12 @@ class ConferenceIqHandler(
         componentsChanged(xmppProvider.components)
     }
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
         get() = OrderedJsonObject().apply {
-            this["breakout_address"] = breakoutAddress.toString()
-            this["focus_auth_jid"] = focusAuthJid
-            this["jigasi_enabled"] = jigasiEnabled
-            this["auth_authority"] = authAuthority?.javaClass?.simpleName ?: "null"
+            put("breakout_address", breakoutAddress.toString())
+            put("focus_auth_jid", focusAuthJid)
+            put("jigasi_enabled", jigasiEnabled)
+            put("auth_authority", authAuthority?.javaClass?.simpleName ?: "null")
         }
 
     /** Handle a [ConferenceIq] synchronously and return a response. */

@@ -18,11 +18,14 @@
 
 package org.jitsi.jicofo.xmpp.jingle
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.metrics.CounterMetric
 import org.jitsi.xmpp.extensions.jingle.JingleAction
-import org.json.simple.JSONObject
 import java.util.concurrent.ConcurrentHashMap
+
+private val jsonMapper = jacksonObjectMapper()
 
 class JingleStats {
     companion object {
@@ -50,9 +53,15 @@ class JingleStats {
         }
 
         @JvmStatic
-        fun toJson() = JSONObject().apply {
-            this["sent"] = stanzasSentByAction.map { it.key to it.value.get() }.toMap()
-            this["received"] = stanzasReceivedByAction.map { it.key to it.value.get() }.toMap()
+        fun toJson(): ObjectNode = jsonMapper.createObjectNode().apply {
+            set<ObjectNode>(
+                "sent",
+                jsonMapper.valueToTree(stanzasSentByAction.map { it.key to it.value.get() }.toMap())
+            )
+            set<ObjectNode>(
+                "received",
+                jsonMapper.valueToTree(stanzasReceivedByAction.map { it.key to it.value.get() }.toMap())
+            )
         }
     }
 }

@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.xmpp.Features
-import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.Presence
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
@@ -74,5 +74,5 @@ interface ChatRoomMember {
      */
     val features: Set<Features>
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
 }

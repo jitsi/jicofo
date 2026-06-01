@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.conference.ConferenceMetrics
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -24,11 +26,9 @@ import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
 import org.jitsi.jicofo.jibri.JibriSession
 import org.jitsi.jicofo.jibri.JibriStats
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.QueueStatistics.Companion.getStatistics
 import org.jitsi.utils.stats.ConferenceSizeBuckets
-import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import java.time.Clock
 import java.time.Duration
@@ -38,6 +38,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Level
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
+
+private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Manages the set of [JitsiMeetConference]s in this instance.
@@ -271,46 +273,49 @@ class FocusManager(
 
     // We want to avoid exposing unnecessary hierarchy levels in the stats,
     // so we'll merge stats from different "child" objects here.
-    val stats: OrderedJsonObject
+    val stats: ObjectNode
         get() {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            val stats = OrderedJsonObject()
-            stats["total_participants"] = ConferenceMetrics.participants.get()
-            stats["total_conferences_created"] = ConferenceMetrics.conferencesCreated.get()
-            stats["conferences"] = ConferenceMetrics.conferenceCount.get()
-            stats["conferences_with_visitors"] = ConferenceMetrics.conferencesWithVisitors.get()
-            val bridgeFailures = JSONObject()
-            bridgeFailures["participants_moved"] = ConferenceMetrics.participantsMoved.get()
-            bridgeFailures["bridges_removed"] = ConferenceMetrics.bridgesRemoved.get()
-            stats["bridge_failures"] = bridgeFailures
-            val participantNotifications = JSONObject()
-            participantNotifications["ice_failed"] = ConferenceMetrics.participantsIceFailed.get()
-            participantNotifications["request_restart"] = ConferenceMetrics.participantsRequestedRestart.get()
-            stats["participant_notifications"] = participantNotifications
-            stats["largest_conference"] = ConferenceMetrics.largestConference.get()
-            stats["participants"] = ConferenceMetrics.currentParticipants.get()
-            stats["visitors"] = ConferenceMetrics.currentVisitors.get()
-            stats["conference_sizes"] = ConferenceMetrics.conferenceSizes.toJson()
-            stats["endpoint_pairs"] = ConferenceMetrics.participantPairs.get()
-            stats["jibri"] = JSONObject().apply {
-                put("total_sip_call_failures", JibriStats.sipFailures.get())
-                put("total_live_streaming_failures", JibriStats.liveStreamingFailures.get())
-                put("total_recording_failures", JibriStats.recordingFailures.get())
-                put("live_streaming_active", JibriStats.liveStreamingActive.get())
-                put("recording_active", JibriStats.recordingActive.get())
-                put("sip_call_active", JibriStats.sipActive.get())
-            }
-            stats["queues"] = getStatistics()
+            val stats = jsonMapper.createObjectNode()
+            stats.put("total_participants", ConferenceMetrics.participants.get())
+            stats.put("total_conferences_created", ConferenceMetrics.conferencesCreated.get())
+            stats.put("conferences", ConferenceMetrics.conferenceCount.get())
+            stats.put("conferences_with_visitors", ConferenceMetrics.conferencesWithVisitors.get())
+            val bridgeFailures = jsonMapper.createObjectNode()
+            bridgeFailures.put("participants_moved", ConferenceMetrics.participantsMoved.get())
+            bridgeFailures.put("bridges_removed", ConferenceMetrics.bridgesRemoved.get())
+            stats.set<ObjectNode>("bridge_failures", bridgeFailures)
+            val participantNotifications = jsonMapper.createObjectNode()
+            participantNotifications.put("ice_failed", ConferenceMetrics.participantsIceFailed.get())
+            participantNotifications.put("request_restart", ConferenceMetrics.participantsRequestedRestart.get())
+            stats.set<ObjectNode>("participant_notifications", participantNotifications)
+            stats.put("largest_conference", ConferenceMetrics.largestConference.get())
+            stats.put("participants", ConferenceMetrics.currentParticipants.get())
+            stats.put("visitors", ConferenceMetrics.currentVisitors.get())
+            stats.set<ObjectNode>("conference_sizes", ConferenceMetrics.conferenceSizes.toJson())
+            stats.put("endpoint_pairs", ConferenceMetrics.participantPairs.get())
+            stats.set<ObjectNode>(
+                "jibri",
+                jsonMapper.createObjectNode().apply {
+                    put("total_sip_call_failures", JibriStats.sipFailures.get())
+                    put("total_live_streaming_failures", JibriStats.liveStreamingFailures.get())
+                    put("total_recording_failures", JibriStats.recordingFailures.get())
+                    put("live_streaming_active", JibriStats.liveStreamingActive.get())
+                    put("recording_active", JibriStats.recordingActive.get())
+                    put("sip_call_active", JibriStats.sipActive.get())
+                }
+            )
+            stats.set<ObjectNode>("queues", getStatistics())
             return stats
         }
 
-    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
+    fun getDebugState(full: Boolean): ObjectNode = jsonMapper.createObjectNode().apply {
         for (conference in getConferences()) {
             if (full) {
-                this[conference.roomName.toString()] = conference.debugState
+                set<ObjectNode>(conference.roomName.toString(), conference.debugState)
             } else {
-                this[conference.roomName.toString()] = conference.participantCount
+                put(conference.roomName.toString(), conference.participantCount)
             }
         }
     }

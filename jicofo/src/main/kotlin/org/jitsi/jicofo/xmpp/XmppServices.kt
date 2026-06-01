@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
@@ -92,7 +93,7 @@ class XmppServices(
     } else {
         null
     }
-    val jigasiStats: OrderedJsonObject
+    val jigasiStats: ObjectNode
         get() = jigasiIqHandler?.statsJson ?: OrderedJsonObject()
 
     val avModerationHandler = AvModerationHandler(clientConnection, conferenceStore)

@@ -31,6 +31,8 @@ import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
 import org.jitsi.jicofo.xmpp.muc.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
 import org.jitsi.utils.*;
 import org.jitsi.utils.logging2.*;
 import org.jitsi.utils.logging2.Logger;
@@ -79,6 +81,7 @@ import static org.jitsi.jicofo.xmpp.MuteIqHandlerKt.createMuteIq;
 public class JitsiMeetConferenceImpl
     implements JitsiMeetConference, XmppProvider.Listener
 {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
      * Status used by participants when they are switching from a room to a breakout room.
@@ -1645,14 +1648,14 @@ public class JitsiMeetConferenceImpl
 
     @Override
     @NotNull
-    public OrderedJsonObject getRtcstatsState()
+    public JsonNode getRtcstatsState()
     {
         return getDebugState(false);
     }
 
     @Override
     @NotNull
-    public OrderedJsonObject getDebugState()
+    public JsonNode getDebugState()
     {
         return getDebugState(true);
     }
@@ -1660,40 +1663,52 @@ public class JitsiMeetConferenceImpl
     /**
      * @param full when false some high volume fields that aren't needed for rtcstats are suppressed.
      */
-    private OrderedJsonObject getDebugState(boolean full)
+    private ObjectNode getDebugState(boolean full)
     {
-        OrderedJsonObject o = new OrderedJsonObject();
+        ObjectNode o = MAPPER.createObjectNode();
         o.put("name", roomName.toString());
         String meetingId = this.meetingId;
         if (meetingId != null)
         {
             o.put("meeting_id", meetingId);
         }
-        o.put("config", config.getDebugState());
+        o.set("config", config.getDebugState());
         ChatRoom chatRoom = this.chatRoom;
-        o.put("chat_room", chatRoom == null ? "null" : chatRoom.getDebugState());
-        OrderedJsonObject participantsJson = new OrderedJsonObject();
+        if (chatRoom == null)
+        {
+            o.putNull("chat_room");
+        }
+        else
+        {
+            o.set("chat_room", chatRoom.getDebugState());
+        }
+        ObjectNode participantsJson = MAPPER.createObjectNode();
         for (Participant participant : participants.values())
         {
-            participantsJson.put(participant.getEndpointId(), participant.getDebugState(full));
+            participantsJson.set(participant.getEndpointId(), participant.getDebugState(full));
         }
-        o.put("participants", participantsJson);
-        //o.put("jibri_recorder", jibriRecorder.getDebugState());
-        //o.put("jibri_sip_gateway", jibriSipGateway.getDebugState());
+        o.set("participants", participantsJson);
+        //o.set("jibri_recorder", jibriRecorder.getDebugState());
+        //o.set("jibri_sip_gateway", jibriSipGateway.getDebugState());
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
-        o.put("chat_room_role_manager", chatRoomRoleManager == null ? "null" : chatRoomRoleManager.getDebugState());
+        if (chatRoomRoleManager == null)
+        {
+            o.putNull("chat_room_role_manager");
+        }
+        else
+        {
+            o.set("chat_room_role_manager", chatRoomRoleManager.getDebugState());
+        }
         o.put("started", started.get());
         o.put("start_audio_muted", startAudioMuted);
         o.put("start_video_muted", startVideoMuted);
         if (colibriSessionManager != null)
         {
-            o.put("colibri_session_manager", colibriSessionManager.getDebugState());
+            o.set("colibri_session_manager", colibriSessionManager.getDebugState());
         }
-        OrderedJsonObject conferencePropertiesJson = new OrderedJsonObject();
-        conferencePropertiesJson.putAll(conferenceProperties);
-        o.put("conference_properties", conferencePropertiesJson);
+        o.set("conference_properties", MAPPER.valueToTree(conferenceProperties));
         o.put("include_in_statistics", includeInStatistics);
-        o.put("conference_sources", conferenceSources.toJson());
+        o.set("conference_sources", conferenceSources.toJson());
         o.put("audio_limit_reached", audioLimitReached);
         o.put("video_limit_reached", videoLimitReached);
 
@@ -1728,7 +1743,7 @@ public class JitsiMeetConferenceImpl
             }
         }
         o.put("visitor_count", visitorCount);
-        o.put("visitor_codecs", visitorCodecs.debugState());
+        o.set("visitor_codecs", visitorCodecs.debugState());
         o.put("participant_count", participantCount);
         o.put("jibri_count", jibriCount);
         o.put("jigasi_count", jigasiCount);

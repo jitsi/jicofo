@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.jibri
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.utils.OrderedJsonObject
@@ -129,21 +130,21 @@ class JibriDetector(
     fun addHandler(eventHandler: EventHandler) = eventEmitter.addHandler(eventHandler)
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
         get() = OrderedJsonObject().also { debugState ->
-            debugState["is_sip"] = isSip
-            debugState["brewery_jid"] = breweryJid.toString()
+            debugState.put("is_sip", isSip)
+            debugState.put("brewery_jid", breweryJid.toString())
             instances.forEach { instance ->
                 val instanceJson = OrderedJsonObject().apply {
-                    this["health_status"] = instance.status.healthStatus?.status.toString()
-                    this["busy_status"] = instance.status.busyStatus?.status.toString()
+                    put("health_status", instance.status.healthStatus?.status.toString())
+                    put("busy_status", instance.status.busyStatus?.status.toString())
                     jibriInstances[instance.jid]?.let {
-                        this["reports_available"] = it.reportsAvailable
-                        this["last_failed"] = it.lastFailed.toString()
-                        this["last_selected"] = it.lastSelected.toString()
+                        put("reports_available", it.reportsAvailable)
+                        put("last_failed", it.lastFailed.toString())
+                        put("last_selected", it.lastSelected.toString())
                     }
                 }
-                debugState[instance.jid.resourcepart.toString()] = instanceJson
+                debugState.set<ObjectNode>(instance.jid.resourcepart.toString(), instanceJson)
             }
         }
 

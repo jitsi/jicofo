@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
@@ -28,9 +30,6 @@ import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
-import shouldBeValidJson
 import java.lang.UnsupportedOperationException
 
 @Suppress("NAME_SHADOWING")
@@ -245,10 +244,10 @@ class ConferenceSourceMapTest : ShouldSpec() {
                 jvb to jvbEndpointSourceSet
             )
             val jsonString = conferenceSourceMap.compactJson()
-            val json = JSONParser().parse(jsonString)
-            json.shouldBeInstanceOf<JSONObject>()
-            json.size shouldBe 3
-            json.keys shouldBe setOf(endpointId1, endpointId2, "jvb")
+            val json = jacksonObjectMapper().readTree(jsonString)
+            json.shouldBeInstanceOf<ObjectNode>()
+            json.size() shouldBe 3
+            json.fieldNames().asSequence().toSet() shouldBe setOf(endpointId1, endpointId2, "jvb")
         }
         context("Debug json") {
             val conferenceSourceMap = ConferenceSourceMap(

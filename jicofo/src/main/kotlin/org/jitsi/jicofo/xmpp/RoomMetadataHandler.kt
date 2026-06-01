@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
@@ -41,9 +42,9 @@ class RoomMetadataHandler(
         componentsChanged(xmppProvider.components)
     }
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
         get() = OrderedJsonObject().apply {
-            this["address"] = componentAddress.toString()
+            put("address", componentAddress.toString())
         }
 
     private fun doProcess(jsonMessage: JsonMessageExtension) {

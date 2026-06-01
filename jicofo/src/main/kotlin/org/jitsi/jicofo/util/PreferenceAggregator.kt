@@ -17,10 +17,14 @@
  */
 package org.jitsi.jicofo.util
 
+import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-import org.json.simple.JSONArray
+
+private val jsonMapper = jacksonObjectMapper()
 
 /** Aggregate lists of preferences coming from a large group of people, such that the resulting aggregated
  * list consists of preference items supported by everyone, and in a rough consensus of preference order.
@@ -110,18 +114,18 @@ class PreferenceAggregator(
         }
     }
 
-    fun debugState() = OrderedJsonObject().apply {
+    fun debugState(): ObjectNode = OrderedJsonObject().apply {
         synchronized(lock) {
             put("count", count)
-            put(
+            set<ObjectNode>(
                 "ranks",
                 OrderedJsonObject().apply {
                     this@PreferenceAggregator.values.asSequence()
                         .sortedBy { it.value.rankAggregate }
-                        .forEach { put(it.key, it.value.debugState()) }
+                        .forEach { set<ObjectNode>(it.key, it.value.debugState()) }
                 }
             )
-            put("aggregate", JSONArray().apply { addAll(aggregate) })
+            set<ArrayNode>("aggregate", jsonMapper.createArrayNode().apply { aggregate.forEach { add(it) } })
         }
     }
 
@@ -142,7 +146,7 @@ class PreferenceAggregator(
         var count = 0
         var rankAggregate = 0
 
-        fun debugState() = OrderedJsonObject().apply {
+        fun debugState(): ObjectNode = OrderedJsonObject().apply {
             put("count", count)
             put("rank_aggregate", rankAggregate)
         }

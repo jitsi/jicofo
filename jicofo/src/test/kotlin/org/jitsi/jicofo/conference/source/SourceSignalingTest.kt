@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.JsonNode
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -23,8 +24,6 @@ import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.SourceSignaling
 import org.jitsi.utils.MediaType
-import org.json.simple.JSONObject
-import org.json.simple.parser.JSONParser
 
 class SourceSignalingTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -164,4 +163,4 @@ class SourceSignalingTest : ShouldSpec() {
     }
 }
 
-fun JSONObject.shouldBeValidJson() = JSONParser().parse(this.toJSONString())
+fun JsonNode.shouldBeValidJson() = this.toString()

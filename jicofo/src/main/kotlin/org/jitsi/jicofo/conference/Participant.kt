@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
@@ -318,14 +319,14 @@ open class Participant @JvmOverloads constructor(
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
 
-    fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
-        this["id"] = endpointId
+    fun getDebugState(full: Boolean): ObjectNode = OrderedJsonObject().apply {
+        put("id", endpointId)
         if (full) {
-            this["source_signaling"] = sourceSignaling.debugState
+            set<ObjectNode>("source_signaling", sourceSignaling.debugState)
         }
-        statId?.let { this["stats_id"] = it }
-        this["invite_runnable"] = if (inviteRunnable != null) "Running" else "Not running"
-        this["jingle_session"] = jingleSession?.debugState() ?: "null"
+        statId?.let { put("stats_id", it) }
+        put("invite_runnable", if (inviteRunnable != null) "Running" else "Not running")
+        jingleSession?.let { set<ObjectNode>("jingle_session", it.debugState()) } ?: putNull("jingle_session")
     }
 
     /**

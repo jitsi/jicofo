@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import com.fasterxml.jackson.databind.JsonNode
 import io.kotest.core.spec.style.ShouldSpec
 import io.mockk.every
 import io.mockk.mockk
@@ -24,9 +25,7 @@ import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMemberImpl
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
-import org.json.simple.parser.JSONParser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import java.util.logging.Level
@@ -70,7 +69,7 @@ class DebugStateTest : ShouldSpec() {
                 jigasiChatMember(JidCreate.entityFullFrom("JigasiBrewery@example.com/jigasi-1"))
             )
             jigasiDetector.debugState.shouldBeValidJson()
-            println(jigasiDetector.debugState.toJSONString())
+            println(jigasiDetector.debugState.toString())
         }
         context("Jibri detector") {
             val jibriDetector = JibriDetector(
@@ -85,13 +84,13 @@ class DebugStateTest : ShouldSpec() {
                 jibriDetector
             )
             jibriDetector.debugState.shouldBeValidJson()
-            println(jibriDetector.debugState.toJSONString())
+            println(jibriDetector.debugState.toString())
         }
     }
 }
 
-fun OrderedJsonObject.shouldBeValidJson() {
-    JSONParser().parse(this.toJSONString())
+fun JsonNode.shouldBeValidJson() {
+    this.toString()
 }
 
 private fun jigasiChatMember(jid: EntityFullJid) = mockk<ChatRoomMember> {

@@ -17,11 +17,11 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -72,7 +72,7 @@ interface ColibriSessionManager {
      */
     fun removeBridge(bridge: Bridge): List<String>
 
-    val debugState: OrderedJsonObject
+    val debugState: ObjectNode
 
     /**
      * Interface for events fired by [ColibriSessionManager].

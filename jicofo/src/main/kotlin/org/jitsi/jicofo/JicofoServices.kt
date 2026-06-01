@@ -17,6 +17,9 @@
  */
 package org.jitsi.jicofo
 
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
@@ -42,10 +45,11 @@ import org.jitsi.jicofo.xmpp.initializeSmack
 import org.jitsi.jicofo.xmpp.jingle.JingleStats
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
-import org.json.simple.JSONObject
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jitsi.jicofo.auth.AuthConfig.Companion.config as authConfig
+
+private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Start/stop jicofo-specific services.
@@ -203,48 +207,51 @@ class JicofoServices {
     }
 
     /** Gets statistics for the /stats HTTP interface. */
-    private fun getStats(): OrderedJsonObject = OrderedJsonObject().apply {
+    private fun getStats(): ObjectNode = OrderedJsonObject().apply {
         // Update the metrics that are usually updated periodically so we read the current values.
         JicofoMetricsContainer.instance.metricsUpdater.updateMetrics()
         // We want to avoid exposing unnecessary hierarchy levels in the stats,
         // so we merge the FocusManager and ColibriConference stats in the root object.
-        putAll(focusManager.stats)
+        setAll<ObjectNode>(focusManager.stats)
 
-        put("bridge_selector", bridgeSelector.stats)
+        set<ObjectNode>("bridge_selector", bridgeSelector.stats)
         JibriDetectorMetrics.appendStats(this)
-        xmppServices.jigasiDetector?.let { put("jigasi_detector", it.stats) }
-        put("jigasi", xmppServices.jigasiStats)
+        xmppServices.jigasiDetector?.let { set<ObjectNode>("jigasi_detector", it.stats) }
+        set<ObjectNode>("jigasi", xmppServices.jigasiStats)
         put("threads", GlobalMetrics.threadCount.get())
-        put("jingle", JingleStats.toJson())
+        set<ObjectNode>("jingle", JingleStats.toJson())
         put("version", CurrentVersionImpl.VERSION.toString())
         healthChecker?.let {
             val result = it.result
             put("slow_health_check", it.totalSlowHealthChecks)
             put("healthy", result.success)
-            put(
+            set<ObjectNode>(
                 "health",
-                JSONObject().apply {
-                    put("success", result.success)
-                    put("hardFailure", result.hardFailure)
-                    put("responseCode", result.responseCode)
-                    put("sticky", result.sticky)
-                    put("message", result.message)
-                }
+                jsonMapper.valueToTree(
+                    mapOf(
+                        "success" to result.success,
+                        "hardFailure" to result.hardFailure,
+                        "responseCode" to result.responseCode,
+                        "sticky" to result.sticky,
+                        "message" to result.message
+                    )
+                )
             )
         }
     }
 
-    private fun getDebugState(full: Boolean) = OrderedJsonObject().apply {
-        put("focus_manager", focusManager.getDebugState(full))
-        put("bridge_selector", bridgeSelector.debugState)
-        put("jibri_detector", jibriDetector?.debugState ?: "null")
-        put("sip_jibri_detector", sipJibriDetector?.debugState ?: "null")
-        put("jigasi_detector", xmppServices.jigasiDetector?.debugState ?: "null")
-        put("av_moderation", xmppServices.avModerationHandler.debugState)
-        put("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
+    private fun getDebugState(full: Boolean): ObjectNode = OrderedJsonObject().apply {
+        set<ObjectNode>("focus_manager", focusManager.getDebugState(full))
+        set<ObjectNode>("bridge_selector", bridgeSelector.debugState)
+        jibriDetector?.let { set<ObjectNode>("jibri_detector", it.debugState) } ?: putNull("jibri_detector")
+        sipJibriDetector?.let { set<ObjectNode>("sip_jibri_detector", it.debugState) } ?: putNull("sip_jibri_detector")
+        xmppServices.jigasiDetector?.let { set<ObjectNode>("jigasi_detector", it.debugState) }
+            ?: putNull("jigasi_detector")
+        set<ObjectNode>("av_moderation", xmppServices.avModerationHandler.debugState)
+        set<ObjectNode>("conference_iq_handler", xmppServices.conferenceIqHandler.debugState)
     }
 
-    private fun getConferenceDebugState(conferenceId: EntityBareJid) = OrderedJsonObject().apply {
+    private fun getConferenceDebugState(conferenceId: EntityBareJid): JsonNode {
         val conference = focusManager.getConference(JidCreate.entityBareFrom(conferenceId))
         return conference?.debugState ?: OrderedJsonObject()
     }
