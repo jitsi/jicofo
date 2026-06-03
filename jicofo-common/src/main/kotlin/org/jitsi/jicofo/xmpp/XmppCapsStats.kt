@@ -18,9 +18,9 @@
 package org.jitsi.jicofo.xmpp
 
 import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 
 private val jsonMapper = jacksonObjectMapper()
@@ -37,7 +37,7 @@ class XmppCapsStats {
 
         @JvmStatic
         val stats: ObjectNode
-            get() = OrderedJsonObject().apply {
+            get() = JsonNodeFactory.instance.objectNode().apply {
                 synchronized(map) {
                     map.forEach { (nodeVer, e) ->
                         set<ObjectNode>(nodeVer, e.json())
@@ -61,7 +61,7 @@ class XmppCapsStats {
     private class FeaturesAndCount(val features: Set<Features>) {
         /** The number of participants seen with this set of features. */
         var count = 0
-        fun json(): ObjectNode = OrderedJsonObject().apply {
+        fun json(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
             put("count", count)
             set<ArrayNode>("features", jsonMapper.valueToTree(features.map { it.name }))
         }

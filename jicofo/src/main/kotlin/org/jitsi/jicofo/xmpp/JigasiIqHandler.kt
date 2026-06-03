@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
@@ -25,7 +26,6 @@ import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -244,7 +244,7 @@ class JigasiIqHandler(
                 "Timeouts for requests sent to jigasi instances."
             )
 
-            fun statsJson() = OrderedJsonObject().apply {
+            fun statsJson() = JsonNodeFactory.instance.objectNode().apply {
                 put("rejected_requests", rejectedRequests.get())
                 put("accepted_requests", acceptedRequests.get())
                 put("retries", retries.get())

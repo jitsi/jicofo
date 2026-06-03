@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TranscriptionConfig
@@ -28,7 +29,6 @@ import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -410,14 +410,14 @@ class Colibri2Session(
 
     override fun toString() = "Colibri2Session[bridge=${bridge.jid.resourceOrNull}, id=$id]"
 
-    fun toJson(): ObjectNode = OrderedJsonObject().apply {
+    fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         set<ObjectNode>("bridge", bridge.debugState)
         put("id", id)
         set<ObjectNode>("feedback_sources", feedbackSources.toJson())
         put("created", created)
         set<ObjectNode>(
             "relays",
-            OrderedJsonObject().apply {
+            JsonNodeFactory.instance.objectNode().apply {
                 relays.values.forEach { set<ObjectNode>(it.relayId, it.toJson()) }
             }
         )
@@ -518,7 +518,7 @@ class Colibri2Session(
             sendRequest(request.build(), "Relay.setTransport")
         }
 
-        fun toJson() = OrderedJsonObject().apply {
+        fun toJson() = JsonNodeFactory.instance.objectNode().apply {
             put("id", relayId)
             put("use_unique_port", useUniquePort)
             put("ice_controlling", iceControlling)

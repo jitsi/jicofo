@@ -17,13 +17,13 @@
  */
 package org.jitsi.jicofo.jigasi
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.JicofoConfig
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.EntityBareJid
@@ -72,17 +72,17 @@ open class JigasiDetector(
         selectJigasi(instances, exclude, preferredRegions, localRegion, transcriber = false)
 
     val stats: ObjectNode
-        get() = OrderedJsonObject().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("sip_count", sipCount.get())
             put("sip_in_graceful_shutdown_count", sipInGracefulShutdownCount.get())
             put("transcriber_count", transcriberCount.get())
         }
 
     val debugState: ObjectNode
-        get() = OrderedJsonObject().also { debugState ->
+        get() = JsonNodeFactory.instance.objectNode().also { debugState ->
             debugState.put("brewery_jid", breweryJid.toString())
             instances.forEach { instance ->
-                val instanceJson = OrderedJsonObject().apply {
+                val instanceJson = JsonNodeFactory.instance.objectNode().apply {
                     put("supports_sip", instance.supportsSip())
                     put("supports_transcription", instance.supportsTranscription())
                     put("is_in_graceful_shutdown", instance.isInGracefulShutdown())

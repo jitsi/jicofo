@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.mock
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.jicofo.xmpp.Features
@@ -22,7 +23,6 @@ import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
-import org.jitsi.utils.OrderedJsonObject
 import org.jivesoftware.smack.packet.ExtensionElement
 import java.lang.IllegalArgumentException
 import javax.xml.namespace.QName
@@ -35,7 +35,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
         every { members } returns memberList
         every { memberCount } answers { memberList.size }
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
-        every { debugState } returns OrderedJsonObject()
+        every { debugState } returns JsonNodeFactory.instance.objectNode()
         every { getChatMember(any()) } answers { memberList.find { it.occupantJid == arg(0) } }
     }
 
@@ -44,7 +44,7 @@ class MockChatRoom(val xmppProvider: XmppProvider) {
             every { name } returns id
             every { chatRoom } returns this@MockChatRoom.chatRoom
             every { features } returns Features.defaultFeatures
-            every { debugState } returns OrderedJsonObject()
+            every { debugState } returns JsonNodeFactory.instance.objectNode()
             every { presence } returns mockk {
                 every { status } returns null
                 every { getExtension(any<String>()) } returns null

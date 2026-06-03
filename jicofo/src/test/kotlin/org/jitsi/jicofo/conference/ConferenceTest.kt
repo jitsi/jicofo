@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
@@ -38,7 +39,6 @@ import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
@@ -84,7 +84,7 @@ class ConferenceTest : ShouldSpec() {
                 every { bridgeSelector } returns mockk(relaxed = true) {
                     every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
                         every { jid } returns JidCreate.from("jvb@example.com/jvb1")
-                        every { debugState } returns OrderedJsonObject()
+                        every { debugState } returns JsonNodeFactory.instance.objectNode()
                     }
                 }
                 every { jingleHandler } returns mockk(relaxed = true) {

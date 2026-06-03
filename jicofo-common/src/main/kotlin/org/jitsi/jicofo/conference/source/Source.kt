@@ -15,8 +15,8 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ParameterPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.SSRCInfoPacketExtension
@@ -90,7 +90,7 @@ data class Source(
     }
 
     /** Expanded JSON format used for debugging. */
-    fun toJson() = OrderedJsonObject().apply {
+    fun toJson() = JsonNodeFactory.instance.objectNode().apply {
         put("ssrc", ssrc)
         put("media_type", mediaType.toString())
         put("name", name ?: "null")

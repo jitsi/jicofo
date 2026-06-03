@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -34,7 +35,6 @@ import org.jitsi.jicofo.conference.inPlaceScheduledExecutor
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.TestColibri2Server
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
@@ -65,7 +65,7 @@ class ColibriTranscriptionTest : ShouldSpec() {
         every { jid } returns JidCreate.from("jvb@example.com/jvb1")
         every { relayId } returns null
         every { isOperational } returns true
-        every { debugState } returns OrderedJsonObject()
+        every { debugState } returns JsonNodeFactory.instance.objectNode()
         every { region } returns "us-east"
     }
 

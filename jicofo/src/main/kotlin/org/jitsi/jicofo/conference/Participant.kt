@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
@@ -34,7 +35,6 @@ import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.RateLimit
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
@@ -319,7 +319,7 @@ open class Participant @JvmOverloads constructor(
     fun hasModeratorRights() = chatMember.role.hasModeratorRights()
     override fun toString() = "Participant[$mucJid]"
 
-    fun getDebugState(full: Boolean): ObjectNode = OrderedJsonObject().apply {
+    fun getDebugState(full: Boolean): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("id", endpointId)
         if (full) {
             set<ObjectNode>("source_signaling", sourceSignaling.debugState)

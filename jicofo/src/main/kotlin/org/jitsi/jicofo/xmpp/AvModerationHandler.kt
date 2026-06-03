@@ -17,9 +17,9 @@
  */
 package org.jitsi.jicofo.xmpp
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceStore
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.StanzaListener
@@ -48,7 +48,7 @@ class AvModerationHandler(
     }
 
     val debugState: ObjectNode
-        get() = OrderedJsonObject().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("address", avModerationAddress.toString())
         }
 

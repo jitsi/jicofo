@@ -20,7 +20,6 @@ package org.jitsi.jicofo.util
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 
@@ -112,12 +111,12 @@ class PreferenceAggregator(
         }
     }
 
-    fun debugState(): ObjectNode = OrderedJsonObject().apply {
+    fun debugState(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         synchronized(lock) {
             put("count", count)
             set<ObjectNode>(
                 "ranks",
-                OrderedJsonObject().apply {
+                JsonNodeFactory.instance.objectNode().apply {
                     this@PreferenceAggregator.values.asSequence()
                         .sortedBy { it.value.rankAggregate }
                         .forEach { set<ObjectNode>(it.key, it.value.debugState()) }
@@ -144,7 +143,7 @@ class PreferenceAggregator(
         var count = 0
         var rankAggregate = 0
 
-        fun debugState(): ObjectNode = OrderedJsonObject().apply {
+        fun debugState(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
             put("count", count)
             put("rank_aggregate", rankAggregate)
         }

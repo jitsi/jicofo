@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.jingle
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -26,7 +27,6 @@ import org.jitsi.jicofo.xmpp.createTransportReplace
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
@@ -284,7 +284,7 @@ class JingleSession(
         }
     }
 
-    fun debugState(): ObjectNode = OrderedJsonObject().apply {
+    fun debugState(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("sid", sid)
         put("remoteJid", remoteJid.toString())
         put("state", state.toString())

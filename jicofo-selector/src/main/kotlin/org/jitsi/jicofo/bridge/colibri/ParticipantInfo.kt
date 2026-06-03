@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import org.jitsi.utils.OrderedJsonObject
 
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
@@ -39,7 +39,7 @@ class ParticipantInfo(
     var videoMuted = parameters.forceMuteVideo
     var sources = parameters.sources
 
-    fun toJson(): ObjectNode = OrderedJsonObject().apply {
+    fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("id", id)
         put("stats_id", statsId.toString())
         set<ObjectNode>("sources", sources.toJson())

@@ -15,9 +15,9 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
@@ -189,7 +189,7 @@ open class ConferenceSourceMap(
     }
 
     /** Expanded JSON format used for debugging */
-    fun toJson(): ObjectNode = OrderedJsonObject().apply {
+    fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         synchronized(syncRoot) {
             endpointSourceSets.forEach { (owner, sourceSet) -> set<ObjectNode>(owner, sourceSet.toJson()) }
         }

@@ -17,10 +17,10 @@
  */
 package org.jitsi.jicofo.jibri
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.xmpp.BaseBrewery
 import org.jitsi.jicofo.xmpp.XmppProvider
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
 import org.jitsi.utils.event.AsyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
@@ -131,11 +131,11 @@ class JibriDetector(
     fun removeHandler(eventHandler: EventHandler) = eventEmitter.removeHandler(eventHandler)
 
     val debugState: ObjectNode
-        get() = OrderedJsonObject().also { debugState ->
+        get() = JsonNodeFactory.instance.objectNode().also { debugState ->
             debugState.put("is_sip", isSip)
             debugState.put("brewery_jid", breweryJid.toString())
             instances.forEach { instance ->
-                val instanceJson = OrderedJsonObject().apply {
+                val instanceJson = JsonNodeFactory.instance.objectNode().apply {
                     put("health_status", instance.status.healthStatus?.status.toString())
                     put("busy_status", instance.status.busyStatus?.status.toString())
                     jibriInstances[instance.jid]?.let {

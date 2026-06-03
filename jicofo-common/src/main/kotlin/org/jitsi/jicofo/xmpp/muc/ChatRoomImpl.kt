@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp.muc
 
 import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
@@ -30,7 +31,6 @@ import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.MemberRole.Companion.fromSmack
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.jicofo.xmpp.tryToSendStanza
-import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.event.EventEmitter
 import org.jitsi.utils.event.SyncEventEmitter
 import org.jitsi.utils.logging2.createLogger
@@ -253,10 +253,10 @@ class ChatRoomImpl(
     }
 
     override val debugState: ObjectNode
-        get() = OrderedJsonObject().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("room_jid", roomJid.toString())
             put("my_occupant_jid", myOccupantJid.toString())
-            val membersJson = OrderedJsonObject()
+            val membersJson = JsonNodeFactory.instance.objectNode()
             membersMap.values.forEach {
                 membersJson.set<ObjectNode>(it.name, it.debugState)
             }
@@ -273,7 +273,7 @@ class ChatRoomImpl(
             put("visitors_live", visitorsLive)
             set<ObjectNode>(
                 "av_moderation",
-                OrderedJsonObject().apply {
+                JsonNodeFactory.instance.objectNode().apply {
                     avModerationByMediaType.forEach { (k, v) -> set<ObjectNode>(k.toString(), v.debugState) }
                 }
             )
@@ -749,7 +749,7 @@ class ChatRoomImpl(
         }
 
         val debugState: ObjectNode
-            get() = OrderedJsonObject().apply {
+            get() = JsonNodeFactory.instance.objectNode().apply {
                 put("enabled", enabled)
                 set<ArrayNode>("whitelist", jsonMapper.valueToTree(whitelist))
             }
