@@ -15,8 +15,8 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
@@ -26,8 +26,6 @@ import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jitsi.xmpp.extensions.jingle.SourceGroupPacketExtension
 import java.lang.IllegalArgumentException
 import kotlin.jvm.Throws
-
-private val jsonMapper = jacksonObjectMapper()
 
 /** A set of [Source]s and [SsrcGroup]s, usually associated with an endpoint. */
 data class EndpointSourceSet(
@@ -140,16 +138,16 @@ data class EndpointSourceSet(
     }
 
     /** Expanded JSON format used for debugging. */
-    fun toJson(): ObjectNode = jsonMapper.createObjectNode().apply {
+    fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         set<ObjectNode>(
             "sources",
-            jsonMapper.createArrayNode().apply {
+            JsonNodeFactory.instance.arrayNode().apply {
                 sources.forEach { add(it.toJson()) }
             }
         )
         set<ObjectNode>(
             "groups",
-            jsonMapper.createArrayNode().apply {
+            JsonNodeFactory.instance.arrayNode().apply {
                 ssrcGroups.forEach { add(it.toJson()) }
             }
         )

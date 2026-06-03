@@ -18,8 +18,8 @@
 package org.jitsi.jicofo.ktor
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.parseHeaderValue
@@ -70,8 +70,6 @@ import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 import java.time.Duration
 import org.jitsi.jicofo.ktor.RestConfig.Companion.config as config
-
-private val jsonMapper = jacksonObjectMapper()
 
 class Application(
     private val healthChecker: HealthCheckService?,
@@ -191,7 +189,7 @@ class Application(
 
     private fun Route.rtcstats() {
         get("/rtcstats") {
-            val rtcstats = jsonMapper.createObjectNode()
+            val rtcstats = JsonNodeFactory.instance.objectNode()
             conferenceStore.getAllConferences().forEach { conference ->
                 if (conference.includeInStatistics() && conference.isRtcStatsEnabled) {
                     conference.meetingId?.let { meetingId ->
@@ -252,13 +250,13 @@ class Application(
                     )
                 }
                 get("conferences") {
-                    val conferencesJson = jsonMapper.createArrayNode().apply {
+                    val conferencesJson = JsonNodeFactory.instance.arrayNode().apply {
                         conferenceStore.getAllConferences().forEach { add(it.roomName.toString()) }
                     }
                     call.respondJson(conferencesJson)
                 }
                 get("conferences-full") {
-                    val conferencesJson = jsonMapper.createObjectNode().apply {
+                    val conferencesJson = JsonNodeFactory.instance.objectNode().apply {
                         conferenceStore.getAllConferences().forEach {
                             set<ObjectNode>(it.roomName.toString(), it.debugState)
                         }

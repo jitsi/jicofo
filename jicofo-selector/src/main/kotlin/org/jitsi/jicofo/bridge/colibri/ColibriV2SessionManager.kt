@@ -18,8 +18,8 @@
 
 package org.jitsi.jicofo.bridge.colibri
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
@@ -52,8 +52,6 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import java.util.Collections.singletonList
-
-private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Implements [ColibriSessionManager] using colibri2.
@@ -678,20 +676,20 @@ class ColibriV2SessionManager(
     }
 
     override val debugState: ObjectNode
-        get() = jsonMapper.createObjectNode().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             synchronized(syncRoot) {
-                val participantsJson = jsonMapper.createObjectNode()
+                val participantsJson = JsonNodeFactory.instance.objectNode()
                 participants.values.forEach { participantsJson.set<ObjectNode>(it.id, it.toJson()) }
                 set<ObjectNode>("participants", participantsJson)
 
-                val sessionsJson = jsonMapper.createObjectNode()
+                val sessionsJson = JsonNodeFactory.instance.objectNode()
                 sessions.values.forEach {
                     sessionsJson.set<ObjectNode>(
                         it.bridge.jid.resourceOrNull.toString(),
                         it.toJson().also { sessionJson ->
                             sessionJson.set<ObjectNode>(
                                 "participants",
-                                jsonMapper.createArrayNode().apply {
+                                JsonNodeFactory.instance.arrayNode().apply {
                                     getSessionParticipants(it).forEach { participant -> add(participant.id) }
                                 }
                             )

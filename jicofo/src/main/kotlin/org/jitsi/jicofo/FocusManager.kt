@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.conference.ConferenceMetrics
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
@@ -38,8 +38,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.logging.Level
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer.Companion.instance as metricsContainer
-
-private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Manages the set of [JitsiMeetConference]s in this instance.
@@ -277,16 +275,16 @@ class FocusManager(
         get() {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
-            val stats = jsonMapper.createObjectNode()
+            val stats = JsonNodeFactory.instance.objectNode()
             stats.put("total_participants", ConferenceMetrics.participants.get())
             stats.put("total_conferences_created", ConferenceMetrics.conferencesCreated.get())
             stats.put("conferences", ConferenceMetrics.conferenceCount.get())
             stats.put("conferences_with_visitors", ConferenceMetrics.conferencesWithVisitors.get())
-            val bridgeFailures = jsonMapper.createObjectNode()
+            val bridgeFailures = JsonNodeFactory.instance.objectNode()
             bridgeFailures.put("participants_moved", ConferenceMetrics.participantsMoved.get())
             bridgeFailures.put("bridges_removed", ConferenceMetrics.bridgesRemoved.get())
             stats.set<ObjectNode>("bridge_failures", bridgeFailures)
-            val participantNotifications = jsonMapper.createObjectNode()
+            val participantNotifications = JsonNodeFactory.instance.objectNode()
             participantNotifications.put("ice_failed", ConferenceMetrics.participantsIceFailed.get())
             participantNotifications.put("request_restart", ConferenceMetrics.participantsRequestedRestart.get())
             stats.set<ObjectNode>("participant_notifications", participantNotifications)
@@ -297,7 +295,7 @@ class FocusManager(
             stats.put("endpoint_pairs", ConferenceMetrics.participantPairs.get())
             stats.set<ObjectNode>(
                 "jibri",
-                jsonMapper.createObjectNode().apply {
+                JsonNodeFactory.instance.objectNode().apply {
                     put("total_sip_call_failures", JibriStats.sipFailures.get())
                     put("total_live_streaming_failures", JibriStats.liveStreamingFailures.get())
                     put("total_recording_failures", JibriStats.recordingFailures.get())
@@ -310,7 +308,7 @@ class FocusManager(
             return stats
         }
 
-    fun getDebugState(full: Boolean): ObjectNode = jsonMapper.createObjectNode().apply {
+    fun getDebugState(full: Boolean): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         for (conference in getConferences()) {
             if (full) {
                 set<ObjectNode>(conference.roomName.toString(), conference.debugState)

@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.xmpp.Features
@@ -254,7 +255,7 @@ class ChatRoomMemberImpl(
     }
 
     override val debugState: ObjectNode
-        get() = jsonMapper.createObjectNode().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("region", region.toString())
             put("occupant_jid", occupantJid.toString())
             put("jid", jid.toString())
@@ -264,7 +265,7 @@ class ChatRoomMemberImpl(
             put("role", role.toString())
             set<ObjectNode>(
                 "video_codecs",
-                jsonMapper.createArrayNode().apply { videoCodecs?.forEach { add(it) } }
+                JsonNodeFactory.instance.arrayNode().apply { videoCodecs?.forEach { add(it) } }
             )
             put("stats_id", statsId.toString())
             put("is_audio_muted", isAudioMuted)

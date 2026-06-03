@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.bridge
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.utils.concurrent.CustomizableThreadFactory
@@ -29,8 +29,6 @@ import org.jxmpp.jid.Jid
 import java.time.Clock
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-
-private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Class exposes methods for selecting best videobridge from all currently
@@ -225,7 +223,7 @@ class BridgeSelector @JvmOverloads constructor(
 
     val stats: ObjectNode
         @Synchronized
-        get() = jsonMapper.createObjectNode().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             // We want to avoid exposing unnecessary hierarchy levels in the stats,
             // so we'll merge stats from different "child" objects here.
             put("bridge_count", bridgeCount.get())
@@ -237,11 +235,11 @@ class BridgeSelector @JvmOverloads constructor(
 
     val debugState: ObjectNode
         @Synchronized
-        get() = jsonMapper.createObjectNode().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("strategy", bridgeSelectionStrategy.javaClass.simpleName)
             set<ObjectNode>(
                 "bridge",
-                jsonMapper.createObjectNode().apply {
+                JsonNodeFactory.instance.objectNode().apply {
                     bridges.values.forEach { set<ObjectNode>(it.jid.toString(), it.debugState) }
                 }
             )

@@ -17,8 +17,8 @@
  */
 package org.jitsi.jicofo.bridge
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
@@ -32,8 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config as config
-
-private val jsonMapper = jacksonObjectMapper()
 
 /**
  * Represents a jitsi-videobridge instance, reachable at a certain JID, which
@@ -338,7 +336,7 @@ class Bridge @JvmOverloads internal constructor(
         get() = correctedStress >= config.stressThreshold
 
     val debugState: ObjectNode
-        get() = jsonMapper.createObjectNode().apply {
+        get() = JsonNodeFactory.instance.objectNode().apply {
             put("corrected-stress", correctedStress)
             put("drain", isDraining)
             put("endpoints", endpoints.get())

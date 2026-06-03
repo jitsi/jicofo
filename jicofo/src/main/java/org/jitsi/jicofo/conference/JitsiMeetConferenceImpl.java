@@ -1665,7 +1665,7 @@ public class JitsiMeetConferenceImpl
      */
     private ObjectNode getDebugState(boolean full)
     {
-        ObjectNode o = MAPPER.createObjectNode();
+        ObjectNode o = JsonNodeFactory.instance.objectNode();
         o.put("name", roomName.toString());
         String meetingId = this.meetingId;
         if (meetingId != null)
@@ -1682,7 +1682,7 @@ public class JitsiMeetConferenceImpl
         {
             o.set("chat_room", chatRoom.getDebugState());
         }
-        ObjectNode participantsJson = MAPPER.createObjectNode();
+        ObjectNode participantsJson = JsonNodeFactory.instance.objectNode();
         for (Participant participant : participants.values())
         {
             participantsJson.set(participant.getEndpointId(), participant.getDebugState(full));

@@ -18,6 +18,7 @@
 
 package org.jitsi.jicofo.xmpp.jingle
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
@@ -53,7 +54,7 @@ class JingleStats {
         }
 
         @JvmStatic
-        fun toJson(): ObjectNode = jsonMapper.createObjectNode().apply {
+        fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
             set<ObjectNode>(
                 "sent",
                 jsonMapper.valueToTree(stanzasSentByAction.map { it.key to it.value.get() }.toMap())

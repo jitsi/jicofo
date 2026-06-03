@@ -18,13 +18,11 @@
 package org.jitsi.jicofo.util
 
 import com.fasterxml.jackson.databind.node.ArrayNode
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jitsi.utils.OrderedJsonObject
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
-
-private val jsonMapper = jacksonObjectMapper()
 
 /** Aggregate lists of preferences coming from a large group of people, such that the resulting aggregated
  * list consists of preference items supported by everyone, and in a rough consensus of preference order.
@@ -125,7 +123,7 @@ class PreferenceAggregator(
                         .forEach { set<ObjectNode>(it.key, it.value.debugState()) }
                 }
             )
-            set<ArrayNode>("aggregate", jsonMapper.createArrayNode().apply { aggregate.forEach { add(it) } })
+            set<ArrayNode>("aggregate", JsonNodeFactory.instance.arrayNode().apply { aggregate.forEach { add(it) } })
         }
     }
 
