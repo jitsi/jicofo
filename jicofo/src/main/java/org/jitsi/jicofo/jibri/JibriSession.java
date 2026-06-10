@@ -145,6 +145,11 @@ public class JibriSession
     private final String applicationData;
 
     /**
+     * Whether rtcstats is enabled for this conference.
+     */
+    private final boolean rtcStatsEnabled;
+
+    /**
      * The maximum amount of retries we'll attempt
      */
     private final int maxNumRetries;
@@ -197,6 +202,7 @@ public class JibriSession
             String youTubeBroadcastId,
             String sessionId,
             String applicationData,
+            boolean rtcStatsEnabled,
             Logger parentLogger)
     {
         this.stateListener = stateListener;
@@ -212,6 +218,7 @@ public class JibriSession
         this.youTubeBroadcastId = youTubeBroadcastId;
         this.sessionId = sessionId;
         this.applicationData = applicationData;
+        this.rtcStatsEnabled = rtcStatsEnabled;
         jibriDetector.addHandler(jibriEventHandler);
         logger = parentLogger.createChildLogger(getClass().getName());
     }
@@ -500,6 +507,7 @@ public class JibriSession
         }
         startIq.setSipAddress(sipAddress);
         startIq.setDisplayName(displayName);
+        startIq.setRtcStatsEnabled(rtcStatsEnabled);
 
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
