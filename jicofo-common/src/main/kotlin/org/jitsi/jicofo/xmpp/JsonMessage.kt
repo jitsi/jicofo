@@ -80,7 +80,9 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         val participantsSoftLimit: Int? = null,
         val visitorsEnabled: Boolean? = null,
         val lobbyEnabled: Boolean? = null,
-        val transcription: Transcription? = null
+        val transcription: Transcription? = null,
+        /** Aggregated live-translation requests: sender endpoint id -> set of requested language codes. */
+        val audioTranslationRequests: Map<String, List<String>>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)

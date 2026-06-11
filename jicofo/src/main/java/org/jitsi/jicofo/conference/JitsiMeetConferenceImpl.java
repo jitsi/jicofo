@@ -25,6 +25,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.conference.translation.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
@@ -247,6 +248,12 @@ public class JitsiMeetConferenceImpl
     );
 
     /**
+     * Manages live-translation synthetic sources and the translator connect, driven by the
+     * {@code audioTranslationRequests} room metadata.
+     */
+    private final ConferenceTranslationManager translationManager;
+
+    /**
      * Whether the limit on the number of audio senders is currently hit.
      */
     private boolean audioLimitReached = false;
@@ -298,6 +305,8 @@ public class JitsiMeetConferenceImpl
     {
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
+
+        translationManager = new ConferenceTranslationManager(conferenceSources, logger);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -380,6 +389,9 @@ public class JitsiMeetConferenceImpl
                         transcriptionParams.getSecond());
                 }
             }
+
+            // Apply any live-translation requests received before colibri was initialized.
+            translationManager.reapply(colibriSessionManager, meetingId);
         }
         return colibriSessionManager;
     }
@@ -1433,6 +1445,9 @@ public class JitsiMeetConferenceImpl
                 false);
 
         sendSourceRemove(new ConferenceSourceMap(participantId, sourcesAcceptedToBeRemoved), participant);
+
+        // A sender may have removed the audio source being translated; re-evaluate synthetic translation sources.
+        translationManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1506,6 +1521,9 @@ public class JitsiMeetConferenceImpl
                 sendSourceRemove(new ConferenceSourceMap(participantId, sourcesRemoved), participant);
             }
         }
+
+        // The participant (a potential translation sender) is gone; drop any synthetic translation sources for it.
+        translationManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -2739,6 +2757,16 @@ public class JitsiMeetConferenceImpl
         public void transcribingEnabledChanged(boolean enabled)
         {
             setEnableTranscribing(enabled);
+        }
+
+        @Override
+        public void audioTranslationRequestsChanged(@NotNull Map<String, ? extends List<String>> requests)
+        {
+            //noinspection unchecked
+            translationManager.setRequests(
+                    (Map<String, List<String>>) (Map<String, ?>) requests,
+                    colibriSessionManager,
+                    meetingId);
         }
     }
 

@@ -30,6 +30,11 @@ interface ChatRoomListener {
     fun numAudioSendersChanged(numAudioSenders: Int) {}
     fun numVideoSendersChanged(numVideoSenders: Int) {}
     fun transcribingEnabledChanged(enabled: Boolean) {}
+
+    /**
+     * The aggregated live-translation request map changed: sender endpoint id -> set of requested language codes.
+     */
+    fun audioTranslationRequestsChanged(requests: Map<String, List<String>>) {}
 }
 
 /** A class with the default kotlin method implementations (to avoid using @JvmDefault) **/

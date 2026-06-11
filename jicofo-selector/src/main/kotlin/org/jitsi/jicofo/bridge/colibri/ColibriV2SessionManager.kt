@@ -88,6 +88,18 @@ class ColibriV2SessionManager(
     /** Custom URL parameters for transcription */
     private var transcriberUrlParams: Map<String, String>? = null
 
+    /** The session currently used for translation, if any */
+    private var translatorSession: Colibri2Session? = null
+
+    /** The translator URL template */
+    private var translatorUrl: TemplatedUrl? = null
+
+    /** Source names the translator should receive (the senders' audio). */
+    private var translatorRequests: List<String> = emptyList()
+
+    /** Source names the translator produces (the synthetic, language-encoded sources). */
+    private var translatorExports: List<String> = emptyList()
+
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
@@ -162,6 +174,18 @@ class ColibriV2SessionManager(
                 val savedParams = transcriberUrlParams
                 transcriberUrl = null
                 setTranscriberUrl(savedUrl, savedHeaders, savedParams)
+            }
+        }
+        if (session == translatorSession) {
+            logger.info("Removing translator session: $session")
+            translatorSession = null
+            translatorUrl?.let {
+                // Trigger selection of a new session for translation.
+                val savedUrl = it
+                val savedRequests = translatorRequests
+                val savedExports = translatorExports
+                translatorUrl = null
+                setTranslator(savedUrl, savedRequests, savedExports)
             }
         }
         return participants.toSet()
@@ -267,6 +291,7 @@ class ColibriV2SessionManager(
             }
 
             val enableTranscriber = transcriberUrl != null && transcriberSession == null
+            val enableTranslator = translatorUrl != null && translatorSession == null
             session = Colibri2Session(
                 this,
                 bridge,
@@ -274,10 +299,16 @@ class ColibriV2SessionManager(
                 if (enableTranscriber) transcriberUrl else null,
                 logger,
                 if (enableTranscriber) transcriberCustomHeaders else null,
-                if (enableTranscriber) transcriberUrlParams else null
+                if (enableTranscriber) transcriberUrlParams else null,
+                if (enableTranslator) translatorUrl else null,
+                if (enableTranslator) translatorRequests else emptyList(),
+                if (enableTranslator) translatorExports else emptyList()
             )
             if (enableTranscriber) {
                 transcriberSession = session
+            }
+            if (enableTranslator) {
+                translatorSession = session
             }
             return Pair(session, true)
         }
@@ -320,6 +351,32 @@ class ColibriV2SessionManager(
 
         Unit
     }
+
+    override fun setTranslator(url: TemplatedUrl?, requests: List<String>, exports: List<String>) =
+        synchronized(syncRoot) {
+            val enable = url != null
+            translatorUrl = url
+            translatorRequests = requests
+            translatorExports = exports
+
+            if (enable) {
+                if (translatorSession == null) {
+                    if (sessions.isEmpty()) {
+                        logger.info("No session available for translation, will enable it once a session is created")
+                        return@synchronized
+                    }
+                    // Use the first session, mirroring transcriber selection.
+                    translatorSession = sessions.values.first()
+                    logger.info("Using ${translatorSession?.bridge} for translation")
+                }
+                translatorSession?.setTranslator(url, requests, exports)
+            } else {
+                translatorSession?.setTranslator(null, emptyList(), emptyList())
+                translatorSession = null
+            }
+
+            Unit
+        }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */
     override fun getBridges(): Map<Bridge, ConferenceBridgeProperties> = synchronized(syncRoot) {

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TranscriptionConfig
+import org.jitsi.jicofo.TranslationConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
@@ -63,7 +64,13 @@ class Colibri2Session(
     private var transcriberUrl: TemplatedUrl?,
     parentLogger: Logger,
     private var transcriberCustomHeaders: Map<String, String>? = null,
-    private var transcriberUrlParams: Map<String, String>? = null
+    private var transcriberUrlParams: Map<String, String>? = null,
+    /** The live-translation websocket URL template, or null when translation is disabled on this session. */
+    private var translatorUrl: TemplatedUrl? = null,
+    /** Source names the translator should receive (the senders' audio to translate). */
+    private var translatorRequests: List<String> = emptyList(),
+    /** Source names the translator produces (the synthetic, language-encoded sources). */
+    private var translatorExports: List<String> = emptyList()
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
@@ -224,11 +231,19 @@ class Colibri2Session(
                     )
                 )
             }
+            translatorUrl?.let {
+                logger.info("Adding connect for translator")
+                addConnect(createTranslatorConnect(resolveTranslatorUrl(it), translatorRequests, translatorExports))
+            }
         }
     }
 
     private fun resolveTranscriberUrl(urlTemplate: TemplatedUrl): URI {
         return urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, bridge.region ?: "")
+    }
+
+    private fun resolveTranslatorUrl(urlTemplate: TemplatedUrl): URI {
+        return urlTemplate.resolve(TranslationConfig.REGION_TEMPLATE, bridge.region ?: "")
     }
 
     fun setTranscriberUrl(
@@ -270,6 +285,30 @@ class Colibri2Session(
         } else {
             logger.info("No change in audio record URL.")
         }
+    }
+
+    /**
+     * Enable, update, or disable the live-translation connect on this session.
+     *
+     * Unlike the transcriber, the request list changes over the lifetime of the connection, so the connect is
+     * (re)sent on every call when [url] is non-null. Passing a null [url] disables translation.
+     *
+     * Note: translation and transcription are managed independently here; the bridge treats the <connects> element as
+     * authoritative, so a session is not expected to run both a transcriber and a translator connect simultaneously.
+     */
+    fun setTranslator(url: TemplatedUrl?, requests: List<String>, exports: List<String>) {
+        translatorUrl = url
+        translatorRequests = requests
+        translatorExports = exports
+        val request = createRequest(create = false)
+        if (url != null) {
+            logger.info("Setting translator connect, requests=$requests exports=$exports")
+            request.addConnect(createTranslatorConnect(resolveTranslatorUrl(url), requests, exports))
+        } else {
+            logger.info("Removing translator connect")
+            request.setEmptyConnects()
+        }
+        sendRequest(request.build(), "setTranslator")
     }
 
     /**
@@ -642,4 +681,18 @@ private fun createConnect(
     if (pingEnabled) {
         setPing(pingInterval, pingTimeout)
     }
+}
+
+/**
+ * Build a translator [Connect]: it receives the senders' audio ([requests]) and produces the synthetic,
+ * language-encoded translated sources ([exports]).
+ */
+private fun createTranslatorConnect(url: URI, requests: List<String>, exports: List<String>) = Connect(
+    url = url,
+    type = Connect.Types.TRANSLATOR,
+    protocol = Connect.Protocols.MEDIAJSON,
+    audio = true
+).apply {
+    setRequests(requests)
+    setExports(exports)
 }

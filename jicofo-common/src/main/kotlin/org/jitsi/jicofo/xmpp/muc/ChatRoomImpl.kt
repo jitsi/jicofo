@@ -405,6 +405,9 @@ class ChatRoomImpl(
                     roomMetadata.metadata.asyncTranscription == true
             )
         }
+        eventEmitter.fireEvent {
+            audioTranslationRequestsChanged(roomMetadata.metadata?.audioTranslationRequests ?: emptyMap())
+        }
         roomMetadataLatch.countDown()
     }
 
