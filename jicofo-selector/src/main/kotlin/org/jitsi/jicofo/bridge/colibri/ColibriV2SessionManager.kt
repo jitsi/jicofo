@@ -94,10 +94,10 @@ class ColibriV2SessionManager(
     /** The translator URL template */
     private var translatorUrl: TemplatedUrl? = null
 
-    /** Source names the translator should receive (the senders' audio). */
+    /** Source names requested from the translator (the synthetic, language-encoded sources it produces). */
     private var translatorRequests: List<String> = emptyList()
 
-    /** Source names the translator produces (the synthetic, language-encoded sources). */
+    /** Source names exported to the translator (the senders' audio to translate). */
     private var translatorExports: List<String> = emptyList()
 
     /**

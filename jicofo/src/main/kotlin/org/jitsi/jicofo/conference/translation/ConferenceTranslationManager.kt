@@ -99,7 +99,7 @@ class ConferenceTranslationManager(
         colibriSessionManager.setTranslator(url, result.requestNames.toList(), result.exportNames.toList())
 
         logger.info(
-            "Applied audio translation: requests=$requests, syntheticExports=${result.exportNames}, " +
+            "Applied audio translation: requests=$requests, syntheticSources=${result.requestNames}, " +
                 "signaledBridgesFor=$affected, translator=${if (url != null) "enabled" else "disabled"}"
         )
     }

@@ -70,8 +70,8 @@ interface ColibriSessionManager {
      * Enable, update, or disable live translation on the selected bridge.
      *
      * @param url the websocket URL template the bridge should connect to, or null to disable translation.
-     * @param requests source names the translator should receive (the senders' audio to translate).
-     * @param exports source names the translator produces (the synthetic, language-encoded sources).
+     * @param requests source names requested from the translator (the synthetic, language-encoded sources).
+     * @param exports source names exported to the translator (the senders' audio to translate).
      */
     fun setTranslator(url: TemplatedUrl?, requests: List<String> = emptyList(), exports: List<String> = emptyList())
 

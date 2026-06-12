@@ -67,9 +67,9 @@ class Colibri2Session(
     private var transcriberUrlParams: Map<String, String>? = null,
     /** The live-translation websocket URL template, or null when translation is disabled on this session. */
     private var translatorUrl: TemplatedUrl? = null,
-    /** Source names the translator should receive (the senders' audio to translate). */
+    /** Source names requested from the translator (the synthetic, language-encoded sources it produces). */
     private var translatorRequests: List<String> = emptyList(),
-    /** Source names the translator produces (the synthetic, language-encoded sources). */
+    /** Source names exported to the translator (the senders' audio to translate). */
     private var translatorExports: List<String> = emptyList()
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
@@ -684,8 +684,8 @@ private fun createConnect(
 }
 
 /**
- * Build a translator [Connect]: it receives the senders' audio ([requests]) and produces the synthetic,
- * language-encoded translated sources ([exports]).
+ * Build a translator [Connect]: the bridge exports the senders' audio to it ([exports]) and requests back the
+ * synthetic, language-encoded translated sources it produces ([requests]).
  */
 private fun createTranslatorConnect(url: URI, requests: List<String>, exports: List<String>) = Connect(
     url = url,

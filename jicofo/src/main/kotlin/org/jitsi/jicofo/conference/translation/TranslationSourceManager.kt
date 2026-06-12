@@ -23,10 +23,10 @@ import java.util.concurrent.ThreadLocalRandom
  * The result of recomputing the set of synthetic translation sources.
  *
  * @param sourcesBySender for each sender endpoint id, the set of synthetic audio sources (one per requested language).
- * @param requestNames the names of the (real) source the translator should receive, i.e. the senders' base audio
- * sources to be translated.
- * @param exportNames the names of the synthetic sources the translator produces (each encodes the language as a
- * "<baseName>.<lang>" suffix).
+ * @param requestNames the names of the synthetic sources the bridge requests from the translator (each encodes the
+ * language as a "<baseName>.<lang>" suffix).
+ * @param exportNames the names of the (real) sources the bridge exports to the translator, i.e. the senders' base
+ * audio sources to be translated.
  */
 data class TranslationSources(
     val sourcesBySender: Map<String, Set<Source>>,
@@ -100,8 +100,8 @@ class TranslationSourceManager(
         allocated.putAll(next)
 
         val sourcesBySender = next.mapValues { (_, byLang) -> byLang.values.toSet() }
-        val requestNames = next.keys.mapNotNull { baseNameResolver(it) }.toSet()
-        val exportNames = next.values.flatMap { it.values }.map { it.name!! }.toSet()
+        val requestNames = next.values.flatMap { it.values }.map { it.name!! }.toSet()
+        val exportNames = next.keys.mapNotNull { baseNameResolver(it) }.toSet()
 
         return TranslationSources(sourcesBySender, requestNames, exportNames)
     }

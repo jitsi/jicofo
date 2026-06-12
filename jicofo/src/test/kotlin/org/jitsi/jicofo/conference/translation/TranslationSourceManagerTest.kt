@@ -48,9 +48,9 @@ class TranslationSourceManagerTest : ShouldSpec() {
                 source.synthetic shouldBe true
                 source.ssrc shouldBe 100L
             }
-            should("report the input and export names for the connect") {
-                result.requestNames shouldContainExactly setOf("aaaaaaaa-a0")
-                result.exportNames shouldContainExactly setOf("aaaaaaaa-a0.en")
+            should("report the request and export names for the connect") {
+                result.requestNames shouldContainExactly setOf("aaaaaaaa-a0.en")
+                result.exportNames shouldContainExactly setOf("aaaaaaaa-a0")
             }
         }
 
@@ -62,8 +62,8 @@ class TranslationSourceManagerTest : ShouldSpec() {
                 sources.map { it.name } shouldContainExactlyInAnyOrder listOf("aaaaaaaa-a0.en", "aaaaaaaa-a0.es")
                 sources.map { it.ssrc }.toSet().size shouldBe 2
             }
-            should("export both synthetic names") {
-                result.exportNames shouldContainExactlyInAnyOrder listOf("aaaaaaaa-a0.en", "aaaaaaaa-a0.es")
+            should("request both synthetic names") {
+                result.requestNames shouldContainExactlyInAnyOrder listOf("aaaaaaaa-a0.en", "aaaaaaaa-a0.es")
             }
         }
 
@@ -106,7 +106,7 @@ class TranslationSourceManagerTest : ShouldSpec() {
             )
             should("skip the unresolved sender and keep the resolved one") {
                 result.sourcesBySender.keys shouldContainExactly setOf("aaaaaaaa")
-                result.exportNames shouldContainExactly setOf("aaaaaaaa-a0.en")
+                result.requestNames shouldContainExactly setOf("aaaaaaaa-a0.en")
             }
         }
 
