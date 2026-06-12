@@ -110,6 +110,24 @@ class TranslationSourceManagerTest : ShouldSpec() {
             }
         }
 
+        context("Sender's audio source appears on a later update") {
+            var hasAudio = false
+            val lateResolver: (String) -> String? = { if (it == "aaaaaaaa" && hasAudio) "aaaaaaaa-a0" else null }
+
+            // Request arrives before the sender has an audio source: skipped, no synthetic source.
+            val first = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver, noneInUse)
+
+            should("skip the sender while it has no audio source") {
+                first.isEmpty shouldBe true
+            }
+            should("create the synthetic source once the audio source appears and the same request is re-applied") {
+                hasAudio = true
+                val second = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver, noneInUse)
+
+                second.sourcesBySender["aaaaaaaa"]!!.map { it.name } shouldContainExactly listOf("aaaaaaaa-a0.es")
+            }
+        }
+
         context("Empty requests") {
             manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, noneInUse)
             val result = manager.update(emptyMap(), baseName, noneInUse)

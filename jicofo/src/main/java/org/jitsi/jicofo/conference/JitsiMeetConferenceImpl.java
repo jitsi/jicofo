@@ -1409,6 +1409,9 @@ public class JitsiMeetConferenceImpl
                 null,
                 false);
         propagateNewSources(participant, sourcesAccepted);
+
+        // A newly-added audio source may be the base source for a pending translation request.
+        translationManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1485,6 +1488,9 @@ public class JitsiMeetConferenceImpl
         {
             logger.debug("Session accepted with no sources.");
         }
+
+        // The initial sources may include the base audio source for a pending translation request.
+        translationManager.reapply(colibriSessionManager, meetingId);
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
