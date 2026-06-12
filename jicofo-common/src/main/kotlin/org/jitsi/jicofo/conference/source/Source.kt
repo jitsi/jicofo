@@ -102,6 +102,9 @@ data class Source(
         put("name", name ?: "null")
         put("msid", msid ?: "null")
         put("videoType", videoType.toString())
+        if (synthetic) {
+            put("synthetic", true)
+        }
     }
 
     companion object {

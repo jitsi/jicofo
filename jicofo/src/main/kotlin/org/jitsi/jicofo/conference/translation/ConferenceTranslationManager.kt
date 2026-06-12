@@ -97,6 +97,11 @@ class ConferenceTranslationManager(
         // Enable/update/disable the translator connect on the selected bridge.
         val url = if (result.isEmpty) null else TranslationConfig.config.getUrl(meetingId)
         colibriSessionManager.setTranslator(url, result.requestNames.toList(), result.exportNames.toList())
+
+        logger.info(
+            "Applied audio translation: requests=$requests, syntheticExports=${result.exportNames}, " +
+                "signaledBridgesFor=$affected, translator=${if (url != null) "enabled" else "disabled"}"
+        )
     }
 
     /** The base (first non-synthetic audio) source name for a sender, or null if it has none / is not present. */
