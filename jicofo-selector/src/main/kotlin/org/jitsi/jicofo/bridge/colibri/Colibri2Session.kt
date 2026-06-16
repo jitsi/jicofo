@@ -695,4 +695,7 @@ private fun createTranslatorConnect(url: URI, requests: List<String>, exports: L
 ).apply {
     setRequests(requests)
     setExports(exports)
+    TranslationConfig.config.httpHeaders.forEach { (name, value) ->
+        addHttpHeader(name, value)
+    }
 }

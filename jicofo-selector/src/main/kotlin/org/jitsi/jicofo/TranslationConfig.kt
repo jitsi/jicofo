@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo
 
+import com.typesafe.config.ConfigObject
 import org.jitsi.config.JitsiConfig
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.TemplatedUrl
@@ -34,6 +35,19 @@ class TranslationConfig private constructor() {
             it
         }
     }
+
+    private val httpHeadersProp: Map<String, String>? by optionalconfig {
+        "jicofo.translation.http-headers".from(JitsiConfig.newConfig)
+            .convertFrom<ConfigObject> { cfg ->
+                cfg.entries.associate { entry ->
+                    entry.key to entry.value.unwrapped().toString()
+                }
+            }
+    }
+
+    /** Static HTTP headers added to the translator connect (e.g. Cloudflare Access service-token credentials). */
+    val httpHeaders: Map<String, String>
+        get() = httpHeadersProp ?: emptyMap()
 
     /** Whether live translation is configured (an URL template is set). */
     val enabled: Boolean
