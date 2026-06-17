@@ -24,6 +24,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.TranscriptionConfig
+import org.jitsi.jicofo.TranslationConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.jicofo.bridge.BridgeSelector
@@ -42,6 +44,7 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
@@ -51,7 +54,15 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.bad_request
 import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
 import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
+import java.net.URI
+import java.net.URLEncoder
 import java.util.Collections.singletonList
+
+/** The fixed connect id used for the (single) transcriber connect. */
+private const val TRANSCRIBER_CONNECT_ID = "transcriber"
+
+/** The connect id used for the single-bridge translator connect. */
+private const val TRANSLATOR_CONNECT_ID = "translator"
 
 /**
  * Implements [ColibriSessionManager] using colibri2.
@@ -76,8 +87,12 @@ class ColibriV2SessionManager(
     override fun addListener(listener: ColibriSessionManager.Listener) = eventEmitter.addHandler(listener)
     override fun removeListener(listener: ColibriSessionManager.Listener) = eventEmitter.removeHandler(listener)
 
-    /** The session currently used for transcription, if any */
-    private var transcriberSession: Colibri2Session? = null
+    /**
+     * The single session that currently hosts the transcriber and/or translator connects. Selected as the first
+     * available session and reselected if it is removed. (The per-source translation mode signals connects to each
+     * source's own session instead; see [updateConnects].)
+     */
+    private var connectSession: Colibri2Session? = null
 
     /** The transcriber URL template */
     private var transcriberUrl: TemplatedUrl? = null
@@ -87,9 +102,6 @@ class ColibriV2SessionManager(
 
     /** Custom URL parameters for transcription */
     private var transcriberUrlParams: Map<String, String>? = null
-
-    /** The session currently used for translation, if any */
-    private var translatorSession: Colibri2Session? = null
 
     /** The translator URL template */
     private var translatorUrl: TemplatedUrl? = null
@@ -164,29 +176,11 @@ class ColibriV2SessionManager(
         session.relayId?.let { removedRelayId ->
             sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
         }
-        if (session == transcriberSession) {
-            logger.info("Removing transcriber session: $session")
-            transcriberSession = null
-            transcriberUrl?.let {
-                // Trigger selection of a new session for transcribing.
-                val savedUrl = it
-                val savedHeaders = transcriberCustomHeaders
-                val savedParams = transcriberUrlParams
-                transcriberUrl = null
-                setTranscriberUrl(savedUrl, savedHeaders, savedParams)
-            }
-        }
-        if (session == translatorSession) {
-            logger.info("Removing translator session: $session")
-            translatorSession = null
-            translatorUrl?.let {
-                // Trigger selection of a new session for translation.
-                val savedUrl = it
-                val savedRequests = translatorRequests
-                val savedExports = translatorExports
-                translatorUrl = null
-                setTranslator(savedUrl, savedRequests, savedExports)
-            }
+        if (session == connectSession) {
+            // The session hosting the transcriber/translator connects went away; reselect another one.
+            logger.info("Removing connect session: $session")
+            connectSession = null
+            updateConnects()
         }
         return participants.toSet()
     }
@@ -290,25 +284,12 @@ class ColibriV2SessionManager(
                 return Pair(session, false)
             }
 
-            val enableTranscriber = transcriberUrl != null && transcriberSession == null
-            val enableTranslator = translatorUrl != null && translatorSession == null
-            session = Colibri2Session(
-                this,
-                bridge,
-                visitor,
-                if (enableTranscriber) transcriberUrl else null,
-                logger,
-                if (enableTranscriber) transcriberCustomHeaders else null,
-                if (enableTranscriber) transcriberUrlParams else null,
-                if (enableTranslator) translatorUrl else null,
-                if (enableTranslator) translatorRequests else emptyList(),
-                if (enableTranslator) translatorExports else emptyList()
-            )
-            if (enableTranscriber) {
-                transcriberSession = session
-            }
-            if (enableTranslator) {
-                translatorSession = session
+            session = Colibri2Session(this, bridge, visitor, logger)
+            // If connects are already desired but no session hosts them yet, this new session becomes the host;
+            // pre-populate them so they go out in the create (allocation) request rather than a separate update.
+            if (connectSession == null && (transcriberUrl != null || translatorUrl != null)) {
+                session.setInitialConnects(computeConnectSpecsFor(session))
+                connectSession = session
             }
             return Pair(session, true)
         }
@@ -319,63 +300,81 @@ class ColibriV2SessionManager(
         urlParams: Map<String, String>?
     ) = synchronized(syncRoot) {
         if (transcriberUrl == url) {
-            return
+            return@synchronized
         }
         if (transcriberUrl != null && url != null) {
-            logger.error("Changing to a different URL is not supported")
-            return
+            logger.error("Changing to a different transcriber URL is not supported")
+            return@synchronized
         }
-
-        val enable = url != null
         transcriberUrl = url
         transcriberCustomHeaders = customHeaders
         transcriberUrlParams = urlParams
-
-        if (enable) {
-            if (transcriberSession != null) {
-                transcriberSession?.setTranscriberUrl(url, customHeaders, urlParams)
-            } else {
-                if (sessions.isEmpty()) {
-                    logger.info("No session available for transcribing, will enable it once a session is created")
-                } else {
-                    // Use the first session.
-                    transcriberSession = sessions.values.first()
-                    logger.info("Using ${transcriberSession?.bridge} for transcribing")
-                    transcriberSession?.setTranscriberUrl(url, customHeaders, urlParams)
-                }
-            }
-        } else {
-            transcriberSession?.setTranscriberUrl(null, null, null)
-            transcriberSession = null
-        }
-
-        Unit
+        updateConnects()
     }
+
+    /** Recompute and (re)signal the transcriber/translator connects to the session that should host them. */
+    private fun updateConnects() {
+        if (transcriberUrl == null && translatorUrl == null) {
+            connectSession?.setConnects(emptyList())
+            connectSession = null
+            return
+        }
+        val session = connectSession ?: sessions.values.firstOrNull()
+        if (session == null) {
+            logger.info("No session available yet for transcriber/translator connects.")
+            return
+        }
+        connectSession = session
+        session.setConnects(computeConnectSpecsFor(session))
+    }
+
+    /** The connects desired on [session] (transcriber and/or translator), with urls resolved for its bridge. */
+    private fun computeConnectSpecsFor(session: Colibri2Session): List<ConnectSpec> = buildList {
+        transcriberUrl?.let { add(buildTranscriberSpec(session, it)) }
+        translatorUrl?.let { add(buildTranslatorSpec(session, it)) }
+    }
+
+    private fun buildTranscriberSpec(session: Colibri2Session, urlTemplate: TemplatedUrl): ConnectSpec {
+        var url = urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, session.bridge.region ?: "")
+        val params = transcriberUrlParams
+        if (!params.isNullOrEmpty()) {
+            val queryString = params.entries.joinToString("&") { (key, value) ->
+                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+            }
+            val separator = if (url.query == null) "?" else "&"
+            url = URI(url.toString() + separator + queryString)
+        }
+        return ConnectSpec(
+            id = TRANSCRIBER_CONNECT_ID,
+            url = url,
+            type = Connect.Types.TRANSCRIBER,
+            httpHeaders = transcriberCustomHeaders ?: TranscriptionConfig.config.httpHeaders,
+            ping = if (TranscriptionConfig.config.pingEnabled) {
+                ConnectSpec.Ping(
+                    TranscriptionConfig.config.pingInterval.toMillis().toInt(),
+                    TranscriptionConfig.config.pingTimeout.toMillis().toInt()
+                )
+            } else {
+                null
+            }
+        )
+    }
+
+    private fun buildTranslatorSpec(session: Colibri2Session, urlTemplate: TemplatedUrl) = ConnectSpec(
+        id = TRANSLATOR_CONNECT_ID,
+        url = urlTemplate.resolve(TranslationConfig.REGION_TEMPLATE, session.bridge.region ?: ""),
+        type = Connect.Types.TRANSLATOR,
+        exports = translatorExports,
+        requests = translatorRequests,
+        httpHeaders = TranslationConfig.config.httpHeaders
+    )
 
     override fun setTranslator(url: TemplatedUrl?, requests: List<String>, exports: List<String>) =
         synchronized(syncRoot) {
-            val enable = url != null
             translatorUrl = url
             translatorRequests = requests
             translatorExports = exports
-
-            if (enable) {
-                if (translatorSession == null) {
-                    if (sessions.isEmpty()) {
-                        logger.info("No session available for translation, will enable it once a session is created")
-                        return@synchronized
-                    }
-                    // Use the first session, mirroring transcriber selection.
-                    translatorSession = sessions.values.first()
-                    logger.info("Using ${translatorSession?.bridge} for translation")
-                }
-                translatorSession?.setTranslator(url, requests, exports)
-            } else {
-                translatorSession?.setTranslator(null, emptyList(), emptyList())
-                translatorSession = null
-            }
-
-            Unit
+            updateConnects()
         }
 
     /** Get the bridge-to-bridge-properties map needed for bridge selection. */

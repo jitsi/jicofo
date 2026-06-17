@@ -20,8 +20,6 @@ package org.jitsi.jicofo.bridge.colibri
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.OctoConfig
-import org.jitsi.jicofo.TranscriptionConfig
-import org.jitsi.jicofo.TranslationConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
@@ -30,7 +28,6 @@ import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
-import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
@@ -39,7 +36,6 @@ import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
-import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jitsi.xmpp.extensions.colibri2.Endpoints
 import org.jitsi.xmpp.extensions.colibri2.InitialLastN
 import org.jitsi.xmpp.extensions.colibri2.Media
@@ -51,7 +47,6 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smackx.muc.MUCRole
-import java.net.URI
 import java.util.Collections.singletonList
 import java.util.UUID
 
@@ -61,22 +56,19 @@ class Colibri2Session(
     val bridge: Bridge,
     // Whether the session was constructed for the purpose of visitor nodes
     val visitor: Boolean,
-    private var transcriberUrl: TemplatedUrl?,
-    parentLogger: Logger,
-    private var transcriberCustomHeaders: Map<String, String>? = null,
-    private var transcriberUrlParams: Map<String, String>? = null,
-    /** The live-translation websocket URL template, or null when translation is disabled on this session. */
-    private var translatorUrl: TemplatedUrl? = null,
-    /** Source names requested from the translator (the synthetic, language-encoded sources it produces). */
-    private var translatorRequests: List<String> = emptyList(),
-    /** Source names exported to the translator (the senders' audio to translate). */
-    private var translatorExports: List<String> = emptyList()
+    parentLogger: Logger
 ) : CascadeNode<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger).apply {
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+
+    /**
+     * The colibri2 `<connect>`s currently active on this session, by id (the last set signaled to the bridge).
+     * Managed via [setInitialConnects] (for the create request) and [setConnects] (delta updates).
+     */
+    private val connects = LinkedHashMap<String, ConnectSpec>()
 
     /**
      * Save the relay ID locally since it is possible for the relay ID of the Bridge to change and we don't want it to
@@ -209,106 +201,56 @@ class Colibri2Session(
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
             setRtcstatsEnabled(colibriSessionManager.rtcStatsEnabled)
-            transcriberUrl?.let {
-                var url = resolveTranscriberUrl(it)
-                val urlParams = transcriberUrlParams
-                if (urlParams != null && urlParams.isNotEmpty()) {
-                    val queryString = urlParams.entries.joinToString("&") { (key, value) ->
-                        "${java.net.URLEncoder.encode(key, "UTF-8")}=${java.net.URLEncoder.encode(value, "UTF-8")}"
-                    }
-                    val separator = if (url.query == null) "?" else "&"
-                    url = java.net.URI(url.toString() + separator + queryString)
-                }
-                val headers = transcriberCustomHeaders ?: TranscriptionConfig.config.httpHeaders
-                logger.info("Adding connect for transcriber, url=$url")
-                addConnect(
-                    createConnect(
-                        url,
-                        headers,
-                        TranscriptionConfig.config.pingEnabled,
-                        TranscriptionConfig.config.pingInterval.toMillis().toInt(),
-                        TranscriptionConfig.config.pingTimeout.toMillis().toInt()
-                    )
-                )
-            }
-            translatorUrl?.let {
-                logger.info("Adding connect for translator")
-                addConnect(createTranslatorConnect(resolveTranslatorUrl(it), translatorRequests, translatorExports))
-            }
-        }
-    }
-
-    private fun resolveTranscriberUrl(urlTemplate: TemplatedUrl): URI {
-        return urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, bridge.region ?: "")
-    }
-
-    private fun resolveTranslatorUrl(urlTemplate: TemplatedUrl): URI {
-        return urlTemplate.resolve(TranslationConfig.REGION_TEMPLATE, bridge.region ?: "")
-    }
-
-    fun setTranscriberUrl(
-        urlTemplate: TemplatedUrl?,
-        customHeaders: Map<String, String>?,
-        urlParams: Map<String, String>?
-    ) {
-        if (transcriberUrl != urlTemplate) {
-            transcriberUrl = urlTemplate
-            transcriberCustomHeaders = customHeaders
-            transcriberUrlParams = urlParams
-            val request = createRequest(create = false)
-            if (urlTemplate != null) {
-                var url = resolveTranscriberUrl(urlTemplate)
-                // Append URL params if provided
-                if (urlParams != null && urlParams.isNotEmpty()) {
-                    val queryString = urlParams.entries.joinToString("&") { (key, value) ->
-                        "${java.net.URLEncoder.encode(key, "UTF-8")}=${java.net.URLEncoder.encode(value, "UTF-8")}"
-                    }
-                    val separator = if (url.query == null) "?" else "&"
-                    url = java.net.URI(url.toString() + separator + queryString)
-                }
-                val headers = customHeaders ?: TranscriptionConfig.config.httpHeaders
-                logger.info("Adding connect, url=$url")
-                request.addConnect(
-                    createConnect(
-                        url,
-                        headers,
-                        TranscriptionConfig.config.pingEnabled,
-                        TranscriptionConfig.config.pingInterval.toMillis().toInt(),
-                        TranscriptionConfig.config.pingTimeout.toMillis().toInt()
-                    )
-                )
-            } else {
-                logger.info("Removing connects")
-                request.setEmptyConnects()
-            }
-            sendRequest(request.build(), "setTranscriberUrl")
-        } else {
-            logger.info("No change in audio record URL.")
+            // Include the session's connects in the create request so they don't need a separate update IQ.
+            connects.values.forEach { addConnect(it.toConnect(create = true)) }
         }
     }
 
     /**
-     * Enable, update, or disable the live-translation connect on this session.
-     *
-     * Unlike the transcriber, the request list changes over the lifetime of the connection, so the connect is
-     * (re)sent on every call when [url] is non-null. Passing a null [url] disables translation.
-     *
-     * Note: translation and transcription are managed independently here; the bridge treats the <connects> element as
-     * authoritative, so a session is not expected to run both a transcriber and a translator connect simultaneously.
+     * Pre-populate the set of connects to include in this session's create request, without sending anything. Used
+     * when a session is created while connects are already desired for it.
      */
-    fun setTranslator(url: TemplatedUrl?, requests: List<String>, exports: List<String>) {
-        translatorUrl = url
-        translatorRequests = requests
-        translatorExports = exports
-        val request = createRequest(create = false)
-        if (url != null) {
-            logger.info("Setting translator connect, requests=$requests exports=$exports")
-            request.addConnect(createTranslatorConnect(resolveTranslatorUrl(url), requests, exports))
-        } else {
-            logger.info("Removing translator connect")
-            request.setEmptyConnects()
+    fun setInitialConnects(specs: List<ConnectSpec>) {
+        connects.clear()
+        specs.forEach { connects[it.id] = it }
+    }
+
+    /**
+     * Apply [desired] as the full set of connects for this session, signaling only the delta to the bridge:
+     * connects with a new id are added with create=true, connects no longer present are expired, and connects whose
+     * parameters changed are re-signaled as an update. Connects whose parameters are unchanged are left alone.
+     */
+    fun setConnects(desired: List<ConnectSpec>) {
+        val desiredById = desired.associateBy { it.id }
+        val request = createRequest()
+        var hasDelta = false
+
+        (connects.keys - desiredById.keys).toList().forEach { id ->
+            logger.info("Expiring connect id=$id")
+            request.addConnect(connects.getValue(id).toConnect(expire = true))
+            hasDelta = true
         }
-        sendRequest(request.build(), "setTranslator")
+        desiredById.forEach { (id, spec) ->
+            val current = connects[id]
+            when {
+                current == null -> {
+                    logger.info("Adding connect id=$id")
+                    request.addConnect(spec.toConnect(create = true))
+                    hasDelta = true
+                }
+                !current.sameAs(spec) -> {
+                    logger.info("Updating connect id=$id")
+                    request.addConnect(spec.toConnect())
+                    hasDelta = true
+                }
+            }
+        }
+
+        connects.clear()
+        connects.putAll(desiredById)
+        if (hasDelta) {
+            sendRequest(request.build(), "setConnects")
+        }
     }
 
     /**
@@ -662,40 +604,3 @@ private fun ConferenceModifyIQ.Builder.addExpire(endpointId: String) = addEndpoi
         setExpire(true)
     }.build()
 )
-
-private fun createConnect(
-    url: URI,
-    httpHeaders: Map<String, String> = emptyMap(),
-    pingEnabled: Boolean = false,
-    pingInterval: Int = 0,
-    pingTimeout: Int = 0
-) = Connect(
-    url = url,
-    type = Connect.Types.TRANSCRIBER,
-    protocol = Connect.Protocols.MEDIAJSON,
-    audio = true
-).apply {
-    httpHeaders.forEach { (name, value) ->
-        addHttpHeader(name, value)
-    }
-    if (pingEnabled) {
-        setPing(pingInterval, pingTimeout)
-    }
-}
-
-/**
- * Build a translator [Connect]: the bridge exports the senders' audio to it ([exports]) and requests back the
- * synthetic, language-encoded translated sources it produces ([requests]).
- */
-private fun createTranslatorConnect(url: URI, requests: List<String>, exports: List<String>) = Connect(
-    url = url,
-    type = Connect.Types.TRANSLATOR,
-    protocol = Connect.Protocols.MEDIAJSON,
-    audio = true
-).apply {
-    setRequests(requests)
-    setExports(exports)
-    TranslationConfig.config.httpHeaders.forEach { (name, value) ->
-        addHttpHeader(name, value)
-    }
-}
