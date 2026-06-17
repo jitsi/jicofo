@@ -19,6 +19,7 @@ package org.jitsi.jicofo
 
 import com.typesafe.config.ConfigObject
 import org.jitsi.config.JitsiConfig
+import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
@@ -53,10 +54,34 @@ class TranslationConfig private constructor() {
     val enabled: Boolean
         get() = urlTemplate != null
 
+    /** How translation connects are placed on bridges. */
+    val mode: Mode by config {
+        "jicofo.translation.mode".from(JitsiConfig.newConfig).convertFrom<String> {
+            Mode.valueOf(it.uppercase().replace('-', '_'))
+        }
+    }
+
+    /**
+     * The maximum number of target languages handled by a single translation connect. Only applies in [Mode.PER_SOURCE]
+     * (a sender requesting more is split across multiple connects on its bridge); ignored in [Mode.SINGLE_BRIDGE].
+     */
+    val maxLanguagesPerConnect: Int by config {
+        "jicofo.translation.max-languages-per-connect".from(JitsiConfig.newConfig)
+    }
+
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
         TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
             set(MEETING_ID_TEMPLATE, meetingId)
         }
+    }
+
+    /** How translation connects are placed on bridges. */
+    enum class Mode {
+        /** Each sender's audio is translated on its own (local) bridge, split by [maxLanguagesPerConnect]. */
+        PER_SOURCE,
+
+        /** A single connect on one selected bridge handles all sources and languages. */
+        SINGLE_BRIDGE
     }
 
     companion object {

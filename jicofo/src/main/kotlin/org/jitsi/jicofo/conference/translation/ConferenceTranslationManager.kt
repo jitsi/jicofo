@@ -17,6 +17,7 @@ package org.jitsi.jicofo.conference.translation
 
 import org.jitsi.jicofo.TranslationConfig
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
+import org.jitsi.jicofo.bridge.colibri.TranslationRequest
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -94,12 +95,17 @@ class ConferenceTranslationManager(
             colibriSessionManager.updateParticipant(sender, sources = conferenceSources[sender])
         }
 
-        // Enable/update/disable the translator connect on the selected bridge.
+        // Enable/update/disable the translator connect(s). The colibri layer decides placement (per-source or
+        // single-bridge) based on configuration.
         val url = if (result.isEmpty) null else TranslationConfig.config.getUrl(meetingId)
-        colibriSessionManager.setTranslator(url, result.requestNames.toList(), result.exportNames.toList())
+        val translationRequests = result.sourcesBySender.mapNotNull { (sender, sources) ->
+            val baseName = baseName(sender) ?: return@mapNotNull null
+            TranslationRequest(sender, baseName, sources.map { it.name!! }.sorted())
+        }
+        colibriSessionManager.setTranslator(url, translationRequests)
 
         logger.info(
-            "Applied audio translation: requests=$requests, syntheticSources=${result.requestNames}, " +
+            "Applied audio translation: requests=$requests, translationRequests=$translationRequests, " +
                 "signaledBridgesFor=$affected, translator=${if (url != null) "enabled" else "disabled"}"
         )
     }

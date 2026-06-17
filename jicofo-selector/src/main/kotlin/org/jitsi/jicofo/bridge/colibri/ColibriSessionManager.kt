@@ -67,13 +67,13 @@ interface ColibriSessionManager {
     )
 
     /**
-     * Enable, update, or disable live translation on the selected bridge.
+     * Enable, update, or disable live translation.
      *
-     * @param url the websocket URL template the bridge should connect to, or null to disable translation.
-     * @param requests source names requested from the translator (the synthetic, language-encoded sources).
-     * @param exports source names exported to the translator (the senders' audio to translate).
+     * @param url the websocket URL template the bridge(s) should connect to, or null to disable translation.
+     * @param requests the per-sender translation requests. How these are placed on bridges depends on the configured
+     * [org.jitsi.jicofo.TranslationConfig.mode].
      */
-    fun setTranslator(url: TemplatedUrl?, requests: List<String> = emptyList(), exports: List<String> = emptyList())
+    fun setTranslator(url: TemplatedUrl?, requests: List<TranslationRequest> = emptyList())
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
@@ -118,4 +118,17 @@ data class ParticipantAllocationParameters(
     val visitor: Boolean,
     val supportsPrivateAddresses: Boolean,
     val medias: Set<Media>
+)
+
+/**
+ * A request to translate one sender's audio into one or more languages.
+ *
+ * @param senderEndpointId the endpoint id of the sender whose audio is translated (used to find its local bridge).
+ * @param sourceName the sender's base audio source name, exported to the translator.
+ * @param syntheticSourceNames the synthetic, language-encoded source names requested back from the translator.
+ */
+data class TranslationRequest(
+    val senderEndpointId: String,
+    val sourceName: String,
+    val syntheticSourceNames: List<String>
 )
