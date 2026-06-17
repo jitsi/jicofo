@@ -111,6 +111,11 @@ internal fun ParticipantInfo.toEndpoint(
         if (useSsrcRewriting) {
             addCapability(Capability.CAP_SSRC_REWRITING_SUPPORT)
         }
+        if (useRtpMidDemux) {
+            // TODO: replace the literal with Capability.CAP_RTP_MID_DEMUX_SUPPORT once a jitsi-xmpp-extensions release
+            // containing it is depended on here.
+            addCapability("rtp-mid-demux")
+        }
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
     if (!expire) {

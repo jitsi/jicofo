@@ -103,6 +103,7 @@ data class ParticipantAllocationParameters(
     val region: String?,
     val sources: EndpointSourceSet,
     val useSsrcRewriting: Boolean,
+    val useRtpMidDemux: Boolean,
     val forceMuteAudio: Boolean,
     val forceMuteVideo: Boolean,
     val useSctp: Boolean,

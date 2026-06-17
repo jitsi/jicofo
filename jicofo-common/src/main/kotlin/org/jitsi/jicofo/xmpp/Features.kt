@@ -36,6 +36,9 @@ enum class Features(val value: String) {
     /** Source name signalling. */
     SOURCE_NAMES("http://jitsi.org/source-name"),
     SSRC_REWRITING_V1("http://jitsi.org/ssrc-rewriting-1"),
+
+    /** The endpoint can demux forwarded media by the RTP sdes:mid header extension (requires SSRC rewriting). */
+    RTP_MID_DEMUX("http://jitsi.org/rtp-mid-demux"),
     RECEIVE_MULTIPLE_STREAMS("http://jitsi.org/receive-multiple-video-streams"),
 
     /** Jingle sources encoded as JSON. */

@@ -72,6 +72,10 @@ class ConferenceConfig private constructor() {
         "jicofo.conference.use-ssrc-rewriting".from(newConfig)
     }
 
+    val useRtpMidDemux: Boolean by config {
+        "jicofo.conference.use-rtp-mid-demux".from(newConfig)
+    }
+
     val useJsonEncodedSources: Boolean by config {
         "jicofo.conference.use-json-encoded-sources".from(newConfig)
     }

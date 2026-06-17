@@ -171,6 +171,12 @@ open class Participant @JvmOverloads constructor(
     /** Return `true` if SSRC rewriting should be used for this participant. */
     fun useSsrcRewriting() = ConferenceConfig.config.useSsrcRewriting && hasSsrcRewritingSupport()
 
+    /** Return `true` if this participant supports demuxing forwarded media by the RTP sdes:mid header extension. */
+    fun hasRtpMidDemuxSupport() = supportedFeatures.contains(Features.RTP_MID_DEMUX)
+
+    /** Return `true` if the bridge should stamp mids on media forwarded to this participant. Requires SSRC rewriting. */
+    fun useRtpMidDemux() = useSsrcRewriting() && ConferenceConfig.config.useRtpMidDemux && hasRtpMidDemuxSupport()
+
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
     fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
 

@@ -33,6 +33,7 @@ class ParticipantInfo(
     val medias = parameters.medias
     val supportsPrivateAddresses = parameters.supportsPrivateAddresses
     val useSsrcRewriting = parameters.useSsrcRewriting
+    val useRtpMidDemux = parameters.useRtpMidDemux
     val visitor = parameters.visitor
 
     var audioMuted = parameters.forceMuteAudio
@@ -48,6 +49,7 @@ class ParticipantInfo(
         put("video_muted", videoMuted)
         put("private_addresses", supportsPrivateAddresses)
         put("ssrc_rewriting", useSsrcRewriting)
+        put("rtp_mid_demux", useRtpMidDemux)
         put("visitor", visitor)
     }
 }
