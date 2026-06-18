@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools.Companion.scheduledPool
+import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.InvalidBridgeSessionIdException
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.SenderCountExceededException
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
@@ -174,8 +175,14 @@ open class Participant @JvmOverloads constructor(
     /** Return `true` if this participant supports demuxing forwarded media by the RTP sdes:mid header extension. */
     fun hasRtpMidDemuxSupport() = supportedFeatures.contains(Features.RTP_MID_DEMUX)
 
-    /** Return `true` if the bridge should stamp mids on media forwarded to this participant. Requires SSRC rewriting. */
-    fun useRtpMidDemux() = useSsrcRewriting() && ConferenceConfig.config.useRtpMidDemux && hasRtpMidDemuxSupport()
+    /**
+     * Return `true` if the bridge should stamp mids on media forwarded to this participant. Requires SSRC rewriting and
+     * that the sdes:mid header extension is being offered.
+     */
+    fun useRtpMidDemux() = useSsrcRewriting() &&
+        ConferenceConfig.config.useRtpMidDemux &&
+        hasRtpMidDemuxSupport() &&
+        Config.config.mid.enabled()
 
     /** Return `true` if this participant supports receiving Jingle sources encoded in JSON. */
     fun supportsJsonEncodedSources() = supportedFeatures.contains(Features.JSON_SOURCES)
