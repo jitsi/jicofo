@@ -355,8 +355,9 @@ public class JibriSession
             // treats the recording as in-progress; the client is notified of the eventual outcome via presence
             // (ON on success, OFF/ERROR if the retries are exhausted). This bridges brief capacity shortfalls,
             // e.g. a demand spike while the autoscaler spins up more instances, or two requests racing for the
-            // last free instance.
-            if (busyRetryDelayMs > 0 && busyRetries < maxBusyRetries)
+            // last free instance. A busy-retry-delay of 0 is honored as "retry immediately" (the retry is
+            // asynchronous, so this does not spin a thread); the feature is disabled only via busy-retries = 0.
+            if (busyRetries < maxBusyRetries)
             {
                 scheduleBusyRetry();
                 return;
@@ -400,7 +401,7 @@ public class JibriSession
             + " in " + busyRetryDelayMs + "ms");
         ScheduledFuture<?> newTask = TaskPools.getScheduledPool().schedule(
             () -> TaskPools.getIoPool().execute(new BusyRetryTask()),
-            busyRetryDelayMs,
+            Math.max(0L, busyRetryDelayMs),
             TimeUnit.MILLISECONDS);
         ScheduledFuture<?> oldTask = busyRetryTask.getAndSet(newTask);
         if (oldTask != null)

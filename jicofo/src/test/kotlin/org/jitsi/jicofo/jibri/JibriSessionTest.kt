@@ -199,4 +199,30 @@ class JibriSessionTest : ShouldSpec({
             }
         }
     }
+    context("When busy-retries are enabled with a zero delay") {
+        // selectJibri() returns no instance (all busy) once, then one frees up.
+        every { detector.selectJibri() } returnsMany listOf(null, JidCreate.bareFrom("jibri1@bar.com"))
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                status = JibriIq.Status.PENDING
+            }
+        }
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            3,
+            // busyRetryDelayMs: 0 means retry immediately, NOT disabled
+            0L,
+            logger
+        )
+        should("still retry (a zero delay does not disable the feature)") {
+            busyRetrySession.start()
+            verify(timeout = 5000, exactly = 2) { detector.selectJibri() }
+            verify(timeout = 5000, exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
 })
