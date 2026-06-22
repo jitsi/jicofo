@@ -67,7 +67,13 @@ private const val TRANSLATOR_CONNECT_ID = "translator"
 /**
  * The per-source translator connect specs for a single [request]: one connect per chunk of at most
  * [maxLanguagesPerConnect] requested languages, each exporting the sender's source and requesting its chunk of
- * synthetic outputs. Connect ids are "translator-<senderEndpointId>-<chunkIndex>" so they are stable across updates.
+ * synthetic outputs. Connect ids are "translator-<sourceName>-<chunkIndex>". The source name (not the endpoint id) keys
+ * the connect so that an endpoint with more than one translated audio source does not collide.
+ *
+ * Note: the chunking is positional, so when [maxLanguagesPerConnect] is exceeded and a language in an earlier chunk is
+ * removed, the first language of the next chunk shifts into the previous connect (a brief glitch for that language). A
+ * stable mapping would require persisting the language->connect assignment; this is not worth it for the rare case of a
+ * single source translated into more than [maxLanguagesPerConnect] languages. See [buildPerSourceTranslatorSpecs].
  */
 internal fun perSourceTranslatorSpecs(
     request: TranslationRequest,
@@ -76,7 +82,7 @@ internal fun perSourceTranslatorSpecs(
     httpHeaders: Map<String, String>
 ): List<ConnectSpec> = request.syntheticSourceNames.chunked(maxLanguagesPerConnect).mapIndexed { index, chunk ->
     ConnectSpec(
-        id = "$TRANSLATOR_CONNECT_ID-${request.senderEndpointId}-$index",
+        id = "$TRANSLATOR_CONNECT_ID-${request.sourceName}-$index",
         url = url,
         type = Connect.Types.TRANSLATOR,
         exports = listOf(request.sourceName),
@@ -384,13 +390,23 @@ class ColibriV2SessionManager(
         val url = urlTemplate.resolve(TranslationConfig.REGION_TEMPLATE, session.bridge.region ?: "")
         return translatorRequests
             .filter { participants[it.senderEndpointId]?.session == session }
-            .flatMap {
+            .flatMap { request ->
                 perSourceTranslatorSpecs(
-                    it,
+                    request,
                     url,
                     TranslationConfig.config.maxLanguagesPerConnect,
                     TranslationConfig.config.httpHeaders
-                )
+                ).also { specs ->
+                    // Detect the at-risk condition for the positional-chunking glitch noted on perSourceTranslatorSpecs:
+                    // a source split across multiple connects can have languages move between connects on a removal.
+                    if (specs.size > 1) {
+                        logger.warn(
+                            "Source ${request.sourceName} is translated into ${request.syntheticSourceNames.size} " +
+                                "languages, split across ${specs.size} translator connects; removing a language may " +
+                                "move others between connects (possible brief glitch)."
+                        )
+                    }
+                }
             }
     }
 

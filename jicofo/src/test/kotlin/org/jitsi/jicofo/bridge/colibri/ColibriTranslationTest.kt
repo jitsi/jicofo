@@ -129,7 +129,7 @@ class ColibriTranslationTest : ShouldSpec() {
 
             should("send a per-source translator connect with create") {
                 connect shouldNotBe null
-                connect!!.id shouldBe "translator-p1-0"
+                connect!!.id shouldBe "translator-p1-a0-0"
                 connect.type shouldBe Connect.Types.TRANSLATOR
                 connect.create shouldBe true
                 connect.expire shouldBe false
@@ -156,7 +156,7 @@ class ColibriTranslationTest : ShouldSpec() {
 
             should("re-signal the same connect as an update (not create)") {
                 connect shouldNotBe null
-                connect!!.id shouldBe "translator-p1-0"
+                connect!!.id shouldBe "translator-p1-a0-0"
                 connect.create shouldBe false
                 connect.expire shouldBe false
                 connect.getRequests() shouldBe listOf("p1-a0.en", "p1-a0.es")
@@ -173,7 +173,7 @@ class ColibriTranslationTest : ShouldSpec() {
 
             should("expire the connect") {
                 connect shouldNotBe null
-                connect!!.id shouldBe "translator-p1-0"
+                connect!!.id shouldBe "translator-p1-a0-0"
                 connect.expire shouldBe true
             }
         }

@@ -64,8 +64,8 @@ class ConnectSpecTest : ShouldSpec() {
                 spec.sameAs(spec.copy()) shouldBe true
             }
             should("ignore source-name ordering") {
-                spec.sameAs(spec.copy(exports = listOf("b-a0", "a-a0"), requests = listOf("b-a0.fr", "a-a0.es"))) shouldBe
-                    true
+                val reordered = spec.copy(exports = listOf("b-a0", "a-a0"), requests = listOf("b-a0.fr", "a-a0.es"))
+                spec.sameAs(reordered) shouldBe true
             }
             should("differ when the exported source set changes") {
                 spec.sameAs(spec.copy(exports = listOf("a-a0"))) shouldBe false

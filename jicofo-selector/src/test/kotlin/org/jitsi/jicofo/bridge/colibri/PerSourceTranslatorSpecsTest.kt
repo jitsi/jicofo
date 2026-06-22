@@ -33,7 +33,7 @@ class PerSourceTranslatorSpecsTest : ShouldSpec() {
 
             should("produce a single connect with all languages") {
                 specs.size shouldBe 1
-                specs[0].id shouldBe "translator-aaaaaaaa-0"
+                specs[0].id shouldBe "translator-aaaaaaaa-a0-0"
                 specs[0].type shouldBe Connect.Types.TRANSLATOR
                 specs[0].exports shouldContainExactly listOf("aaaaaaaa-a0")
                 specs[0].requests shouldContainExactly listOf("aaaaaaaa-a0.en", "aaaaaaaa-a0.es")
@@ -47,9 +47,9 @@ class PerSourceTranslatorSpecsTest : ShouldSpec() {
 
             should("split into ceil(n / max) connects with stable ids") {
                 specs.map { it.id } shouldContainExactly listOf(
-                    "translator-aaaaaaaa-0",
-                    "translator-aaaaaaaa-1",
-                    "translator-aaaaaaaa-2"
+                    "translator-aaaaaaaa-a0-0",
+                    "translator-aaaaaaaa-a0-1",
+                    "translator-aaaaaaaa-a0-2"
                 )
             }
             should("chunk the languages, each connect exporting the same source") {
