@@ -171,6 +171,24 @@ public class JibriSession
     private final long busyRetryDelayMs;
 
     /**
+     * How many busy-retries have been scheduled so far for this session. Bounded by {@link #maxBusyRetries} across
+     * the whole session (it is not reset per attempt).
+     */
+    private int busyRetries = 0;
+
+    /**
+     * Reference to a scheduled busy-retry task, so it can be cancelled (e.g. on {@link #stop(Jid)}).
+     */
+    @NotNull
+    private final AtomicReference<ScheduledFuture<?>> busyRetryTask = new AtomicReference<>();
+
+    /**
+     * Set once the session is stopped, so that a busy-retry task which is already firing becomes a no-op instead of
+     * (re)starting a session that the caller has already torn down.
+     */
+    private boolean cancelled = false;
+
+    /**
      * The full JID of the entity that has initiated the recording flow.
      */
     private final Jid initiator;
@@ -322,7 +340,31 @@ public class JibriSession
     private void startInternal()
         throws StartException
     {
-        final Jid jibriJid = selectJibriWithBusyRetries();
+        final Jid jibriJid = jibriDetector.selectJibri();
+
+        if (jibriJid == null)
+        {
+            if (!jibriDetector.isAnyInstanceConnected())
+            {
+                logger.error("Unable to find an available Jibri, can't start (no instances connected)");
+                throw new StartException.NotAvailable();
+            }
+
+            // All connected instances are busy. Rather than blocking the calling thread, schedule an asynchronous
+            // retry (up to maxBusyRetries times) in case one frees up, and return without failing. The caller
+            // treats the recording as in-progress; the client is notified of the eventual outcome via presence
+            // (ON on success, OFF/ERROR if the retries are exhausted). This bridges brief capacity shortfalls,
+            // e.g. a demand spike while the autoscaler spins up more instances, or two requests racing for the
+            // last free instance.
+            if (busyRetryDelayMs > 0 && busyRetries < maxBusyRetries)
+            {
+                scheduleBusyRetry();
+                return;
+            }
+
+            logger.error("Unable to find an available Jibri, can't start (all instances busy)");
+            throw new StartException.AllBusy();
+        }
 
         try
         {
@@ -346,58 +388,36 @@ public class JibriSession
     }
 
     /**
-     * Selects a Jibri to use, retrying when all connected instances are busy.
-     *
-     * When {@link JibriDetector#selectJibri()} returns no instance because they are all busy, this waits up to
-     * {@link #maxBusyRetries} times (sleeping {@link #busyRetryDelayMs} between attempts) for one to free up before
-     * giving up with {@link StartException.AllBusy}. This bridges brief capacity shortfalls (e.g. a demand spike
-     * while the autoscaler spins up more instances, or two requests racing for the last free instance).
-     *
-     * The "no instances connected at all" case ({@link StartException.NotAvailable}) fails immediately, since
-     * waiting can not help when no Jibri infrastructure is present.
-     *
-     * @return the selected Jibri's JID (never null).
-     * @throws StartException.AllBusy if all connected instances remained busy after exhausting the retries.
-     * @throws StartException.NotAvailable if no Jibri instance is connected.
+     * Schedules an asynchronous retry of {@link #startInternal()} after {@link #busyRetryDelayMs}, used when all
+     * connected Jibris are busy. Unlike a blocking wait, this does not tie up the calling thread or hold this
+     * session's monitor while waiting: the delay runs on the (small) scheduled pool and the retry itself (which
+     * exchanges the bounded start IQ with a Jibri) runs on the IO pool.
      */
-    private Jid selectJibriWithBusyRetries()
-        throws StartException
+    private void scheduleBusyRetry()
     {
-        int busyRetries = 0;
-        while (true)
+        busyRetries++;
+        logger.info("All Jibris are busy, scheduling busy-retry " + busyRetries + "/" + maxBusyRetries
+            + " in " + busyRetryDelayMs + "ms");
+        ScheduledFuture<?> newTask = TaskPools.getScheduledPool().schedule(
+            () -> TaskPools.getIoPool().execute(new BusyRetryTask()),
+            busyRetryDelayMs,
+            TimeUnit.MILLISECONDS);
+        ScheduledFuture<?> oldTask = busyRetryTask.getAndSet(newTask);
+        if (oldTask != null)
         {
-            final Jid jibriJid = jibriDetector.selectJibri();
-            if (jibriJid != null)
-            {
-                return jibriJid;
-            }
+            oldTask.cancel(false);
+        }
+    }
 
-            if (!jibriDetector.isAnyInstanceConnected())
-            {
-                logger.error("Unable to find an available Jibri, can't start (no instances connected)");
-                throw new StartException.NotAvailable();
-            }
-
-            // All connected instances are busy. Optionally wait and retry, in case one frees up.
-            if (busyRetryDelayMs <= 0 || busyRetries >= maxBusyRetries)
-            {
-                logger.error("Unable to find an available Jibri, can't start (all instances busy)");
-                throw new StartException.AllBusy();
-            }
-
-            busyRetries++;
-            logger.info("All Jibris are busy, waiting " + busyRetryDelayMs + "ms before busy-retry "
-                + busyRetries + "/" + maxBusyRetries);
-            try
-            {
-                Thread.sleep(busyRetryDelayMs);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-                logger.warn("Interrupted while waiting to retry Jibri selection.");
-                throw new StartException.AllBusy();
-            }
+    /**
+     * Cancels any scheduled busy-retry task.
+     */
+    private void clearBusyRetry()
+    {
+        ScheduledFuture<?> oldTask = busyRetryTask.getAndSet(null);
+        if (oldTask != null)
+        {
+            oldTask.cancel(false);
         }
     }
 
@@ -410,11 +430,25 @@ public class JibriSession
      */
     synchronized public void stop(Jid initiator)
     {
+        this.terminator = initiator;
+
+        // Cancel any scheduled busy-retry, and make sure a retry that is already firing becomes a no-op.
+        boolean hadPendingBusyRetry = busyRetryTask.get() != null;
+        cancelled = true;
+        clearBusyRetry();
+
         if (currentJibriJid == null)
         {
+            // No Jibri has been engaged yet. If we were still waiting for capacity (a busy-retry was pending),
+            // let the owner know the session is over so its presence is cleared; otherwise there is nothing to do.
+            if (hadPendingBusyRetry)
+            {
+                logger.info("Stopping session while still waiting for an available Jibri: " + roomName);
+                jibriDetector.removeHandler(jibriEventHandler);
+                dispatchSessionStateChanged(Status.OFF, null);
+            }
             return;
         }
-        this.terminator = initiator;
 
         logger.info("Stopping session for room: " + roomName);
 
@@ -457,6 +491,7 @@ public class JibriSession
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
         numRetries = 0;
+        clearBusyRetry();
         jibriDetector.removeHandler(jibriEventHandler);
     }
 
@@ -819,6 +854,43 @@ public class JibriSession
     public String getSessionId()
     {
         return this.sessionId;
+    }
+
+    /**
+     * Task that retries {@link #startInternal()} after a busy-retry delay, scheduled when all Jibris were busy at
+     * the time of the previous attempt. Runs on the IO pool (so the bounded start-IQ exchange does not occupy the
+     * small scheduled pool). If the session has already been stopped, it does nothing. If the retry budget is
+     * exhausted, it notifies the owner of failure via presence, mirroring the terminal failure path.
+     */
+    private class BusyRetryTask implements Runnable
+    {
+        public void run()
+        {
+            synchronized (JibriSession.this)
+            {
+                // This task has now fired; clear our reference to it.
+                busyRetryTask.set(null);
+
+                if (cancelled)
+                {
+                    logger.info("Busy-retry fired but the session was stopped; ignoring.");
+                    return;
+                }
+
+                try
+                {
+                    startInternal();
+                }
+                catch (StartException e)
+                {
+                    // No Jibri became available within the retry budget (or another terminal error). Notify the
+                    // owner (which publishes presence) that the recording failed, then clean up.
+                    logger.warn("Giving up starting Jibri session after busy-retries: " + e);
+                    dispatchSessionStateChanged(Status.OFF, FailureReason.ERROR);
+                    cleanupSession();
+                }
+            }
+        }
     }
 
     /**

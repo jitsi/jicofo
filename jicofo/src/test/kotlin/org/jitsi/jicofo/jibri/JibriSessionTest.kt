@@ -165,13 +165,15 @@ class JibriSessionTest : ShouldSpec({
             // maxBusyRetries
             5,
             // busyRetryDelayMs (kept tiny to keep the test fast)
-            1L,
+            10L,
             logger
         )
-        should("wait and retry selection until an instance frees up") {
+        should("asynchronously retry selection until an instance frees up and start the session") {
+            // start() returns immediately after scheduling the async retry: it neither blocks nor throws.
             busyRetrySession.start()
-            verify(exactly = 3) { detector.selectJibri() }
-            verify(exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+            // The retries run on the scheduled/IO pools; wait for them to converge.
+            verify(timeout = 5000, exactly = 3) { detector.selectJibri() }
+            verify(timeout = 5000, exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
         }
     }
     context("When all Jibris are busy and busy-retries are exhausted") {
@@ -184,15 +186,17 @@ class JibriSessionTest : ShouldSpec({
             // maxBusyRetries
             2,
             // busyRetryDelayMs
-            1L,
+            10L,
             logger
         )
-        should("give up with AllBusy after exhausting busy-retries") {
-            shouldThrow<JibriSession.StartException.AllBusy> {
-                busyRetrySession.start()
+        should("give up after exhausting busy-retries and report failure via presence") {
+            // start() does not throw: it schedules async retries and returns.
+            busyRetrySession.start()
+            // initial attempt + 2 retries, then the owner is notified of the failure.
+            verify(timeout = 5000, exactly = 3) { detector.selectJibri() }
+            verify(timeout = 5000) {
+                stateListener.onSessionStateChanged(any(), JibriIq.Status.OFF, JibriIq.FailureReason.ERROR)
             }
-            // initial attempt + 2 retries
-            verify(exactly = 3) { detector.selectJibri() }
         }
     }
 })
