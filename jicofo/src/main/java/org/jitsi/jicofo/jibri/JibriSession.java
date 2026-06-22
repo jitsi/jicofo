@@ -160,6 +160,17 @@ public class JibriSession
     private int numRetries = 0;
 
     /**
+     * The maximum number of times to re-select a Jibri when all connected instances are busy, waiting
+     * {@link #busyRetryDelayMs} between attempts. Zero disables busy-retries (the request fails immediately).
+     */
+    private final int maxBusyRetries;
+
+    /**
+     * How long (in milliseconds) to wait between busy-retries. See {@link #maxBusyRetries}.
+     */
+    private final long busyRetryDelayMs;
+
+    /**
      * The full JID of the entity that has initiated the recording flow.
      */
     private final Jid initiator;
@@ -186,6 +197,9 @@ public class JibriSession
      * @param youTubeBroadcastId the YouTube broadcast id (optional)
      * @param applicationData a JSON-encoded string containing application-specific
      * data for Jibri
+     * @param maxBusyRetries the maximum number of times to re-select a Jibri when all connected instances are busy
+     * (waiting {@code busyRetryDelayMs} between attempts). Zero disables busy-retries.
+     * @param busyRetryDelayMs how long (in milliseconds) to wait between busy-retries.
      * @param parentLogger the parent logger whose context will be inherited by {@link #logger}.
      */
     JibriSession(
@@ -203,6 +217,8 @@ public class JibriSession
             String sessionId,
             String applicationData,
             boolean rtcStatsEnabled,
+            int maxBusyRetries,
+            long busyRetryDelayMs,
             Logger parentLogger)
     {
         this.stateListener = stateListener;
@@ -210,6 +226,8 @@ public class JibriSession
         this.initiator = initiator;
         this.pendingTimeout = pendingTimeout;
         this.maxNumRetries = maxNumRetries;
+        this.maxBusyRetries = maxBusyRetries;
+        this.busyRetryDelayMs = busyRetryDelayMs;
         this.isSIP = isSIP;
         this.jibriDetector = jibriDetector;
         this.sipAddress = sipAddress;
@@ -304,19 +322,7 @@ public class JibriSession
     private void startInternal()
         throws StartException
     {
-        final Jid jibriJid = jibriDetector.selectJibri();
-
-        if (jibriJid == null)
-        {
-            logger.error("Unable to find an available Jibri, can't start");
-
-            if (jibriDetector.isAnyInstanceConnected())
-            {
-                throw new StartException.AllBusy();
-            }
-
-            throw new StartException.NotAvailable();
-        }
+        final Jid jibriJid = selectJibriWithBusyRetries();
 
         try
         {
@@ -335,6 +341,62 @@ public class JibriSession
             else
             {
                 throw new StartException.InternalServerError();
+            }
+        }
+    }
+
+    /**
+     * Selects a Jibri to use, retrying when all connected instances are busy.
+     *
+     * When {@link JibriDetector#selectJibri()} returns no instance because they are all busy, this waits up to
+     * {@link #maxBusyRetries} times (sleeping {@link #busyRetryDelayMs} between attempts) for one to free up before
+     * giving up with {@link StartException.AllBusy}. This bridges brief capacity shortfalls (e.g. a demand spike
+     * while the autoscaler spins up more instances, or two requests racing for the last free instance).
+     *
+     * The "no instances connected at all" case ({@link StartException.NotAvailable}) fails immediately, since
+     * waiting can not help when no Jibri infrastructure is present.
+     *
+     * @return the selected Jibri's JID (never null).
+     * @throws StartException.AllBusy if all connected instances remained busy after exhausting the retries.
+     * @throws StartException.NotAvailable if no Jibri instance is connected.
+     */
+    private Jid selectJibriWithBusyRetries()
+        throws StartException
+    {
+        int busyRetries = 0;
+        while (true)
+        {
+            final Jid jibriJid = jibriDetector.selectJibri();
+            if (jibriJid != null)
+            {
+                return jibriJid;
+            }
+
+            if (!jibriDetector.isAnyInstanceConnected())
+            {
+                logger.error("Unable to find an available Jibri, can't start (no instances connected)");
+                throw new StartException.NotAvailable();
+            }
+
+            // All connected instances are busy. Optionally wait and retry, in case one frees up.
+            if (busyRetryDelayMs <= 0 || busyRetries >= maxBusyRetries)
+            {
+                logger.error("Unable to find an available Jibri, can't start (all instances busy)");
+                throw new StartException.AllBusy();
+            }
+
+            busyRetries++;
+            logger.info("All Jibris are busy, waiting " + busyRetryDelayMs + "ms before busy-retry "
+                + busyRetries + "/" + maxBusyRetries);
+            try
+            {
+                Thread.sleep(busyRetryDelayMs);
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+                logger.warn("Interrupted while waiting to retry Jibri selection.");
+                throw new StartException.AllBusy();
             }
         }
     }

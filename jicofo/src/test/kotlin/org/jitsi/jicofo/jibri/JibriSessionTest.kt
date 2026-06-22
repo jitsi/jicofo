@@ -79,6 +79,10 @@ class JibriSessionTest : ShouldSpec({
         "sessionId",
         "applicationData",
         true,
+        // maxBusyRetries
+        0,
+        // busyRetryDelayMs
+        0L,
         logger
     )
 
@@ -142,6 +146,53 @@ class JibriSessionTest : ShouldSpec({
         jibriSession.start()
         should("retry with another jibri") {
             verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
+    context("When all Jibris are busy and busy-retries are enabled") {
+        // selectJibri() returns no instance (all busy) twice, then one frees up.
+        every { detector.selectJibri() } returnsMany listOf(null, null, JidCreate.bareFrom("jibri1@bar.com"))
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                status = JibriIq.Status.PENDING
+            }
+        }
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            5,
+            // busyRetryDelayMs (kept tiny to keep the test fast)
+            1L,
+            logger
+        )
+        should("wait and retry selection until an instance frees up") {
+            busyRetrySession.start()
+            verify(exactly = 3) { detector.selectJibri() }
+            verify(exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
+    context("When all Jibris are busy and busy-retries are exhausted") {
+        // No instance ever frees up.
+        every { detector.selectJibri() } returns null
+        every { detector.isAnyInstanceConnected } returns true
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            2,
+            // busyRetryDelayMs
+            1L,
+            logger
+        )
+        should("give up with AllBusy after exhausting busy-retries") {
+            shouldThrow<JibriSession.StartException.AllBusy> {
+                busyRetrySession.start()
+            }
+            // initial attempt + 2 retries
+            verify(exactly = 3) { detector.selectJibri() }
         }
     }
 })
