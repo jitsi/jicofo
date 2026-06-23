@@ -79,7 +79,8 @@ internal fun perSourceTranslatorSpecs(
     request: TranslationRequest,
     url: URI,
     maxLanguagesPerConnect: Int,
-    httpHeaders: Map<String, String>
+    httpHeaders: Map<String, String>,
+    ping: ConnectSpec.Ping? = null
 ): List<ConnectSpec> = request.syntheticSourceNames.chunked(maxLanguagesPerConnect).mapIndexed { index, chunk ->
     ConnectSpec(
         id = "$TRANSLATOR_CONNECT_ID-${request.sourceName}-$index",
@@ -87,7 +88,8 @@ internal fun perSourceTranslatorSpecs(
         type = Connect.Types.TRANSLATOR,
         exports = listOf(request.sourceName),
         requests = chunk,
-        httpHeaders = httpHeaders
+        httpHeaders = httpHeaders,
+        ping = ping
     )
 }
 
@@ -372,6 +374,16 @@ class ColibriV2SessionManager(
         }
     }
 
+    /** The keepalive ping for translator connects, or null when disabled (mirrors the transcriber). */
+    private fun translatorPing(): ConnectSpec.Ping? = if (TranslationConfig.config.pingEnabled) {
+        ConnectSpec.Ping(
+            TranslationConfig.config.pingInterval.toMillis().toInt(),
+            TranslationConfig.config.pingTimeout.toMillis().toInt()
+        )
+    } else {
+        null
+    }
+
     /** A single translator connect on [session] carrying all senders' sources (single-bridge mode). */
     private fun buildSingleBridgeTranslatorSpec(session: Colibri2Session, urlTemplate: TemplatedUrl) = ConnectSpec(
         id = TRANSLATOR_CONNECT_ID,
@@ -379,7 +391,8 @@ class ColibriV2SessionManager(
         type = Connect.Types.TRANSLATOR,
         exports = translatorRequests.map { it.sourceName },
         requests = translatorRequests.flatMap { it.syntheticSourceNames },
-        httpHeaders = TranslationConfig.config.httpHeaders
+        httpHeaders = TranslationConfig.config.httpHeaders,
+        ping = translatorPing()
     )
 
     /**
@@ -395,7 +408,8 @@ class ColibriV2SessionManager(
                     request,
                     url,
                     TranslationConfig.config.maxLanguagesPerConnect,
-                    TranslationConfig.config.httpHeaders
+                    TranslationConfig.config.httpHeaders,
+                    translatorPing()
                 ).also { specs ->
                     // Detect the at-risk condition for the positional-chunking glitch noted on perSourceTranslatorSpecs:
                     // a source split across multiple connects can have languages move between connects on a removal.

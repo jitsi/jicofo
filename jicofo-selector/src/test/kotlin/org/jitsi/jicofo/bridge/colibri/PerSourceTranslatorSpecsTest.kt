@@ -60,6 +60,33 @@ class PerSourceTranslatorSpecsTest : ShouldSpec() {
             }
         }
 
+        context("A ping passed through") {
+            val request = TranslationRequest("aaaaaaaa", "aaaaaaaa-a0", listOf("aaaaaaaa-a0.en", "aaaaaaaa-a0.fr"))
+            val specs = perSourceTranslatorSpecs(
+                request,
+                url,
+                maxLanguagesPerConnect = 1,
+                httpHeaders = emptyMap(),
+                ping = ConnectSpec.Ping(10000, 3000)
+            )
+
+            should("set the ping on every connect") {
+                specs.size shouldBe 2
+                specs.forEach { it.ping shouldBe ConnectSpec.Ping(10000, 3000) }
+            }
+        }
+
+        context("No ping by default") {
+            should("leave ping null") {
+                perSourceTranslatorSpecs(
+                    TranslationRequest("aaaaaaaa", "aaaaaaaa-a0", listOf("aaaaaaaa-a0.en")),
+                    url,
+                    maxLanguagesPerConnect = 5,
+                    httpHeaders = emptyMap()
+                ).single().ping shouldBe null
+            }
+        }
+
         context("A sender with no requested languages") {
             should("produce no connects") {
                 perSourceTranslatorSpecs(

@@ -23,6 +23,7 @@ import org.jitsi.metaconfig.config
 import org.jitsi.metaconfig.optionalconfig
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
+import java.time.Duration
 
 /** Configuration for live audio translation (the websocket endpoint a bridge connects to). */
 class TranslationConfig private constructor() {
@@ -67,6 +68,19 @@ class TranslationConfig private constructor() {
      */
     val maxLanguagesPerConnect: Int by config {
         "jicofo.translation.max-languages-per-connect".from(JitsiConfig.newConfig)
+    }
+
+    /** Whether the bridge should send keepalive pings on the translator connect (to avoid idle-timeout). */
+    val pingEnabled: Boolean by config {
+        "jicofo.translation.ping.enabled".from(JitsiConfig.newConfig)
+    }
+
+    val pingInterval: Duration by config {
+        "jicofo.translation.ping.interval".from(JitsiConfig.newConfig)
+    }
+
+    val pingTimeout: Duration by config {
+        "jicofo.translation.ping.timeout".from(JitsiConfig.newConfig)
     }
 
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
