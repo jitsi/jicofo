@@ -44,14 +44,22 @@ class ConferenceTranslationManager(
     private val sourceManager = TranslationSourceManager()
     private var requests: Map<String, List<String>> = emptyMap()
 
-    /** Update the aggregated request map and re-apply. */
+    /**
+     * Per-room translator connect headers (config headers merged with room metadata, e.g. a per-customer usage
+     * token), or null to use the static config headers. Stored so [reapply] reuses the last value.
+     */
+    private var customHeaders: Map<String, String>? = null
+
+    /** Update the aggregated request map (and per-room connect headers) and re-apply. */
     @Synchronized
     fun setRequests(
         requests: Map<String, List<String>>,
+        customHeaders: Map<String, String>?,
         colibriSessionManager: ColibriSessionManager?,
         meetingId: String?
     ) {
         this.requests = requests
+        this.customHeaders = customHeaders
         apply(colibriSessionManager, meetingId)
     }
 
@@ -102,7 +110,7 @@ class ConferenceTranslationManager(
             val baseName = baseName(sender) ?: return@mapNotNull null
             TranslationRequest(sender, baseName, sources.map { it.name!! }.sorted())
         }
-        colibriSessionManager.setTranslator(url, translationRequests)
+        colibriSessionManager.setTranslator(url, translationRequests, customHeaders)
 
         logger.info(
             "Applied audio translation: requests=$requests, translationRequests=$translationRequests, " +

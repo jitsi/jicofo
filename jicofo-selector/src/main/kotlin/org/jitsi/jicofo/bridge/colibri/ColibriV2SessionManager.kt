@@ -138,6 +138,9 @@ class ColibriV2SessionManager(
     /** The current per-sender translation requests. */
     private var translatorRequests: List<TranslationRequest> = emptyList()
 
+    /** Per-room translator connect headers (merged config + room metadata), or null to use config headers. */
+    private var translatorCustomHeaders: Map<String, String>? = null
+
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
@@ -391,7 +394,7 @@ class ColibriV2SessionManager(
         type = Connect.Types.TRANSLATOR,
         exports = translatorRequests.map { it.sourceName },
         requests = translatorRequests.flatMap { it.syntheticSourceNames },
-        httpHeaders = TranslationConfig.config.httpHeaders,
+        httpHeaders = translatorCustomHeaders ?: TranslationConfig.config.httpHeaders,
         ping = translatorPing()
     )
 
@@ -408,7 +411,7 @@ class ColibriV2SessionManager(
                     request,
                     url,
                     TranslationConfig.config.maxLanguagesPerConnect,
-                    TranslationConfig.config.httpHeaders,
+                    translatorCustomHeaders ?: TranslationConfig.config.httpHeaders,
                     translatorPing()
                 ).also { specs ->
                     // Detect the at-risk condition for the positional-chunking glitch noted on perSourceTranslatorSpecs:
@@ -450,9 +453,14 @@ class ColibriV2SessionManager(
         )
     }
 
-    override fun setTranslator(url: TemplatedUrl?, requests: List<TranslationRequest>) = synchronized(syncRoot) {
+    override fun setTranslator(
+        url: TemplatedUrl?,
+        requests: List<TranslationRequest>,
+        customHeaders: Map<String, String>?
+    ) = synchronized(syncRoot) {
         translatorUrl = url
         translatorRequests = requests
+        translatorCustomHeaders = customHeaders
         updateConnects()
     }
 

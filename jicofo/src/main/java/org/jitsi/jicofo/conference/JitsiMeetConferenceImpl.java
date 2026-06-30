@@ -2768,9 +2768,15 @@ public class JitsiMeetConferenceImpl
         @Override
         public void audioTranslationRequestsChanged(@NotNull Map<String, ? extends List<String>> requests)
         {
+            // Merge any per-room translator headers (e.g. a per-customer usage token delivered on the
+            // admin-only metadata path) over the static config headers; null falls back to config headers.
+            Map<String, String> translationHeaders = TranslationConfig.processTranslationMetadata(
+                    chatRoom != null ? chatRoom.getTranslation() : null,
+                    TranslationConfig.config.getHttpHeaders());
             //noinspection unchecked
             translationManager.setRequests(
                     (Map<String, List<String>>) (Map<String, ?>) requests,
+                    translationHeaders,
                     colibriSessionManager,
                     meetingId);
         }
