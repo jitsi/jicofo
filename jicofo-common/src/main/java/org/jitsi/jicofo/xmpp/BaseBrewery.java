@@ -206,6 +206,8 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             if (chatRoom != null)
             {
                 chatRoom.removeListener(chatRoomListener);
+                chatRoom.leave();
+
                 chatRoom = null;
             }
         }
