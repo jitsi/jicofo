@@ -104,5 +104,24 @@ class TranslationConfig private constructor() {
 
         const val MEETING_ID_TEMPLATE = "MEETING_ID"
         const val REGION_TEMPLATE = "REGION"
+
+        /**
+         * Merge per-room translation headers (from room metadata) over the static config headers, with the
+         * per-room values taking precedence. Mirrors [TranscriptionConfig.processTranscriptionMetadata].
+         *
+         * Returns null when there are no per-room headers, so callers fall back to the static config headers
+         * (i.e. `merged ?: TranslationConfig.config.httpHeaders`).
+         *
+         * @param translation the translation metadata from room metadata (e.g. a per-customer usage token)
+         * @param baseHeaders the static headers from configuration
+         */
+        @JvmStatic
+        fun processTranslationMetadata(
+            translation: org.jitsi.jicofo.xmpp.RoomMetadata.Metadata.Translation?,
+            baseHeaders: Map<String, String>
+        ): Map<String, String>? {
+            val customHeaders = translation?.httpHeaders ?: return null
+            return baseHeaders.toMutableMap().apply { putAll(customHeaders) }
+        }
     }
 }

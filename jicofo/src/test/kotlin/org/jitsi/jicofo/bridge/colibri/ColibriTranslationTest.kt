@@ -177,5 +177,39 @@ class ColibriTranslationTest : ShouldSpec() {
                 connect.expire shouldBe true
             }
         }
+
+        context("With per-room translator headers") {
+            val manager = createSessionManager()
+            allocateParticipant(manager, "p1")
+            colibriRequests.clear()
+            manager.setTranslator(
+                translatorUrl,
+                listOf(TranslationRequest("p1", "p1-a0", listOf("p1-a0.en"))),
+                customHeaders = mapOf("Authorization" to "Bearer per-room", "X-Custom" to "v1")
+            )
+            val connect = lastConnect()
+
+            should("put the per-room headers on the connect") {
+                connect shouldNotBe null
+                connect!!.getHttpHeaders().associate { it.name to it.value } shouldBe mapOf(
+                    "Authorization" to "Bearer per-room",
+                    "X-Custom" to "v1"
+                )
+            }
+        }
+
+        context("Without per-room translator headers") {
+            val manager = createSessionManager()
+            allocateParticipant(manager, "p1")
+            colibriRequests.clear()
+            // No customHeaders: fall back to the (empty, in this test) static config headers.
+            manager.setTranslator(translatorUrl, listOf(TranslationRequest("p1", "p1-a0", listOf("p1-a0.en"))))
+            val connect = lastConnect()
+
+            should("fall back to the config headers (none configured here)") {
+                connect shouldNotBe null
+                connect!!.getHttpHeaders().associate { it.name to it.value } shouldBe emptyMap()
+            }
+        }
     }
 }

@@ -73,7 +73,11 @@ interface ColibriSessionManager {
      * @param requests the per-sender translation requests. How these are placed on bridges depends on the configured
      * [org.jitsi.jicofo.TranslationConfig.mode].
      */
-    fun setTranslator(url: TemplatedUrl?, requests: List<TranslationRequest> = emptyList())
+    fun setTranslator(
+        url: TemplatedUrl?,
+        requests: List<TranslationRequest> = emptyList(),
+        customHeaders: Map<String, String>? = null
+    )
 
     /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
