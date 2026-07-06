@@ -106,7 +106,6 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Translation(
-            val urlParams: Map<String, String>? = null,
             val httpHeaders: Map<String, String>? = null
         )
     }
