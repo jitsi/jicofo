@@ -34,7 +34,13 @@ data class Source(
     /** Optional msid */
     val msid: String? = null,
     /** Optional video type (camera or desktop) */
-    val videoType: VideoType? = null
+    val videoType: VideoType? = null,
+    /**
+     * Whether this source is synthetic, i.e. injected by the server (e.g. a translated audio stream). Synthetic
+     * sources are created by jicofo (not parsed from client Jingle); the flag is carried to the bridge on the
+     * Colibri2 media-source element (see [org.jitsi.jicofo.bridge.colibri.toColibriMediaSources]).
+     */
+    val synthetic: Boolean = false
 ) {
     /** Create a [Source] from an XML extension. */
     constructor(mediaType: MediaType, sourcePacketExtension: SourcePacketExtension) : this(
@@ -96,6 +102,9 @@ data class Source(
         put("name", name ?: "null")
         put("msid", msid ?: "null")
         put("videoType", videoType.toString())
+        if (synthetic) {
+            put("synthetic", true)
+        }
     }
 
     companion object {

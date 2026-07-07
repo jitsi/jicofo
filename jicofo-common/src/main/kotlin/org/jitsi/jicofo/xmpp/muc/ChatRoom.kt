@@ -69,6 +69,9 @@ interface ChatRoom {
     /** Transcription configuration from room metadata. */
     val transcription: RoomMetadata.Metadata.Transcription?
 
+    /** Translation configuration from room metadata (e.g. per-customer connect headers). */
+    val translation: RoomMetadata.Metadata.Translation?
+
     val debugState: ObjectNode
 
     /** Returns the number of members that currently have their audio sources unmuted. */

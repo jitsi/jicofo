@@ -80,7 +80,14 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         val participantsSoftLimit: Int? = null,
         val visitorsEnabled: Boolean? = null,
         val lobbyEnabled: Boolean? = null,
-        val transcription: Transcription? = null
+        val transcription: Transcription? = null,
+        /**
+         * Per-room live-translation connect config (e.g. a per-customer usage token as an HTTP header,
+         * delivered to jicofo on the admin-only metadata path). Mirrors [transcription].
+         */
+        val translation: Translation? = null,
+        /** Aggregated live-translation requests: sender endpoint id -> set of requested language codes. */
+        val audioTranslationRequests: Map<String, List<String>>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
@@ -94,6 +101,11 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Transcription(
             val urlParams: Map<String, String>? = null,
+            val httpHeaders: Map<String, String>? = null
+        )
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Translation(
             val httpHeaders: Map<String, String>? = null
         )
     }

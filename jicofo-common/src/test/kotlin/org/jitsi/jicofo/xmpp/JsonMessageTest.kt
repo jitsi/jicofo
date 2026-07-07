@@ -108,6 +108,38 @@ class JsonMessageTest : ShouldSpec() {
                         type shouldBe "room_metadata"
                     }
                 }
+                context("With audioTranslationRequests") {
+                    JsonMessage.parse(
+                        """
+                            {
+                                "type": "room_metadata",
+                                "metadata": {
+                                    "audioTranslationRequests": {
+                                        "aaaaaaaa": ["en", "es"],
+                                        "bbbbbbbb": ["fr"]
+                                    }
+                                }
+                            }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.audioTranslationRequests.apply {
+                            shouldNotBeNull()
+                            this!!["aaaaaaaa"] shouldBe listOf("en", "es")
+                            this["bbbbbbbb"] shouldBe listOf("fr")
+                        }
+                    }
+                }
+                context("Without audioTranslationRequests") {
+                    JsonMessage.parse(
+                        """
+                            { "type": "room_metadata", "metadata": {} }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.audioTranslationRequests shouldBe null
+                    }
+                }
             }
             context("Invalid") {
                 context("Missing type") {

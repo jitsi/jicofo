@@ -70,6 +70,9 @@ fun EndpointSourceSet.toColibriMediaSources(endpointId: String): Sources {
             MediaSource.getBuilder()
                 .setType(source.mediaType)
                 .setId(sourceId)
+                // Synthetic sources (e.g. translated audio) are injected by the server and the bridge must only
+                // forward them to endpoints explicitly subscribed to them.
+                .setSynthetic(source.synthetic)
         }
         mediaSource.addSource(source.toPacketExtension(encodeMsid = false))
     }
