@@ -55,6 +55,14 @@ class JibriConfig private constructor() {
         "jicofo.jibri.num-retries".from(newConfig)
     }
 
+    val busyRetries: Int by config {
+        "jicofo.jibri.busy-retries".from(newConfig)
+    }
+
+    val busyRetryDelay: Duration by config {
+        "jicofo.jibri.busy-retry-delay".from(newConfig)
+    }
+
     val xmppConnectionName: XmppConnectionEnum by config {
         "jicofo.jibri.xmpp-connection-name".from(newConfig)
     }

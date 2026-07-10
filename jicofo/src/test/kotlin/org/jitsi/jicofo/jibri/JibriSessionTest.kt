@@ -79,6 +79,10 @@ class JibriSessionTest : ShouldSpec({
         "sessionId",
         "applicationData",
         true,
+        // maxBusyRetries
+        0,
+        // busyRetryDelayMs
+        0L,
         logger
     )
 
@@ -142,6 +146,83 @@ class JibriSessionTest : ShouldSpec({
         jibriSession.start()
         should("retry with another jibri") {
             verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
+    context("When all Jibris are busy and busy-retries are enabled") {
+        // selectJibri() returns no instance (all busy) twice, then one frees up.
+        every { detector.selectJibri() } returnsMany listOf(null, null, JidCreate.bareFrom("jibri1@bar.com"))
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                status = JibriIq.Status.PENDING
+            }
+        }
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            5,
+            // busyRetryDelayMs (kept tiny to keep the test fast)
+            10L,
+            logger
+        )
+        should("asynchronously retry selection until an instance frees up and start the session") {
+            // start() returns immediately after scheduling the async retry: it neither blocks nor throws.
+            busyRetrySession.start()
+            // The retries run on the scheduled/IO pools; wait for them to converge.
+            verify(timeout = 5000, exactly = 3) { detector.selectJibri() }
+            verify(timeout = 5000, exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
+    context("When all Jibris are busy and busy-retries are exhausted") {
+        // No instance ever frees up.
+        every { detector.selectJibri() } returns null
+        every { detector.isAnyInstanceConnected } returns true
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            2,
+            // busyRetryDelayMs
+            10L,
+            logger
+        )
+        should("give up after exhausting busy-retries and report failure via presence") {
+            // start() does not throw: it schedules async retries and returns.
+            busyRetrySession.start()
+            // initial attempt + 2 retries, then the owner is notified of the failure.
+            verify(timeout = 5000, exactly = 3) { detector.selectJibri() }
+            verify(timeout = 5000) {
+                stateListener.onSessionStateChanged(any(), JibriIq.Status.OFF, JibriIq.FailureReason.ERROR)
+            }
+        }
+    }
+    context("When busy-retries are enabled with a zero delay") {
+        // selectJibri() returns no instance (all busy) once, then one frees up.
+        every { detector.selectJibri() } returnsMany listOf(null, JidCreate.bareFrom("jibri1@bar.com"))
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                status = JibriIq.Status.PENDING
+            }
+        }
+        val busyRetrySession = JibriSession(
+            stateListener, roomName, initiator, pendingTimeout, maxNumRetries, detector,
+            false, null, "displayName", "streamID", "youTubeBroadcastId", "sessionId", "applicationData", true,
+            // maxBusyRetries
+            3,
+            // busyRetryDelayMs: 0 means retry immediately, NOT disabled
+            0L,
+            logger
+        )
+        should("still retry (a zero delay does not disable the feature)") {
+            busyRetrySession.start()
+            verify(timeout = 5000, exactly = 2) { detector.selectJibri() }
+            verify(timeout = 5000, exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
         }
     }
 })

@@ -84,6 +84,7 @@ class JibriSipGateway(
             iq.sipAddress,
             iq.displayName, null, null, sessionId, null,
             conference.isRtcStatsEnabled,
+            config.busyRetries, config.busyRetryDelay.toMillis(),
             logger
         )
         sipSessions[iq.sipAddress] = jibriSession
