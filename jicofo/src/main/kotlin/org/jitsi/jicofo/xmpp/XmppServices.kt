@@ -31,7 +31,9 @@ import org.jitsi.utils.logging2.createLogger
 class XmppServices(
     conferenceStore: ConferenceStore,
     authenticationAuthority: AbstractAuthAuthority?,
-    focusManager: FocusManager
+    focusManager: FocusManager,
+    /** Whether any jibri detectors are configured. Evaluated lazily, because detectors are created after [XmppServices]. */
+    hasJibriDetector: () -> Boolean = { false }
 ) {
     private val logger = createLogger()
 
@@ -79,7 +81,8 @@ class XmppServices(
 
     private val jibriIqHandler = JibriIqHandler(
         setOf(clientConnection.xmppConnection, serviceConnection.xmppConnection),
-        conferenceStore
+        conferenceStore,
+        hasJibriDetector
     )
 
     private val jigasiIqHandler = if (jigasiDetector != null) {

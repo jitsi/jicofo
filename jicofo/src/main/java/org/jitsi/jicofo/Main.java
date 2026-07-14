@@ -71,13 +71,7 @@ public class Main
         JicofoServices jicofoServices;
         try
         {
-            // JicofoServices starts various services in different threads, some of which depend on the singleton being
-            // set. Make sure they are blocked until the initialization has completed and the singleton has been set.
-            synchronized (JicofoServices.getJicofoServicesSingletonSyncRoot())
-            {
-                jicofoServices = new JicofoServices();
-                JicofoServices.setJicofoServicesSingleton(jicofoServices);
-            }
+            jicofoServices = new JicofoServices();
         }
         catch (Exception e)
         {
@@ -122,7 +116,6 @@ public class Main
         logger.info("Stopping services.");
         jicofoServices.shutdown();
         TaskPools.shutdown();
-        JicofoServices.setJicofoServicesSingleton(null);
         logger.info("Jicofo has been stopped, exiting with exit code " + exitStatus.get());
         System.exit(exitStatus.get());
     }

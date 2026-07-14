@@ -39,7 +39,6 @@ import org.jitsi.jicofo.jibri.JibriDetectorMetrics
 import org.jitsi.jicofo.ktor.RestConfig
 import org.jitsi.jicofo.metrics.GlobalMetrics
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
-import org.jitsi.jicofo.util.SynchronizedDelegate
 import org.jitsi.jicofo.version.CurrentVersionImpl
 import org.jitsi.jicofo.xmpp.XmppServices
 import org.jitsi.jicofo.xmpp.initializeSmack
@@ -69,11 +68,12 @@ class JicofoServices {
         focusManager.addListener(this)
     }
 
-    val xmppServices = XmppServices(
+    val xmppServices: XmppServices = XmppServices(
         conferenceStore = focusManager,
         // TODO do not use FocusManager directly
         focusManager = focusManager,
-        authenticationAuthority = authenticationAuthority
+        authenticationAuthority = authenticationAuthority,
+        hasJibriDetector = { jibriDetector != null || sipJibriDetector != null }
     ).also {
         it.clientConnection.addListener(focusManager)
     }
@@ -100,7 +100,7 @@ class JicofoServices {
         logger.error("No bridge detector configured.")
         null
     }
-    val jibriDetector = JibriConfig.config.breweryJid?.let { breweryJid ->
+    val jibriDetector: JibriDetector? = JibriConfig.config.breweryJid?.let { breweryJid ->
         JibriDetector(
             xmppServices.getXmppConnectionByName(JibriConfig.config.xmppConnectionName),
             breweryJid,
@@ -112,7 +112,7 @@ class JicofoServices {
         logger.info("No Jibri detector configured.")
         null
     }
-    val sipJibriDetector = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
+    val sipJibriDetector: JibriDetector? = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
         JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
     } ?: run {
         logger.info("No SIP Jibri detector configured.")
@@ -257,12 +257,6 @@ class JicofoServices {
     }
 
     companion object {
-        @JvmStatic
-        val jicofoServicesSingletonSyncRoot = Any()
-
-        @JvmStatic
-        var jicofoServicesSingleton: JicofoServices? by SynchronizedDelegate(null, jicofoServicesSingletonSyncRoot)
-
         @JvmField
         val versionMetric = JicofoMetricsContainer.instance.registerInfo(
             "version",
