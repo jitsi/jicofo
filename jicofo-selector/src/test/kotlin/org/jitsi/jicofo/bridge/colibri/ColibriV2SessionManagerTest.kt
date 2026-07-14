@@ -133,7 +133,8 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             useSctp = false,
             visitor = false,
             supportsPrivateAddresses = false,
-            medias = emptySet()
+            medias = emptySet(),
+            diarize = false
         )
     ).also { drain() }
 
