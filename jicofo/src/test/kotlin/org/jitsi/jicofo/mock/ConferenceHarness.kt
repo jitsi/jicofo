@@ -54,20 +54,22 @@ class ConferenceHarness(roomNameString: String = "test@example.com") {
         null,
         false,
         mockk(relaxed = true) {
-            every { xmppServices } returns mockk(relaxed = true) {
-                every { clientConnection } returns xmppProvider.xmppProvider
-                every { serviceConnection } returns xmppProvider.xmppProvider
-                every { bridgeSelector } returns mockk(relaxed = true) {
-                    every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
-                        every { jid } returns JidCreate.from("jvb@example.com/jvb1")
-                        every { debugState } returns JsonNodeFactory.instance.objectNode()
-                    }
-                }
-                every { jingleHandler } returns mockk(relaxed = true) {
-                    every { registerSession(capture(jingleSessions)) } returns Unit
-                }
+            every { clientConnection } returns xmppProvider.xmppProvider
+            every { serviceConnection } returns xmppProvider.xmppProvider
+            every { jingleHandler } returns mockk(relaxed = true) {
+                every { registerSession(capture(jingleSessions)) } returns Unit
             }
-        }
+        },
+        mockk(relaxed = true) {
+            every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
+                every { jid } returns JidCreate.from("jvb@example.com/jvb1")
+                every { debugState } returns JsonNodeFactory.instance.objectNode()
+            }
+        },
+        null,
+        null,
+        null,
+        mockk(relaxed = true)
     ).apply { start() }
 
     /**

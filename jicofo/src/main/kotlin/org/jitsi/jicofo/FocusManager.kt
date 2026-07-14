@@ -133,7 +133,12 @@ class FocusManager(
                 logLevel,
                 jvbVersion,
                 includeInStatistics,
-                jicofoServices
+                jicofoServices.xmppServices,
+                jicofoServices.bridgeSelector,
+                jicofoServices.jibriDetector,
+                jicofoServices.sipJibriDetector,
+                jicofoServices.authenticationAuthority,
+                this
             )
             conferences[room] = conference
             conferencesCache.add(conference)

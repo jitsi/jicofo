@@ -234,7 +234,12 @@ public class JitsiMeetConferenceImpl
 
     private final BridgeSelectorEventHandler bridgeSelectorEventHandler = new BridgeSelectorEventHandler();
 
-    @NotNull private final JicofoServices jicofoServices;
+    @NotNull private final XmppServices xmppServices;
+    @NotNull private final BridgeSelector bridgeSelector;
+    @Nullable private final JibriDetector jibriDetector;
+    @Nullable private final JibriDetector sipJibriDetector;
+    @Nullable private final AuthenticationAuthority authenticationAuthority;
+    @NotNull private final FocusManager focusManager;
 
     /** Whether to enable transcription via a colibri export. */
     private boolean enableTranscription = false;
@@ -301,7 +306,12 @@ public class JitsiMeetConferenceImpl
             Level logLevel,
             String jvbVersion,
             boolean includeInStatistics,
-            @NotNull JicofoServices jicofoServices)
+            @NotNull XmppServices xmppServices,
+            @NotNull BridgeSelector bridgeSelector,
+            @Nullable JibriDetector jibriDetector,
+            @Nullable JibriDetector sipJibriDetector,
+            @Nullable AuthenticationAuthority authenticationAuthority,
+            @NotNull FocusManager focusManager)
     {
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
@@ -315,7 +325,12 @@ public class JitsiMeetConferenceImpl
         this.etherpadName = createSharedDocumentName();
         this.includeInStatistics = includeInStatistics;
 
-        this.jicofoServices = jicofoServices;
+        this.xmppServices = xmppServices;
+        this.bridgeSelector = bridgeSelector;
+        this.jibriDetector = jibriDetector;
+        this.sipJibriDetector = sipJibriDetector;
+        this.authenticationAuthority = authenticationAuthority;
+        this.focusManager = focusManager;
         this.jvbVersion = jvbVersion;
 
         scheduleConferenceStartTimeout();
@@ -364,8 +379,8 @@ public class JitsiMeetConferenceImpl
             // We initialize colibriSessionManager only after having joined the room, so meetingId must be set.
             String meetingId = Objects.requireNonNull(this.meetingId);
             colibriSessionManager = new ColibriV2SessionManager(
-                    jicofoServices.getXmppServices().getServiceConnection().getXmppConnection(),
-                    jicofoServices.getBridgeSelector(),
+                    xmppServices.getServiceConnection().getXmppConnection(),
+                    bridgeSelector,
                     getRoomName().toString(),
                     meetingId,
                     config.getRtcStatsEnabled(),
@@ -417,7 +432,6 @@ public class JitsiMeetConferenceImpl
         {
             XmppProvider clientXmppProvider = getClientXmppProvider();
 
-            BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
             bridgeSelector.addHandler(bridgeSelectorEventHandler);
 
             if (clientXmppProvider.getRegistered())
@@ -425,7 +439,6 @@ public class JitsiMeetConferenceImpl
                 joinTheRoom();
             }
 
-            JibriDetector jibriDetector = jicofoServices.getJibriDetector();
             if (jibriDetector != null)
             {
                 jibriRecorder
@@ -435,7 +448,6 @@ public class JitsiMeetConferenceImpl
                             logger);
             }
 
-            JibriDetector sipJibriDetector = jicofoServices.getSipJibriDetector();
             if (sipJibriDetector != null)
             {
                 jibriSipGateway
@@ -499,7 +511,6 @@ public class JitsiMeetConferenceImpl
             jibriRecorder = null;
         }
 
-        BridgeSelector bridgeSelector = jicofoServices.getBridgeSelector();
         bridgeSelector.removeHandler(bridgeSelectorEventHandler);
 
         if (colibriSessionManager != null)
@@ -602,7 +613,6 @@ public class JitsiMeetConferenceImpl
 
         mainRoomJid = chatRoomInfo.getMainRoomJid();
 
-        AuthenticationAuthority authenticationAuthority = jicofoServices.getAuthenticationAuthority();
         if (authenticationAuthority != null)
         {
             chatRoomRoleManager = new AuthenticationRoleManager(chatRoom, authenticationAuthority);
@@ -771,7 +781,7 @@ public class JitsiMeetConferenceImpl
         {
             if (!disconnectVnodeExtensions.isEmpty())
             {
-                jicofoServices.getXmppServices().getVisitorsManager()
+                xmppServices.getVisitorsManager()
                         .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
             }
 
@@ -917,7 +927,7 @@ public class JitsiMeetConferenceImpl
             final Participant participant = new Participant(
                     chatRoomMember,
                     this,
-                    jicofoServices.getXmppServices().getJingleHandler(),
+                    xmppServices.getJingleHandler(),
                     logger,
                     features);
 
@@ -1102,7 +1112,7 @@ public class JitsiMeetConferenceImpl
         ChatRoom chatRoom = this.chatRoom;
         if (chatRoom == null || chatRoom.getMemberCount() == 0)
         {
-            if (jicofoServices.getFocusManager().hasBreakoutRooms(roomName))
+            if (focusManager.hasBreakoutRooms(roomName))
             {
                 logger.info("Breakout rooms still present, will not stop.");
             }
@@ -1572,7 +1582,7 @@ public class JitsiMeetConferenceImpl
     @NotNull
     public XmppProvider getClientXmppProvider()
     {
-        return jicofoServices.getXmppServices().getClientConnection();
+        return xmppServices.getClientConnection();
     }
 
     /**
@@ -2030,7 +2040,7 @@ public class JitsiMeetConferenceImpl
         {
             node = ConferenceUtilKt.selectVisitorNode(
                     visitorChatRooms,
-                    jicofoServices.getXmppServices().getVisitorConnections());
+                    xmppServices.getVisitorConnections());
             if (node == null)
             {
                 logger.warn("Visitor node required, but none available.");
@@ -2044,7 +2054,7 @@ public class JitsiMeetConferenceImpl
             }
 
             // Join a new visitor chat room on the selected [node].
-            XmppProvider xmppProvider = jicofoServices.getXmppServices().getXmppVisitorConnectionByName(node);
+            XmppProvider xmppProvider = xmppServices.getXmppVisitorConnectionByName(node);
             if (xmppProvider == null)
             {
                 logger.error("No XMPP provider for node " + node);
@@ -2060,7 +2070,7 @@ public class JitsiMeetConferenceImpl
 
             EntityBareJid visitorMucJid = getVisitorMucJid(
                     roomName,
-                    jicofoServices.getXmppServices().getClientConnection(),
+                    xmppServices.getClientConnection(),
                     xmppProvider);
 
             // Will call join after releasing the lock
@@ -2091,7 +2101,7 @@ public class JitsiMeetConferenceImpl
 
         if (this.visitorsBroadcastEnabled)
         {
-            VisitorsManager visitorsManager = jicofoServices.getXmppServices().getVisitorsManager();
+            VisitorsManager visitorsManager = xmppServices.getVisitorsManager();
             visitorsManager.sendIqToComponent(
                     roomName,
                     Collections.singletonList(new ConnectVnodePacketExtension(node)));
@@ -2320,7 +2330,7 @@ public class JitsiMeetConferenceImpl
                         }
 
                         // in case of last participant leaving to join a breakout room, we want to skip destroy
-                        if (jicofoServices.getFocusManager().hasBreakoutRooms(roomName))
+                        if (focusManager.hasBreakoutRooms(roomName))
                         {
                             logger.info("Breakout rooms present, will not stop.");
                             return;
@@ -2653,7 +2663,7 @@ public class JitsiMeetConferenceImpl
 
                 if (vnode != null)
                 {
-                    jicofoServices.getXmppServices().getVisitorsManager().sendIqToComponent(
+                    xmppServices.getVisitorsManager().sendIqToComponent(
                             roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
                 }
             }
