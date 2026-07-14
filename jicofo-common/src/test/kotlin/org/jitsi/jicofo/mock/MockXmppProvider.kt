@@ -29,5 +29,6 @@ class MockXmppProvider(val xmppConnection: AbstractXMPPConnection = MockXmppConn
         every { xmppConnection } returns this@MockXmppProvider.xmppConnection
     }
 
-    fun getRoom(jid: EntityBareJid): MockChatRoom = chatRooms.computeIfAbsent(jid) { MockChatRoom(this.xmppProvider) }
+    fun getRoom(jid: EntityBareJid): MockChatRoom =
+        chatRooms.computeIfAbsent(jid) { MockChatRoom(this.xmppProvider, jid) }
 }
