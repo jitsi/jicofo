@@ -114,6 +114,7 @@ class ParticipantInviteRunnableTest : ShouldSpec({
                     every { isJibri } returns false
                     every { isJigasi } returns false
                     every { isTranscriber } returns false
+                    every { diarize } returns false
                 },
                 conference,
                 mockk(),
