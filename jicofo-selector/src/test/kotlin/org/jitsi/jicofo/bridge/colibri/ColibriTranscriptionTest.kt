@@ -83,22 +83,24 @@ class ColibriTranscriptionTest : ShouldSpec() {
         createLogger()
     )
 
-    private fun allocateParticipant(manager: ColibriV2SessionManager, id: String = "p1") = manager.allocate(
-        ParticipantAllocationParameters(
-            id = id,
-            statsId = null,
-            region = null,
-            sources = EndpointSourceSet.EMPTY,
-            useSsrcRewriting = false,
-            useRtpMidDemux = false,
-            forceMuteAudio = false,
-            forceMuteVideo = false,
-            useSctp = false,
-            visitor = false,
-            supportsPrivateAddresses = false,
-            medias = emptySet()
+    private fun allocateParticipant(manager: ColibriV2SessionManager, id: String = "p1", diarize: Boolean = false) =
+        manager.allocate(
+            ParticipantAllocationParameters(
+                id = id,
+                statsId = null,
+                region = null,
+                sources = EndpointSourceSet.EMPTY,
+                useSsrcRewriting = false,
+                useRtpMidDemux = false,
+                forceMuteAudio = false,
+                forceMuteVideo = false,
+                useSctp = false,
+                visitor = false,
+                supportsPrivateAddresses = false,
+                diarize = diarize,
+                medias = emptySet()
+            )
         )
-    )
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         TaskPools.ioPool = inPlaceExecutor
@@ -173,6 +175,32 @@ class ColibriTranscriptionTest : ShouldSpec() {
                 urlStr shouldContain "$expectedBaseUrl?"
                 urlStr shouldContain "key1=value1"
                 urlStr shouldContain "key2=hello+world"
+            }
+        }
+
+        context("Diarize flag") {
+            context("Participant with diarize=true") {
+                val manager = createSessionManager()
+                allocateParticipant(manager, diarize = true)
+
+                val createRequest = colibriRequests.find { it.create }!!
+                val endpoint = createRequest.endpoints.first()
+
+                should("set the diarize attribute on the endpoint") {
+                    endpoint.diarize shouldBe true
+                }
+            }
+            context("Participant with diarize=false") {
+                val manager = createSessionManager()
+                allocateParticipant(manager, diarize = false)
+
+                val createRequest = colibriRequests.find { it.create }!!
+                val endpoint = createRequest.endpoints.first()
+
+                should("not set the diarize attribute on the endpoint") {
+                    // The attribute is omitted, so getDiarize() returns null.
+                    endpoint.diarize shouldBe null
+                }
             }
         }
 

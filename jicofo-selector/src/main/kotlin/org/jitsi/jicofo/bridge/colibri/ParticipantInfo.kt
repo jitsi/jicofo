@@ -35,6 +35,7 @@ class ParticipantInfo(
     val useSsrcRewriting = parameters.useSsrcRewriting
     val useRtpMidDemux = parameters.useRtpMidDemux
     val visitor = parameters.visitor
+    val diarize = parameters.diarize
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
@@ -51,5 +52,6 @@ class ParticipantInfo(
         put("ssrc_rewriting", useSsrcRewriting)
         put("rtp_mid_demux", useRtpMidDemux)
         put("visitor", visitor)
+        put("diarize", diarize)
     }
 }

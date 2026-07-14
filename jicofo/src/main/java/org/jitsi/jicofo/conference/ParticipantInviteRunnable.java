@@ -207,6 +207,7 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     offer.getContents().stream().anyMatch(c -> c.getName() == "data"),
                     (participant.getChatMember().getRole() == MemberRole.VISITOR),
                     privateAddresses,
+                    participant.getChatMember().getDiarize(),
                     medias);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }

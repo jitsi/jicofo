@@ -59,6 +59,9 @@ interface ChatRoomMember {
     val isAudioMuted: Boolean
     val isVideoMuted: Boolean
 
+    /** Whether this member requested per-endpoint diarization (signaled via the "diarize" participant property). */
+    val diarize: Boolean
+
     /** Gets the region (e.g. "us-east") of this [ChatRoomMember]. */
     val region: String?
 

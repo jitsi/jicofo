@@ -122,6 +122,7 @@ data class ParticipantAllocationParameters(
     val useSctp: Boolean,
     val visitor: Boolean,
     val supportsPrivateAddresses: Boolean,
+    val diarize: Boolean,
     val medias: Set<Media>
 )
 
