@@ -53,13 +53,20 @@ class MockChatRoom(
         every { getChatMember(any()) } answers { memberList.find { it.occupantJid == arg(0) } }
     }
 
-    fun addMember(id: String, role: MemberRole = MemberRole.PARTICIPANT): ChatRoomMember {
+    fun addMember(
+        id: String,
+        role: MemberRole = MemberRole.PARTICIPANT,
+        jibri: Boolean = false,
+        jigasi: Boolean = false
+    ): ChatRoomMember {
         val occupant = JidCreate.entityFullFrom("$roomJid/$id")
         val member = mockk<ChatRoomMember>(relaxed = true) {
             every { name } returns id
             every { occupantJid } returns occupant
             every { chatRoom } returns this@MockChatRoom.chatRoom
             every { features } returns Features.defaultFeatures
+            every { isJibri } returns jibri
+            every { isJigasi } returns jigasi
             every { debugState } returns JsonNodeFactory.instance.objectNode()
             every { presence } returns mockk {
                 every { status } returns null
