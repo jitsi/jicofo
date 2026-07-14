@@ -73,7 +73,7 @@ constructor(
      * call [reportChanged] immediately, *outside* the synchronization block.
      */
     private fun valueUpdated(): Boolean {
-        val now = Instant.now()
+        val now = clock.instant()
         if (updateTask != null) {
             return false
         }
