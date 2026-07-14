@@ -15,7 +15,6 @@
  */
 package org.jitsi.jicofo.conference
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
@@ -32,67 +31,22 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
-import org.jitsi.jicofo.mock.MockXmppConnection
-import org.jitsi.jicofo.mock.MockXmppProvider
-import org.jitsi.jicofo.mock.TestColibri2Server
-import org.jitsi.jicofo.xmpp.jingle.JingleSession
+import org.jitsi.jicofo.mock.ConferenceHarness
+import org.jitsi.jicofo.mock.inPlaceExecutor
+import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
+import org.jitsi.jicofo.util.shouldBeValidJson
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
-import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
-import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
-import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
-import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
-import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
-import org.jitsi.xmpp.extensions.jingle.JingleIQ
-import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.packet.IQ
-import org.jxmpp.jid.Jid
-import org.jxmpp.jid.impl.JidCreate
-import shouldBeValidJson
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledExecutorService
-import java.util.logging.Level
 
 class ConferenceTest : ShouldSpec() {
-    private val roomName = JidCreate.entityBareFrom("test@example.com")
-    private val xmppConnection = ColibriAndJingleXmppConnection()
-    private val jingleSessions = mutableListOf<JingleSession>()
-    private val xmppProvider = MockXmppProvider(xmppConnection.xmppConnection)
-    private val chatRoom = xmppProvider.getRoom(roomName)
-
-    private var memberCounter = 1
-    private fun nextMemberId() = "member-${memberCounter++}"
-
-    private var ended = false
-    private val conference = JitsiMeetConferenceImpl(
-        roomName,
-        mockk {
-            every { conferenceEnded(any()) } answers { ended = true }
-            every { meetingIdSet(any(), any()) } returns true
-        },
-        HashMap(),
-        Level.INFO,
-        null,
-        false,
-        mockk(relaxed = true) {
-            every { xmppServices } returns mockk(relaxed = true) {
-                every { clientConnection } returns xmppProvider.xmppProvider
-                every { serviceConnection } returns xmppProvider.xmppProvider
-                every { bridgeSelector } returns mockk(relaxed = true) {
-                    every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
-                        every { jid } returns JidCreate.from("jvb@example.com/jvb1")
-                        every { debugState } returns JsonNodeFactory.instance.objectNode()
-                    }
-                }
-                every { jingleHandler } returns mockk(relaxed = true) {
-                    every { registerSession(capture(jingleSessions)) } returns Unit
-                }
-            }
-        }
-    ).apply { start() }
+    private val harness = ConferenceHarness()
+    private val xmppConnection = harness.xmppConnection
+    private val jingleSessions = harness.jingleSessions
+    private val chatRoom = harness.chatRoom
+    private val conference = harness.conference
 
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
@@ -106,19 +60,9 @@ class ConferenceTest : ShouldSpec() {
         TaskPools.resetScheduledPool()
     }
 
-    private fun addParticipants(n: Int): List<ChatRoomMember> {
-        val members = buildList { repeat(n) { add(chatRoom.addMember(nextMemberId())) } }
-
-        members.forEach { member ->
-            val remoteParticipant = xmppConnection.remoteParticipants[member.occupantJid]!!
-            val jingleSession = jingleSessions.find { it.sid == remoteParticipant.sessionInitiate.sid }!!
-            jingleSession.processIq(remoteParticipant.createSessionAccept())
-        }
-        return members
-    }
-
-    private fun ChatRoomMember.getParticipant() = conference.getParticipant(occupantJid)
-    private fun ChatRoomMember.getRemoteParticipant() = xmppConnection.remoteParticipants[occupantJid]
+    private fun addParticipants(n: Int): List<ChatRoomMember> = harness.addParticipants(n)
+    private fun ChatRoomMember.getParticipant() = harness.getParticipant(this)
+    private fun ChatRoomMember.getRemoteParticipant() = harness.getRemoteParticipant(this)
 
     init {
         context("Test inviting 2 participants initially") {
@@ -155,11 +99,11 @@ class ConferenceTest : ShouldSpec() {
                 chatRoom.removeMember(member1)
                 // The single-participant timeout should execute immediately and end the jingle session
                 conference.participantCount shouldBe 0
-                ended shouldBe false
+                harness.ended shouldBe false
 
                 chatRoom.removeMember(member2)
                 conference.participantCount shouldBe 0
-                ended shouldBe true
+                harness.ended shouldBe true
             }
         }
         context("Test inviting more than 2 initially") {
@@ -176,7 +120,7 @@ class ConferenceTest : ShouldSpec() {
 
             members.forEach { chatRoom.removeMember(it) }
             conference.participantCount shouldBe 0
-            ended shouldBe true
+            harness.ended shouldBe true
         }
         context("Test participants leaving before accepting a session") {
             val members = buildList {
@@ -203,7 +147,7 @@ class ConferenceTest : ShouldSpec() {
 
             members.take(3).forEach { chatRoom.removeMember(it) }
             conference.participantCount shouldBe 0
-            ended shouldBe true
+            harness.ended shouldBe true
         }
         context("Sender limits") {
             withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
@@ -372,132 +316,4 @@ class ConferenceTest : ShouldSpec() {
             }
         }
     }
-}
-
-// Execute tasks in place (in the current thread, blocking)
-val inPlaceExecutor: ExecutorService = mockk {
-    every { submit(any<Runnable>()) } answers {
-        firstArg<Runnable>().run()
-        CompletableFuture<Unit>().apply {
-            complete(Unit)
-        }
-    }
-    every { execute(any()) } answers {
-        firstArg<Runnable>().run()
-    }
-}
-
-val inPlaceScheduledExecutor: ScheduledExecutorService = mockk {
-    every { schedule(any(), any(), any()) } answers {
-        firstArg<Runnable>().run()
-        mockk(relaxed = true) {
-            every { isDone } returns true
-        }
-    }
-}
-
-/**
- * Mocks an [AbstractXMPPConnection] which responds to colibri2 and Jingle IQs. Creates [RemoteParticipant]s that model
- * the remote side of a Jingle session.
- */
-class ColibriAndJingleXmppConnection : MockXmppConnection() {
-    var ssrcs = 1L
-    val colibri2Server = TestColibri2Server()
-    val remoteParticipants = mutableMapOf<Jid, RemoteParticipant>()
-
-    // IQs sent by jicofo
-    val requests = mutableListOf<IQ>()
-
-    override fun handleIq(iq: IQ): IQ? = when (iq) {
-        is ConferenceModifyIQ -> colibri2Server.handleConferenceModifyIq(iq)
-        is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
-        else -> {
-            println("Not handling ${iq.toXML()}")
-            null
-        }
-    }.also {
-        requests.add(iq)
-    }
-
-    private fun nextSource(mediaType: MediaType) = Source(ssrcs++, mediaType)
-
-    /**
-     *  Model the remote side of a [Participant], i.e. the entity that would respond to Jingle requests sent from
-     *  jicofo.
-     */
-    inner class RemoteParticipant(jid: Jid) {
-        var sources = EndpointSourceSet(setOf(nextSource(MediaType.AUDIO), nextSource(MediaType.VIDEO)))
-        val requests = mutableListOf<JingleIQ>()
-        fun handleJingleIq(iq: JingleIQ) = IQ.createResultIQ(iq).also { requests.add(iq) }
-
-        val sessionInitiate: JingleIQ
-            get() = requests.find { it.action == JingleAction.SESSION_INITIATE }
-                ?: throw IllegalStateException("session-initiate not received")
-
-        fun createSourceAdd(sources: EndpointSourceSet) = JingleIQ(JingleAction.SOURCEADD, sessionInitiate.sid).apply {
-            from = sessionInitiate.to
-            type = IQ.Type.set
-            to = sessionInitiate.from
-            sources.toJingle().forEach { addContent(it) }
-        }
-        fun createSourceRemove(sources: EndpointSourceSet) =
-            JingleIQ(JingleAction.SOURCEREMOVE, sessionInitiate.sid).apply {
-                from = sessionInitiate.to
-                type = IQ.Type.set
-                to = sessionInitiate.from
-                sources.toJingle().forEach { addContent(it) }
-            }
-
-        fun nextSource(mediaType: MediaType) = this@ColibriAndJingleXmppConnection.nextSource(mediaType)
-
-        fun createSessionAccept(): JingleIQ {
-            val accept = JingleIQ(JingleAction.SESSION_ACCEPT, sessionInitiate.sid).apply {
-                type = IQ.Type.set
-                from = sessionInitiate.to
-                to = sessionInitiate.from
-            }
-
-            val audioContent = ContentPacketExtension().apply {
-                name = "audio"
-                creator = ContentPacketExtension.CreatorEnum.responder // xxx
-                addChildExtension(RtpDescriptionPacketExtension().apply { media = "audio" })
-                sources.sources.filter { it.mediaType == MediaType.AUDIO }.forEach {
-                    addChildExtension(it.toPacketExtension())
-                }
-            }
-
-            val videoContent = ContentPacketExtension().apply {
-                name = "video"
-                creator = ContentPacketExtension.CreatorEnum.responder // xxx
-                addChildExtension(RtpDescriptionPacketExtension().apply { media = "video" })
-                sources.sources.filter { it.mediaType == MediaType.VIDEO }.forEach {
-                    addChildExtension(it.toPacketExtension())
-                }
-            }
-
-            videoContent.addChildExtension(createTransport(sessionInitiate))
-
-            accept.addContent(audioContent)
-            accept.addContent(videoContent)
-
-            return accept
-        }
-    }
-}
-
-private fun createTransport(sessionInitiate: JingleIQ) = IceUdpTransportPacketExtension().apply {
-    addChildExtension(IceRtcpmuxPacketExtension())
-    addChildExtension(
-        DtlsFingerprintPacketExtension().apply {
-            val offerFp = sessionInitiate.contentList.firstNotNullOf {
-                it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java)
-            }.getFirstChildOfType(DtlsFingerprintPacketExtension::class.java)
-
-            hash = offerFp.hash
-            fingerprint = offerFp.fingerprint
-                .replace("A", "B")
-                .replace("1", "2")
-                .replace("C", "D")
-        }
-    )
 }

@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.fasterxml.jackson.databind.JsonNode
+package org.jitsi.jicofo
+
 import io.kotest.core.spec.style.ShouldSpec
 import io.mockk.every
 import io.mockk.mockk
-import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.jibri.JibriChatRoomMember
 import org.jitsi.jicofo.jibri.JibriDetector
 import org.jitsi.jicofo.jigasi.JigasiDetector
+import org.jitsi.jicofo.util.shouldBeValidJson
 import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMemberImpl
@@ -87,10 +88,6 @@ class DebugStateTest : ShouldSpec() {
             println(jibriDetector.debugState.toString())
         }
     }
-}
-
-fun JsonNode.shouldBeValidJson() {
-    this.toString()
 }
 
 private fun jigasiChatMember(jid: EntityFullJid) = mockk<ChatRoomMember> {
