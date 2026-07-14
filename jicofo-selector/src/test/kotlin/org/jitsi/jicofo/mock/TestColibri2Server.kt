@@ -20,7 +20,9 @@ package org.jitsi.jicofo.mock
 
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
+import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Relay
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifiedIQ
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
@@ -70,6 +72,7 @@ class TestColibri2Server {
 
     private inner class Conference(val meetingId: String) {
         val endpoints = mutableMapOf<String, Endpoint>()
+        val relays = mutableMapOf<String, Relay>()
 
         @Throws(IqProcessingException::class)
         fun handleRequest(request: ConferenceModifyIQ): IQ {
@@ -81,9 +84,7 @@ class TestColibri2Server {
             }
 
             request.endpoints.forEach { responseBuilder.addEndpoint(handleEndpoint(it)) }
-            if (request.relays.isNotEmpty()) {
-                throw RuntimeException("Relays not implemented")
-            }
+            request.relays.forEach { responseBuilder.addRelay(handleRelay(it)) }
 
             if (!request.create && endpoints.isEmpty()) {
                 expireConference(meetingId)
@@ -155,6 +156,75 @@ class TestColibri2Server {
             }
 
             return respBuilder.build()
+        }
+
+        private fun handleRelay(c2relay: Colibri2Relay): Colibri2Relay {
+            val respBuilder = Colibri2Relay.getBuilder().apply { setId(c2relay.id) }
+            if (c2relay.expire) {
+                if (relays.remove(c2relay.id) == null) {
+                    throw IqProcessingException(item_not_found, "Unknown relay ${c2relay.id}")
+                }
+                respBuilder.setExpire(true)
+                return respBuilder.build()
+            }
+
+            val relay = if (c2relay.create) {
+                if (relays.containsKey(c2relay.id)) {
+                    throw IqProcessingException(conflict, "Relay with ID ${c2relay.id} already exists")
+                }
+                val transport = c2relay.transport ?: throw IqProcessingException(
+                    bad_request,
+                    "Attempt to create relay ${c2relay.id} with no <transport>"
+                )
+                val newRelay = Relay(c2relay.id, useSctp = transport.sctp != null)
+                relays[c2relay.id] = newRelay
+                newRelay
+            } else {
+                relays[c2relay.id] ?: throw IqProcessingException(
+                    item_not_found,
+                    "Unknown relay ${c2relay.id}"
+                )
+            }
+
+            c2relay.endpoints?.endpoints?.forEach { relayEndpoint ->
+                if (relayEndpoint.expire) {
+                    relay.endpoints.remove(relayEndpoint.id)
+                } else {
+                    relay.endpoints[relayEndpoint.id] = relayEndpoint
+                }
+            }
+
+            if (c2relay.create) {
+                respBuilder.setTransport(
+                    Transport.getBuilder().apply {
+                        setIceUdpExtension(relay.describeTransport())
+                    }.build()
+                )
+            }
+
+            return respBuilder.build()
+        }
+
+        private inner class Relay(val id: String, val useSctp: Boolean) {
+            /** Remote endpoints that have been set on this relay, by ID. */
+            val endpoints = mutableMapOf<String, Colibri2Endpoint>()
+
+            fun describeTransport() = IceUdpTransportPacketExtension().apply {
+                password = "password-$meetingId-relay-$id"
+                ufrag = "ufrag-$meetingId-relay-$id"
+                addChildExtension(
+                    DtlsFingerprintPacketExtension().apply {
+                        hash = "sha-256"
+                        setup = "actpass"
+                        text = "AC:58:2D:03:40:89:87:30:6C:25:2C:50:17:5C:5C:2E:" +
+                            "1F:A1:19:19:4D:74:A5:37:35:22:6E:8E:DF:55:13:8E"
+                    }
+                )
+                if (!useSctp) {
+                    // The bridge advertises a websocket unless SCTP is in use.
+                    addChildExtension(WebSocketPacketExtension("wss://example.com/colibri-relay-ws/$meetingId/$id"))
+                }
+            }
         }
 
         private inner class Endpoint(val id: String) {
