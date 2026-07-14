@@ -141,6 +141,7 @@ class JibriChatRoomMember(
     override val isJibri: Boolean get() = TODO("Not yet implemented")
     override val isAudioMuted: Boolean get() = TODO("Not yet implemented")
     override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
+    override val diarize: Boolean get() = TODO("Not yet implemented")
     override val region: String? get() = TODO("Not yet implemented")
     override val statsId: String? get() = TODO("Not yet implemented")
     override val videoCodecs: List<String>? get() = TODO("Not yet implemented")

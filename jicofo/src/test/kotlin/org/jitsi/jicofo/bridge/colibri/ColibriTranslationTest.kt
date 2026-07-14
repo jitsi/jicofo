@@ -95,6 +95,7 @@ class ColibriTranslationTest : ShouldSpec() {
             useSctp = false,
             visitor = false,
             supportsPrivateAddresses = false,
+            diarize = false,
             medias = emptySet()
         )
     )

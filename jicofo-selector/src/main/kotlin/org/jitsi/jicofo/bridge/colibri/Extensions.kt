@@ -117,6 +117,11 @@ internal fun ParticipantInfo.toEndpoint(
         if (useRtpMidDemux) {
             addCapability(Capability.CAP_RTP_MID_DEMUX_SUPPORT)
         }
+        if (diarize) {
+            // Call setDiarize on the Colibri2Endpoint.Builder directly: the fluent builder chain returns a parent
+            // Builder type after setId(...) which does not expose setDiarize.
+            setDiarize(true)
+        }
     }
     // TODO: find a way to signal sources only when they change? Or is this already the case implicitly?
     if (!expire) {

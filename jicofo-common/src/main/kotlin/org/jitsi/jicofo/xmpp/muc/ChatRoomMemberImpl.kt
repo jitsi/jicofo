@@ -70,6 +70,8 @@ class ChatRoomMemberImpl(
         private set
     override var statsId: String? = null
         private set
+    override var diarize: Boolean = false
+        private set
     override var videoCodecs: List<String>? = null
         private set
     override var isAudioMuted = true
@@ -209,6 +211,9 @@ class ChatRoomMemberImpl(
             statsId = it.statsId
         }
 
+        val diarizeElement = presence.getExtensionElement("jitsi_participant_diarize", "jabber:client")
+        diarize = (diarizeElement as? StandardExtensionElement)?.text?.toBoolean() ?: false
+
         val newVideoCodecs =
             presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
                 if (!it.codecs.contains("vp8")) {
@@ -270,6 +275,7 @@ class ChatRoomMemberImpl(
             put("stats_id", statsId.toString())
             put("is_audio_muted", isAudioMuted)
             put("is_video_muted", isVideoMuted)
+            put("diarize", diarize)
             set<ObjectNode>("features", jsonMapper.valueToTree(features.map { it.name }))
             put("capsNodeVer", capsNodeVer.toString())
         }
