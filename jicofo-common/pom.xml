@@ -117,6 +117,11 @@
       <artifactId>jicoco-test-kotlin</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.mockk</groupId>
+      <artifactId>mockk-jvm</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
@@ -221,6 +226,22 @@
             </manifest>
           </archive>
         </configuration>
+        <executions>
+          <execution>
+            <!-- Publish test utilities (mocks, helpers) for use in the other jicofo modules. -->
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>**/*Test.class</exclude>
+                <exclude>**/*Test$*.class</exclude>
+                <exclude>**/JicofoCommonKotestProjectConfig.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

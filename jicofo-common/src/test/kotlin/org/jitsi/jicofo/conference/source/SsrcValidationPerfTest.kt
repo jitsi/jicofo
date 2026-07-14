@@ -15,15 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo
+package org.jitsi.jicofo.conference.source
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.jicofo.conference.source.Source
-import org.jitsi.jicofo.conference.source.SsrcGroup
-import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
-import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
 import java.time.Clock
@@ -57,8 +52,8 @@ class SsrcValidationPerfTest : ShouldSpec() {
             }
             context("Sequential add/remove") {
                 val conferenceSources = ValidatingConferenceSourceMap(
-                    ConferenceConfig.config.maxSsrcsPerUser,
-                    ConferenceConfig.config.maxSsrcGroupsPerUser
+                    MAX_SSRCS_PER_USER,
+                    MAX_SSRC_GROUPS_PER_USER
                 )
                 measureAndLog("Adding all endpoints") {
                     for (i in 0 until numEndpoints) {
@@ -107,8 +102,8 @@ class SsrcValidationPerfTest : ShouldSpec() {
     )
 
     private fun createConferenceSourceMap(numEndpoints: Int) = ValidatingConferenceSourceMap(
-        ConferenceConfig.config.maxSsrcsPerUser,
-        ConferenceConfig.config.maxSsrcGroupsPerUser
+        MAX_SSRCS_PER_USER,
+        MAX_SSRC_GROUPS_PER_USER
     ).apply {
         for (i in 0 until numEndpoints) {
             val endpointSourceSet = createEndpointSourceSet(i.toString(), ssrcCount)
@@ -128,3 +123,7 @@ fun measure(clock: Clock = Clock.systemUTC(), block: () -> Unit): Duration {
     block()
     return Duration.between(start, clock.instant())
 }
+
+// Default values from jicofo.conference.max-ssrcs-per-user / max-ssrc-groups-per-user.
+private const val MAX_SSRCS_PER_USER = 20
+private const val MAX_SSRC_GROUPS_PER_USER = 20

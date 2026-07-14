@@ -29,11 +29,11 @@ import io.mockk.mockk
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeSelector
-import org.jitsi.jicofo.conference.inPlaceExecutor
-import org.jitsi.jicofo.conference.inPlaceScheduledExecutor
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.TestColibri2Server
+import org.jitsi.jicofo.mock.inPlaceExecutor
+import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ

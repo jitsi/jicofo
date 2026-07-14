@@ -25,6 +25,7 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import org.jitsi.jicofo.util.shouldBeValidJson
 import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri.SourcePacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension

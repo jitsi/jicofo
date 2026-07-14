@@ -15,7 +15,6 @@
  */
 package org.jitsi.jicofo.conference.source
 
-import com.fasterxml.jackson.databind.JsonNode
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -23,6 +22,7 @@ import io.kotest.matchers.shouldBe
 import org.jitsi.jicofo.conference.AddOrRemove.Add
 import org.jitsi.jicofo.conference.AddOrRemove.Remove
 import org.jitsi.jicofo.conference.SourceSignaling
+import org.jitsi.jicofo.util.shouldBeValidJson
 import org.jitsi.utils.MediaType
 
 class SourceSignalingTest : ShouldSpec() {
@@ -162,5 +162,3 @@ class SourceSignalingTest : ShouldSpec() {
         }
     }
 }
-
-fun JsonNode.shouldBeValidJson() = this.toString()

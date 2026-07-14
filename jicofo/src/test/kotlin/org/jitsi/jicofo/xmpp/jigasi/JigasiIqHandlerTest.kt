@@ -26,9 +26,9 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConference
-import org.jitsi.jicofo.conference.inPlaceExecutor
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.mock.MockXmppConnection
+import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.util.ListConferenceStore
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError

@@ -118,6 +118,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>jicofo-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.mockk</groupId>
       <artifactId>mockk-jvm</artifactId>
       <scope>test</scope>
@@ -226,6 +233,22 @@
             </manifest>
           </archive>
         </configuration>
+        <executions>
+          <execution>
+            <!-- Publish test utilities (TestColibri2Server) for use in the jicofo module. -->
+            <id>test-jar</id>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+            <configuration>
+              <excludes>
+                <exclude>**/*Test.class</exclude>
+                <exclude>**/*Test$*.class</exclude>
+                <exclude>**/JicofoSelectorKotestProjectConfig.class</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

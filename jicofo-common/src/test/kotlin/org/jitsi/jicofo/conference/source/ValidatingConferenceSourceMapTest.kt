@@ -13,28 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo
+package org.jitsi.jicofo.conference.source
 
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe
-import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.jicofo.conference.source.GroupMsidMismatchException
-import org.jitsi.jicofo.conference.source.InvalidFidGroupException
-import org.jitsi.jicofo.conference.source.InvalidSsrcException
-import org.jitsi.jicofo.conference.source.MsidConflictException
-import org.jitsi.jicofo.conference.source.RequiredParameterMissingException
-import org.jitsi.jicofo.conference.source.Source
-import org.jitsi.jicofo.conference.source.SourceDoesNotExistException
-import org.jitsi.jicofo.conference.source.SourceGroupDoesNotExistException
-import org.jitsi.jicofo.conference.source.SsrcAlreadyUsedException
-import org.jitsi.jicofo.conference.source.SsrcGroup
-import org.jitsi.jicofo.conference.source.SsrcGroupLimitExceededException
-import org.jitsi.jicofo.conference.source.SsrcGroupSemantics
-import org.jitsi.jicofo.conference.source.SsrcLimitExceededException
-import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
-import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.utils.MediaType.AUDIO
 import org.jitsi.utils.MediaType.VIDEO
 
@@ -66,8 +50,8 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         val sourceSet = EndpointSourceSet(sources, groups)
 
         val conferenceSources = ValidatingConferenceSourceMap(
-            ConferenceConfig.config.maxSsrcsPerUser,
-            ConferenceConfig.config.maxSsrcGroupsPerUser
+            MAX_SSRCS_PER_USER,
+            MAX_SSRC_GROUPS_PER_USER
         )
 
         context("Adding sources.") {
@@ -115,7 +99,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             context("Max SSRC count limit") {
                 val conferenceSources = ValidatingConferenceSourceMap(
                     maxSsrcsPerUser = 4,
-                    ConferenceConfig.config.maxSsrcGroupsPerUser
+                    MAX_SSRC_GROUPS_PER_USER
                 )
                 context("At once") {
                     shouldThrow<SsrcLimitExceededException> {
@@ -140,7 +124,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
             }
             context("Max ssrc-group count limit") {
                 val conferenceSources = ValidatingConferenceSourceMap(
-                    ConferenceConfig.config.maxSsrcsPerUser,
+                    MAX_SSRCS_PER_USER,
                     maxSsrcGroupsPerUser = 2
                 )
                 context("At once") {
@@ -427,3 +411,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
         }
     }
 }
+
+// Default values from jicofo.conference.max-ssrcs-per-user / max-ssrc-groups-per-user.
+private const val MAX_SSRCS_PER_USER = 20
+private const val MAX_SSRC_GROUPS_PER_USER = 20
