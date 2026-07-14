@@ -441,6 +441,19 @@
                   <goal>report</goal>
                 </goals>
               </execution>
+              <!-- Aggregate report over all jicofo modules. This is the report to look at: tests in one module
+                   exercise classes from the other modules, so the per-module reports under-count coverage.
+                   Output: jicofo/target/site/jacoco-aggregate/ -->
+              <execution>
+                <id>report-aggregate</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>report-aggregate</goal>
+                </goals>
+                <configuration>
+                  <includeCurrentProject>true</includeCurrentProject>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
         </plugins>
