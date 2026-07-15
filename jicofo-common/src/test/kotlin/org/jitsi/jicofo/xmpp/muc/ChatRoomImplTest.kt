@@ -209,6 +209,10 @@ class ChatRoomImplTest : ShouldSpec() {
             chatRoom.isMemberAllowedToUnmute(jid, MediaType.AUDIO) shouldBe true
             chatRoom.isMemberAllowedToUnmute(JidCreate.from("other@example.com"), MediaType.AUDIO) shouldBe false
         }
+        context("Leaving the room") {
+            chatRoom.leave()
+            left shouldBe true
+        }
         context("Room metadata") {
             chatRoom.setRoomMetadata(
                 RoomMetadata(

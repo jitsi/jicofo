@@ -32,6 +32,8 @@
       <!-- False positives with kotlin 1.6. -->
       <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
       <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
+      <!-- False positive with kotlin lazy initialization. -->
+      <Bug pattern="BC_IMPOSSIBLE_INSTANCEOF"/>
     </Or>
   </And>
 </Match>
@@ -49,16 +51,18 @@
 </Match>
 
 <Match>
-  <!-- Tests have a valid reason to ignore return values (expecting exceptions, etc). -->
+  <!-- Tests have a valid reason to ignore return values (expecting exceptions, etc) and to force GC (testing
+       weak-reference eviction). -->
   <And>
     <Or>
       <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+      <Bug pattern="DM_GC"/>
     </Or>
     <Or>
       <Source name="~.*\.*Test.kt" />
       <Source name="~.*\.*Test.java" />
     </Or>
-  </And>  
+  </And>
 </Match>
 
 

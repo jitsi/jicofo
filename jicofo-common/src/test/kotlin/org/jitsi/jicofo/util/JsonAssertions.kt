@@ -16,7 +16,12 @@
 package org.jitsi.jicofo.util
 
 import com.fasterxml.jackson.databind.JsonNode
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 
+@SuppressFBWarnings(
+    value = ["RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"],
+    justification = "The point is to exercise serialization; a thrown exception is the failure signal."
+)
 fun JsonNode.shouldBeValidJson() {
     this.toString()
 }
