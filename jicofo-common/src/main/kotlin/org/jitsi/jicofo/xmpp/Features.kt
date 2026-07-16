@@ -45,6 +45,7 @@ enum class Features(val value: String) {
     JSON_SOURCES("http://jitsi.org/json-encoded-sources"),
     OPUS_RED("http://jitsi.org/opus-red"),
     AUDIO_MUTE("http://jitsi.org/protocol/audio-mute"),
+    AUDIO_TRANSLATION("http://jitsi.org/protocol/audio-translation"),
 
     // The ones below are not used in jicofo, but are defined here to improve the xmpp-caps statistics and avoid logs
     // about unknown features.
