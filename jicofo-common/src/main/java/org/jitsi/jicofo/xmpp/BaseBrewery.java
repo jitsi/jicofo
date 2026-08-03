@@ -210,6 +210,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
                 chatRoom = null;
             }
+
+            // The XMPP connection is already authenticated at this point, so registrationChanged() won't
+            // fire again. Schedule an explicit retry so a transient failure (e.g. the server not responding
+            // to a stale MUC leave during reconnect) doesn't permanently break the brewery.
+            TaskPools.getScheduledPool().schedule(
+                this::maybeStart,
+                XmppConfig.service.getReplyTimeout().toMillis(),
+                TimeUnit.MILLISECONDS);
         }
     }
 
