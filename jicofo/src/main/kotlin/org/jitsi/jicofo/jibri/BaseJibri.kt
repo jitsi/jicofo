@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.jibri
 
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.jibri.JibriSession.StateListener
@@ -27,12 +29,14 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.jicofo.xmpp.tryToSendStanza
+import org.jitsi.tracing.TracingGlobal
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import java.lang.Exception
+import kotlin.use
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
 /**
@@ -48,6 +52,7 @@ abstract class BaseJibri internal constructor(
 ) : StateListener {
 
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
+    val tracer: Tracer = TracingGlobal.sdk.getTracer("org.jitsi.jicofo.jibri")
 
     fun handleJibriRequest(request: JibriRequest): IqProcessingResult = if (accept(request.iq)) {
         logger.info("Accepted jibri request: ${request.iq.toXML()}")
@@ -58,14 +63,24 @@ abstract class BaseJibri internal constructor(
         }
 
         chatRoom.queueXmppTask {
+            val span = tracer.spanBuilder("jibri.request")
+                .setAttribute("action", request.iq.action.toString())
+                .setAttribute("client.id", request.iq.from.toString())
+                .setAttribute("recording-mode", request.iq.recordingMode.toString())
+                .startSpan()
             val response = try {
-                doHandleIQRequest(request.iq)
+                span.makeCurrent().use {
+                    doHandleIQRequest(request.iq)
+                }
             } catch (e: Exception) {
                 logger.warn("Failed to handle request: ${request.iq}", e)
                 request.connection.tryToSendStanza(
                     IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
                 )
+                span.setStatus(StatusCode.ERROR, e.message ?: "")
                 null
+            } finally {
+                span.end()
             }
             response?.let { request.connection.tryToSendStanza(it) }
         }

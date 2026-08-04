@@ -18,9 +18,12 @@
 package org.jitsi.jicofo.jibri;
 
 import edu.umd.cs.findbugs.annotations.*;
+import io.opentelemetry.api.trace.*;
+import io.opentelemetry.context.*;
 import org.jetbrains.annotations.Nullable;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.xmpp.*;
+import org.jitsi.xmpp.extensions.*;
 import org.jitsi.xmpp.extensions.jibri.*;
 import org.jitsi.xmpp.extensions.jibri.JibriIq.*;
 import org.jetbrains.annotations.*;
@@ -370,6 +373,18 @@ public class JibriSession
         stopRequest.setAction(JibriIq.Action.STOP);
         stopRequest.setSessionId(this.sessionId);
 
+        Span span = Span.fromContextOrNull(Context.current());
+        if (span != null)
+        {
+            stopRequest.addExtension(
+                    new TraceParent(
+                            span.getSpanContext().getTraceId(),
+                            span.getSpanContext().getSpanId(),
+                            span.getSpanContext().getTraceFlags().asHex()
+                    )
+            );
+        }
+
         logger.info("Sending stop IQ (fire-and-forget): " + stopRequest.toXML());
 
         try
@@ -512,6 +527,17 @@ public class JibriSession
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
 
+        Span span = Span.fromContextOrNull(Context.current());
+        if (span != null)
+        {
+            startIq.addExtension(
+                new TraceParent(
+                    span.getSpanContext().getTraceId(),
+                    span.getSpanContext().getSpanId(),
+                    span.getSpanContext().getTraceFlags().asHex()
+                )
+            );
+        }
         // We will not wait forever for the Jibri to start. This method can be
         // run multiple times on retry, so we want to restart the pending
         // timeout each time.
@@ -532,6 +558,19 @@ public class JibriSession
             stopRequest.setTo(jibriJid);
             stopRequest.setAction(JibriIq.Action.STOP);
             stopRequest.setSessionId(sessionId);
+
+            span = Span.fromContextOrNull(Context.current());
+            if (span != null)
+            {
+                startIq.addExtension(
+                        new TraceParent(
+                                span.getSpanContext().getTraceId(),
+                                span.getSpanContext().getSpanId(),
+                                span.getSpanContext().getTraceFlags().asHex()
+                        )
+                );
+            }
+
             try
             {
                 jibriDetector.getXmppConnection().trySendStanza(stopRequest);
