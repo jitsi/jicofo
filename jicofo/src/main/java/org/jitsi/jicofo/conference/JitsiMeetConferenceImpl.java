@@ -1295,6 +1295,35 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * Handles a request from a {@link Participant} for an in-place ICE restart. The bridge is asked to create a new
+     * ICE agent with fresh credentials while the existing one keeps carrying media; its response is handled
+     * asynchronously and relayed back to the participant via
+     * {@link ColibriSessionManager.Listener#endpointIceRestarted}.
+     *
+     * @param bridgeSessionId the ID of the bridge session the participant wants restarted.
+     *
+     * @throws InvalidBridgeSessionIdException if bridgeSessionId doesn't match the ID of the (colibri) session that
+     * the participant currently has.
+     */
+    void iceRestart(@NotNull Participant participant, String bridgeSessionId)
+    throws InvalidBridgeSessionIdException
+    {
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (!Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
+        {
+            throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
+        }
+
+        // Note that unlike a full restart request we intentionally do not call Bridge.endpointRequestedRestart(): an
+        // in-place ICE restart is normally triggered by the client's network changing and is not a signal that the
+        // bridge is failing ICE.
+        logger.info("ICE restart: requesting one from the bridge for " + participant.getEndpointId()
+                + ", bridge-session ID: " + bridgeSessionId);
+        getColibriSessionManager().restartIce(participant.getEndpointId());
+    }
+
+    /**
      * Handles a request from a {@link Participant} to terminate its session and optionally start it again.
      *
      * @param bridgeSessionId the ID of the bridge session that the participant requested to be terminated.
