@@ -44,9 +44,17 @@ import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
+
+private fun transportWithGeneration(generation: Int?) = IceUdpTransportPacketExtension().apply {
+    ufrag = "ufrag-$generation"
+    password = "password-$generation"
+    generation?.let { setIceGeneration(it) }
+}
 
 /**
  * Tests [ColibriV2SessionManager] against [TestColibri2Server]s, including multi-bridge (Octo) conferences with
@@ -92,6 +100,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
     private val failedSessions = mutableListOf<Bridge>()
     private val removedEndpoints = mutableListOf<String>()
+
+    /** The transports relayed to participants after an ICE restart, in the order they were fired. */
+    private val iceRestartedTransports = mutableListOf<Pair<String, IceUdpTransportPacketExtension>>()
     private val listener = object : ColibriSessionManager.Listener {
         override fun bridgeCountChanged(bridgeCount: Int) {}
         override fun bridgeRemoved(bridge: Bridge, participantIds: List<String>) {
@@ -99,6 +110,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         }
         override fun endpointRemoved(endpointId: String) {
             removedEndpoints.add(endpointId)
+        }
+        override fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {
+            iceRestartedTransports.add(endpointId to transport)
         }
     }
 
@@ -286,6 +300,74 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
                     allocate("p4", region = "region-jvb1")
                     sessionManager.getBridges()[bridge1]!!.recentlyAddedParticipantCount shouldBe 1
+                }
+            }
+        }
+
+        context("ICE restart") {
+            allocate("p1", region = "region-jvb1")
+
+            context("For an existing participant") {
+                sessionManager.restartIce("p1").also { drain() }
+
+                should("request an ICE restart for the endpoint from its bridge") {
+                    val iceRestarts = requestsTo(bridge1).flatMap { it.endpoints }
+                        .filter { it.transport?.iceRestart == true }
+                    iceRestarts.map { it.id } shouldBe listOf("p1")
+                }
+                should("relay the bridge's rotated transport back to the participant") {
+                    iceRestartedTransports.size shouldBe 1
+                    val (endpointId, transport) = iceRestartedTransports.first()
+                    endpointId shouldBe "p1"
+                    // The bridge rotated its credentials and tagged them with the first generation.
+                    transport.iceGeneration shouldBe 1
+                    transport.ufrag shouldBe "ufrag-test-meeting-id-p1-1"
+                }
+                should("not fail the session") {
+                    failedSessions.shouldBeEmpty()
+                }
+
+                context("And restarting again") {
+                    sessionManager.restartIce("p1").also { drain() }
+
+                    should("relay the next generation") {
+                        iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(1, 2)
+                    }
+                }
+            }
+
+            context("For an unknown participant") {
+                sessionManager.restartIce("nonexistent").also { drain() }
+
+                should("not send anything to the bridge") {
+                    requestsTo(bridge1).flatMap { it.endpoints }.none { it.transport?.iceRestart == true } shouldBe true
+                }
+                should("not relay anything") {
+                    iceRestartedTransports.shouldBeEmpty()
+                }
+            }
+
+            context("With responses arriving out of order") {
+                // Colibri2 responses are handled on an IO pool, so two restarts in quick succession can be handled in
+                // either order. Only the latest generation may be relayed on to the participant.
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(2)).also { drain() }
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(3)).also { drain() }
+
+                should("drop the stale generation and relay the rest") {
+                    iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2, 3)
+                }
+            }
+
+            context("With a bridge that does not tag generations") {
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(null)).also { drain() }
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(null)).also { drain() }
+
+                should("relay everything (the guard can not order untagged transports)") {
+                    iceRestartedTransports.size shouldBe 2
+                    iceRestartedTransports.map {
+                        it.second.iceGeneration
+                    } shouldBe listOf(GENERATION_UNSPECIFIED, GENERATION_UNSPECIFIED)
                 }
             }
         }

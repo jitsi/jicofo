@@ -153,6 +153,13 @@ class TestColibri2Server {
                     )
                 }
                 respBuilder.setTransport(transBuilder.build())
+            } else if (c2endpoint.transport?.iceRestart == true) {
+                // Model the bridge's in-place ICE restart: it creates a new agent with fresh credentials, tags them
+                // with the next generation, and returns them in the response.
+                endpoint.iceGeneration++
+                respBuilder.setTransport(
+                    Transport.getBuilder().setIceUdpExtension(endpoint.describeTransport()).build()
+                )
             }
 
             c2endpoint.forceMute?.let {
@@ -237,17 +244,28 @@ class TestColibri2Server {
             var forceMuteAudio = false
             var forceMuteVideo = false
 
-            fun describeTransport() = IceUdpTransportPacketExtension().apply {
-                password = "password-$meetingId-$id"
-                ufrag = "ufrag-$meetingId-$id"
-                // TODO add some candidates?
-                addChildExtension(
-                    DtlsFingerprintPacketExtension().apply {
-                        hash = "sha-256"
-                        text = "AC:58:2D:03:40:89:87:30:6C:25:2C:50:17:5C:5C:2E:" +
-                            "1F:A1:19:19:4D:74:A5:37:35:22:6E:8E:DF:55:13:8E"
+            /** Incremented on each in-place ICE restart, i.e. each time the bridge rotates its credentials. */
+            var iceGeneration = 0
+
+            fun describeTransport(): IceUdpTransportPacketExtension {
+                // Note: bound outside the apply{} below, where `iceGeneration` would resolve to the transport's own
+                // property rather than this endpoint's.
+                val generation = iceGeneration
+                return IceUdpTransportPacketExtension().apply {
+                    password = "password-$meetingId-$id-$generation"
+                    ufrag = "ufrag-$meetingId-$id-$generation"
+                    if (generation > 0) {
+                        setIceGeneration(generation)
                     }
-                )
+                    // TODO add some candidates?
+                    addChildExtension(
+                        DtlsFingerprintPacketExtension().apply {
+                            hash = "sha-256"
+                            text = "AC:58:2D:03:40:89:87:30:6C:25:2C:50:17:5C:5C:2E:" +
+                                "1F:A1:19:19:4D:74:A5:37:35:22:6E:8E:DF:55:13:8E"
+                        }
+                    )
+                }
             }
         }
     }

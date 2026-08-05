@@ -28,12 +28,14 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.conference.translation.*;
+import org.jitsi.jicofo.metrics.IceRestartMetrics;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.util.TracingUtil;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
+import org.jitsi.jicofo.xmpp.jingle.JingleSession;
 import org.jitsi.jicofo.xmpp.muc.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.*;
@@ -2907,6 +2909,45 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Endpoint " + endpointId + " was removed from the conference. Re-inviting participant.");
             reInviteParticipantsById(Collections.singletonList(endpointId), false);
+        }
+
+        @Override
+        public void endpointIceRestarted(
+                @NotNull String endpointId,
+                @NotNull IceUdpTransportPacketExtension transport)
+        {
+            Participant participant = null;
+            synchronized (participantLock)
+            {
+                for (Participant p : participants.values())
+                {
+                    if (endpointId.equals(p.getEndpointId()))
+                    {
+                        participant = p;
+                        break;
+                    }
+                }
+            }
+
+            if (participant == null)
+            {
+                logger.warn("ICE restart: can not signal the bridge's transport, no participant for " + endpointId);
+                IceRestartMetrics.failed.inc();
+                return;
+            }
+
+            JingleSession jingleSession = participant.getJingleSession();
+            if (jingleSession == null)
+            {
+                logger.warn("ICE restart: can not signal the bridge's transport, no Jingle session for " + endpointId);
+                IceRestartMetrics.failed.inc();
+                return;
+            }
+
+            logger.info("ICE restart: relaying the bridge's transport to " + endpointId
+                    + ", generation=" + transport.getIceGeneration());
+            jingleSession.sendTransportInfo(transport);
+            IceRestartMetrics.relayed.inc();
         }
     }
 

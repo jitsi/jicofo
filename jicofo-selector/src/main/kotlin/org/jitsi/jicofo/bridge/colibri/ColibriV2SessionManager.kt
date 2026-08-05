@@ -40,6 +40,7 @@ import org.jitsi.jicofo.bridge.getNodesBehind
 import org.jitsi.jicofo.bridge.getPathsFrom
 import org.jitsi.jicofo.bridge.removeNode
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.metrics.IceRestartMetrics
 import org.jitsi.tracing.TracingGlobal
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.event.AsyncEventEmitter
@@ -781,6 +782,53 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             val removedParticipants = removeSession(session)
             eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
         }
+    }
+
+    /**
+     * The bridge performed an ICE restart for [endpointId] and rotated its own ICE credentials. Relay its new
+     * transport on to the participant, which needs it to address its connectivity checks to the bridge's new
+     * Agent.
+     *
+     * Stale responses are dropped here rather than downstream: colibri2 responses are handled on an IO pool, so
+     * if the participant restarts twice in quick succession the two responses can arrive in either order. The
+     * `ice-generation` the bridge echoes tells us which round each belongs to, and anything older than what we
+     * have already relayed is discarded.
+     */
+    internal fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {
+        val generation = transport.iceGeneration
+        synchronized(syncRoot) {
+            val participantInfo = participants[endpointId] ?: run {
+                logger.info("ICE restart: got a transport for an unknown endpoint $endpointId, ignoring.")
+                IceRestartMetrics.failed.inc()
+                return
+            }
+            if (generation != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED &&
+                participantInfo.lastRelayedIceGeneration != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED &&
+                generation <= participantInfo.lastRelayedIceGeneration
+            ) {
+                logger.info(
+                    "ICE restart: ignoring a stale transport for $endpointId, generation=$generation " +
+                        "(already relayed ${participantInfo.lastRelayedIceGeneration})"
+                )
+                IceRestartMetrics.failed.inc()
+                return
+            }
+            participantInfo.lastRelayedIceGeneration = generation
+        }
+        logger.info(
+            "ICE restart: received the bridge's transport for $endpointId, generation=$generation, " +
+                "ufrag=${transport.ufrag}"
+        )
+        eventEmitter.fireEvent { endpointIceRestarted(endpointId, transport) }
+    }
+
+    override fun restartIce(participantId: String) = synchronized(syncRoot) {
+        val participantInfo = participants[participantId] ?: run {
+            logger.error("ICE restart: no ParticipantInfo for $participantId, can not request an ICE restart.")
+            IceRestartMetrics.failed.inc()
+            return
+        }
+        participantInfo.session.restartIce(participantInfo)
     }
 
     internal fun endpointFailed(endpointId: String) {
