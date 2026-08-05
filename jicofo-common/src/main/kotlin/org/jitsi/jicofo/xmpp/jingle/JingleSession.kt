@@ -28,7 +28,6 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
-import org.jitsi.jicofo.util.TracingUtil
 import org.jitsi.jicofo.xmpp.IqProcessingResult
 import org.jitsi.jicofo.xmpp.createSessionInitiate
 import org.jitsi.jicofo.xmpp.createTransportReplace
