@@ -20,7 +20,10 @@ package org.jitsi.jicofo.xmpp.jingle
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.SpanContext
 import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.TraceFlags
+import io.opentelemetry.api.trace.TraceState
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.context.Context
 import org.jitsi.jicofo.TaskPools
@@ -53,6 +56,34 @@ import org.jxmpp.jid.Jid
 import java.util.Objects
 
 /**
+ * Extracts a remote [Span] from the `traceparent` extension of an IQ, if present.
+ *
+ * Inlined from jicoco-tracing's TracingUtil, which was removed because it pulled in a Smack
+ * dependency that isn't available on Maven Central: https://github.com/jitsi/jicoco/pull/241
+ */
+private fun remoteSpanFromIq(iq: IQ): Span? {
+    val extension = iq.getExtension(TraceParent::class.java) ?: return null
+    return Span.wrap(
+        SpanContext.createFromRemoteParent(
+            extension.traceId,
+            extension.parentId,
+            TraceFlags.fromHex(extension.traceFlags, 0),
+            TraceState.getDefault()
+        )
+    )
+}
+
+/**
+ * Extracts a remote [Context] from the `traceparent` extension of an IQ, if present, or the root
+ * context otherwise.
+ */
+private fun remoteContextFromIq(iq: IQ): Context {
+    val root = Context.root()
+    val span = remoteSpanFromIq(iq) ?: return root
+    return root.with(span)
+}
+
+/**
  * Class describes Jingle session.
  *
  * @author Pawel Domas
@@ -83,7 +114,7 @@ class JingleSession(
         "jingle-iq-queue",
         { iq ->
             val span = tracer.spanBuilder("jingle.${iq.action}")
-                .setParent(org.jitsi.tracing.TracingUtil.remoteContextFromIq(iq))
+                .setParent(remoteContextFromIq(iq))
                 .setAttribute("initiator.id", Objects.toString(iq.initiator))
                 .setAttribute("responder.id", Objects.toString(iq.responder))
                 .setAttribute("session.id", Objects.toString(iq.sid))
