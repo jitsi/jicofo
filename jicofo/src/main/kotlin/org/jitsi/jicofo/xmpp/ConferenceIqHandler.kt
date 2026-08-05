@@ -19,12 +19,15 @@ package org.jitsi.jicofo.xmpp
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
 import org.jitsi.jwt.JitsiToken
+import org.jitsi.tracing.TracingGlobal.Companion.sdk
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
@@ -35,6 +38,7 @@ import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.Boolean.parseBoolean
+import java.util.*
 import org.jitsi.jicofo.visitors.VisitorsConfig.Companion.config as visitorsConfig
 
 /**
@@ -56,6 +60,7 @@ class ConferenceIqHandler(
     private val connection = xmppProvider.xmppConnection
     private var breakoutAddress: DomainBareJid? = null
     private val logger = createLogger()
+    private val tracer: Tracer = sdk.getTracer("org.jitsi.jicofo.xmpp")
 
     init {
         xmppProvider.addListener(this)
@@ -73,6 +78,23 @@ class ConferenceIqHandler(
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
     fun handleConferenceIq(query: ConferenceIq): IQ {
+        val span = tracer.spanBuilder("xmpp.conference")
+            .setAttribute("client.id", Objects.toString(query.from))
+            .setAttribute("room.id", Objects.toString(query.room))
+            .startSpan()
+        try {
+            span.makeCurrent().use {
+                return doHandleConferenceIq(query)
+            }
+        } catch (e: Throwable) {
+            span.setStatus(StatusCode.ERROR, e.message ?: "")
+            throw e
+        } finally {
+            span.end()
+        }
+    }
+
+    private fun doHandleConferenceIq(query: ConferenceIq): IQ {
         val room = query.room ?: return IQ.createErrorResponse(
             query,
             StanzaError.from(StanzaError.Condition.bad_request, "No 'room' specified.").build()

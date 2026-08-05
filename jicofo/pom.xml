@@ -92,6 +92,10 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
+      <artifactId>jicoco-tracing</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
       <artifactId>jitsi-utils</artifactId>
     </dependency>
     <dependency>

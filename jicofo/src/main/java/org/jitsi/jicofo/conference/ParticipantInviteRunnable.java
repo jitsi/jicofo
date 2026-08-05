@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.conference;
 
+import io.opentelemetry.api.trace.*;
+import io.opentelemetry.context.*;
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
 import org.jitsi.jicofo.bridge.colibri.*;
@@ -27,6 +29,7 @@ import org.jitsi.jicofo.jigasi.*;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.xmpp.jingle.*;
 import org.jitsi.jicofo.xmpp.muc.*;
+import org.jitsi.tracing.*;
 import org.jitsi.xmpp.extensions.colibri2.*;
 import org.jitsi.xmpp.extensions.jingle.*;
 import org.jitsi.xmpp.extensions.jingle.JingleUtils;
@@ -47,6 +50,7 @@ import java.util.*;
 public class ParticipantInviteRunnable implements Runnable, Cancelable
 {
     private final Logger logger;
+    private final Tracer tracer = TracingGlobal.Companion.getSdk().getTracer("org.jitsi.jicofo.conference");
 
     /**
      * The {@link JitsiMeetConferenceImpl} into which a participant will be
@@ -146,18 +150,22 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     @Override
     public void run()
     {
-        try
+        Span span = tracer.spanBuilder("conference.participant-invite")
+                .startSpan();
+        try (Scope s = span.makeCurrent())
         {
             doRun();
         }
         catch (Throwable e)
         {
             logger.error("Channel allocator failed: ", e);
+            span.setStatus(StatusCode.ERROR, Objects.toString(e.getMessage(), ""));
             cancel();
         }
         finally
         {
             participant.inviteRunnableCompleted(this);
+            span.end();
         }
     }
 

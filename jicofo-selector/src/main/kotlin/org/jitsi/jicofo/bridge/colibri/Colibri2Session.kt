@@ -19,6 +19,8 @@ package org.jitsi.jicofo.bridge.colibri
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.context.Context
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.CascadeLink
@@ -30,6 +32,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.TraceParent
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
@@ -197,6 +200,17 @@ class Colibri2Session(
     private fun createRequest(create: Boolean = false) = ConferenceModifyIQ.builder(xmppConnection).apply {
         to(bridge.jid)
         setMeetingId(colibriSessionManager.meetingId)
+
+        Span.fromContextOrNull(Context.current())?.let {
+            addExtension(
+                TraceParent(
+                    it.spanContext.traceId,
+                    it.spanContext.spanId,
+                    it.spanContext.traceFlags.asHex()
+                )
+            )
+        }
+
         if (create) {
             setCreate(true)
             setConferenceName(colibriSessionManager.conferenceName)
