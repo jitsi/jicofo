@@ -2978,6 +2978,21 @@ public class JitsiMeetConferenceImpl
             jingleSession.sendTransportInfo(transport);
             IceRestartMetrics.relayed.inc();
         }
+
+        @Override
+        public void endpointIceRestartFailed(@NotNull String endpointId)
+        {
+            // The participant asked for an in-place ICE restart and the bridge declined it, so nothing will be
+            // signalled back and the participant would sit on a broken connection until its own timeout. Recover
+            // it the way it would have been recovered if it had never asked: a full re-invite.
+            //
+            // As in iceRestart(), Bridge.endpointRequestedRestart() is intentionally not called - the bridge
+            // declining a restart (typically because the feature is disabled on it) is not evidence that it is
+            // failing ICE, and counting it would feed the bridge-selection penalty.
+            logger.info("ICE restart: the bridge did not restart ICE for " + endpointId
+                    + ", re-inviting the participant.");
+            reInviteParticipantsById(Collections.singletonList(endpointId));
+        }
     }
 
     public static class SenderCountExceededException extends Exception

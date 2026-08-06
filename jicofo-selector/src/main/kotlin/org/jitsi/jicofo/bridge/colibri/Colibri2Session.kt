@@ -30,7 +30,6 @@ import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
-import org.jitsi.jicofo.metrics.IceRestartMetrics
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -217,8 +216,10 @@ class Colibri2Session(
         sendRequest(request.build(), "restartIce") { response ->
             val bridgeTransport = response.endpoints.find { it.id == participant.id }?.transport?.iceUdpTransport
             if (bridgeTransport == null) {
-                logger.error("No transport in the response to an ICE restart request for ${participant.id}")
-                IceRestartMetrics.failed.inc()
+                // The bridge declined the restart (disabled in its configuration, transport not established yet,
+                // or shutting down). It says so by omitting the transport rather than by returning an error.
+                logger.warn("No transport in the response to an ICE restart request for ${participant.id}")
+                colibriSessionManager.endpointIceRestartFailed(participant.id)
             } else {
                 colibriSessionManager.endpointIceRestarted(participant.id, bridgeTransport)
             }

@@ -822,6 +822,17 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         eventEmitter.fireEvent { endpointIceRestarted(endpointId, transport) }
     }
 
+    /**
+     * The bridge declined an ICE restart we requested for [endpointId] (it answered with no transport). The
+     * endpoint is waiting for a restart that will never arrive, so escalate to the recovery it would have got
+     * if it had never asked for an in-place restart.
+     */
+    internal fun endpointIceRestartFailed(endpointId: String) {
+        logger.warn("ICE restart: the bridge did not restart ICE for $endpointId, falling back to a re-invite.")
+        IceRestartMetrics.failed.inc()
+        eventEmitter.fireEvent { endpointIceRestartFailed(endpointId) }
+    }
+
     override fun restartIce(participantId: String) = synchronized(syncRoot) {
         val participantInfo = participants[participantId] ?: run {
             logger.error("ICE restart: no ParticipantInfo for $participantId, can not request an ICE restart.")

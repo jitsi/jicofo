@@ -120,6 +120,14 @@ interface ColibriSessionManager {
          * transport has to be signalled to the endpoint, whose connectivity checks are addressed to it.
          */
         fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {}
+
+        /**
+         * The bridge did not perform the ICE restart that was requested for an endpoint. The bridge signals this
+         * by answering with no transport rather than with an error (so that one endpoint can not fail a
+         * conference-modify carrying updates for others), which leaves the endpoint waiting for a restart that
+         * will never arrive. Recover it the way it would have been recovered without an in-place restart.
+         */
+        fun endpointIceRestartFailed(endpointId: String) {}
     }
 }
 
