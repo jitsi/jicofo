@@ -288,7 +288,12 @@ class BridgeSelector @JvmOverloads constructor(
 
 data class ConferenceBridgeProperties(
     val participantCount: Int,
-    val visitor: Boolean = false
+    val visitor: Boolean = false,
+    /**
+     * The number of endpoints that this conference has added to this bridge within
+     * [BridgeConfig.maxBridgeParticipantsInterval].
+     */
+    val recentlyAddedParticipantCount: Long = 0
 )
 
 data class ParticipantProperties(

@@ -79,6 +79,11 @@ class TestColibri2Server {
             val responseBuilder =
                 ConferenceModifiedIQ.builder(ConferenceModifiedIQ.Builder.createResponse(request))
 
+            if (request.expire) {
+                expireConference(meetingId)
+                return responseBuilder.build()
+            }
+
             if (request.create) {
                 responseBuilder.setSources(buildFeedbackSources(Random.nextLong(), Random.nextLong()))
             }

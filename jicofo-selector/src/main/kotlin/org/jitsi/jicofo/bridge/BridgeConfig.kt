@@ -37,6 +37,19 @@ class BridgeConfig private constructor() {
         "$BASE.max-bridge-participants".from(JitsiConfig.newConfig)
     }
 
+    /**
+     * The maximum number of participants that a single conference may add to a single bridge within
+     * [maxBridgeParticipantsInterval]. Use -1 to disable.
+     */
+    val maxBridgeParticipantsPerInterval: Int by config {
+        "$BASE.max-bridge-participants-per-interval".from(JitsiConfig.newConfig)
+    }
+
+    /** The interval over which [maxBridgeParticipantsPerInterval] is enforced. */
+    val maxBridgeParticipantsInterval: Duration by config {
+        "$BASE.max-bridge-participants-interval".from(JitsiConfig.newConfig)
+    }
+
     val averageParticipantStress: Double by config {
         "$BASE.average-participant-stress".from(JitsiConfig.newConfig)
     }

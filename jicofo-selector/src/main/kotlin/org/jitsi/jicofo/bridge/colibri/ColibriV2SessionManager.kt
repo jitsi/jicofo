@@ -59,6 +59,7 @@ import org.jivesoftware.smack.packet.StanzaError.Condition.item_not_found
 import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import java.net.URI
 import java.net.URLEncoder
+import java.time.Clock
 import java.util.Collections.singletonList
 
 /** The fixed connect id used for the (single) transcriber connect. */
@@ -100,7 +101,7 @@ internal fun perSourceTranslatorSpecs(
  * Implements [ColibriSessionManager] using colibri2.
  */
 @SuppressFBWarnings("BC_IMPOSSIBLE_INSTANCEOF")
-class ColibriV2SessionManager(
+class ColibriV2SessionManager @JvmOverloads constructor(
     internal val xmppConnection: AbstractXMPPConnection,
     private val bridgeSelector: BridgeSelector,
     internal val conferenceName: String,
@@ -111,7 +112,8 @@ class ColibriV2SessionManager(
     internal val meetingId: String,
     internal val rtcStatsEnabled: Boolean,
     private val bridgeVersion: String?,
-    parentLogger: Logger
+    parentLogger: Logger,
+    internal val clock: Clock = Clock.systemUTC()
 ) : ColibriSessionManager, Cascade<Colibri2Session, Colibri2Session.Relay> {
     private val logger = createChildLogger(parentLogger)
     private val tracer = TracingGlobal.sdk.getTracer("org.jitsi.jicofo.colibri")
@@ -477,7 +479,8 @@ class ColibriV2SessionManager(
                     it.key.bridge,
                     ConferenceBridgeProperties(
                         it.value.size,
-                        it.value.firstOrNull()?.visitor == true
+                        it.value.firstOrNull()?.visitor == true,
+                        it.key.recentlyAddedEndpointCount
                     )
                 )
             }
@@ -574,7 +577,7 @@ class ColibriV2SessionManager(
                 )
             }
             participantInfo = ParticipantInfo(participant, session)
-            session.bridge.endpointAdded()
+            session.endpointAdded()
             stanzaCollector = session.sendAllocationRequest(participantInfo)
             add(participantInfo)
             if (created) {
