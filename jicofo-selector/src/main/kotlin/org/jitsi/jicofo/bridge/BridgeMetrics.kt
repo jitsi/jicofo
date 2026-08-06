@@ -24,5 +24,10 @@ class BridgeMetrics {
             "Total number of endpoints moved away from a bridge for automatic load redistribution.",
             labelNames = listOf("jvb")
         )
+        val rateLimited = metricsContainer.registerCounter(
+            "bridge_selection_rate_limited",
+            "Total number of times a bridge was considered overloaded for a conference because the conference had " +
+                "reached max-bridge-participants-per-interval on it."
+        )
     }
 }

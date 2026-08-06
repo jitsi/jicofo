@@ -24,6 +24,7 @@ import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.bridge.BridgeConfig.Companion.config
 import org.jitsi.metaconfig.MetaconfigSettings
 import org.jitsi.utils.mins
+import org.jitsi.utils.secs
 
 class BridgeConfigTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -32,6 +33,20 @@ class BridgeConfigTest : ShouldSpec() {
         MetaconfigSettings.cacheEnabled = false
         context("with no config the defaults from reference.conf should be used") {
             config.maxBridgeParticipants shouldBe 80
+            // The rate limit is disabled by default.
+            config.maxBridgeParticipantsPerInterval shouldBe -1
+            config.maxBridgeParticipantsInterval shouldBe 1.mins
+        }
+        context("max-bridge-participants-per-interval") {
+            withNewConfig(
+                """
+                jicofo.bridge.max-bridge-participants-per-interval=30
+                jicofo.bridge.max-bridge-participants-interval=30 seconds
+                """.trimIndent()
+            ) {
+                config.maxBridgeParticipantsPerInterval shouldBe 30
+                config.maxBridgeParticipantsInterval shouldBe 30.secs
+            }
         }
         context("with legacy config") {
             withLegacyConfig(legacyConfig) {

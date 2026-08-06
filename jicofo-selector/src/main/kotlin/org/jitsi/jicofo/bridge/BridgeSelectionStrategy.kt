@@ -42,6 +42,7 @@ abstract class BridgeSelectionStrategy {
         participantProperties: ParticipantProperties,
         allowMultiBridge: Boolean
     ): Bridge? {
+        logRateLimitedBridges(conferenceBridges)
         return if (conferenceBridges.isEmpty()) {
             val bridge = doSelect(bridges, conferenceBridges, participantProperties)
             if (bridge != null) {
@@ -319,7 +320,9 @@ abstract class BridgeSelectionStrategy {
      * @return `true` if the bridge should be considered overloaded.
      */
     private fun Bridge.isOverloaded(conferenceBridges: Map<Bridge, ConferenceBridgeProperties>): Boolean {
-        return isOverloaded || hasMaxParticipantsInConference(conferenceBridges)
+        return isOverloaded ||
+            hasMaxParticipantsInConference(conferenceBridges) ||
+            hasMaxRecentParticipantsInConference(conferenceBridges)
     }
 
     private fun Bridge.hasMaxParticipantsInConference(
@@ -328,5 +331,39 @@ abstract class BridgeSelectionStrategy {
         return config.maxBridgeParticipants > 0 &&
             conferenceBridges.containsKey(this) &&
             conferenceBridges[this]!!.participantCount >= config.maxBridgeParticipants
+    }
+
+    /**
+     * Whether the conference has recently added too many endpoints to this bridge, i.e. it is growing on this bridge
+     * faster than the bridge's stress reports can keep up with. Note that this is specific to the conference, and does
+     * not affect the way the bridge is treated for other conferences.
+     */
+    private fun Bridge.hasMaxRecentParticipantsInConference(
+        conferenceBridges: Map<Bridge, ConferenceBridgeProperties>
+    ): Boolean {
+        return config.maxBridgeParticipantsPerInterval > 0 &&
+            (conferenceBridges[this]?.recentlyAddedParticipantCount ?: 0) >=
+            config.maxBridgeParticipantsPerInterval
+    }
+
+    /**
+     * Log (and count) the bridges on which the conference has hit the [config.maxBridgeParticipantsPerInterval] limit.
+     * This is only for visibility, the limit itself is enforced in [hasMaxRecentParticipantsInConference].
+     */
+    private fun logRateLimitedBridges(conferenceBridges: Map<Bridge, ConferenceBridgeProperties>) {
+        if (config.maxBridgeParticipantsPerInterval <= 0) return
+        val rateLimited = conferenceBridges.filterValues {
+            it.recentlyAddedParticipantCount >= config.maxBridgeParticipantsPerInterval
+        }
+        if (rateLimited.isNotEmpty()) {
+            BridgeMetrics.rateLimited.inc()
+            logger.info(
+                "The conference has recently added too many endpoints to these bridges, they will not be used for " +
+                    "this participant: " +
+                    rateLimited.entries.joinToString {
+                        "${it.key}=${it.value.recentlyAddedParticipantCount}"
+                    }
+            )
+        }
     }
 }

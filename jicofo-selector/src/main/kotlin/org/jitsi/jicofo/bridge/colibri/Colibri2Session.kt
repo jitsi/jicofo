@@ -23,6 +23,7 @@ import io.opentelemetry.api.trace.Span
 import io.opentelemetry.context.Context
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.CascadeLink
 import org.jitsi.jicofo.bridge.CascadeNode
 import org.jitsi.jicofo.codec.CodecUtil
@@ -32,6 +33,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.utils.stats.RateTracker
 import org.jitsi.xmpp.extensions.TraceParent
 import org.jitsi.xmpp.extensions.colibri.WebSocketPacketExtension
 import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
@@ -50,8 +52,13 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.StanzaCollector
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smackx.muc.MUCRole
+import java.time.Duration
 import java.util.Collections.singletonList
 import java.util.UUID
+import kotlin.math.ceil
+
+/** The size of the buckets used to track the rate at which endpoints are added to a session. */
+private const val BUCKET_SIZE_MS = 100L
 
 /** Represents a colibri2 session with one specific bridge. */
 class Colibri2Session(
@@ -66,6 +73,34 @@ class Colibri2Session(
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
     val id = UUID.randomUUID().toString()
+
+    /**
+     * Keep track of the endpoints that this conference recently added to this bridge. Note that this is
+     * per-(conference, bridge), as opposed to [Bridge]'s own tracker which is per-bridge (across all conferences).
+     *
+     * We use the number-of-buckets constructor (as opposed to the window-size one) so that an interval which is not a
+     * multiple of the bucket size is rounded up instead of failing at runtime.
+     */
+    private val newEndpointsRate = RateTracker(
+        numBuckets = ceil(
+            BridgeConfig.config.maxBridgeParticipantsInterval.toMillis().toDouble() / BUCKET_SIZE_MS
+        ).toInt().coerceAtLeast(1),
+        bucketSize = Duration.ofMillis(BUCKET_SIZE_MS),
+        clock = colibriSessionManager.clock
+    )
+
+    /** The number of endpoints that this conference recently added to this bridge. */
+    internal val recentlyAddedEndpointCount: Long
+        get() = newEndpointsRate.getAccumulatedCount()
+
+    /**
+     * Notifies this session that it was used for a new endpoint. Note that endpoints leaving are intentionally not
+     * subtracted (this models the rate at which endpoints were *added*, matching [Bridge.endpointAdded]).
+     */
+    internal fun endpointAdded() {
+        newEndpointsRate.update(1)
+        bridge.endpointAdded()
+    }
 
     /**
      * The colibri2 `<connect>`s currently active on this session, by id (the last set signaled to the bridge).
@@ -410,6 +445,7 @@ class Colibri2Session(
         put("id", id)
         set<ObjectNode>("feedback_sources", feedbackSources.toJson())
         put("created", created)
+        put("recently_added_endpoints", recentlyAddedEndpointCount)
         set<ObjectNode>(
             "relays",
             JsonNodeFactory.instance.objectNode().apply {

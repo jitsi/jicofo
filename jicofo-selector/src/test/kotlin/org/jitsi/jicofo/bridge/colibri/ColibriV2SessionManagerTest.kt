@@ -31,6 +31,7 @@ import io.mockk.mockk
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.ParticipantProperties
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -39,6 +40,8 @@ import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.utils.logging2.createLogger
+import org.jitsi.utils.ms
+import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jivesoftware.smack.packet.IQ
@@ -105,6 +108,8 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
      */
     private val ioExecutor = PendingExecutor()
 
+    private val clock = FakeClock()
+
     // Initialized lazily so that construction happens after [beforeAny] has replaced the TaskPools executors.
     private val sessionManager by lazy {
         ColibriV2SessionManager(
@@ -114,7 +119,8 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             "test-meeting-id",
             false,
             null,
-            createLogger()
+            createLogger(),
+            clock
         ).apply { addListener(listener) }
     }
 
@@ -248,6 +254,38 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                 should("keep the remaining bridge in the conference") {
                     sessionManager.getBridges().keys shouldBe setOf(bridge1)
                     sessionManager.getParticipants(bridge1) shouldBe listOf("p1")
+                }
+            }
+        }
+
+        context("Tracking recently added endpoints") {
+            withNewConfig("jicofo.octo.enabled=true") {
+                allocate("p1", region = "region-jvb1")
+                allocate("p2", region = "region-jvb1")
+                allocate("p3", region = "region-jvb2")
+
+                should("count the endpoints that this conference added to each bridge") {
+                    sessionManager.getBridges()[bridge1]!!.recentlyAddedParticipantCount shouldBe 2
+                    sessionManager.getBridges()[bridge2]!!.recentlyAddedParticipantCount shouldBe 1
+                }
+                should("not decrease the count when a participant is removed") {
+                    sessionManager.removeParticipant("p2").also { drain() }
+                    with(sessionManager.getBridges()[bridge1]!!) {
+                        participantCount shouldBe 1
+                        recentlyAddedParticipantCount shouldBe 2
+                    }
+                }
+                should("decay the count after the configured interval") {
+                    clock.elapse(BridgeConfig.config.maxBridgeParticipantsInterval + 100.ms)
+                    sessionManager.getBridges()[bridge1]!!.recentlyAddedParticipantCount shouldBe 0
+                }
+                should("reset the count when the session is removed and re-created") {
+                    sessionManager.removeParticipant("p1").also { drain() }
+                    sessionManager.removeParticipant("p2").also { drain() }
+                    sessionManager.getBridges().keys shouldBe setOf(bridge2)
+
+                    allocate("p4", region = "region-jvb1")
+                    sessionManager.getBridges()[bridge1]!!.recentlyAddedParticipantCount shouldBe 1
                 }
             }
         }
