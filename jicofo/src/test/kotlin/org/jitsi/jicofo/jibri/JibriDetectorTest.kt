@@ -145,7 +145,9 @@ class JibriChatRoomMember(
     override val region: String? get() = TODO("Not yet implemented")
     override val statsId: String? get() = TODO("Not yet implemented")
     override val videoCodecs: List<String>? get() = TODO("Not yet implemented")
+    override val clientVersion: String? get() = TODO("Not yet implemented")
     override val features: Set<Features> get() = TODO("Not yet implemented")
+    override val featuresDiscovered: Boolean get() = TODO("Not yet implemented")
     override val debugState: ObjectNode get() = TODO("Not yet implemented")
 
     var idle: Boolean = true

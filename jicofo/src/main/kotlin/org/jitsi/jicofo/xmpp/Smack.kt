@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
+import org.jitsi.xmpp.extensions.clientrequirements.ClientRequirementsIq
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsIqProvider
 import org.jitsi.xmpp.extensions.colibri.ForcefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
@@ -146,6 +147,7 @@ fun registerXmppExtensions() {
         FeatureExtension.NAMESPACE,
         DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )
+    ClientRequirementsIq.registerProviders()
     RayoIqProvider().registerRayoIQs()
     org.jitsi.xmpp.Smack.registerMuteIqProviders()
     StartMutedProvider.registerStartMutedProvider()

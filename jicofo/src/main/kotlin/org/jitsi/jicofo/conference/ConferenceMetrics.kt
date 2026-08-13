@@ -55,6 +55,32 @@ class ConferenceMetrics {
         )
 
         @JvmField
+        val participantsMissingFeatures = metricsContainer.registerCounter(
+            "participants_missing_features",
+            "The number of participants that were missing a feature required by the deployment.",
+            labelNames = listOf("feature", "level")
+        )
+
+        @JvmField
+        val participantsRejectedMissingFeatures = metricsContainer.registerCounter(
+            "participants_rejected_missing_features",
+            "The number of participants that were not invited because they were missing a required feature."
+        )
+
+        @JvmField
+        val participantsFeaturesNotDiscovered = metricsContainer.registerCounter(
+            "participants_features_not_discovered",
+            "The number of participants whose features could not be discovered."
+        )
+
+        @JvmField
+        val clientRequirementsNotifications = metricsContainer.registerCounter(
+            "client_requirements_notifications",
+            "The number of notifications sent to endpoints about missing capabilities.",
+            labelNames = listOf("transport")
+        )
+
+        @JvmField
         val participantsMoved = metricsContainer.registerCounter(
             "participants_moved",
             "Number of participants moved away from a failed bridge"

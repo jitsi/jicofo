@@ -261,15 +261,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name, null)
     fun findOrCreateRoom(name: EntityBareJid, logLevel: Level): ChatRoom = muc.findOrCreateRoom(name, logLevel)
 
-    fun discoverFeatures(jid: EntityFullJid): Set<Features> {
+    fun discoverFeatures(jid: EntityFullJid): FeatureDiscoveryResult {
         if (!xmppConnection.isConnected) {
             logger.error("Can not discover features, not connected.")
-            return Features.defaultFeatures
+            return featuresNotDiscovered
         }
         val discoveryManager = ServiceDiscoveryManager.getInstanceFor(xmppConnection)
         if (discoveryManager == null) {
             logger.error("Can not discover features, no ServiceDiscoveryManager")
-            return Features.defaultFeatures
+            return featuresNotDiscovered
         }
 
         val start = System.currentTimeMillis()
@@ -277,10 +277,10 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             discoveryManager.discoverInfo(jid)?.features?.map { it.`var` }?.toList() ?: emptyList()
         } catch (e: SmackException.NoResponseException) {
             logger.info("No response for disco#info, assuming default features.")
-            return Features.defaultFeatures
+            return featuresNotDiscovered
         } catch (e: Exception) {
             logger.warn("Failed to discover features for $jid: ${e.message}, assuming default feature set.", e)
-            return Features.defaultFeatures
+            return featuresNotDiscovered
         }
 
         logger.info("Discovered features for $jid in ${System.currentTimeMillis() - start} ms.")
@@ -289,7 +289,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             val unrecognizedFeatures = featureStrings - features.map { it.value }.toSet()
             logger.info("Unrecognized features for $jid: $unrecognizedFeatures")
         }
-        return features
+        return FeatureDiscoveryResult(features, true)
     }
 
     private fun discoverComponents(domain: DomainBareJid) {

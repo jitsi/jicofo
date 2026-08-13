@@ -118,6 +118,12 @@ public class JitsiMeetConferenceImpl
     private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
 
     /**
+     * Checks that the endpoints in this conference advertise the capabilities that the deployment requires, and
+     * notifies the ones that do not.
+     */
+    private final ClientRequirementsHandler clientRequirementsHandler;
+
+    /**
      * Conference room chat instance.
      */
     private volatile ChatRoom chatRoom;
@@ -322,6 +328,7 @@ public class JitsiMeetConferenceImpl
         logger.addContext("room", roomName.toString());
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
+        clientRequirementsHandler = new ClientRequirementsHandler(logger);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -865,6 +872,7 @@ public class JitsiMeetConferenceImpl
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi()
                             + " isTranscriber=" + chatRoomMember.isTranscriber()
+                            + " clientVersion=" + chatRoomMember.getClientVersion()
                             + room);
 
             // Are we ready to start ?
@@ -928,6 +936,14 @@ public class JitsiMeetConferenceImpl
             // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
             Set<Features> features = chatRoomMember.getFeatures();
+
+            // An endpoint which does not advertise the capabilities that the deployment requires is not invited. It
+            // stays in the MUC, so it can still use the features which do not need a media session (e.g. chat).
+            if (!clientRequirementsHandler.checkAndNotify(chatRoomMember))
+            {
+                return;
+            }
+
             logger.info("Creating participant " + chatRoomMember.getName() + " with features=" + features);
             final Participant participant = new Participant(
                     chatRoomMember,
@@ -1041,8 +1057,11 @@ public class JitsiMeetConferenceImpl
         {
             minParticipants = 1;
         }
+        // Members which were not invited because they miss a required capability do not count, because they can not
+        // send or receive media.
         int memberCount = chatRoom.getMemberCount()
-                + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum();
+                + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum()
+                - clientRequirementsHandler.getRejectedCount();
         return memberCount >= minParticipants;
     }
 
@@ -1076,6 +1095,7 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             logger.info("Member left:" + chatRoomMember.getName());
+            boolean wasRejected = clientRequirementsHandler.memberLeft(chatRoomMember);
             Participant leftParticipant = participants.get(chatRoomMember.getOccupantJid());
             if (leftParticipant != null)
             {
@@ -1089,7 +1109,7 @@ public class JitsiMeetConferenceImpl
                         /* no need to send source-remove */ false,
                         /* not reinviting */ false);
             }
-            else
+            else if (!wasRejected)
             {
                 logger.warn("Participant not found for " + chatRoomMember.getName()
                         + ". Terminated already or never started?");
@@ -1727,6 +1747,7 @@ public class JitsiMeetConferenceImpl
             participantsJson.set(participant.getEndpointId(), participant.getDebugState(full));
         }
         o.set("participants", participantsJson);
+        o.set("client_requirements", clientRequirementsHandler.getDebugState());
         //o.set("jibri_recorder", jibriRecorder.getDebugState());
         //o.set("jibri_sip_gateway", jibriSipGateway.getDebugState());
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;

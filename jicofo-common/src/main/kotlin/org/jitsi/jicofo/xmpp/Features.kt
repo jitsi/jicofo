@@ -65,7 +65,10 @@ enum class Features(val value: String) {
 
     // Supports handling "start muted" via room metadata (instead of via jingle).
     START_MUTED_RMD("http://jitsi.org/start-muted-room-metadata"),
-    VISITORS_V1("http://jitsi.org/visitors-1");
+    VISITORS_V1("http://jitsi.org/visitors-1"),
+
+    /** The endpoint understands the "jitsi:client-requirements" IQ, used to signal missing capabilities. */
+    CLIENT_REQUIREMENTS_1("http://jitsi.org/client-requirements-1");
 
     companion object {
         val defaultFeatures = setOf(AUDIO, VIDEO, SCTP)
@@ -74,3 +77,18 @@ enum class Features(val value: String) {
         fun parseString(s: String): Features? = values().find { it.value == s }
     }
 }
+
+/**
+ * The result of a feature discovery (disco#info) for an endpoint.
+ */
+data class FeatureDiscoveryResult(
+    val features: Set<Features>,
+    /**
+     * Whether the features were actually discovered. When this is false [features] is just an assumed default set,
+     * and the absence of a feature from it does not mean that the endpoint does not support the feature.
+     */
+    val discovered: Boolean
+)
+
+/** Used when the features of an endpoint could not be discovered. */
+val featuresNotDiscovered = FeatureDiscoveryResult(Features.defaultFeatures, false)
