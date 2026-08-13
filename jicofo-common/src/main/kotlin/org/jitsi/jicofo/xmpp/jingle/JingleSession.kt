@@ -40,6 +40,7 @@ import org.jitsi.utils.queue.PacketQueue
 import org.jitsi.xmpp.extensions.TraceParent
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.GroupPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
@@ -286,6 +287,37 @@ class JingleSession(
         if (state != State.ACTIVE) logger.error("Sending source-remove for session in state $state")
         connection.tryToSendStanza(removeSourceIq)
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
+    }
+
+    /**
+     * Send a transport-info IQ carrying the bridge's transport. Used after the bridge performed an ICE restart
+     * and rotated its ICE credentials: the client's connectivity checks are addressed to those credentials, so
+     * it has to be told the new ones. Returns immediately without waiting for a response.
+     *
+     * The transport is sent on a single content; the client applies the credentials to its whole (bundled)
+     * transport, so which content carries them does not matter.
+     */
+    fun sendTransportInfo(transport: IceUdpTransportPacketExtension) {
+        val transportInfoIq = JingleIQ(JingleAction.TRANSPORT_INFO, sid).apply {
+            from = localJid
+            type = IQ.Type.set
+            to = remoteJid
+            addContent(
+                ContentPacketExtension().apply {
+                    creator = ContentPacketExtension.CreatorEnum.initiator
+                    name = "audio"
+                    addChildExtension(IceUdpTransportPacketExtension.cloneTransportAndCandidates(transport, true))
+                }
+            )
+        }
+
+        logger.info(
+            "ICE restart: sending transport-info with the bridge's transport, generation=${transport.iceGeneration}, " +
+                "ufrag=${transport.ufrag}"
+        )
+        if (state != State.ACTIVE) logger.error("Sending transport-info for session in state $state")
+        connection.tryToSendStanza(transportInfoIq)
+        JingleStats.stanzaSent(JingleAction.TRANSPORT_INFO)
     }
 
     /**

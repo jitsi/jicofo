@@ -28,12 +28,14 @@ import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
 import org.jitsi.jicofo.conference.translation.*;
+import org.jitsi.jicofo.metrics.IceRestartMetrics;
 import org.jitsi.jicofo.util.*;
 import org.jitsi.jicofo.util.TracingUtil;
 import org.jitsi.jicofo.version.*;
 import org.jitsi.jicofo.visitors.*;
 import org.jitsi.jicofo.xmpp.*;
 import org.jitsi.jicofo.xmpp.UtilKt;
+import org.jitsi.jicofo.xmpp.jingle.JingleSession;
 import org.jitsi.jicofo.xmpp.muc.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.*;
@@ -1290,6 +1292,35 @@ public class JitsiMeetConferenceImpl
                     participant.getEndpointId(),
                     bridgeSessionId));
         }
+    }
+
+    /**
+     * Handles a request from a {@link Participant} for an in-place ICE restart. The bridge is asked to create a new
+     * ICE agent with fresh credentials while the existing one keeps carrying media; its response is handled
+     * asynchronously and relayed back to the participant via
+     * {@link ColibriSessionManager.Listener#endpointIceRestarted}.
+     *
+     * @param bridgeSessionId the ID of the bridge session the participant wants restarted.
+     *
+     * @throws InvalidBridgeSessionIdException if bridgeSessionId doesn't match the ID of the (colibri) session that
+     * the participant currently has.
+     */
+    void iceRestart(@NotNull Participant participant, String bridgeSessionId)
+    throws InvalidBridgeSessionIdException
+    {
+        Pair<Bridge, String> existingBridgeSession
+                = getColibriSessionManager().getBridgeSessionId(participant.getEndpointId());
+        if (!Objects.equals(bridgeSessionId, existingBridgeSession.getSecond()))
+        {
+            throw new InvalidBridgeSessionIdException(bridgeSessionId + " is not a currently active session");
+        }
+
+        // Note that unlike a full restart request we intentionally do not call Bridge.endpointRequestedRestart(): an
+        // in-place ICE restart is normally triggered by the client's network changing and is not a signal that the
+        // bridge is failing ICE.
+        logger.info("ICE restart: requesting one from the bridge for " + participant.getEndpointId()
+                + ", bridge-session ID: " + bridgeSessionId);
+        getColibriSessionManager().restartIce(participant.getEndpointId());
     }
 
     /**
@@ -2907,6 +2938,60 @@ public class JitsiMeetConferenceImpl
         {
             logger.info("Endpoint " + endpointId + " was removed from the conference. Re-inviting participant.");
             reInviteParticipantsById(Collections.singletonList(endpointId), false);
+        }
+
+        @Override
+        public void endpointIceRestarted(
+                @NotNull String endpointId,
+                @NotNull IceUdpTransportPacketExtension transport)
+        {
+            Participant participant = null;
+            synchronized (participantLock)
+            {
+                for (Participant p : participants.values())
+                {
+                    if (endpointId.equals(p.getEndpointId()))
+                    {
+                        participant = p;
+                        break;
+                    }
+                }
+            }
+
+            if (participant == null)
+            {
+                logger.warn("ICE restart: can not signal the bridge's transport, no participant for " + endpointId);
+                IceRestartMetrics.failed.inc();
+                return;
+            }
+
+            JingleSession jingleSession = participant.getJingleSession();
+            if (jingleSession == null)
+            {
+                logger.warn("ICE restart: can not signal the bridge's transport, no Jingle session for " + endpointId);
+                IceRestartMetrics.failed.inc();
+                return;
+            }
+
+            logger.info("ICE restart: relaying the bridge's transport to " + endpointId
+                    + ", generation=" + transport.getIceGeneration());
+            jingleSession.sendTransportInfo(transport);
+            IceRestartMetrics.relayed.inc();
+        }
+
+        @Override
+        public void endpointIceRestartFailed(@NotNull String endpointId)
+        {
+            // The participant asked for an in-place ICE restart and the bridge declined it, so nothing will be
+            // signalled back and the participant would sit on a broken connection until its own timeout. Recover
+            // it the way it would have been recovered if it had never asked: a full re-invite.
+            //
+            // As in iceRestart(), Bridge.endpointRequestedRestart() is intentionally not called - the bridge
+            // declining a restart (typically because the feature is disabled on it) is not evidence that it is
+            // failing ICE, and counting it would feed the bridge-selection penalty.
+            logger.info("ICE restart: the bridge did not restart ICE for " + endpointId
+                    + ", re-inviting the participant.");
+            reInviteParticipantsById(Collections.singletonList(endpointId));
         }
     }
 

@@ -195,6 +195,37 @@ class Colibri2Session(
         sendRequest(request.build(), "updateParticipant")
     }
 
+    /**
+     * Ask the bridge to perform an in-place ICE restart for an endpoint: it creates a new ICE agent with fresh
+     * credentials while the existing one keeps carrying media, and answers with the new transport.
+     *
+     * The bridge's new credentials are relayed on to the endpoint (via
+     * [ColibriV2SessionManager.endpointIceRestarted]), which addresses its connectivity checks to them.
+     */
+    internal fun restartIce(participant: ParticipantInfo) {
+        val request = createRequest()
+        request.addEndpoint(
+            Colibri2Endpoint.getBuilder().apply {
+                setId(participant.id)
+                setStatsId(participant.statsId)
+                setTransport(Transport.getBuilder().setIceRestart(true).build())
+            }.build()
+        )
+
+        logger.info("Requesting an ICE restart for ${participant.id}")
+        sendRequest(request.build(), "restartIce") { response ->
+            val bridgeTransport = response.endpoints.find { it.id == participant.id }?.transport?.iceUdpTransport
+            if (bridgeTransport == null) {
+                // The bridge declined the restart (disabled in its configuration, transport not established yet,
+                // or shutting down). It says so by omitting the transport rather than by returning an error.
+                logger.warn("No transport in the response to an ICE restart request for ${participant.id}")
+                colibriSessionManager.endpointIceRestartFailed(participant.id)
+            } else {
+                colibriSessionManager.endpointIceRestarted(participant.id, bridgeTransport)
+            }
+        }
+    }
+
     internal fun updateForceMute(participants: Set<ParticipantInfo>) {
         val request = createRequest()
         participants.forEach { participant ->
@@ -394,8 +425,12 @@ class Colibri2Session(
     /**
      * Send an IQ async, and handle timeouts and errors: timeouts are just logged, while errors trigger a session
      * failure.
+     *
+     * @param onSuccess invoked with the response when the bridge answered successfully. Note that this runs on
+     * [org.jitsi.jicofo.util.TaskPools.ioPool], so responses to two requests sent in order may be handled out of
+     * order — anything order-sensitive needs its own guard.
      */
-    private fun sendRequest(iq: IQ, name: String) {
+    private fun sendRequest(iq: IQ, name: String, onSuccess: ((ConferenceModifiedIQ) -> Unit)? = null) {
         logger.debug { "Sending $name request: ${iq.toXML()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) { response ->
             if (response == null) {
@@ -434,6 +469,7 @@ class Colibri2Session(
                 colibriSessionManager.sessionFailed(this@Colibri2Session)
             } else {
                 logger.debug { "Received $name response: ${response.toXML()}" }
+                onSuccess?.invoke(response)
             }
         }
     }

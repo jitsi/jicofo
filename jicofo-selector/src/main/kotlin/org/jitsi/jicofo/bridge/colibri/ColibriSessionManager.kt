@@ -58,6 +58,13 @@ interface ColibriSessionManager {
         suppressLocalBridgeUpdate: Boolean = false
     )
 
+    /**
+     * Ask the bridge to perform an in-place ICE restart for a participant. The bridge creates a new ICE agent with
+     * fresh credentials (while the existing one keeps carrying media) and answers with its new transport, which is
+     * relayed back to the participant via [Listener.endpointIceRestarted].
+     */
+    fun restartIce(participantId: String)
+
     fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?>
 
     fun setTranscriberUrl(
@@ -107,6 +114,20 @@ interface ColibriSessionManager {
 
         /** Endpoint removed due to a failure e.g. unknown endpoint */
         fun endpointRemoved(endpointId: String)
+
+        /**
+         * The bridge performed an ICE restart for an endpoint and rotated its own ICE credentials. The new
+         * transport has to be signalled to the endpoint, whose connectivity checks are addressed to it.
+         */
+        fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {}
+
+        /**
+         * The bridge did not perform the ICE restart that was requested for an endpoint. The bridge signals this
+         * by answering with no transport rather than with an error (so that one endpoint can not fail a
+         * conference-modify carrying updates for others), which leaves the endpoint waiting for a restart that
+         * will never arrive. Recover it the way it would have been recovered without an in-place restart.
+         */
+        fun endpointIceRestartFailed(endpointId: String) {}
     }
 }
 
