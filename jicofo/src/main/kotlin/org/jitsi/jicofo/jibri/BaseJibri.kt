@@ -63,8 +63,7 @@ abstract class BaseJibri internal constructor(
         }
 
         chatRoom.queueXmppTask {
-            val span = tracer.spanBuilder("jibri.request")
-                .setAttribute("action", request.iq.action.toString())
+            val span = tracer.spanBuilder("jibri.${request.iq.action}")
                 .setAttribute("client.id", request.iq.from.toString())
                 .setAttribute("recording-mode", request.iq.recordingMode.toString())
                 .startSpan()
