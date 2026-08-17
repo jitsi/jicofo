@@ -793,6 +793,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      * if the participant restarts twice in quick succession the two responses can arrive in either order. The
      * `ice-generation` the bridge echoes tells us which round each belongs to, and anything older than what we
      * have already relayed is discarded.
+     *
+     * A transport with no `ice-generation` at all means something different: the bridge did not restart and
+     * answered with the credentials of the Agent it already has. It does this when its transport has not
+     * connected yet, where there is nothing to preserve and nothing for the participant to do. There is nothing
+     * to relay in that case, and no restart to record.
      */
     internal fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {
         val generation = transport.iceGeneration
@@ -802,8 +807,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 IceRestartMetrics.failed.inc()
                 return
             }
-            if (generation != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED &&
-                participantInfo.lastRelayedIceGeneration != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED &&
+            if (generation == IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED) {
+                logger.info("ICE restart: the bridge kept its existing transport for $endpointId, not relaying.")
+                IceRestartMetrics.notNeeded.inc()
+                return
+            }
+            if (participantInfo.lastRelayedIceGeneration != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED &&
                 generation <= participantInfo.lastRelayedIceGeneration
             ) {
                 logger.info(

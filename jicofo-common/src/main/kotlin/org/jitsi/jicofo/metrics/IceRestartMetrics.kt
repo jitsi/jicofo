@@ -43,6 +43,17 @@ class IceRestartMetrics {
         )
 
         /**
+         * The bridge answered with the transport it already had, because it did not need to restart (its own
+         * transport has not connected yet). Nothing was relayed and the participant keeps the session it has, so
+         * this is neither a completed restart nor a failed one.
+         */
+        @JvmField
+        val notNeeded = metricsContainer.registerCounter(
+            "ice_restarts_not_needed",
+            "Number of in-place ICE restarts for which the bridge kept its existing transport."
+        )
+
+        /**
          * An ICE restart did not complete: the request was rejected (disabled, rate-limited, stale bridge-session ID)
          * or the bridge's response could not be relayed (no transport in the response, stale generation, participant
          * or Jingle session gone).

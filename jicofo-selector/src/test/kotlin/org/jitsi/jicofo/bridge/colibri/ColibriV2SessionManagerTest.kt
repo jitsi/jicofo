@@ -45,7 +45,6 @@ import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
-import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
@@ -359,15 +358,18 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                 }
             }
 
-            context("With a bridge that does not tag generations") {
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(null)).also { drain() }
+            context("With a transport that carries no generation") {
+                // The bridge kept the Agent it already had instead of restarting, so there is nothing to relay.
+                sessionManager.endpointIceRestarted("p1", transportWithGeneration(2)).also { drain() }
                 sessionManager.endpointIceRestarted("p1", transportWithGeneration(null)).also { drain() }
 
-                should("relay everything (the guard can not order untagged transports)") {
-                    iceRestartedTransports.size shouldBe 2
-                    iceRestartedTransports.map {
-                        it.second.iceGeneration
-                    } shouldBe listOf(GENERATION_UNSPECIFIED, GENERATION_UNSPECIFIED)
+                should("not relay it") {
+                    iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
+                }
+                should("not lose the generation of the last transport that was relayed") {
+                    sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
+
+                    iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
                 }
             }
         }
