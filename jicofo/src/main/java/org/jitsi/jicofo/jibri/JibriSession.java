@@ -562,7 +562,7 @@ public class JibriSession
             span = Span.fromContextOrNull(Context.current());
             if (span != null)
             {
-                startIq.addExtension(
+                stopRequest.addExtension(
                         new TraceParent(
                                 span.getSpanContext().getTraceId(),
                                 span.getSpanContext().getSpanId(),
