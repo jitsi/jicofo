@@ -2118,7 +2118,37 @@ public class JitsiMeetConferenceImpl
             chatRoomToJoin.visitorInvited();
         }
 
-        chatRoomToJoin.join();
+        try
+        {
+            chatRoomToJoin.join();
+        }
+        catch (Exception e)
+        {
+            // Do not keep a room that we failed to join. We would never join it, and we would keep sending visitors
+            // to it because of the check above.
+            logger.error("Failed to join the visitor room on node " + node, e);
+            synchronized (visitorChatRooms)
+            {
+                visitorChatRooms.remove(node, chatRoomToJoin);
+            }
+            chatRoomToJoin.removeAllListeners();
+            chatRoomToJoin.leave();
+            throw e;
+        }
+
+        // The room may have been discarded while we were joining it, for example because the node was restarted.
+        // Leave it, otherwise we stay in a MUC that we do not track anymore.
+        synchronized (visitorChatRooms)
+        {
+            if (visitorChatRooms.get(node) != chatRoomToJoin)
+            {
+                logger.warn("The visitor room on node " + node + " was discarded while we were joining it.");
+                chatRoomToJoin.removeAllListeners();
+                chatRoomToJoin.leave();
+                return null;
+            }
+        }
+
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
@@ -2147,6 +2177,63 @@ public class JitsiMeetConferenceImpl
             logger.info("Redirected visitor, broadcast not enabled yet.");
         }
         return node;
+    }
+
+    @Override
+    public void visitorConnectionReset(@NotNull String node)
+    {
+        final ChatRoom staleChatRoom;
+        synchronized (visitorChatRooms)
+        {
+            staleChatRoom = visitorChatRooms.remove(node);
+        }
+
+        if (staleChatRoom == null)
+        {
+            // This conference does not use the node.
+            return;
+        }
+
+        logger.info("The connection to visitor node " + node + " was reset, discarding the visitor room.");
+        discardVisitorChatRoom(node, staleChatRoom);
+    }
+
+    /**
+     * Clean up after a visitor {@link ChatRoom} that we are not joined in anymore. Terminate the visitors that were
+     * in the room, leave the room, and tell the visitors component to stop sending visitors to the node.
+     *
+     * The caller must remove the room from {@link #visitorChatRooms} first.
+     *
+     * @param node the ID of the visitor node that the room is on.
+     * @param staleChatRoom the room to discard.
+     */
+    private void discardVisitorChatRoom(@NotNull String node, @NotNull ChatRoom staleChatRoom)
+    {
+        TaskPools.getIoPool().submit(() ->
+        {
+            try
+            {
+                // We are not in the room anymore, so we do not receive presence for the visitors leaving it. Without
+                // this they leak, because each one keeps a Participant and an endpoint on a bridge.
+                for (ChatRoomMember member : staleChatRoom.getMembers())
+                {
+                    if (member.getRole() == MemberRole.VISITOR)
+                    {
+                        onMemberLeft(member);
+                    }
+                }
+
+                staleChatRoom.removeAllListeners();
+                staleChatRoom.leave();
+            }
+            catch (Exception e)
+            {
+                logger.error("Failed to discard the visitor room on node " + node, e);
+            }
+        });
+
+        xmppServices.getVisitorsManager().sendIqToComponent(
+                roomName, Collections.singletonList(new DisconnectVnodePacketExtension(node)));
     }
 
     private void onBridgeUp(Jid bridgeJid)
@@ -2666,7 +2753,6 @@ public class JitsiMeetConferenceImpl
         public void roomDestroyed(String reason)
         {
             logger.info("Visitor room destroyed with reason=" + reason);
-            ChatRoom chatRoomToLeave = null;
             String vnode = null;
             synchronized (visitorChatRooms)
             {
@@ -2675,33 +2761,14 @@ public class JitsiMeetConferenceImpl
                             .filter(e -> e.getValue() == chatRoom).findFirst().orElse(null);
                 if (entry != null)
                 {
-                    chatRoomToLeave = entry.getValue();
                     vnode = entry.getKey();
                     visitorChatRooms.remove(vnode);
                 }
             }
 
-            if (chatRoomToLeave != null)
+            if (vnode != null)
             {
-                ChatRoom finalChatRoom = chatRoomToLeave;
-                TaskPools.getIoPool().submit(() ->
-                {
-                    try
-                    {
-                        logger.info("Removing visitor chat room");
-                        finalChatRoom.leave();
-                    }
-                    catch (Exception e)
-                    {
-                        logger.warn("Error while leaving chat room.", e);
-                    }
-                });
-
-                if (vnode != null)
-                {
-                    xmppServices.getVisitorsManager().sendIqToComponent(
-                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
-                }
+                discardVisitorChatRoom(vnode, chatRoom);
             }
         }
 

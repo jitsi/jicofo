@@ -179,5 +179,11 @@ public interface JitsiMeetConference extends XmppProvider.Listener
     String redirectVisitor(boolean visitorRequested, @Nullable String userId, @Nullable String groupId)
             throws Exception;
 
+    /**
+     * Notify this conference that the XMPP stream to the visitor node {@code node} was re-established without being
+     * resumed, so the MUC that this conference joined on that node (if any) is not joined anymore.
+     */
+    void visitorConnectionReset(@NotNull String node);
+
     void setPresenceExtension(@NotNull ExtensionElement extension);
 }
