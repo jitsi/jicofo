@@ -295,6 +295,11 @@ public class JibriSession
         {
             JibriStats.sessionFailed(getJibriType());
 
+            if (e instanceof StartException.NotAvailable)
+            {
+                JibriStats.noInstanceFailed();
+            }
+
             throw e;
         }
     }
