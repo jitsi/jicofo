@@ -91,7 +91,13 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
          * a separate field from [recording], which carries the client-visible recording state, so that the
          * admin-only path can add it without overwriting that.
          */
-        val recordingParams: RecordingParams? = null
+        val recordingParams: RecordingParams? = null,
+
+        /**
+         * The voice agents requested in the room, keyed by agent id (which becomes the agent's endpoint id). The
+         * metadata also carries client-facing fields (display name, kind) that jicofo ignores.
+         */
+        val agents: Map<String, Agent>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(
@@ -145,6 +151,13 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         ) {
             override fun toString(): String = "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
         }
+
+        /** A voice agent's connect config (the fields jicofo needs; mirrors [Transcription]). */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Agent(
+            val urlParams: Map<String, String>? = null,
+            val httpHeaders: Map<String, String>? = null
+        )
     }
 
     companion object {
