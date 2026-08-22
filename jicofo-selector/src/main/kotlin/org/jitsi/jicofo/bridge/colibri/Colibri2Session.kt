@@ -139,17 +139,20 @@ class Colibri2Session(
             if (participant.visitor) {
                 setMucRole(MUCRole.visitor)
             }
-            setTransport(
-                Transport.getBuilder().apply {
-                    // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
-                    //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
-                    //  failures with firefox but not chrome).
-                    setIceControlling(true)
-                    if (participant.useSctp) {
-                        setSctp(Sctp.Builder().build())
-                    }
-                }.build()
-            )
+            // Synthetic endpoints (e.g. voice agents) have no media transport.
+            if (!participant.synthetic) {
+                setTransport(
+                    Transport.getBuilder().apply {
+                        // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to
+                        //  the client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic
+                        //  ICE/DTLS failures with firefox but not chrome).
+                        setIceControlling(true)
+                        if (participant.useSctp) {
+                            setSctp(Sctp.Builder().build())
+                        }
+                    }.build()
+                )
+            }
         }
         participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())

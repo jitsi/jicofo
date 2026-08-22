@@ -27,6 +27,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.conference.agent.*;
 import org.jitsi.jicofo.conference.translation.*;
 import org.jitsi.jicofo.metrics.IceRestartMetrics;
 import org.jitsi.jicofo.util.*;
@@ -266,6 +267,11 @@ public class JitsiMeetConferenceImpl
     private final ConferenceTranslationManager translationManager;
 
     /**
+     * Manages voice-agent synthetic endpoints and their connects, driven by the {@code agents} room metadata.
+     */
+    private final ConferenceAgentManager agentManager;
+
+    /**
      * Whether the limit on the number of audio senders is currently hit.
      */
     private boolean audioLimitReached = false;
@@ -324,6 +330,7 @@ public class JitsiMeetConferenceImpl
         logger.addContext("room", roomName.toString());
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
+        agentManager = new ConferenceAgentManager(conferenceSources, logger);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -414,6 +421,9 @@ public class JitsiMeetConferenceImpl
 
             // Apply any live-translation requests received before colibri was initialized.
             translationManager.reapply(colibriSessionManager, meetingId);
+
+            // Apply any voice-agent requests received before colibri was initialized.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
         return colibriSessionManager;
     }
@@ -2878,6 +2888,12 @@ public class JitsiMeetConferenceImpl
                     translationHeaders,
                     colibriSessionManager,
                     meetingId);
+        }
+
+        @Override
+        public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
+        {
+            agentManager.setRequests(agents, colibriSessionManager, meetingId);
         }
     }
 

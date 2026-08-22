@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import org.jitsi.jicofo.AgentConfig
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
@@ -68,6 +69,21 @@ private const val TRANSCRIBER_CONNECT_ID = "transcriber"
 
 /** The connect id used for the single-bridge translator connect. */
 private const val TRANSLATOR_CONNECT_ID = "translator"
+
+/** The connect id prefix for voice-agent connects; the agent's endpoint id is appended. */
+private const val AGENT_CONNECT_ID_PREFIX = "agent-"
+
+/** Append [params] to this URI's query string (no-op when null or empty). */
+private fun URI.withParams(params: Map<String, String>?): URI {
+    if (params.isNullOrEmpty()) {
+        return this
+    }
+    val queryString = params.entries.joinToString("&") { (key, value) ->
+        "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+    }
+    val separator = if (query == null) "?" else "&"
+    return URI(toString() + separator + queryString)
+}
 
 /**
  * The per-source translator connect specs for a single [request]: one connect per chunk of at most
@@ -147,6 +163,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
     /** Per-room translator connect headers (merged config + room metadata), or null to use config headers. */
     private var translatorCustomHeaders: Map<String, String>? = null
+
+    /** The desired voice-agent connects, each placed on the session hosting the agent's synthetic endpoint. */
+    private var agentRequests: List<AgentConnectRequest> = emptyList()
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -374,6 +393,10 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         if (session == connectSession) {
             transcriberUrl?.let { add(buildTranscriberSpec(session, it)) }
         }
+        // Agent connects are placed on the session hosting the agent's synthetic endpoint.
+        agentRequests.filter { participants[it.endpointId]?.session == session }.forEach { agent ->
+            add(buildAgentSpec(session, agent))
+        }
         translatorUrl?.let { url ->
             when (TranslationConfig.config.mode) {
                 TranslationConfig.Mode.SINGLE_BRIDGE ->
@@ -383,6 +406,24 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             }
         }
     }
+
+    private fun buildAgentSpec(session: Colibri2Session, agent: AgentConnectRequest) = ConnectSpec(
+        id = "$AGENT_CONNECT_ID_PREFIX${agent.endpointId}",
+        url = agent.url.resolve(AgentConfig.REGION_TEMPLATE, session.bridge.region ?: "").withParams(agent.urlParams),
+        // TODO: use a dedicated AGENT type once available in jitsi-xmpp-extensions.
+        type = Connect.Types.TRANSLATOR,
+        exports = emptyList(),
+        requests = listOf(agent.syntheticSourceName),
+        httpHeaders = agent.httpHeaders ?: AgentConfig.config.httpHeaders,
+        ping = if (AgentConfig.config.pingEnabled) {
+            ConnectSpec.Ping(
+                AgentConfig.config.pingInterval.toMillis().toInt(),
+                AgentConfig.config.pingTimeout.toMillis().toInt()
+            )
+        } else {
+            null
+        }
+    )
 
     /** The keepalive ping for translator connects, or null when disabled (mirrors the transcriber). */
     private fun translatorPing(): ConnectSpec.Ping? = if (TranslationConfig.config.pingEnabled) {
@@ -435,15 +476,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     private fun buildTranscriberSpec(session: Colibri2Session, urlTemplate: TemplatedUrl): ConnectSpec {
-        var url = urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, session.bridge.region ?: "")
-        val params = transcriberUrlParams
-        if (!params.isNullOrEmpty()) {
-            val queryString = params.entries.joinToString("&") { (key, value) ->
-                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
-            }
-            val separator = if (url.query == null) "?" else "&"
-            url = URI(url.toString() + separator + queryString)
-        }
+        val url = urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, session.bridge.region ?: "")
+            .withParams(transcriberUrlParams)
         return ConnectSpec(
             id = TRANSCRIBER_CONNECT_ID,
             url = url,
@@ -468,6 +502,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         translatorUrl = url
         translatorRequests = requests
         translatorCustomHeaders = customHeaders
+        updateConnects()
+    }
+
+    override fun setAgents(agents: List<AgentConnectRequest>) = synchronized(syncRoot) {
+        agentRequests = agents
         updateConnects()
     }
 
@@ -521,6 +560,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun doAllocate(participant: ParticipantAllocationParameters): ColibriAllocation {
+        require(!(participant.synthetic && participant.useSctp)) {
+            "Synthetic endpoints have no transport and can not use SCTP"
+        }
         logger.info("Allocating for ${participant.id}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
@@ -756,6 +798,18 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         if (created) {
             session.feedbackSources = response.parseSources()
+        }
+
+        if (participantInfo.synthetic) {
+            // Synthetic endpoints have no transport, so there is nothing further to parse. The transport field is
+            // meaningless for them (there is no client to signal it to). SCTP is rejected up front in doAllocate.
+            return ColibriAllocation(
+                session.feedbackSources,
+                IceUdpTransportPacketExtension(),
+                session.bridge.region,
+                session.id,
+                null
+            )
         }
 
         val transport = response.parseTransport(participantInfo.id)

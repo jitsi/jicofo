@@ -87,7 +87,12 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
          */
         val translation: Translation? = null,
         /** Aggregated live-translation requests: sender endpoint id -> set of requested language codes. */
-        val audioTranslationRequests: Map<String, List<String>>? = null
+        val audioTranslationRequests: Map<String, List<String>>? = null,
+        /**
+         * The voice agents requested in the room, keyed by agent id (which becomes the agent's endpoint id). The
+         * metadata also carries client-facing fields (display name, kind) that jicofo ignores.
+         */
+        val agents: Map<String, Agent>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(val live: Boolean?)
@@ -106,6 +111,13 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Translation(
+            val httpHeaders: Map<String, String>? = null
+        )
+
+        /** A voice agent's connect config (the fields jicofo needs; mirrors [Transcription]). */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Agent(
+            val urlParams: Map<String, String>? = null,
             val httpHeaders: Map<String, String>? = null
         )
     }

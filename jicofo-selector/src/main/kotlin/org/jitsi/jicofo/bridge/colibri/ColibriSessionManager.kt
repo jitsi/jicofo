@@ -87,6 +87,13 @@ interface ColibriSessionManager {
     )
 
     /**
+     * Set the desired voice-agent connects. Each entry corresponds to an already-allocated synthetic endpoint; its
+     * connect is placed on the bridge session hosting that endpoint. The full list replaces the previous one:
+     * connects for agents no longer listed are expired.
+     */
+    fun setAgents(agents: List<AgentConnectRequest>)
+
+    /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
      * @return the list of participant IDs which were on the removed bridge and now need to be re-invited.
      */
@@ -144,7 +151,12 @@ data class ParticipantAllocationParameters(
     val visitor: Boolean,
     val supportsPrivateAddresses: Boolean,
     val diarize: Boolean,
-    val medias: Set<Media>
+    val medias: Set<Media>,
+    /**
+     * Whether this is a synthetic endpoint: a bridge-side entity that owns synthetic (injected) sources, e.g. a
+     * voice agent, and has no media transport of its own.
+     */
+    val synthetic: Boolean = false
 )
 
 /**
@@ -158,4 +170,20 @@ data class TranslationRequest(
     val senderEndpointId: String,
     val sourceName: String,
     val syntheticSourceNames: List<String>
+)
+
+/**
+ * A request for a voice-agent connect on the bridge session hosting the agent's synthetic endpoint.
+ *
+ * @param endpointId the id of the agent's (synthetic) endpoint, which must have been allocated already.
+ * @param syntheticSourceName the agent's synthetic audio source name, requested back from the agent service.
+ * @param url the websocket URL template for the connect ([AgentConfig.REGION_TEMPLATE] is resolved per bridge).
+ * @param httpHeaders headers for the connect, or null to use the static config headers.
+ */
+data class AgentConnectRequest(
+    val endpointId: String,
+    val syntheticSourceName: String,
+    val url: TemplatedUrl,
+    val urlParams: Map<String, String>? = null,
+    val httpHeaders: Map<String, String>? = null
 )

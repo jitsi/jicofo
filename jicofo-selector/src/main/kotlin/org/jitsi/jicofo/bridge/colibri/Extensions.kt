@@ -32,6 +32,13 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 
+/**
+ * The colibri2 endpoint capability marking a synthetic endpoint: a bridge-side entity that owns synthetic (injected)
+ * sources, e.g. a voice agent, and has no media transport. Mirrors the constant in jitsi-videobridge.
+ * TODO: move to [Capability] in jitsi-xmpp-extensions.
+ */
+const val CAP_SYNTHETIC_ENDPOINT = "synthetic-endpoint"
+
 /** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
 fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? {
     return endpoints.find { it.id == endpointId }?.transport
@@ -116,6 +123,9 @@ internal fun ParticipantInfo.toEndpoint(
         }
         if (useRtpMidDemux) {
             addCapability(Capability.CAP_RTP_MID_DEMUX_SUPPORT)
+        }
+        if (synthetic) {
+            addCapability(CAP_SYNTHETIC_ENDPOINT)
         }
         if (diarize) {
             // Call setDiarize on the Colibri2Endpoint.Builder directly: the fluent builder chain returns a parent

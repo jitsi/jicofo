@@ -413,6 +413,9 @@ class ChatRoomImpl(
         eventEmitter.fireEvent {
             audioTranslationRequestsChanged(roomMetadata.metadata?.audioTranslationRequests ?: emptyMap())
         }
+        eventEmitter.fireEvent {
+            agentsChanged(roomMetadata.metadata?.agents ?: emptyMap())
+        }
         roomMetadataLatch.countDown()
     }
 
