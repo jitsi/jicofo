@@ -103,17 +103,15 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
             val urlParams: Map<String, String>? = null,
             val httpHeaders: Map<String, String>? = null
         ) {
-            override fun toString(): String =
-                "Transcription(urlParams=${urlParams?.mapValues { "***" }}, " +
-                    "httpHeaders=${httpHeaders?.mapValues { "***" }})"
+            override fun toString(): String = "Transcription(urlParams=${urlParams?.mapValues { "***" }}, " +
+                "httpHeaders=${httpHeaders?.mapValues { "***" }})"
         }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Translation(
             val httpHeaders: Map<String, String>? = null
         ) {
-            override fun toString(): String =
-                "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
+            override fun toString(): String = "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
         }
     }
 
