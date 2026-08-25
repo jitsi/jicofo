@@ -44,7 +44,7 @@ class JibriStats {
         @JvmField
         val noInstanceFailures = JicofoMetricsContainer.instance.registerCounter(
             "jibri_no_instance_failures",
-            "Number of failures to start a jibri session because no instance was available"
+            "Number of failures to start a jibri session because no instance was available or all instances were busy"
         )
 
         @JvmField

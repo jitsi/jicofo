@@ -295,7 +295,7 @@ public class JibriSession
         {
             JibriStats.sessionFailed(getJibriType());
 
-            if (e instanceof StartException.NotAvailable)
+            if (e instanceof StartException.NotAvailable || e instanceof StartException.AllBusy)
             {
                 JibriStats.noInstanceFailed();
             }
