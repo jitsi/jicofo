@@ -20,8 +20,12 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
+import org.jitsi.jicofo.xmpp.VisitorsManager
 import org.jitsi.jicofo.xmpp.jingle.JingleSession
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
+import org.jitsi.xmpp.extensions.visitors.ConnectVnodePacketExtension
+import org.jitsi.xmpp.extensions.visitors.DisconnectVnodePacketExtension
+import org.jivesoftware.smack.packet.ExtensionElement
 import org.jxmpp.jid.impl.JidCreate
 import java.util.logging.Level
 
@@ -29,12 +33,47 @@ import java.util.logging.Level
  * Wires up a real [JitsiMeetConferenceImpl] against mock XMPP (colibri2 and Jingle responders, a mock chat room) so
  * conference-level behavior can be tested without a real XMPP connection or bridge.
  */
-class ConferenceHarness(roomNameString: String = "test@example.com") {
+class ConferenceHarness(
+    roomNameString: String = "test@example.com",
+    /** The XMPP domain of the main connection. It must match the domain of [roomNameString]. */
+    val xmppDomain: String = "example.com",
+    /** The names of the visitor nodes to make available to the conference. */
+    visitorNodeNames: List<String> = emptyList()
+) {
     val roomName = JidCreate.entityBareFrom(roomNameString)
     val xmppConnection = ColibriAndJingleXmppConnection()
     val jingleSessions = mutableListOf<JingleSession>()
-    val xmppProvider = MockXmppProvider(xmppConnection.xmppConnection)
+    val xmppProvider = MockXmppProvider(xmppConnection.xmppConnection, "client", xmppDomain)
     val chatRoom = xmppProvider.getRoom(roomName)
+
+    /** The mock XMPP connections to the visitor nodes, mapped by node name. */
+    val visitorProviders: Map<String, MockXmppProvider> = visitorNodeNames.associateWith {
+        MockXmppProvider(xmppConnection.xmppConnection, it, "$it.$xmppDomain")
+    }
+
+    /** The extensions of the VisitorsIqs that the conference sent to the visitors component. */
+    val visitorsIqExtensions = mutableListOf<List<ExtensionElement>>()
+
+    val visitorsManager: VisitorsManager = mockk(relaxed = true) {
+        every { sendIqToComponent(any(), capture(visitorsIqExtensions)) } returns Unit
+        every { sendIqToComponentAndGetResponse(any(), capture(visitorsIqExtensions)) } returns null
+    }
+
+    /**
+     * The visitor room on the node [node] for this conference. The conference joins this same room, because it looks
+     * it up by JID with [MockXmppProvider.getRoom].
+     */
+    fun visitorRoom(node: String): MockChatRoom = visitorProviders[node]!!.getRoom(
+        JidCreate.entityBareFrom(roomName.toString().replace(xmppDomain, "$node.$xmppDomain"))
+    )
+
+    /** The names of the visitor nodes that the conference asked the visitors component to disconnect. */
+    fun disconnectedVnodes(): List<String> = visitorsIqExtensions.flatten()
+        .filterIsInstance<DisconnectVnodePacketExtension>().map { it.vnode }
+
+    /** The names of the visitor nodes that the conference asked the visitors component to connect. */
+    fun connectedVnodes(): List<String> = visitorsIqExtensions.flatten()
+        .filterIsInstance<ConnectVnodePacketExtension>().map { it.vnode }
 
     /** Whether the conference has ended (fired conferenceEnded on its listener). */
     var ended = false
@@ -59,6 +98,11 @@ class ConferenceHarness(roomNameString: String = "test@example.com") {
             every { jingleHandler } returns mockk(relaxed = true) {
                 every { registerSession(capture(jingleSessions)) } returns Unit
             }
+            every { visitorConnections } returns visitorProviders.values.map { it.xmppProvider }
+            every { getXmppVisitorConnectionByName(any()) } answers {
+                visitorProviders[arg<String>(0)]?.xmppProvider
+            }
+            every { visitorsManager } returns this@ConferenceHarness.visitorsManager
         },
         mockk(relaxed = true) {
             every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {

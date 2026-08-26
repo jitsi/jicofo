@@ -59,6 +59,10 @@ class XmppServices(
         }
     }
 
+    private val visitorConnectionMonitor = VisitorConnectionMonitor(visitorConnections) { node ->
+        focusManager.visitorConnectionReset(node)
+    }
+
     fun getXmppConnectionByName(name: XmppConnectionEnum) = when (name) {
         XmppConnectionEnum.Client -> clientConnection
         XmppConnectionEnum.Service -> serviceConnection
@@ -143,6 +147,7 @@ class XmppServices(
         avModerationHandler.shutdown()
         roomMetadataHandler.shutdown()
         jingleHandler.shutdown()
+        visitorConnectionMonitor.shutdown()
 
         clientConnection.xmppConnection.unregisterIQRequestHandler(conferenceIqHandler)
         authenticationIqHandler?.let {

@@ -19,6 +19,7 @@ package org.jitsi.jicofo.bridge.colibri
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
+import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 
 /**
  * Represents the information for a specific participant/endpoint needed for colibri2.
@@ -40,6 +41,13 @@ class ParticipantInfo(
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
     var sources = parameters.sources
+
+    /**
+     * The `ice-generation` of the most recent ICE restart for which we relayed the bridge's rotated transport
+     * back to this participant, used to discard responses that arrive out of order. See
+     * [ColibriV2SessionManager.endpointIceRestarted]. Guarded by the session manager's lock.
+     */
+    var lastRelayedIceGeneration = IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
 
     fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("id", id)

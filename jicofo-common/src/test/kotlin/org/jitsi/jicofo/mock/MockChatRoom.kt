@@ -21,6 +21,7 @@ import io.mockk.mockk
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoom
+import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.ChatRoomListener
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
@@ -41,6 +42,9 @@ class MockChatRoom(
     var audioSenders = 0
     var videoSenders = 0
 
+    /** Settable visitor count (the real ChatRoom derives it from member presence). */
+    var visitors = 0
+
     val chatRoom = mockk<ChatRoom>(relaxed = true) {
         every { addListener(capture(chatRoomListeners)) } returns Unit
         every { roomJid } returns this@MockChatRoom.roomJid
@@ -48,6 +52,10 @@ class MockChatRoom(
         every { memberCount } answers { memberList.size }
         every { audioSendersCount } answers { audioSenders }
         every { videoSendersCount } answers { videoSenders }
+        every { visitorCount } answers { visitors }
+        // Without this a relaxed mock returns a ChatRoomInfo with a non-null mainRoomJid, i.e. the room looks like a
+        // breakout room. Let jicofo generate the meeting ID, as it does when the MUC does not advertise one.
+        every { join() } returns ChatRoomInfo(meetingId = null, mainRoomJid = null)
         every { xmppProvider } returns this@MockChatRoom.xmppProvider
         every { debugState } returns JsonNodeFactory.instance.objectNode()
         every { getChatMember(any()) } answers { memberList.find { it.occupantJid == arg(0) } }

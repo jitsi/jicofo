@@ -60,7 +60,12 @@ internal fun List<ContentPacketExtension>.getTransport(): IceUdpTransportPacketE
 }
 
 internal fun selectVisitorNode(existingNodes: Map<String, ChatRoom>, allNodes: List<XmppProvider>): String? {
-    val min = existingNodes.minByOrNull { it.value.visitorCount }
+    val registeredNodeNames = allNodes.filter { it.registered }.map { it.config.name }.toSet()
+
+    // Re-use a node that we already have a room on, if it has capacity. Skip a node whose XMPP connection is down,
+    // because we can not signal to the visitors that we send there.
+    val min = existingNodes.filterKeys { registeredNodeNames.contains(it) }
+        .minByOrNull { it.value.visitorCount }
     if (min != null && min.value.visitorCount < VisitorsConfig.config.maxVisitorsPerNode) {
         return min.key
     }

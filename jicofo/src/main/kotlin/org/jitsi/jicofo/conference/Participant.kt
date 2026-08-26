@@ -28,6 +28,7 @@ import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.ValidationFailedException
+import org.jitsi.jicofo.metrics.IceRestartMetrics
 import org.jitsi.jicofo.util.Cancelable
 import org.jitsi.jicofo.xmpp.Features
 import org.jitsi.jicofo.xmpp.jingle.JingleIqRequestHandler
@@ -113,6 +114,17 @@ open class Participant @JvmOverloads constructor(
     private var inviteRunnable: Cancelable? = null
 
     private val restartRequestsRateLimit = RateLimit(
+        defaultMinInterval = ConferenceConfig.config.restartRequestMinInterval,
+        maxRequests = ConferenceConfig.config.restartRequestMaxRequests,
+        interval = ConferenceConfig.config.restartRequestInterval,
+        clock = clock
+    )
+
+    /**
+     * A separate budget for in-place ICE restart requests, so that a burst of them can not exhaust the budget for full
+     * session restarts (and vice versa). It uses the same configured limits.
+     */
+    private val iceRestartRequestsRateLimit = RateLimit(
         defaultMinInterval = ConferenceConfig.config.restartRequestMinInterval,
         maxRequests = ConferenceConfig.config.restartRequestMaxRequests,
         interval = ConferenceConfig.config.restartRequestInterval,
@@ -213,6 +225,9 @@ open class Participant @JvmOverloads constructor(
 
     /** Return true if a restart request should be accepted and false otherwise. */
     fun acceptRestartRequest(): Boolean = restartRequestsRateLimit.accept()
+
+    /** Return true if an in-place ICE restart request should be accepted and false otherwise. */
+    fun acceptIceRestartRequest(): Boolean = iceRestartRequestsRateLimit.accept()
 
     /** The stats ID of the participant. */
     val statId: String?
@@ -452,6 +467,11 @@ open class Participant @JvmOverloads constructor(
         override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }
 
+            val bridgeSession = iq.getExtension(BridgeSessionPacketExtension::class.java)
+            if (bridgeSession?.isIceRestart == true) {
+                return onIceRestartRequest(bridgeSession.id)
+            }
+
             val iceState = iq.getExtension(IceStatePacketExtension::class.java)?.text
             if (!iceState.equals("failed", ignoreCase = true)) {
                 logger.info("Ignored unknown ice-state: $iceState")
@@ -459,9 +479,45 @@ open class Participant @JvmOverloads constructor(
             }
             ConferenceMetrics.participantsIceFailed.inc()
 
-            val bridgeSessionId = iq.getExtension(BridgeSessionPacketExtension::class.java)?.id
+            conference.iceFailed(this@Participant, bridgeSession?.id)
+            return null
+        }
 
-            conference.iceFailed(this@Participant, bridgeSessionId)
+        /**
+         * Handle a request for an in-place ICE restart, i.e. a `session-info` with
+         * `<bridge-session ice-restart="true"/>`. Unlike the full session restart requested via `session-terminate`
+         * this does not tear the session down: the bridge rotates its ICE credentials in place, and the resulting
+         * transport is signaled back to the participant in a `transport-info`.
+         *
+         * @return a [StanzaError] to respond with if the request was rejected, or null if it was accepted.
+         */
+        private fun onIceRestartRequest(bridgeSessionId: String?): StanzaError? {
+            logger.info("ICE restart: received a request, bsId=$bridgeSessionId")
+            IceRestartMetrics.requested.inc()
+
+            if (!ConferenceConfig.config.enableIceRestart) {
+                logger.info("ICE restart: rejecting the request, disabled in configuration.")
+                IceRestartMetrics.failed.inc()
+                return StanzaError.from(
+                    StanzaError.Condition.feature_not_implemented,
+                    "in-place ICE restart is disabled"
+                ).build()
+            }
+
+            if (!acceptIceRestartRequest()) {
+                logger.warn("ICE restart: rejecting the request, rate-limited.")
+                IceRestartMetrics.failed.inc()
+                return StanzaError.from(StanzaError.Condition.resource_constraint, "rate-limited").build()
+            }
+
+            try {
+                conference.iceRestart(this@Participant, bridgeSessionId)
+            } catch (e: InvalidBridgeSessionIdException) {
+                logger.warn("ICE restart: rejecting the request, ${e.message}")
+                IceRestartMetrics.failed.inc()
+                return StanzaError.from(StanzaError.Condition.item_not_found, e.message).build()
+            }
+
             return null
         }
 

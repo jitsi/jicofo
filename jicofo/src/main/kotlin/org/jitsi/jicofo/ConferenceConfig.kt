@@ -105,6 +105,14 @@ class ConferenceConfig private constructor() {
     }
 
     /**
+     * Whether to honor in-place ICE restart requests (a `session-info` with `<bridge-session ice-restart="true"/>`).
+     * When disabled such requests are rejected and the client is expected to fall back to a full session restart.
+     */
+    val enableIceRestart: Boolean by config {
+        "jicofo.conference.enable-ice-restart".from(newConfig)
+    }
+
+    /**
      * Get the number of milliseconds to delay signaling of Jingle sources given a certain [conferenceSize].
      */
     fun getSourceSignalingDelayMs(conferenceSize: Int) = sourceSignalingDelays.floorEntry(conferenceSize)?.value ?: 0

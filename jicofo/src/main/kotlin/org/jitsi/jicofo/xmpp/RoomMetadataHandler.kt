@@ -53,7 +53,7 @@ class RoomMetadataHandler(
             val roomMetadata = JsonMessage.parse(jsonMessage.json)
 
             if (roomMetadata !is RoomMetadata) {
-                throw IllegalArgumentException("Received invalid message type: ${jsonMessage.json}")
+                throw IllegalArgumentException("Received invalid message type: ${roomMetadata.type}")
             }
 
             val conference = conferenceStore.getConference(conferenceJid)
@@ -64,7 +64,7 @@ class RoomMetadataHandler(
                 roomMetadata
             )
         } catch (e: Exception) {
-            logger.info("Failed to process room_metadata request: ${jsonMessage.toXML()}")
+            logger.info("Failed to process room_metadata request for room=${jsonMessage.getAttribute("room")}: $e")
             return
         }
 

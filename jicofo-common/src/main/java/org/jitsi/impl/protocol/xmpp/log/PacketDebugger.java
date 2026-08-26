@@ -17,6 +17,7 @@ package org.jitsi.impl.protocol.xmpp.log;
 
 import edu.umd.cs.findbugs.annotations.*;
 import org.jitsi.utils.logging2.*;
+import org.jitsi.xmpp.util.RedactColibri;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 import org.jivesoftware.smack.packet.*;
@@ -66,13 +67,18 @@ public class PacketDebugger
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(() -> "RCV PKT (" + id + "): " + redact(streamElement));
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(() -> "SENT PKT (" + id + "): " + redact(streamElement));
+    }
+
+    private static String redact(TopLevelStreamElement streamElement)
+    {
+        return RedactColibri.Companion.redactToken(streamElement.toXML().toString());
     }
 
     /**
