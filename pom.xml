@@ -168,7 +168,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-121-gf5bbb1d</version>
+        <version>1.0-122-g58922cb</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
