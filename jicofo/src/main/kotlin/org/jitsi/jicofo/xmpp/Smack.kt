@@ -33,6 +33,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JingleIQProvider
 import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.ClientVersionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
@@ -148,6 +149,7 @@ fun registerXmppExtensions() {
         DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )
     ClientRequirementsIq.registerProviders()
+    ClientVersionPacketExtension.registerProvider()
     RayoIqProvider().registerRayoIQs()
     org.jitsi.xmpp.Smack.registerMuteIqProviders()
     StartMutedProvider.registerStartMutedProvider()

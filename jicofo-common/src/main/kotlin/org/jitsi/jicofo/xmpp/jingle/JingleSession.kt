@@ -46,6 +46,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.ClientVersionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
@@ -160,9 +161,18 @@ class JingleSession(
         return IqProcessingResult.AcceptedWithNoResponse()
     }
 
+    /** The version of the client, if it included one in its session-accept. */
+    var clientVersion: String? = null
+        private set
+
     private fun doProcessIq(iq: JingleIQ) {
         val error = when (iq.action) {
             JingleAction.SESSION_ACCEPT -> {
+                // The client includes its version in the session-accept that it sends to us.
+                iq.getExtension(ClientVersionPacketExtension::class.java)?.version?.let {
+                    clientVersion = it
+                    logger.info("Client version: $it")
+                }
                 // The session needs to be marked as active early to allow code executing as part of onSessionAccept
                 // to proceed (e.g. to signal source updates).
                 state = State.ACTIVE
@@ -383,6 +393,7 @@ class JingleSession(
         put("sid", sid)
         put("remoteJid", remoteJid.toString())
         put("state", state.toString())
+        put("client_version", clientVersion)
     }
 
     enum class State { PENDING, ACTIVE, ENDED }

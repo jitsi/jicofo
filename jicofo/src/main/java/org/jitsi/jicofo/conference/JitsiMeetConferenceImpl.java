@@ -874,7 +874,6 @@ public class JitsiMeetConferenceImpl
                             + " isJibri=" + chatRoomMember.isJibri()
                             + " isJigasi=" + chatRoomMember.isJigasi()
                             + " isTranscriber=" + chatRoomMember.isTranscriber()
-                            + " clientVersion=" + chatRoomMember.getClientVersion()
                             + room);
 
             // Are we ready to start ?

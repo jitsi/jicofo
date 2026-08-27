@@ -71,9 +71,6 @@ interface ChatRoomMember {
     /** The supported video codecs if any */
     val videoCodecs: List<String>?
 
-    /** The client version, if the member advertised one in presence. */
-    val clientVersion: String?
-
     /**
      * The list of features advertised as XMPP capabilities. Note that although the features are cached (XEP-0115),
      * the first time [features] is accessed it may block waiting for a disco#info response!

@@ -50,7 +50,6 @@ private fun member(
     every { isJibri } returns jibri
     every { isJigasi } returns jigasi
     every { isTranscriber } returns transcriber
-    every { clientVersion } returns "abc1234"
 }
 
 class ClientRequirementsHandlerTest : ShouldSpec() {

@@ -118,7 +118,7 @@ class ClientRequirementsHandler @JvmOverloads constructor(
             "Endpoint ${member.name} is missing required capabilities: " +
                 "missing=${missing.map { "${it.feature.name}/${it.level.value}" }}, reject=${verdict.reject}" +
                 (if (hasHard && !config.enforce) " (enforce is disabled)" else "") +
-                ", clientVersion=${member.clientVersion}, statsId=${member.statsId}, region=${member.region}" +
+                ", statsId=${member.statsId}, region=${member.region}" +
                 ", features=${features.map { it.name }}"
         )
 
