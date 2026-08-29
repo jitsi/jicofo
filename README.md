@@ -34,7 +34,7 @@ for the available options.
 ## Debian
 
 The recommended way to install Jicofo and Jitsi Meet is to follow the
-[Quick Install Guide](https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md) for debian-based systems.
+[Quick Install Guide]([https://github.com/jitsi/jitsi-meet/blob/master/doc/quick-install.md](https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart)) for debian-based systems.
 
 ### Binaries
 
