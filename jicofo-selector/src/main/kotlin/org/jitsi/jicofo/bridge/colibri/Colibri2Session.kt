@@ -72,7 +72,11 @@ class Colibri2Session(
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
-    val id = UUID.randomUUID().toString()
+    val id = if (BridgeConfig.config.includeBridgeNameInSessionId) {
+        "${bridge.jid.resourceOrEmpty}-${UUID.randomUUID()}"
+    } else {
+        UUID.randomUUID().toString()
+    }
 
     /**
      * Keep track of the endpoints that this conference recently added to this bridge. Note that this is
