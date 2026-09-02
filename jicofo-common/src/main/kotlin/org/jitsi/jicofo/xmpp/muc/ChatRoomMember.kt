@@ -63,10 +63,11 @@ interface ChatRoomMember {
     val diarize: Boolean
 
     /**
-     * The language this member wants transcriptions translated into, or null when it wants none (either because it
-     * signaled no language, or because it is not requesting transcription at all).
+     * The language this member wants transcriptions translated into, or null when it wants none or signaled one that
+     * does not look like a language code.
      *
      * Signaled via the "translation_language" participant property, the same presence element jigasi has always used.
+     * Whether transcription runs at all is a separate question, decided by the room metadata.
      */
     val translationLanguage: String?
 

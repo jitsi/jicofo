@@ -256,25 +256,31 @@ class ChatRoomMemberImpl(
 
     companion object {
         /**
-         * The language a member wants transcriptions translated into, or null when it wants none.
+         * The shape of a language code, as jitsi-meet sends them (the keys of its
+         * lang/translation-languages.json): a 2- or 3-letter primary subtag with optional region or script subtags,
+         * for example "fr", "ceb" or "zh-CN".
+         */
+        private val LANGUAGE_CODE_REGEX = Regex("[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*")
+
+        /**
+         * The language a member wants transcriptions translated into, or null when it wants none. A blank value means
+         * the same as an absent one.
          *
-         * Both participant properties are read, and both must be set: a member that is not requesting
-         * transcription is not asking for a translation either. Clients set "translation_language" but do not always
-         * clear it when the user switches back to the original language, so a stale value would otherwise keep a
-         * language requested forever. A blank value means the same as an absent one.
+         * The value is set by the participant, so it is validated rather than trusted. It ends up in a colibri2
+         * attribute, in the bridge's log lines, and (later) in a request to a translation provider. Smack escapes the
+         * attribute and Jackson escapes the JSON, so this is not about breaking out of the XML or the JSON. It keeps
+         * junk and control characters out of the signalling, and it bounds the length.
          */
         private fun parseTranslationLanguage(presence: Presence): String? {
-            val requestingTranscription = presence
-                .getExtensionElement("jitsi_participant_requestingTranscription", "jabber:client")
-                .let { (it as? StandardExtensionElement)?.text?.toBoolean() } ?: false
-            if (!requestingTranscription) {
-                return null
-            }
-            return presence
+            val language = presence
                 .getExtensionElement("jitsi_participant_translation_language", "jabber:client")
                 .let { (it as? StandardExtensionElement)?.text }
                 ?.trim()
-                ?.takeIf { it.isNotEmpty() }
+                ?: return null
+            if (language.isEmpty()) {
+                return null
+            }
+            return language.takeIf { LANGUAGE_CODE_REGEX.matches(it) }
         }
     }
 

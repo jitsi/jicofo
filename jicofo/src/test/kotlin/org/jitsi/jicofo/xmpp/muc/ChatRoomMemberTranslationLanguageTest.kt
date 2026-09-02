@@ -28,7 +28,7 @@ import java.util.logging.Level
 
 /**
  * Tests that the "translation_language" participant property is parsed from presence into
- * [ChatRoomMember.translationLanguage], and that it is only honoured while the member also requests transcription.
+ * [ChatRoomMember.translationLanguage], and that a participant cannot put an arbitrary string there.
  */
 class ChatRoomMemberTranslationLanguageTest : ShouldSpec() {
     private val occupantJid: EntityFullJid = JidCreate.entityFullFrom("conference@example.com/member")
@@ -37,78 +37,87 @@ class ChatRoomMemberTranslationLanguageTest : ShouldSpec() {
 
     private fun member() = ChatRoomMemberImpl(occupantJid, chatRoom, mockk(relaxed = true))
 
-    private fun presence(requestingTranscription: String?, language: String?) =
-        StanzaBuilder.buildPresence().from(occupantJid).apply {
-            requestingTranscription?.let {
-                addExtension(
-                    StandardExtensionElement
-                        .builder("jitsi_participant_requestingTranscription", "jabber:client")
-                        .setText(it)
-                        .build()
-                )
-            }
-            language?.let {
-                addExtension(
-                    StandardExtensionElement
-                        .builder("jitsi_participant_translation_language", "jabber:client")
-                        .setText(it)
-                        .build()
-                )
-            }
-        }.build()
+    private fun presence(language: String?) = StanzaBuilder.buildPresence().from(occupantJid).apply {
+        language?.let {
+            addExtension(
+                StandardExtensionElement
+                    .builder("jitsi_participant_translation_language", "jabber:client")
+                    .setText(it)
+                    .build()
+            )
+        }
+    }.build()
 
-    private fun languageFor(requestingTranscription: String?, language: String?) =
-        member().apply { processPresence(presence(requestingTranscription, language)) }.translationLanguage
+    private fun languageFor(language: String?) =
+        member().apply { processPresence(presence(language)) }.translationLanguage
 
     init {
         context("Parsing the translation_language participant property") {
-            should("be null when neither element is present") {
-                languageFor(null, null) shouldBe null
+            should("be null when the element is absent") {
+                languageFor(null) shouldBe null
             }
-            should("read the language when transcription is requested") {
-                languageFor("true", "fr") shouldBe "fr"
+            should("read a two-letter language") {
+                languageFor("fr") shouldBe "fr"
+            }
+            should("read a three-letter language") {
+                languageFor("ceb") shouldBe "ceb"
             }
             should("keep a region subtag verbatim") {
-                languageFor("true", "zh-CN") shouldBe "zh-CN"
-            }
-            should("be null when transcription is requested but no language is set") {
-                languageFor("true", null) shouldBe null
+                languageFor("zh-CN") shouldBe "zh-CN"
             }
             should("be null for a blank language") {
-                languageFor("true", "   ") shouldBe null
+                languageFor("   ") shouldBe null
             }
             should("trim surrounding whitespace") {
-                languageFor("true", " de ") shouldBe "de"
+                languageFor(" de ") shouldBe "de"
             }
         }
 
-        context("Ignoring a stale language") {
-            // Clients set translation_language but do not always clear it when the user switches back to the
-            // original language or turns subtitles off. Requiring requestingTranscription stops a stale value from
-            // keeping a language requested for the rest of the conference.
-            should("be null when transcription is not requested") {
-                languageFor("false", "fr") shouldBe null
+        context("Rejecting a value that is not a language code") {
+            // The value is set by the participant. It reaches a colibri2 attribute, the bridge's logs and (later) a
+            // translation provider, so anything that does not look like a language code is dropped here.
+            should("reject a single letter") {
+                languageFor("f") shouldBe null
             }
-            should("be null when the requestingTranscription element is absent") {
-                languageFor(null, "fr") shouldBe null
+            should("reject an over-long primary subtag") {
+                languageFor("abcd") shouldBe null
             }
-            should("be null for a non-boolean requestingTranscription value") {
-                languageFor("garbage", "fr") shouldBe null
+            should("reject a very long value") {
+                languageFor("a".repeat(4096)) shouldBe null
+            }
+            should("reject a value with a newline, which would otherwise forge a log line") {
+                languageFor("fr\nINFO: forged log line") shouldBe null
+            }
+            should("reject a value with markup") {
+                languageFor("fr\"/><evil/>") shouldBe null
+            }
+            should("reject a value with a space") {
+                languageFor("fr de") shouldBe null
+            }
+            should("reject a non-language string") {
+                languageFor("../../etc/passwd") shouldBe null
             }
         }
 
         context("Updating on a later presence") {
             should("follow the language from one presence to the next") {
                 val member = member()
-                member.processPresence(presence("true", "fr"))
+                member.processPresence(presence("fr"))
                 member.translationLanguage shouldBe "fr"
-                member.processPresence(presence("true", "de"))
+                member.processPresence(presence("de"))
                 member.translationLanguage shouldBe "de"
             }
-            should("clear the language when the member stops requesting transcription") {
+            should("clear the language when the client clears the property") {
+                // The client sets the property to the empty string when the user goes back to the original language.
                 val member = member()
-                member.processPresence(presence("true", "fr"))
-                member.processPresence(presence("false", "fr"))
+                member.processPresence(presence("fr"))
+                member.processPresence(presence(""))
+                member.translationLanguage shouldBe null
+            }
+            should("clear the language when the element goes away") {
+                val member = member()
+                member.processPresence(presence("fr"))
+                member.processPresence(presence(null))
                 member.translationLanguage shouldBe null
             }
         }
