@@ -35,6 +35,15 @@ interface ChatRoomListener {
      * The aggregated live-translation request map changed: sender endpoint id -> set of requested language codes.
      */
     fun audioTranslationRequestsChanged(requests: Map<String, List<String>>) {}
+
+    /**
+     * The set of languages the room wants transcriptions translated into may have changed, because a member changed
+     * or gave up its language, a member holding one left, or the visitors' languages changed.
+     *
+     * The new set is not passed: read it from [ChatRoom.getTranslationLanguages], which unions the members' languages
+     * with the visitors'. The event only says "recompute" -- it can fire when the union is in fact unchanged.
+     */
+    fun translationLanguagesChanged() {}
 }
 
 /** A class with the default kotlin method implementations (to avoid using @JvmDefault) **/

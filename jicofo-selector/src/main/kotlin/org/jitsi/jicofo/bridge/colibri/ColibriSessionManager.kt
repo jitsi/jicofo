@@ -74,6 +74,16 @@ interface ColibriSessionManager {
     )
 
     /**
+     * Set the languages the transcriber should translate its transcripts into (text translation, not the
+     * speech-to-speech translation that [setTranslator] controls).
+     *
+     * The languages are signaled as the `requests` of the transcriber connect, which the bridge forwards to the
+     * transcriber. [languages] is the full set, so an empty set stops all translation. Calling this before the
+     * transcriber connect exists is fine: the languages are kept and applied when it is created.
+     */
+    fun setTextTranslationLanguages(languages: Set<String>)
+
+    /**
      * Enable, update, or disable live translation.
      *
      * @param url the websocket URL template the bridge(s) should connect to, or null to disable translation.

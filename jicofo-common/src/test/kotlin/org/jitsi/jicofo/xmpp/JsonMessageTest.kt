@@ -140,6 +140,65 @@ class JsonMessageTest : ShouldSpec() {
                         metadata!!.audioTranslationRequests shouldBe null
                     }
                 }
+                context("With visitor transcribing languages") {
+                    JsonMessage.parse(
+                        """
+                            {
+                                "type": "room_metadata",
+                                "metadata": {
+                                    "visitors": {
+                                        "live": true,
+                                        "transcribingLanguages": "de,fr",
+                                        "transcribingCount": 3
+                                    }
+                                }
+                            }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.visitors.apply {
+                            shouldNotBeNull()
+                            live shouldBe true
+                            transcribingLanguages shouldBe "de,fr"
+                            transcribingCount shouldBe 3L
+                        }
+                    }
+                }
+                context("With no visitor transcribing languages") {
+                    // Prosody sends an empty string once the last visitor gives up its language.
+                    JsonMessage.parse(
+                        """
+                            {
+                                "type": "room_metadata",
+                                "metadata": {
+                                    "visitors": { "transcribingLanguages": "", "transcribingCount": 0 }
+                                }
+                            }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.visitors.apply {
+                            shouldNotBeNull()
+                            live shouldBe null
+                            transcribingLanguages shouldBe ""
+                            transcribingCount shouldBe 0L
+                        }
+                    }
+                }
+                context("With a visitors block from an older prosody") {
+                    JsonMessage.parse(
+                        """
+                            { "type": "room_metadata", "metadata": { "visitors": { "live": true } } }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.visitors.apply {
+                            shouldNotBeNull()
+                            transcribingLanguages shouldBe null
+                            transcribingCount shouldBe null
+                        }
+                    }
+                }
             }
             context("Invalid") {
                 context("Missing type") {

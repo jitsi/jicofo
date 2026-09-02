@@ -62,6 +62,14 @@ interface ChatRoomMember {
     /** Whether this member requested per-endpoint diarization (signaled via the "diarize" participant property). */
     val diarize: Boolean
 
+    /**
+     * The language this member wants transcriptions translated into, or null when it wants none (either because it
+     * signaled no language, or because it is not requesting transcription at all).
+     *
+     * Signaled via the "translation_language" participant property, the same presence element jigasi has always used.
+     */
+    val translationLanguage: String?
+
     /** Gets the region (e.g. "us-east") of this [ChatRoomMember]. */
     val region: String?
 

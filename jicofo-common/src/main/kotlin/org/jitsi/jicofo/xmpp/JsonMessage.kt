@@ -90,7 +90,20 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         val audioTranslationRequests: Map<String, List<String>>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
-        data class Visitors(val live: Boolean?)
+        data class Visitors(
+            val live: Boolean?,
+            /**
+             * The languages the visitors want transcriptions translated into, as a comma-separated list, or an empty
+             * string when they want none.
+             *
+             * Visitors are in a MUC on a visitor node, so their presence is not visible here. Instead each visitor
+             * node's mod_fmuc collects their requested languages and sends them to the main prosody, which aggregates
+             * across nodes into this field (mod_visitors_component). This is the same field jigasi reads.
+             */
+            val transcribingLanguages: String? = null,
+            /** How many visitors are requesting transcription, across all visitor nodes. */
+            val transcribingCount: Long? = null
+        )
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class StartMuted(val audio: Boolean?, val video: Boolean?)

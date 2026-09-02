@@ -207,6 +207,22 @@ class ChatRoomImpl(
         private set
 
     /**
+     * The languages the visitors want transcriptions translated into, from room metadata.
+     *
+     * Visitor presence is not visible in this room, so the visitors' requests reach us this way instead: each visitor
+     * node collects them and the main prosody aggregates them into the room metadata. Fires
+     * [ChatRoomListener.translationLanguagesChanged] on change, like the per-member languages do.
+     */
+    override var visitorTranslationLanguages: Set<String> = emptySet()
+        private set(value) {
+            if (value != field) {
+                logger.info("Visitor translation languages are now: $value")
+                field = value
+                eventEmitter.fireEvent { translationLanguagesChanged() }
+            }
+        }
+
+    /**
      * List of user IDs which the room is configured to allow to be moderators.
      */
     private var moderators: List<String> = emptyList()
@@ -413,6 +429,7 @@ class ChatRoomImpl(
         eventEmitter.fireEvent {
             audioTranslationRequestsChanged(roomMetadata.metadata?.audioTranslationRequests ?: emptyMap())
         }
+        visitorTranslationLanguages = parseVisitorTranslationLanguages(roomMetadata)
         roomMetadataLatch.countDown()
     }
 
@@ -648,6 +665,7 @@ class ChatRoomImpl(
             }
         }
         if (member != null) {
+            val previousTranslationLanguage = member.translationLanguage
             member.processPresence(presence)
             if (memberJoined) {
                 // Trigger member "joined"
@@ -661,6 +679,13 @@ class ChatRoomImpl(
             }
             if (!memberLeft) {
                 eventEmitter.fireEvent { memberPresenceChanged(member) }
+            }
+            // This member picked a translation language, changed it, or gave it up, so the room's set may have
+            // changed. A member joining with one set is covered too, because its language is null before its first
+            // presence is processed. A member leaving is handled by MemberListener instead, because it can also be
+            // removed without an unavailable presence.
+            if (member.translationLanguage != previousTranslationLanguage) {
+                eventEmitter.fireEvent { translationLanguagesChanged() }
             }
         }
     }
@@ -727,14 +752,29 @@ class ChatRoomImpl(
             logger.debug { "Left $occupantJid room: $roomJid" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
-            member?.let { eventEmitter.fireEvent { memberLeft(it) } }
-                ?: logger.info("Member left event for non-existing member: $occupantJid")
+            member?.let {
+                eventEmitter.fireEvent { memberLeft(it) }
+                translationLanguageReleased(it)
+            } ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
 
         fun kicked(occupantJid: EntityFullJid) {
             val member = synchronized(membersMap) { removeMember(occupantJid) }
-            member?.let { eventEmitter.fireEvent { memberKicked(it) } }
-                ?: logger.error("Kicked member does not exist: $occupantJid")
+            member?.let {
+                eventEmitter.fireEvent { memberKicked(it) }
+                translationLanguageReleased(it)
+            } ?: logger.error("Kicked member does not exist: $occupantJid")
+        }
+
+        /**
+         * A member that was removed from the room may have been the only one wanting its translation language, so the
+         * room's set may have shrunk. Fired here rather than from presence handling, because a member can also be
+         * removed without an unavailable presence (e.g. the stale-member cleanup).
+         */
+        private fun translationLanguageReleased(member: ChatRoomMemberImpl) {
+            if (member.translationLanguage != null) {
+                eventEmitter.fireEvent { translationLanguagesChanged() }
+            }
         }
     }
 
@@ -768,5 +808,22 @@ class ChatRoomImpl(
             enabled = false
             whitelist = emptyList()
         }
+    }
+
+    companion object {
+        /**
+         * The visitors' requested translation languages from [roomMetadata], as a set.
+         *
+         * Prosody sends them as one comma-separated string, and an empty string when there are none. Note that this
+         * must clear the set when the string is empty, so that the languages are released when the last visitor that
+         * wanted them goes away.
+         */
+        private fun parseVisitorTranslationLanguages(roomMetadata: RoomMetadata): Set<String> =
+            roomMetadata.metadata?.visitors?.transcribingLanguages
+                ?.split(",")
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?.toSet()
+                ?: emptySet()
     }
 }

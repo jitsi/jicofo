@@ -139,6 +139,13 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     /** Custom URL parameters for transcription */
     private var transcriberUrlParams: Map<String, String>? = null
 
+    /**
+     * The languages the transcriber should translate its transcripts into (text translation). Signaled as the
+     * `requests` of the transcriber connect. Kept sorted so the same set always produces the same connect and
+     * [ConnectSpec.sameAs] does not see a spurious change.
+     */
+    private var textTranslationLanguages: List<String> = emptyList()
+
     /** The translator URL template */
     private var translatorUrl: TemplatedUrl? = null
 
@@ -352,6 +359,19 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         updateConnects()
     }
 
+    override fun setTextTranslationLanguages(languages: Set<String>) = synchronized(syncRoot) {
+        val sorted = languages.sorted()
+        if (sorted == textTranslationLanguages) {
+            return@synchronized
+        }
+        logger.info("Setting text translation languages: $sorted")
+        textTranslationLanguages = sorted
+        // Only the transcriber connect carries these, and only the requests change, so the bridge updates the
+        // existing connect in place instead of reconnecting its websocket. When there is no transcriber connect yet
+        // this is a no-op and the languages are picked up when it is created.
+        updateConnects()
+    }
+
     /** Recompute and (re)signal the connects (transcriber/translator) to every session. */
     private fun updateConnects() {
         // The transcriber, and the translator in single-bridge mode, are hosted on a single chosen session.
@@ -448,6 +468,10 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             id = TRANSCRIBER_CONNECT_ID,
             url = url,
             type = Connect.Types.TRANSCRIBER,
+            // On a transcriber connect the requests are the text-translation target languages (bare language codes),
+            // not source names. The bridge forwards them to the transcriber, which translates each final transcript
+            // into each of them.
+            requests = textTranslationLanguages,
             httpHeaders = transcriberCustomHeaders ?: TranscriptionConfig.config.httpHeaders,
             ping = if (TranscriptionConfig.config.pingEnabled) {
                 ConnectSpec.Ping(

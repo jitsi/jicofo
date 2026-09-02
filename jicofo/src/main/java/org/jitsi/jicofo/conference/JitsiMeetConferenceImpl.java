@@ -416,6 +416,12 @@ public class JitsiMeetConferenceImpl
                         uri,
                         transcriptionParams.getFirst(),
                         transcriptionParams.getSecond());
+
+                    // Apply the text-translation languages the room already asked for before colibri existed.
+                    if (chatRoom != null)
+                    {
+                        colibriSessionManager.setTextTranslationLanguages(chatRoom.getTranslationLanguages());
+                    }
                 }
             }
 
@@ -2646,6 +2652,36 @@ public class JitsiMeetConferenceImpl
             uri,
             transcriptionParams.getFirst(),
             transcriptionParams.getSecond());
+
+        // The transcriber connect was just created or removed; (re)apply the requested languages to it.
+        updateTextTranslationLanguages();
+    }
+
+    /**
+     * Signal the set of languages the transcriber should translate its transcripts into: the languages the members
+     * request in their presence, together with the visitors' (which reach us through the room metadata).
+     *
+     * This is text translation. It is unrelated to the speech-to-speech translation that
+     * {@link ConferenceTranslationManager} drives.
+     *
+     * Signaling an empty set stops translation, so this is also the path that releases languages when the last
+     * member that wanted them leaves, or when transcription is turned off.
+     */
+    private void updateTextTranslationLanguages()
+    {
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        if (colibriSessionManager == null)
+        {
+            // The languages are read from the room when the session manager is initialized.
+            return;
+        }
+
+        ChatRoom chatRoom = this.chatRoom;
+        Set<String> languages = enableTranscription && chatRoom != null
+            ? chatRoom.getTranslationLanguages()
+            : Collections.emptySet();
+
+        colibriSessionManager.setTextTranslationLanguages(languages);
     }
 
     /**
@@ -2949,6 +2985,12 @@ public class JitsiMeetConferenceImpl
         public void transcribingEnabledChanged(boolean enabled)
         {
             setEnableTranscribing(enabled);
+        }
+
+        @Override
+        public void translationLanguagesChanged()
+        {
+            updateTextTranslationLanguages();
         }
 
         @Override

@@ -1,0 +1,65 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Copyright @ 2026 - present 8x8, Inc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.jitsi.jicofo.xmpp.muc
+
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.mockk
+
+/**
+ * Tests the union behind [ChatRoom.getTranslationLanguages]: the languages the members request, together with the
+ * visitors' (which reach jicofo through room metadata, because visitor presence is not visible in this room).
+ */
+class ChatRoomTranslationLanguagesTest : ShouldSpec() {
+    private fun member(language: String?): ChatRoomMember = mockk {
+        every { translationLanguage } returns language
+    }
+
+    private fun languages(members: List<ChatRoomMember>, visitorLanguages: Set<String>) =
+        ChatRoom.translationLanguages(members, visitorLanguages)
+
+    init {
+        context("Combining the members' and the visitors' languages") {
+            should("be empty when nobody requested a language") {
+                languages(listOf(member(null), member(null)), emptySet()) shouldBe emptySet()
+            }
+            should("collect the languages the members requested") {
+                languages(listOf(member("fr"), member("de")), emptySet()) shouldBe setOf("fr", "de")
+            }
+            should("de-duplicate a language two members both requested") {
+                languages(listOf(member("fr"), member("fr")), emptySet()) shouldBe setOf("fr")
+            }
+            should("ignore members that requested none") {
+                languages(listOf(member("fr"), member(null)), emptySet()) shouldBe setOf("fr")
+            }
+            should("include the visitors' languages") {
+                languages(listOf(member("fr")), setOf("es")) shouldBe setOf("fr", "es")
+            }
+            should("de-duplicate a language a member and a visitor both requested") {
+                languages(listOf(member("fr")), setOf("fr")) shouldBe setOf("fr")
+            }
+            should("include the visitors' languages when no member requested one") {
+                languages(listOf(member(null)), setOf("es")) shouldBe setOf("es")
+            }
+            should("be empty when there are no members and no visitor languages") {
+                languages(emptyList(), emptySet()) shouldBe emptySet()
+            }
+        }
+    }
+}
