@@ -44,6 +44,7 @@ import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceCandidatePacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
@@ -53,6 +54,17 @@ private fun transportWithGeneration(generation: Int?) = IceUdpTransportPacketExt
     ufrag = "ufrag-$generation"
     password = "password-$generation"
     generation?.let { setIceGeneration(it) }
+}
+
+/** A transport as a participant signals it: ICE credentials, with no `ice-generation` of its own. */
+private fun transportWithCredentials(ufrag: String) = IceUdpTransportPacketExtension().apply {
+    this.ufrag = ufrag
+    password = "password-$ufrag"
+}
+
+/** A transport as a participant signals it when it trickles a candidate: no credentials. */
+private fun transportWithCandidateOnly() = IceUdpTransportPacketExtension().apply {
+    addCandidate(IceCandidatePacketExtension())
 }
 
 /**
@@ -331,6 +343,71 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
                     should("relay the next generation") {
                         iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(1, 2)
+                    }
+                }
+            }
+
+            context("Tagging the participant's answer") {
+                // The bridge tells the credentials of its new Agent apart from an ordinary transport update by
+                // the `ice-generation`. The participant can not carry that attribute across SDP, so jicofo tags
+                // the answer on its behalf.
+                fun transportsToBridge() = requestsTo(bridge1).flatMap { it.endpoints }
+                    .mapNotNull { it.transport?.iceUdpTransport }
+
+                sessionManager.updateParticipant("p1", transport = transportWithCredentials("initial"))
+                    .also { drain() }
+
+                should("not tag a transport signaled before any restart") {
+                    transportsToBridge().last().iceGeneration shouldBe
+                        IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                }
+
+                context("After a restart was relayed") {
+                    sessionManager.restartIce("p1").also { drain() }
+                    sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer"))
+                        .also { drain() }
+
+                    should("tag the new credentials with the generation of that restart") {
+                        transportsToBridge().last().iceGeneration shouldBe 1
+                    }
+
+                    context("And the participant repeats the same credentials") {
+                        sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer"))
+                            .also { drain() }
+
+                        should("not tag them again") {
+                            transportsToBridge().last().iceGeneration shouldBe
+                                IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                        }
+                    }
+
+                    context("And the participant trickles a candidate") {
+                        sessionManager.updateParticipant("p1", transport = transportWithCandidateOnly())
+                            .also { drain() }
+
+                        should("not tag it") {
+                            transportsToBridge().last().iceGeneration shouldBe
+                                IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                        }
+                    }
+
+                    context("And a second restart is relayed") {
+                        sessionManager.restartIce("p1").also { drain() }
+                        sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer-2"))
+                            .also { drain() }
+
+                        should("tag the next answer with the next generation") {
+                            transportsToBridge().last().iceGeneration shouldBe 2
+                        }
+                    }
+                }
+
+                context("With a participant that tags the answer itself") {
+                    sessionManager.restartIce("p1").also { drain() }
+                    sessionManager.updateParticipant("p1", transport = transportWithGeneration(1)).also { drain() }
+
+                    should("leave its tag alone") {
+                        transportsToBridge().last().iceGeneration shouldBe 1
                     }
                 }
             }

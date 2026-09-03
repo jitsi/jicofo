@@ -49,6 +49,19 @@ class ParticipantInfo(
      */
     var lastRelayedIceGeneration = IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
 
+    /**
+     * The `ice-generation` of the most recent ICE restart whose answer we have already forwarded to the bridge,
+     * so that only the first set of new credentials of a round is tagged. See
+     * [ColibriV2SessionManager.stampIceGeneration]. Guarded by the session manager's lock.
+     */
+    var lastAnsweredIceGeneration = IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+
+    /**
+     * The ICE ufrag of the last transport we forwarded to the bridge for this participant. The answer to an ICE
+     * restart is recognized by carrying credentials which are not these. Guarded by the session manager's lock.
+     */
+    var lastSignaledIceUfrag: String? = null
+
     fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("id", id)
         put("stats_id", statsId.toString())

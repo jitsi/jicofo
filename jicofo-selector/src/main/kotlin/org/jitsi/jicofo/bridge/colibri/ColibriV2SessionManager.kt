@@ -898,6 +898,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 logger.error("No ParticipantInfo for $participantId")
                 return
             }
+        transport?.let { stampIceGeneration(participantInfo, it) }
         if (!suppressLocalBridgeUpdate) {
             participantInfo.session.updateParticipant(participantInfo, transport, sources, initialLastN)
         }
@@ -912,6 +913,54 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Tags the transport that answers an ICE restart with the `ice-generation` of that restart round, which is
+     * how the bridge tells the credentials of the new Agent from an ordinary transport update for the
+     * established one. An untagged answer is applied to the established Agent, which already has connectivity
+     * and ignores it, so the new Agent never learns the endpoint's credentials, never starts its checks, and the
+     * restart is abandoned when it times out.
+     *
+     * We tag it here rather than rely on the endpoint to echo the attribute back: `ice-generation` has no SDP
+     * representation, so an endpoint can only carry it across by handling it explicitly, and one that does not
+     * (an older client, or one that failed to) would silently get no restart at all. Jicofo knows which round is
+     * outstanding, so it can tag on the endpoint's behalf. A tag the endpoint did set is left alone.
+     *
+     * Only the first credentials of a round are tagged. A transport with no credentials carries trickled
+     * candidates and belongs to the established Agent, and so does one that repeats the credentials we last
+     * forwarded - tagging either would hand the new Agent the wrong password.
+     *
+     * Must be called with [syncRoot] held.
+     */
+    private fun stampIceGeneration(participantInfo: ParticipantInfo, transport: IceUdpTransportPacketExtension) {
+        val ufrag = transport.ufrag
+        if (ufrag == null || transport.password == null) {
+            return
+        }
+
+        val previousUfrag = participantInfo.lastSignaledIceUfrag
+        participantInfo.lastSignaledIceUfrag = ufrag
+
+        if (transport.iceGeneration != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED) {
+            participantInfo.lastAnsweredIceGeneration = transport.iceGeneration
+            return
+        }
+
+        val generation = participantInfo.lastRelayedIceGeneration
+        if (generation == IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED ||
+            generation == participantInfo.lastAnsweredIceGeneration ||
+            ufrag == previousUfrag
+        ) {
+            return
+        }
+
+        participantInfo.lastAnsweredIceGeneration = generation
+        transport.iceGeneration = generation
+        logger.info(
+            "ICE restart: tagging the transport of ${participantInfo.id} with generation=$generation " +
+                "(ufrag=$ufrag), the endpoint did not."
+        )
     }
 
     override fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?> = synchronized(syncRoot) {
