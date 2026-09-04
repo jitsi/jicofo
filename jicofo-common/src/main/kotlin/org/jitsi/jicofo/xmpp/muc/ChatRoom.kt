@@ -69,6 +69,13 @@ interface ChatRoom {
     /** Transcription configuration from room metadata. */
     val transcription: RoomMetadata.Metadata.Transcription?
 
+    /**
+     * Whether the room is configured for async (backend/proxy) transcription rather than a live Jigasi
+     * transcriber. Read from room metadata. When true, a client-initiated transcriber dial-out request
+     * should be rejected -- the client is expected to enable transcription via room metadata instead.
+     */
+    val asyncTranscription: Boolean
+
     /** Translation configuration from room metadata (e.g. per-customer connect headers). */
     val translation: RoomMetadata.Metadata.Translation?
 

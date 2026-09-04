@@ -206,6 +206,10 @@ class ChatRoomImpl(
     override var translation: RoomMetadata.Metadata.Translation? = null
         private set
 
+    /** Whether the room is configured for async (backend/proxy) transcription. Read from room metadata. */
+    override var asyncTranscription: Boolean = false
+        private set
+
     /**
      * List of user IDs which the room is configured to allow to be moderators.
      */
@@ -275,6 +279,7 @@ class ChatRoomImpl(
             set<ArrayNode>("moderators", jsonMapper.valueToTree(moderators))
             put("visitors_enabled", visitorsEnabled?.toString() ?: "null")
             put("visitors_live", visitorsLive)
+            put("async_transcription", asyncTranscription)
             set<ObjectNode>(
                 "av_moderation",
                 JsonNodeFactory.instance.objectNode().apply {
@@ -404,6 +409,7 @@ class ChatRoomImpl(
         }
         transcription = roomMetadata.metadata?.transcription
         translation = roomMetadata.metadata?.translation
+        asyncTranscription = roomMetadata.metadata?.asyncTranscription == true
         eventEmitter.fireEvent {
             transcribingEnabledChanged(
                 roomMetadata.metadata?.recording?.isTranscribingEnabled == true &&
