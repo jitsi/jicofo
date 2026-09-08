@@ -55,6 +55,18 @@ class JibriConfig private constructor() {
         "jicofo.jibri.num-retries".from(newConfig)
     }
 
+    val startRequestMinInterval: Duration by config {
+        "jicofo.jibri.start-request-rate-limits.min-interval".from(newConfig)
+    }
+
+    val startRequestMaxRequests: Int by config {
+        "jicofo.jibri.start-request-rate-limits.max-requests".from(newConfig)
+    }
+
+    val startRequestInterval: Duration by config {
+        "jicofo.jibri.start-request-rate-limits.interval".from(newConfig)
+    }
+
     val xmppConnectionName: XmppConnectionEnum by config {
         "jicofo.jibri.xmpp-connection-name".from(newConfig)
     }

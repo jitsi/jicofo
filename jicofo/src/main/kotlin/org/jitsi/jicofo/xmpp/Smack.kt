@@ -25,6 +25,7 @@ import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri2.IqProviderUtils
 import org.jitsi.xmpp.extensions.health.HealthCheckIQProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
+import org.jitsi.xmpp.extensions.jibri.BadRequestPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIqProvider
@@ -104,6 +105,7 @@ fun registerXmppExtensions() {
     ProviderManager.addIQProvider(JibriIq.ELEMENT, JibriIq.NAMESPACE, JibriIqProvider())
     JibriStatusPacketExt.registerExtensionProvider()
     JibriBusyStatusPacketExt.registerExtensionProvider()
+    BadRequestPacketExt.registerExtensionProvider()
     HealthStatusPacketExt.registerExtensionProvider()
     // User info
     ProviderManager.addExtensionProvider(

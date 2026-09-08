@@ -21,6 +21,7 @@ import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
@@ -30,6 +31,7 @@ import io.mockk.verify
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
+import org.jitsi.xmpp.extensions.jibri.BadRequestPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
@@ -142,6 +144,55 @@ class JibriSessionTest : ShouldSpec({
         jibriSession.start()
         should("retry with another jibri") {
             verify(exactly = 2) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+    }
+    context("Trying to start a session with a Jibri that refuses the request as invalid") {
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                to = iq.captured.from
+                shouldRetry = false
+                status = JibriIq.Status.OFF
+                failureReason = JibriIq.FailureReason.ERROR
+                addExtension(BadRequestPacketExt("The YouTube stream key has an invalid format"))
+            }
+        }
+        should("tell jibri that it understands a bad-request response") {
+            shouldThrow<JibriSession.StartException.NotRetryable> { jibriSession.start() }
+            (iq.captured as JibriIq).supportsBadRequest shouldBe true
+        }
+        should("fail without trying another jibri, and pass on the detail") {
+            val exc = shouldThrow<JibriSession.StartException.NotRetryable> { jibriSession.start() }
+            exc.message shouldBe "The YouTube stream key has an invalid format"
+            verify(exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+            verify(exactly = 0) { detector.instanceFailed(any()) }
+        }
+    }
+    context("Trying to start a session with a Jibri that rejects the request and says not to retry") {
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                to = iq.captured.from
+                shouldRetry = false
+                status = JibriIq.Status.OFF
+                failureReason = JibriIq.FailureReason.ERROR
+            }
+        }
+        should("fail without trying another jibri") {
+            shouldThrow<JibriSession.StartException.NotRetryable> {
+                jibriSession.start()
+            }
+            verify(exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
+        }
+        should("not blame the jibri which rejected the request") {
+            shouldThrow<JibriSession.StartException.NotRetryable> {
+                jibriSession.start()
+            }
+            verify(exactly = 0) { detector.instanceFailed(any()) }
         }
     }
 })
