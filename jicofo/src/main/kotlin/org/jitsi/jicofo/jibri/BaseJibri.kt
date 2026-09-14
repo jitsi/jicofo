@@ -169,6 +169,7 @@ abstract class BaseJibri internal constructor(
         return when (iq.action) {
             Action.START -> when (session) {
                 null -> handleStartRequest(iq)
+
                 else -> {
                     logger.info("Will not start a Jibri session, a session is already active")
                     error(
@@ -178,16 +179,19 @@ abstract class BaseJibri internal constructor(
                     )
                 }
             }
+
             Action.STOP -> when (session) {
                 null -> {
                     logger.warn("Rejecting STOP request for an unknown session.: ${iq.toXML()}")
                     error(iq, StanzaError.Condition.item_not_found, "Unknown session")
                 }
+
                 else -> {
                     session.stop(iq.from)
                     IQ.createResultIQ(iq)
                 }
             }
+
             Action.UNDEFINED, null -> {
                 return error(iq, StanzaError.Condition.bad_request, "undefined action ${iq.toXML()}")
             }
@@ -199,7 +203,10 @@ abstract class BaseJibri internal constructor(
         return when {
             // XXX do we need to keep the difference between `forbidden` and `not_allowed`?
             role == null -> StanzaError.getBuilder(StanzaError.Condition.forbidden).build()
-            role.hasModeratorRights() -> null // no error
+
+            role.hasModeratorRights() -> null
+
+            // no error
             else -> StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
         }
     }

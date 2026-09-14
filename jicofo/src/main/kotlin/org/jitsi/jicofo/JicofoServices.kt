@@ -184,8 +184,8 @@ class JicofoServices {
         xmppServices.shutdown()
     }
 
-    private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
-        return if (AuthConfig.config.type != AuthConfig.Type.NONE) {
+    private fun createAuthenticationAuthority(): AbstractAuthAuthority? =
+        if (AuthConfig.config.type != AuthConfig.Type.NONE) {
             logger.info("Starting authentication service with config=$authConfig.")
             val authAuthority = when (authConfig.type) {
                 AuthConfig.Type.XMPP -> XMPPDomainAuthAuthority(
@@ -197,6 +197,7 @@ class JicofoServices {
                 AuthConfig.Type.JWT -> ExternalJWTAuthority(
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
+
                 AuthConfig.Type.NONE -> null
             }
             authAuthority
@@ -204,7 +205,6 @@ class JicofoServices {
             logger.info("Authentication service disabled.")
             null
         }
-    }
 
     /** Gets statistics for the /stats HTTP interface. */
     private fun getStats(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {

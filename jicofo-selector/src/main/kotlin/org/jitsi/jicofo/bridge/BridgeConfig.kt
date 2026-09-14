@@ -97,14 +97,12 @@ class BridgeConfig private constructor() {
             .convertFrom<String> { createTopologyStrategy(it) }
     }
 
-    private fun <T> createClassInstance(className: String): T {
-        return try {
-            val clazz = Class.forName("${javaClass.getPackage().name}.$className")
-            clazz.getConstructor().newInstance() as T
-        } catch (e: Exception) {
-            val clazz = Class.forName(className)
-            clazz.getConstructor().newInstance() as T
-        }
+    private fun <T> createClassInstance(className: String): T = try {
+        val clazz = Class.forName("${javaClass.getPackage().name}.$className")
+        clazz.getConstructor().newInstance() as T
+    } catch (e: Exception) {
+        val clazz = Class.forName(className)
+        clazz.getConstructor().newInstance() as T
     }
 
     private fun createSelectionStrategy(className: String): BridgeSelectionStrategy = createClassInstance(className)

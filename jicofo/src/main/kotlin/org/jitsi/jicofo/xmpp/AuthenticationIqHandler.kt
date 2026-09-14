@@ -58,18 +58,16 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
         IQ.Type.get,
         IQRequestHandler.Mode.sync
     ) {
-        override fun handleIQRequest(iqRequest: IQ): IQ {
-            return if (iqRequest is LoginUrlIq) {
-                // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
-                val originalFrom = iqRequest.from
-                iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
-                handleLoginUrlIq(iqRequest).also {
-                    it.to = originalFrom
-                }
-            } else {
-                logger.error("Received an unexpected IQ type: $iqRequest")
-                createInternalServerErrorResponse(iqRequest)
+        override fun handleIQRequest(iqRequest: IQ): IQ = if (iqRequest is LoginUrlIq) {
+            // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
+            val originalFrom = iqRequest.from
+            iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
+            handleLoginUrlIq(iqRequest).also {
+                it.to = originalFrom
             }
+        } else {
+            logger.error("Received an unexpected IQ type: $iqRequest")
+            createInternalServerErrorResponse(iqRequest)
         }
     }
 
@@ -79,18 +77,16 @@ class AuthenticationIqHandler(private val authAuthority: AuthenticationAuthority
         IQ.Type.set,
         IQRequestHandler.Mode.sync
     ) {
-        override fun handleIQRequest(iqRequest: IQ): IQ {
-            return if (iqRequest is LogoutIq) {
-                // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
-                val originalFrom = iqRequest.from
-                iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
-                handleLogoutIq(iqRequest).also {
-                    it.to = originalFrom
-                }
-            } else {
-                logger.error("Received an unexpected IQ type: $iqRequest")
-                createInternalServerErrorResponse(iqRequest)
+        override fun handleIQRequest(iqRequest: IQ): IQ = if (iqRequest is LogoutIq) {
+            // If the IQ comes from mod_client_proxy, parse and substitute the original sender's JID.
+            val originalFrom = iqRequest.from
+            iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
+            handleLogoutIq(iqRequest).also {
+                it.to = originalFrom
             }
+        } else {
+            logger.error("Received an unexpected IQ type: $iqRequest")
+            createInternalServerErrorResponse(iqRequest)
         }
     }
 

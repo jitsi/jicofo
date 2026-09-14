@@ -234,9 +234,7 @@ class Bridge @JvmOverloads internal constructor(
      *
      * @return a negative number if this instance is more able to serve conferences than o
      */
-    override fun compareTo(other: Bridge): Int {
-        return compare(this, other)
-    }
+    override fun compareTo(other: Bridge): Int = compare(this, other)
 
     /** Notifies this [Bridge] that it was used for a new endpoint. */
     fun endpointAdded() {
@@ -305,16 +303,14 @@ class Bridge @JvmOverloads internal constructor(
     val fullVersion: String?
         get() = if (version != null && releaseId != null) "$version-$releaseId" else version
 
-    override fun toString(): String {
-        return String.format(
-            "Bridge[jid=%s, version=%s, relayId=%s, region=%s, correctedStress=%.2f]",
-            jid.toString(),
-            fullVersion,
-            relayId,
-            region,
-            correctedStress
-        )
-    }
+    override fun toString(): String = String.format(
+        "Bridge[jid=%s, version=%s, relayId=%s, region=%s, correctedStress=%.2f]",
+        jid.toString(),
+        fullVersion,
+        relayId,
+        region,
+        correctedStress
+    )
 
     /**
      * Gets the "stress" of the bridge, represented as a double between 0 and 1 (though technically the value
@@ -379,12 +375,10 @@ class Bridge @JvmOverloads internal constructor(
             }
         }
 
-        private fun getPriority(b: Bridge): Int {
-            return if (b.isOperational) {
-                if (b.isInGracefulShutdown) 2 else 1
-            } else {
-                3
-            }
+        private fun getPriority(b: Bridge): Int = if (b.isOperational) {
+            if (b.isInGracefulShutdown) 2 else 1
+        } else {
+            3
         }
     }
 }

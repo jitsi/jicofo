@@ -183,6 +183,7 @@ class JigasiXmppConnection : MockXmppConnection() {
                 Response.Timeout -> null
             }
         }
+
         else -> {
             println("Not handling ${iq.toXML()}")
             null

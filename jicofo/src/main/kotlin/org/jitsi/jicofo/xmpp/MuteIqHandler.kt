@@ -44,18 +44,16 @@ class AudioMuteIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    override fun handleRequest(request: IqRequest<MuteIq>): IqProcessingResult {
-        return handleRequest(
-            MuteRequest(
-                request.iq,
-                request.connection,
-                conferenceStore,
-                request.iq.mute,
-                request.iq.jid,
-                MediaType.AUDIO
-            )
+    override fun handleRequest(request: IqRequest<MuteIq>): IqProcessingResult = handleRequest(
+        MuteRequest(
+            request.iq,
+            request.connection,
+            conferenceStore,
+            request.iq.mute,
+            request.iq.jid,
+            MediaType.AUDIO
         )
-    }
+    )
 }
 
 class VideoMuteIqHandler(
@@ -69,18 +67,16 @@ class VideoMuteIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    override fun handleRequest(request: IqRequest<MuteVideoIq>): IqProcessingResult {
-        return handleRequest(
-            MuteRequest(
-                request.iq,
-                request.connection,
-                conferenceStore,
-                request.iq.mute,
-                request.iq.jid,
-                MediaType.VIDEO
-            )
+    override fun handleRequest(request: IqRequest<MuteVideoIq>): IqProcessingResult = handleRequest(
+        MuteRequest(
+            request.iq,
+            request.connection,
+            conferenceStore,
+            request.iq.mute,
+            request.iq.jid,
+            MediaType.VIDEO
         )
-    }
+    )
 }
 
 class DesktopMuteIqHandler(
@@ -94,18 +90,16 @@ class DesktopMuteIqHandler(
         setOf(IQ.Type.set),
         IQRequestHandler.Mode.sync
     ) {
-    override fun handleRequest(request: IqRequest<MuteDesktopIq>): IqProcessingResult {
-        return handleRequest(
-            MuteRequest(
-                request.iq,
-                request.connection,
-                conferenceStore,
-                request.iq.mute,
-                request.iq.jid,
-                MediaType.DESKTOP
-            )
+    override fun handleRequest(request: IqRequest<MuteDesktopIq>): IqProcessingResult = handleRequest(
+        MuteRequest(
+            request.iq,
+            request.connection,
+            conferenceStore,
+            request.iq.mute,
+            request.iq.jid,
+            MediaType.DESKTOP
         )
-    }
+    )
 }
 
 private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.MuteIqHandler")
@@ -147,12 +141,14 @@ private fun handleRequest(request: MuteRequest): IqProcessingResult {
                         )
                     }
                 }
+
                 MuteResult.NOT_ALLOWED -> request.connection.tryToSendStanza(
                     IQ.createErrorResponse(
                         request.iq,
                         StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
                     )
                 )
+
                 MuteResult.ERROR -> request.connection.tryToSendStanza(
                     IQ.createErrorResponse(
                         request.iq,

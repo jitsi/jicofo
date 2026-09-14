@@ -8,22 +8,18 @@ import java.util.Objects
 class TracingUtil {
     companion object {
         @JvmStatic
-        fun memberAttributes(member: ChatRoomMember): Attributes {
-            return Attributes.builder()
-                .put("member.name", member.name)
-                .put("member.id", Objects.toString(member.jid))
-                .put("member.role", member.role.toString())
-                .put("member.region", Objects.toString(member.region))
-                .build()
-        }
+        fun memberAttributes(member: ChatRoomMember): Attributes = Attributes.builder()
+            .put("member.name", member.name)
+            .put("member.id", Objects.toString(member.jid))
+            .put("member.role", member.role.toString())
+            .put("member.region", Objects.toString(member.region))
+            .build()
 
         @JvmStatic
-        fun roomAttributes(room: ChatRoom): Attributes {
-            return Attributes.builder()
-                .put("room.id", Objects.toString(room.roomJid))
-                .put("room.members", room.memberCount.toString())
-                .put("room.visitors", room.visitorCount.toString())
-                .build()
-        }
+        fun roomAttributes(room: ChatRoom): Attributes = Attributes.builder()
+            .put("room.id", Objects.toString(room.roomJid))
+            .put("room.members", room.memberCount.toString())
+            .put("room.visitors", room.visitorCount.toString())
+            .build()
     }
 }

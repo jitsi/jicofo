@@ -26,7 +26,9 @@ mvn test -Dtest=BridgeSelectorTest   # Run specific test class
 
 ### Code Quality
 ```bash
-mvn ktlint:check                     # Run ktlint (must be run for individual modules e.g. in ./jicofo-selector/)
+mvn exec:exec@ktlint-check           # Run ktlint (must be run for individual modules e.g. in ./jicofo-selector/; sibling modules must
+                                     # be resolvable, so run "mvn install -DskipTests" from the root first if they are not)
+mvn exec:exec@ktlint-format          # Auto-format Kotlin code with ktlint (same restriction)
 mvn checkstyle:check                 # Run checkstyle (config: checkstyle.xml)
 ```
 

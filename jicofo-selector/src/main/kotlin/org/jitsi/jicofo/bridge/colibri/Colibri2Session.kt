@@ -327,6 +327,7 @@ class Colibri2Session(
                     request.addConnect(spec.toConnect(create = true))
                     hasDelta = true
                 }
+
                 !current.sameAs(spec) -> {
                     logger.info("Updating connect id=$id")
                     request.addConnect(spec.toConnect())

@@ -122,10 +122,12 @@ class JibriRecorder(
                         logger.info("Failed to start a Jibri session, all Jibris were busy")
                         error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
                     }
+
                     is NotAvailable -> {
                         logger.info("Failed to start a Jibri session, no Jibris available")
                         error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
                     }
+
                     else -> {
                         logger.warn("Failed to start a Jibri session: ${exc.message}", exc)
                         error(iq, StanzaError.Condition.internal_server_error, exc.message)

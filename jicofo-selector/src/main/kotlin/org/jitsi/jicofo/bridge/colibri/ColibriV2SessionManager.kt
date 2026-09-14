@@ -286,8 +286,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     return@forEach
                 }
 
-                if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
-                    mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
+                if ((mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute) ||
+                    (mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute)
                 ) {
                     // No change required.
                     return@forEach
@@ -398,6 +398,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             when (TranslationConfig.config.mode) {
                 TranslationConfig.Mode.SINGLE_BRIDGE ->
                     if (session == connectSession) add(buildSingleBridgeTranslatorSpec(session, url))
+
                 TranslationConfig.Mode.PER_SOURCE ->
                     addAll(buildPerSourceTranslatorSpecs(session, url))
             }
@@ -719,6 +720,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     // If we trigger a re-invite we may cause the same error repeating.
                     throw ColibriAllocationFailedException("Bad request: ${error.toXML()}", false)
                 }
+
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                         // The conference on the bridge has expired. The state between jicofo and the bridge is out of
@@ -732,6 +734,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Item not found, bridge unavailable?", false)
                     }
                 }
+
                 conflict -> {
                     if (reason == null) {
                         // An error NOT coming from the bridge.
@@ -752,6 +755,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Colibri error: ${error.toXML()}", true)
                     }
                 }
+
                 service_unavailable -> {
                     if (reason == Colibri2Error.Reason.GRACEFUL_SHUTDOWN) {
                         // The fact that this bridge was selected means that we haven't received its updated presence yet,
@@ -763,6 +767,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Bridge failed with service_unavailable.", true)
                     }
                 }
+
                 else -> {
                     session.bridge.isOperational = false
                     throw ColibriAllocationFailedException("Error: ${error.toXML()}", true)

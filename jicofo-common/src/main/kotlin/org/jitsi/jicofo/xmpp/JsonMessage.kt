@@ -43,9 +43,7 @@ sealed class JsonMessage(val type: String) {
 
         @JvmStatic
         @Throws(JsonProcessingException::class, JsonMappingException::class)
-        fun parse(string: String): JsonMessage {
-            return mapper.readValue(string)
-        }
+        fun parse(string: String): JsonMessage = mapper.readValue(string)
     }
 }
 

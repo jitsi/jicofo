@@ -38,7 +38,9 @@ enum class MemberRole {
         @JvmStatic
         fun fromSmack(mucRole: MUCRole?, mucAffiliation: MUCAffiliation?) = when (mucAffiliation) {
             MUCAffiliation.admin -> MODERATOR
+
             MUCAffiliation.owner -> OWNER
+
             else -> when (mucRole) {
                 MUCRole.moderator -> MODERATOR
                 MUCRole.participant -> PARTICIPANT

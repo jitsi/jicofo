@@ -76,9 +76,11 @@ class VisitorsManager(
             val response = sendIqToComponentAndGetResponse(roomJid, extensions)
             when {
                 response == null -> logger.warn("Timeout waiting for VisitorsIq response.")
+
                 response.type == IQ.Type.result -> {
                     logger.info("Received VisitorsIq response: ${response.toXML()}")
                 }
+
                 else -> logger.warn("Received error response: ${response.toXML()}")
             }
         }
