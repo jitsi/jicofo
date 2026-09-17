@@ -332,6 +332,14 @@ public class JibriSession
 
             sendJibriStartIq(jibriJid);
         }
+        catch (StartException.NotRetryable e)
+        {
+            // The Jibri is healthy, it just refused this request. Retrying with another Jibri would only waste more
+            // instances, so fail the session immediately.
+            currentJibriJid = null;
+            clearPendingTimeout(true);
+            throw e;
+        }
         catch (Exception e)
         {
             logger.error("Failed to send start Jibri IQ: " + e, e);
@@ -528,6 +536,10 @@ public class JibriSession
         startIq.setSipAddress(sipAddress);
         startIq.setDisplayName(displayName);
         startIq.setRtcStatsEnabled(rtcStatsEnabled);
+        // Tell Jibri it may refuse an invalid request in the response to this IQ. Without this it must report such a
+        // failure asynchronously instead, because a Jicofo which does not understand the response would treat it as
+        // unexpected and retry the same doomed request with other instances.
+        startIq.setSupportsBadRequest(true);
 
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
@@ -599,6 +611,20 @@ public class JibriSession
         {
             logger.info("Jibri " + jibriIq.getFrom() + " was busy");
             throw new StartException.OneBusy();
+        }
+        BadRequestPacketExt badRequest = jibriIq.getExtension(BadRequestPacketExt.class);
+        if (badRequest != null)
+        {
+            String detail = badRequest.getDetail();
+            logger.info("Jibri " + jibriIq.getFrom() + " refused the request as invalid: " + detail);
+            throw new StartException.NotRetryable(
+                detail == null ? "Jibri refused the request as invalid" : detail);
+        }
+        if (isNotRetryableFailureResponse(jibriIq))
+        {
+            logger.info("Jibri " + jibriIq.getFrom()
+                + " rejected the request and signaled that we should not retry: " + jibriIq.toXML());
+            throw new StartException.NotRetryable("Jibri rejected the request");
         }
         if (!isPendingResponse(jibriIq))
         {
@@ -905,6 +931,17 @@ public class JibriSession
                 super("Unexpected response");
             }
         }
+        /**
+         * The Jibri rejected the request and signaled that it must not be retried (for example because the RTMP URL
+         * is invalid). Another Jibri would reject the same request, so we must not try one.
+         */
+        static public class NotRetryable extends StartException
+        {
+            public NotRetryable(String message)
+            {
+                super(message);
+            }
+        }
         static public class OneBusy extends StartException
         {
             public OneBusy()
@@ -961,6 +998,16 @@ public class JibriSession
     private boolean isPendingResponse(JibriIq iq)
     {
         return Status.PENDING.equals(iq.getStatus());
+    }
+
+    /**
+     * Whether {@code iq} is a response which reports a failure that must not be retried with another Jibri.
+     */
+    private boolean isNotRetryableFailureResponse(JibriIq iq)
+    {
+        return Status.OFF.equals(iq.getStatus()) &&
+            iq.isFailure() &&
+            Boolean.FALSE.equals(iq.getShouldRetry());
     }
 
 }

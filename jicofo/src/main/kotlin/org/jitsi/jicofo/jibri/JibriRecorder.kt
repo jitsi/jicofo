@@ -23,6 +23,7 @@ import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
 import org.jitsi.jicofo.jibri.JibriSession.StartException.AllBusy
 import org.jitsi.jicofo.jibri.JibriSession.StartException.NotAvailable
+import org.jitsi.jicofo.jibri.JibriSession.StartException.NotRetryable
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.RecordingMode
@@ -126,6 +127,13 @@ class JibriRecorder(
                     is NotAvailable -> {
                         logger.info("Failed to start a Jibri session, no Jibris available")
                         error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
+                    }
+
+                    is NotRetryable -> {
+                        // The Jibri refused the request itself, e.g. because the RTMP URL is invalid. Another Jibri
+                        // would refuse it too, so tell the client instead of trying again.
+                        logger.info("Failed to start a Jibri session, the Jibri rejected the request")
+                        error(iq, StanzaError.Condition.bad_request, exc.message)
                     }
 
                     else -> {

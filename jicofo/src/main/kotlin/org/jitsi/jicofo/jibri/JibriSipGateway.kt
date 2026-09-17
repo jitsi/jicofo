@@ -23,6 +23,7 @@ import org.jitsi.jicofo.jibri.JibriConfig.Companion.config
 import org.jitsi.jicofo.jibri.JibriSession.StartException
 import org.jitsi.jicofo.jibri.JibriSession.StartException.AllBusy
 import org.jitsi.jicofo.jibri.JibriSession.StartException.NotAvailable
+import org.jitsi.jicofo.jibri.JibriSession.StartException.NotRetryable
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.SipCallState
@@ -97,7 +98,12 @@ class JibriSipGateway(
             sipSessions.remove(iq.sipAddress)
             when (exc) {
                 is AllBusy -> error(iq, StanzaError.Condition.resource_constraint, "all Jibris are busy")
+
                 is NotAvailable -> error(iq, StanzaError.Condition.service_unavailable, "no Jibris available")
+
+                // The Jibri refused the request itself. Another Jibri would refuse it too, so tell the client.
+                is NotRetryable -> error(iq, StanzaError.Condition.bad_request, reason)
+
                 else -> error(iq, StanzaError.Condition.internal_server_error, reason)
             }
         }
