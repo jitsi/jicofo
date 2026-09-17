@@ -85,6 +85,8 @@ class JibriSipGateway(
             iq.sipAddress,
             iq.displayName, null, null, sessionId, null,
             conference.isRtcStatsEnabled,
+            // A SIP gateway session makes no recording, so it has no recording parameters.
+            null,
             logger
         )
         sipSessions[iq.sipAddress] = jibriSession

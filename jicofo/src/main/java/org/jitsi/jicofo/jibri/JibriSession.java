@@ -153,6 +153,12 @@ public class JibriSession
     private final boolean rtcStatsEnabled;
 
     /**
+     * What a recording of this conference must look like, or {@code null} if the room asks for the default
+     * recording. Jibri decides how to satisfy it, and refuses a request it cannot serve.
+     */
+    private final RoomMetadata.Metadata.RecordingParams recordingParams;
+
+    /**
      * The maximum amount of retries we'll attempt
      */
     private final int maxNumRetries;
@@ -206,6 +212,7 @@ public class JibriSession
             String sessionId,
             String applicationData,
             boolean rtcStatsEnabled,
+            RoomMetadata.Metadata.RecordingParams recordingParams,
             Logger parentLogger)
     {
         this.stateListener = stateListener;
@@ -222,6 +229,7 @@ public class JibriSession
         this.sessionId = sessionId;
         this.applicationData = applicationData;
         this.rtcStatsEnabled = rtcStatsEnabled;
+        this.recordingParams = recordingParams;
         jibriDetector.addHandler(jibriEventHandler);
         logger = parentLogger.createChildLogger(getClass().getName());
     }
@@ -495,6 +503,34 @@ public class JibriSession
     }
 
     /**
+     * Adds the recording parameters of this room to a start request, if the room has any.
+     *
+     * We do not check the values. Jibri decides which values it accepts, and refuses a request it cannot serve. A
+     * parameter which the room does not set stays absent, so that Jibri uses its own default for it.
+     */
+    private void addRecordingParams(JibriIq startIq)
+    {
+        if (recordingParams == null)
+        {
+            return;
+        }
+
+        RecordingParamsPacketExt ext = new RecordingParamsPacketExt();
+        ext.setTileResolution(recordingParams.getTileResolution());
+        ext.setTileCount(recordingParams.getTileCount());
+        ext.setMaxFullResolutionParticipants(recordingParams.getMaxFullResolutionParticipants());
+
+        // Every parameter was absent, so the element would say nothing.
+        if (ext.getAttributeNames().isEmpty())
+        {
+            return;
+        }
+
+        logger.info("Requesting a recording with " + recordingParams);
+        startIq.addExtension(ext);
+    }
+
+    /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
@@ -540,6 +576,7 @@ public class JibriSession
         // failure asynchronously instead, because a Jicofo which does not understand the response would treat it as
         // unexpected and retry the same doomed request with other instances.
         startIq.setSupportsBadRequest(true);
+        addRecordingParams(startIq);
 
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
