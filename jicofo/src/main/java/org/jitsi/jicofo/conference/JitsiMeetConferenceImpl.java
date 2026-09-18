@@ -262,6 +262,9 @@ public class JitsiMeetConferenceImpl
      */
     private volatile boolean enableTranscription = false;
 
+    /** Whether the room has any voice agent; like transcription, forces a bridge for a lone human. */
+    private boolean hasAgents = false;
+
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
@@ -1056,8 +1059,9 @@ public class JitsiMeetConferenceImpl
         }
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         // When the conference exports media (e.g. to a transcriber), start sessions immediately without waiting for
-        // min-participants: the exported media is consumed even if nobody else is in the conference.
-        if (hasColibriConnects())
+        // min-participants: the exported media is consumed even if nobody else is in the conference. A requested
+        // voice agent counts too: its connect can only exist once a session does.
+        if (hasColibriConnects() || hasAgents)
         {
             minParticipants = 1;
         }
@@ -3082,7 +3086,25 @@ public class JitsiMeetConferenceImpl
         @Override
         public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
         {
+            boolean nowHasAgents = !agents.isEmpty();
+            boolean wasEmpty = !hasAgents;
+            hasAgents = nowHasAgents;
+
+            // Store requests first so the invite below (inits colibri, calls reapply) picks them up.
             agentManager.setRequests(agents, colibriSessionManager, meetingId);
+
+            // Agent added while members waited for min-participants: invite them so a bridge is allocated.
+            if (nowHasAgents && wasEmpty && chatRoom != null && chatRoom.getMemberCount() > 0)
+            {
+                synchronized (participantLock)
+                {
+                    if (participants.isEmpty())
+                    {
+                        logger.info("Voice agent added with existing members, starting sessions.");
+                        inviteAllChatMembers();
+                    }
+                }
+            }
         }
     }
 
