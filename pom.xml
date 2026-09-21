@@ -84,6 +84,13 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>3.12.0</version>
@@ -129,6 +136,11 @@
         <artifactId>kotlin-stdlib</artifactId>
         <version>${kotlin.version}</version>
         <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-reflect</artifactId>
+        <version>${kotlin.version}</version>
       </dependency>
       <!-- org.jitsi -->
       <dependency>
@@ -180,11 +192,6 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-kotlin</artifactId>
-          <version>${jackson.version}</version>
       </dependency>
       <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
       <dependency>
