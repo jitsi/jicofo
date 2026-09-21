@@ -18,14 +18,12 @@
 package org.jitsi.jicofo
 
 import com.typesafe.config.ConfigObject
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
 import java.time.Duration
 import java.util.TreeMap
 
-@SuppressFBWarnings(value = ["BX_UNBOXING_IMMEDIATELY_REBOXED"], justification = "False positive.")
 class ConferenceConfig private constructor() {
     val conferenceStartTimeout: Duration by config {
         "org.jitsi.focus.IDLE_TIMEOUT".from(legacyConfig)

@@ -160,7 +160,7 @@ public class JibriSession
     /**
      * How many times we've retried this request to another Jibri
      */
-    private int numRetries = 0;
+    private final AtomicInteger numRetries = new AtomicInteger(0);
 
     /**
      * The full JID of the entity that has initiated the recording flow.
@@ -415,14 +415,14 @@ public class JibriSession
 
         // Clean up immediately - this makes any in-flight callbacks from previous operations ignore this session
         currentJibriJid = null;
-        numRetries = 0;
+        numRetries.set(0);
     }
 
     private void cleanupSession()
     {
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
-        numRetries = 0;
+        numRetries.set(0);
         jibriDetector.removeHandler(jibriEventHandler);
     }
 
@@ -682,7 +682,7 @@ public class JibriSession
      */
     private boolean maxRetriesExceeded()
     {
-        return (maxNumRetries >= 0 && numRetries >= maxNumRetries);
+        return (maxNumRetries >= 0 && numRetries.get() >= maxNumRetries);
     }
 
     /**
@@ -692,7 +692,7 @@ public class JibriSession
     private void retryRequestWithAnotherJibri()
         throws StartException
     {
-        numRetries++;
+        numRetries.incrementAndGet();
         start();
     }
 

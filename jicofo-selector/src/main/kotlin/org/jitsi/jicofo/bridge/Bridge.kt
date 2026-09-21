@@ -69,6 +69,7 @@ class Bridge @JvmOverloads internal constructor(
     val endpoints = AtomicInteger(0)
 
     /** The last report stress level */
+    @Volatile
     var lastReportedStressLevel = 0.0
         private set
 
@@ -76,6 +77,7 @@ class Bridge @JvmOverloads internal constructor(
     private var version: String? = null
 
     /** Whether the last received presence indicated the bridge is healthy. */
+    @Volatile
     var isHealthy = true
         private set
 
@@ -111,18 +113,22 @@ class Bridge @JvmOverloads internal constructor(
         }
 
     /** Start out with the configured value, update if the bridge reports a value. */
+    @Volatile
     private var averageParticipantStress = config.averageParticipantStress
 
     /** Stores a boolean that indicates whether the bridge is in graceful shutdown mode. */
+    @Volatile
     var isInGracefulShutdown = false // we assume it is not shutting down
 
     /** Whether the bridge is in SHUTTING_DOWN mode. */
+    @Volatile
     var isShuttingDown = false
         private set
 
     /**
      * Stores a boolean that indicates whether the bridge is in drain mode.
      */
+    @Volatile
     var isDraining = true // Default to true to prevent unwanted selection before reading actual state
         private set
 

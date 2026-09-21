@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -53,7 +52,6 @@ private val jsonMapper = jacksonObjectMapper()
 /**
  * Start/stop jicofo-specific services.
  */
-@SuppressFBWarnings("MS_CANNOT_BE_FINAL")
 class JicofoServices {
     private val logger = createLogger()
 

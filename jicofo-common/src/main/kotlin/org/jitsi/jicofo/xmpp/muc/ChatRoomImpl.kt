@@ -127,7 +127,13 @@ class ChatRoomImpl(
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+
+    @field:SuppressFBWarnings(
+        value = ["AT_STALE_THREAD_WRITE_OF_PRIMITIVE"],
+        justification = "Only accessed while synchronized on membersMap."
+    )
     private var visitorMemberCount: Int = 0
+
     override val visitorCount: Int
         get() = synchronized(membersMap) { visitorMemberCount } +
             pendingVisitorsCounter.getCount().toInt()
