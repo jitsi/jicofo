@@ -65,6 +65,8 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
     val xmppConnection = createXmppConnection(config, logger)
 
     private val started = AtomicBoolean(false)
+
+    @Volatile
     var registered = false
         private set(value) {
             if (value != field) {

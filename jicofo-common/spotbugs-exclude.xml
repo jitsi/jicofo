@@ -34,6 +34,10 @@
       <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
       <!-- False positive with kotlin lazy initialization. -->
       <Bug pattern="BC_IMPOSSIBLE_INSTANCEOF"/>
+      <!-- Exposure of internal representation is not a concern. -->
+      <Bug pattern="MS_EXPOSE_REP"/>
+      <!-- A Kotlin class compiles to several JVM classes, so a class-level suppression can look unused. -->
+      <Bug pattern="US_USELESS_SUPPRESSION_ON_CLASS"/>
     </Or>
   </And>
 </Match>
