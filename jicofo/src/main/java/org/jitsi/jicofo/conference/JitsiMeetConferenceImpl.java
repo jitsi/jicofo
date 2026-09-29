@@ -340,7 +340,7 @@ public class JitsiMeetConferenceImpl
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
         clientRequirementsHandler = new ClientRequirementsHandler(logger);
-        agentManager = new ConferenceAgentManager(conferenceSources, logger);
+        agentManager = new ConferenceAgentManager(conferenceSources, roomName.toString(), logger);
 
         this.config = new JitsiMeetConfig(properties);
 

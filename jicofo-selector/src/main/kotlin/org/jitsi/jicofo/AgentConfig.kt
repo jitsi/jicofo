@@ -68,6 +68,25 @@ class AgentConfig private constructor() {
         "jicofo.agent.ping.timeout".from(JitsiConfig.newConfig)
     }
 
+    /** Where to report agent lifecycle transitions (the provisioning API's /voice-agent/status); null = disabled. */
+    val statusUrl: String? by optionalconfig {
+        "jicofo.agent.status.url".from(JitsiConfig.newConfig)
+    }
+
+    /** Bearer token for [statusUrl] (the provisioning API's configured status secret). */
+    val statusToken: String? by optionalconfig {
+        "jicofo.agent.status.token".from(JitsiConfig.newConfig)
+    }
+
+    val statusTimeout: Duration by config {
+        "jicofo.agent.status.timeout".from(JitsiConfig.newConfig)
+    }
+
+    /** Retries (with backoff) after a failed status report. */
+    val statusRetries: Int by config {
+        "jicofo.agent.status.retries".from(JitsiConfig.newConfig)
+    }
+
     fun getUrl(meetingId: String): TemplatedUrl? = urlTemplate?.let {
         TemplatedUrl(it, requiredKeys = setOf(REGION_TEMPLATE)).apply {
             set(MEETING_ID_TEMPLATE, meetingId)

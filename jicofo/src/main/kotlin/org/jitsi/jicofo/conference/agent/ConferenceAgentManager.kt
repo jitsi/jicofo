@@ -40,11 +40,15 @@ import java.util.concurrent.ThreadLocalRandom
  *
  * Endpoint allocation involves a blocking colibri round-trip, so it runs on the IO pool; connects are (re)applied
  * once the allocation completes. All state ([allocated], [ready], [pending]) is guarded by this object's monitor.
+ *
+ * The lifecycle transitions jicofo can observe are reported through [statusReporter] (see [AgentStatusReporter]).
  */
-class ConferenceAgentManager(
+class ConferenceAgentManager @JvmOverloads constructor(
     /** Used only to check SSRCs already in use in the conference when minting; never modified. */
     private val conferenceSources: ValidatingConferenceSourceMap,
-    parentLogger: Logger
+    conferenceJid: String,
+    parentLogger: Logger,
+    private val statusReporter: AgentStatusReporter = AgentStatusReporter(conferenceJid, parentLogger)
 ) {
     private val logger = createChildLogger(parentLogger)
 
@@ -88,6 +92,7 @@ class ConferenceAgentManager(
             return
         }
 
+        // Removals originate from the provisioning API (dismiss / room end), so there is nothing to report back.
         (allocated.keys - requests.keys).toList().forEach { id ->
             logger.info("Removing agent $id")
             allocated.remove(id)
@@ -104,6 +109,7 @@ class ConferenceAgentManager(
             if (id !in ready && id !in pending) {
                 logger.info("Allocating synthetic endpoint for agent $id (${source.name}, ssrc ${source.ssrc})")
                 pending.add(id)
+                statusReporter.report(id, AgentStatusReporter.CONNECTING)
                 TaskPools.ioPool.submit { allocateAgent(id, source, colibriSessionManager, meetingId) }
             }
         }
@@ -141,6 +147,7 @@ class ConferenceAgentManager(
             colibriSessionManager.updateParticipant(id, sources = EndpointSourceSet(source))
         } catch (e: Exception) {
             logger.error("Failed to allocate synthetic endpoint for agent $id", e)
+            statusReporter.report(id, AgentStatusReporter.FAILED, e.message ?: e.javaClass.simpleName)
             synchronized(this) { pending.remove(id) }
             return
         }
@@ -150,6 +157,7 @@ class ConferenceAgentManager(
             if (id in allocated) {
                 ready.add(id)
                 updateConnects(colibriSessionManager, meetingId)
+                statusReporter.report(id, AgentStatusReporter.ACTIVE)
             } else {
                 // The agent was removed while its allocation was in flight.
                 logger.info("Agent $id was removed during allocation, expiring its endpoint.")

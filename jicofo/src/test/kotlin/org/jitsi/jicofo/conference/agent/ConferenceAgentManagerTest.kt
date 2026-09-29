@@ -21,9 +21,11 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
 import io.mockk.Called
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
@@ -48,7 +50,9 @@ class ConferenceAgentManagerTest : ShouldSpec() {
 
     private val conferenceSources = ValidatingConferenceSourceMap(20, 20)
     private val colibriSessionManager = mockk<ColibriSessionManager>(relaxed = true)
-    private val manager = ConferenceAgentManager(conferenceSources, LoggerImpl("test"))
+    private val statusReporter = mockk<AgentStatusReporter>(relaxed = true)
+    private val manager =
+        ConferenceAgentManager(conferenceSources, "room@muc.example.com", LoggerImpl("test"), statusReporter)
     private val agent = RoomMetadata.Metadata.Agent(urlParams = mapOf("session" to "s1"))
 
     private val urlConfig = "jicofo.agent.url-template=\"wss://agents.example.com/{{MEETING_ID}}\""
@@ -119,6 +123,37 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     verify { colibriSessionManager.allocate(capture(allParams)) }
                     allParams.map { it.id } shouldBe listOf("agent1", "agent2")
                     allParams.first { it.id == "agent1" }.sources.sources.single().ssrc shouldBe firstSsrc
+                }
+            }
+        }
+
+        context("Lifecycle reporting") {
+            withNewConfig(urlConfig) {
+                context("when an agent is allocated") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("report connecting, then active") {
+                        verifyOrder {
+                            statusReporter.report("agent1", AgentStatusReporter.CONNECTING)
+                            statusReporter.report("agent1", AgentStatusReporter.ACTIVE)
+                        }
+                    }
+                }
+
+                context("when allocation fails") {
+                    every { colibriSessionManager.allocate(any()) } throws RuntimeException("no bridge")
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("report failed with the reason, and never active") {
+                        verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "no bridge") }
+                        verify(exactly = 0) { statusReporter.report("agent1", AgentStatusReporter.ACTIVE) }
+                    }
+                }
+
+                context("when the provisioning API removes an agent") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
+                    should("not report anything further") {
+                        verify(exactly = 0) { statusReporter.report("agent1", "ended", any()) }
+                    }
                 }
             }
         }
