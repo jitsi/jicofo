@@ -212,6 +212,10 @@ class ChatRoomImpl(
     override var translation: RoomMetadata.Metadata.Translation? = null
         private set
 
+    /** What a recording of this room must look like. Read from room metadata. */
+    override var recordingParams: RoomMetadata.Metadata.RecordingParams? = null
+        private set
+
     /** Whether the room is configured for async (backend/proxy) transcription. Read from room metadata. */
     override var asyncTranscription: Boolean = false
         private set
@@ -431,6 +435,7 @@ class ChatRoomImpl(
         }
         transcription = roomMetadata.metadata?.transcription
         translation = roomMetadata.metadata?.translation
+        recordingParams = roomMetadata.metadata?.recordingParams
         asyncTranscription = roomMetadata.metadata?.asyncTranscription == true
         eventEmitter.fireEvent {
             transcribingEnabledChanged(

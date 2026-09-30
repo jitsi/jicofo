@@ -130,6 +130,65 @@ class JsonMessageTest : ShouldSpec() {
                         }
                     }
                 }
+                context("With recordingParams") {
+                    JsonMessage.parse(
+                        """
+                            {
+                                "type": "room_metadata",
+                                "metadata": {
+                                    "recording": {
+                                        "isTranscribingEnabled": true
+                                    },
+                                    "recordingParams": {
+                                        "tileResolution": "1280x720",
+                                        "tileCount": 2,
+                                        "maxFullResolutionParticipants": 3
+                                    }
+                                }
+                            }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        val parsed = metadata.shouldNotBeNull()
+                        parsed.recordingParams.apply {
+                            shouldNotBeNull()
+                            tileResolution shouldBe "1280x720"
+                            tileCount shouldBe 2
+                            maxFullResolutionParticipants shouldBe 3
+                        }
+                        // The recording parameters must not disturb the client-visible recording state.
+                        parsed.recording!!.isTranscribingEnabled shouldBe true
+                    }
+                }
+                context("With a subset of recordingParams") {
+                    // A parameter the sender does not set must stay absent, so that Jibri uses its own default.
+                    JsonMessage.parse(
+                        """
+                            {
+                                "type": "room_metadata",
+                                "metadata": { "recordingParams": { "tileCount": 2 } }
+                            }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.recordingParams.apply {
+                            shouldNotBeNull()
+                            tileCount shouldBe 2
+                            tileResolution shouldBe null
+                            maxFullResolutionParticipants shouldBe null
+                        }
+                    }
+                }
+                context("Without recordingParams") {
+                    JsonMessage.parse(
+                        """
+                            { "type": "room_metadata", "metadata": {} }
+                        """.trimIndent()
+                    ).apply {
+                        shouldBeInstanceOf<RoomMetadata>()
+                        metadata!!.recordingParams shouldBe null
+                    }
+                }
                 context("Without audioTranslationRequests") {
                     JsonMessage.parse(
                         """

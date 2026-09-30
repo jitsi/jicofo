@@ -28,11 +28,13 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
+import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.jicofo.xmpp.sendIqAndGetResponse
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.LoggerImpl
 import org.jitsi.xmpp.extensions.jibri.BadRequestPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriIq
+import org.jitsi.xmpp.extensions.jibri.RecordingParamsPacketExt
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
@@ -64,7 +66,7 @@ class JibriSessionTest : ShouldSpec({
     }
     val logger: Logger = LoggerImpl("JibriSessionTest")
 
-    val jibriSession = JibriSession(
+    fun createSession(recordingParams: RoomMetadata.Metadata.RecordingParams? = null) = JibriSession(
         stateListener,
         roomName,
         initiator,
@@ -81,8 +83,11 @@ class JibriSessionTest : ShouldSpec({
         "sessionId",
         "applicationData",
         true,
+        recordingParams,
         logger
     )
+
+    val jibriSession = createSession()
 
     context("When sending a request to a Jibri to start a session throws an error") {
         val iqRequests = mutableListOf<IQ>()
@@ -168,6 +173,48 @@ class JibriSessionTest : ShouldSpec({
             exc.message shouldBe "The YouTube stream key has an invalid format"
             verify(exactly = 1) { mockXmppConnection.sendIqAndGetResponse(any()) }
             verify(exactly = 0) { detector.instanceFailed(any()) }
+        }
+    }
+    context("Starting a session") {
+        val iq = slot<IQ>()
+        every { mockXmppConnection.sendIqAndGetResponse(capture(iq)) } answers {
+            JibriIq().apply {
+                type = IQ.Type.result
+                from = iq.captured.to
+                to = iq.captured.from
+                status = JibriIq.Status.PENDING
+            }
+        }
+        fun startedRequest() = iq.captured as JibriIq
+
+        should("pass on the recording parameters of the room") {
+            createSession(RoomMetadata.Metadata.RecordingParams("1280x720", 2, 3)).start()
+
+            val params = startedRequest().getExtension(RecordingParamsPacketExt::class.java)
+            params shouldNotBe null
+            params.tileResolution shouldBe "1280x720"
+            params.tileCount shouldBe 2
+            params.maxFullResolutionParticipants shouldBe 3
+        }
+        should("omit a parameter which the room does not set") {
+            // Jibri uses its own default for a parameter which is absent, so we must not send a value of our own.
+            createSession(RoomMetadata.Metadata.RecordingParams(tileCount = 2)).start()
+
+            val params = startedRequest().getExtension(RecordingParamsPacketExt::class.java)
+            params shouldNotBe null
+            params.tileCount shouldBe 2
+            params.tileResolution shouldBe null
+            params.maxFullResolutionParticipants shouldBe null
+        }
+        should("not add the element when the room has no recording parameters") {
+            createSession().start()
+
+            startedRequest().getExtension(RecordingParamsPacketExt::class.java) shouldBe null
+        }
+        should("not add the element when the room sets no parameter at all") {
+            createSession(RoomMetadata.Metadata.RecordingParams()).start()
+
+            startedRequest().getExtension(RecordingParamsPacketExt::class.java) shouldBe null
         }
     }
     context("Trying to start a session with a Jibri that rejects the request and says not to retry") {

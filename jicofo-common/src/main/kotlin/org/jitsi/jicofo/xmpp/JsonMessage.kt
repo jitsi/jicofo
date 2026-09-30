@@ -85,7 +85,13 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
          */
         val translation: Translation? = null,
         /** Aggregated live-translation requests: sender endpoint id -> set of requested language codes. */
-        val audioTranslationRequests: Map<String, List<String>>? = null
+        val audioTranslationRequests: Map<String, List<String>>? = null,
+        /**
+         * What a recording of this room must look like, delivered to jicofo on the admin-only metadata path. It is
+         * a separate field from [recording], which carries the client-visible recording state, so that the
+         * admin-only path can add it without overwriting that.
+         */
+        val recordingParams: RecordingParams? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(
@@ -108,6 +114,21 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Recording(val isTranscribingEnabled: Boolean?)
+
+        /**
+         * What a recording must look like. These say nothing about how Jibri makes it: Jibri selects the screen
+         * resolution, the layout and the client options, and it refuses a request it cannot serve. We only pass
+         * them on.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class RecordingParams(
+            /** The resolution of one tile, in the "WIDTHxHEIGHT" format. */
+            val tileResolution: String? = null,
+            /** How many tiles the recording must show. */
+            val tileCount: Int? = null,
+            /** The value for the maxFullResolutionParticipants option of the recorder's client. */
+            val maxFullResolutionParticipants: Int? = null
+        )
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Transcription(

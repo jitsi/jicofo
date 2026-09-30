@@ -79,6 +79,9 @@ interface ChatRoom {
     /** Translation configuration from room metadata (e.g. per-customer connect headers). */
     val translation: RoomMetadata.Metadata.Translation?
 
+    /** What a recording of this room must look like. Read from room metadata, and passed on to Jibri. */
+    val recordingParams: RoomMetadata.Metadata.RecordingParams?
+
     /**
      * The languages the visitors want transcriptions translated into, from room metadata.
      *
