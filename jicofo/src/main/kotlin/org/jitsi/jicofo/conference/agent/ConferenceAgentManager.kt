@@ -34,7 +34,8 @@ import java.util.concurrent.ThreadLocalRandom
 /**
  * Ties the voice-agent request map (from RoomMetadata) to the conference: for each requested agent it allocates a
  * synthetic (transport-less) colibri2 endpoint owning a synthetic audio source with a freshly minted SSRC, and
- * drives the agent `<connect>` on the bridge session hosting that endpoint.
+ * drives the agent `<connect>` on the bridge session hosting that endpoint. The connect exports only the audio of the
+ * members that consented to that agent (see [org.jitsi.jicofo.xmpp.muc.ChatRoomMember.voiceAgentConsent]).
  *
  * The agent's sources are NOT added to the conference source map (no Jingle signaling): clients learn about the
  * agent from room metadata and receive its audio only after explicitly subscribing to its source, which is
@@ -47,10 +48,12 @@ import java.util.concurrent.ThreadLocalRandom
  * The lifecycle transitions jicofo can observe are reported through [statusReporter] (see [AgentStatusReporter]).
  */
 class ConferenceAgentManager @JvmOverloads constructor(
-    /** Used only to check SSRCs already in use in the conference when minting; never modified. */
+    /** Read to avoid SSRC conflicts when minting and to name consenting members' audio sources; never modified. */
     private val conferenceSources: ValidatingConferenceSourceMap,
     conferenceJid: String,
     parentLogger: Logger,
+    /** Endpoint id -> ids of the agents that member consented to share audio with, read on every (re)apply. */
+    private val consentingMembers: () -> Map<String, Set<String>> = { emptyMap() },
     private val statusReporter: AgentStatusReporter = AgentStatusReporter(conferenceJid, parentLogger)
 ) {
     private val logger = createChildLogger(parentLogger)
@@ -80,10 +83,13 @@ class ConferenceAgentManager @JvmOverloads constructor(
         meetingId: String?
     ) {
         this.requests = requests
+        if (requests.isNotEmpty() && !AgentConfig.config.enabled) {
+            logger.warn("Voice agents requested, but no agent URL is configured. Ignoring.")
+        }
         apply(colibriSessionManager, meetingId)
     }
 
-    /** Re-apply the last request map (e.g. once colibri is ready). */
+    /** Re-apply the last request map, e.g. once colibri is ready, or when consent or sources changed. */
     @Synchronized
     fun reapply(colibriSessionManager: ColibriSessionManager?, meetingId: String?) =
         apply(colibriSessionManager, meetingId)
@@ -94,10 +100,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
             // Not ready yet; will be applied from JitsiMeetConferenceImpl once colibri is initialized.
             return
         }
-        if (!AgentConfig.config.enabled) {
-            if (requests.isNotEmpty()) {
-                logger.warn("Voice agents requested, but no agent URL is configured. Ignoring.")
-            }
+        // Re-applies run on every presence update, so bail out early when there is no agent to manage.
+        if (!AgentConfig.config.enabled || (requests.isEmpty() && allocated.isEmpty())) {
             return
         }
 
@@ -184,11 +188,13 @@ class ConferenceAgentManager @JvmOverloads constructor(
     @Synchronized
     private fun updateConnects(colibriSessionManager: ColibriSessionManager, meetingId: String) {
         val url = AgentConfig.config.getUrl(meetingId) ?: return
+        val consent = consentingMembers()
         val connects = ready.mapNotNull { id ->
             val agent = requests[id] ?: return@mapNotNull null
             AgentConnectRequest(
                 endpointId = id,
                 syntheticSourceName = sourceName(id),
+                exports = exportsFor(id, consent),
                 url = url,
                 urlParams = agent.urlParams,
                 httpHeaders = agent.httpHeaders
@@ -196,6 +202,19 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
         colibriSessionManager.setAgents(connects)
     }
+
+    /**
+     * The audio source names exported to [agentId]: those of every member that consented to it. Synthetic sources
+     * (translations) are never exported. A consenting member whose sources are not signaled yet gets the conventional
+     * first audio source name; the re-apply on source-add replaces it with the real one.
+     */
+    private fun exportsFor(agentId: String, consent: Map<String, Set<String>>): List<String> =
+        consent.filterValues { agentId in it }.keys.sorted().flatMap { endpointId ->
+            val audio = conferenceSources[endpointId]?.sources.orEmpty()
+                .filter { it.mediaType == MediaType.AUDIO && !it.synthetic }
+                .mapNotNull { it.name }
+            audio.ifEmpty { listOf(Source.nameForIdAndMediaType(endpointId, MediaType.AUDIO, 0)) }
+        }
 
     /** Whether an SSRC is already used by a source in the conference or by another agent. */
     private fun ssrcInUse(ssrc: Long): Boolean = allocated.values.any { it.ssrc == ssrc } ||

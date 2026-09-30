@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -75,6 +76,11 @@ class ChatRoomMemberImpl(
 
     override var translationLanguage: String? = null
         private set
+    override var voiceAgentConsent: Set<String> = emptySet()
+        private set
+
+    /** Logged once per member: a broken client would otherwise repeat it on every presence. */
+    private var invalidVoiceAgentConsentLogged = false
     override var videoCodecs: List<String>? = null
         private set
     override var isAudioMuted = true
@@ -218,6 +224,7 @@ class ChatRoomMemberImpl(
         diarize = (diarizeElement as? StandardExtensionElement)?.text?.toBoolean() ?: false
 
         translationLanguage = parseTranslationLanguage(presence)
+        voiceAgentConsent = parseVoiceAgentConsent(presence)
 
         val newVideoCodecs =
             presence.getExtension(JitsiParticipantCodecList::class.java)?.let {
@@ -249,6 +256,26 @@ class ChatRoomMemberImpl(
             }
         } else {
             videoCodecs = newVideoCodecs
+        }
+    }
+
+    /** The agent ids in the "jitsi_participant_voiceAgentConsent" JSON array; absent or invalid means no consent. */
+    private fun parseVoiceAgentConsent(presence: Presence): Set<String> {
+        val element = presence.getExtensionElement("jitsi_participant_voiceAgentConsent", "jabber:client")
+        val text = (element as? StandardExtensionElement)?.text
+        if (text.isNullOrBlank()) {
+            return emptySet()
+        }
+        return try {
+            val json = jsonMapper.readTree(text)
+            require(json is ArrayNode && json.all { it.isTextual }) { "Expected a JSON array of strings" }
+            json.map { it.asText() }.toSet()
+        } catch (e: Exception) {
+            if (!invalidVoiceAgentConsentLogged) {
+                invalidVoiceAgentConsentLogged = true
+                logger.warn("Ignoring invalid voiceAgentConsent: $text", e)
+            }
+            emptySet()
         }
     }
 
@@ -318,6 +345,7 @@ class ChatRoomMemberImpl(
             put("is_video_muted", isVideoMuted)
             put("diarize", diarize)
             put("translation_language", translationLanguage)
+            set<ObjectNode>("voice_agent_consent", jsonMapper.valueToTree(voiceAgentConsent.toList()))
             set<ObjectNode>("features", jsonMapper.valueToTree(features.map { it.name }))
             put("features_discovered", featuresDiscovered)
             put("capsNodeVer", capsNodeVer.toString())

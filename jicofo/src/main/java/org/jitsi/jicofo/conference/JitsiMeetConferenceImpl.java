@@ -340,7 +340,8 @@ public class JitsiMeetConferenceImpl
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
         clientRequirementsHandler = new ClientRequirementsHandler(logger);
-        agentManager = new ConferenceAgentManager(conferenceSources, roomName.toString(), logger);
+        agentManager = new ConferenceAgentManager(
+                conferenceSources, roomName.toString(), logger, this::getVoiceAgentConsent);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -442,6 +443,31 @@ public class JitsiMeetConferenceImpl
             agentManager.reapply(colibriSessionManager, meetingId);
         }
         return colibriSessionManager;
+    }
+
+    /**
+     * The voice-agent consent advertised in presence: endpoint id (the MUC nickname) to the ids of the agents the
+     * member consented to share audio with. Members without consent are omitted.
+     */
+    @NotNull
+    private Map<String, Set<String>> getVoiceAgentConsent()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom == null)
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Set<String>> consent = new HashMap<>();
+        for (ChatRoomMember member : chatRoom.getMembers())
+        {
+            Set<String> agentIds = member.getVoiceAgentConsent();
+            if (!agentIds.isEmpty())
+            {
+                consent.put(member.getName(), agentIds);
+            }
+        }
+        return consent;
     }
 
     /**
@@ -1145,6 +1171,9 @@ public class JitsiMeetConferenceImpl
             }
         }
 
+        // The member's consent left with it.
+        agentManager.reapply(colibriSessionManager, meetingId);
+
         maybeStop(chatRoomMember);
     }
 
@@ -1496,6 +1525,8 @@ public class JitsiMeetConferenceImpl
 
         // A newly-added audio source may be the base source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        // Agent exports name the consenting members' audio sources.
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1535,6 +1566,7 @@ public class JitsiMeetConferenceImpl
 
         // A sender may have removed the audio source being translated; re-evaluate synthetic translation sources.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1575,6 +1607,7 @@ public class JitsiMeetConferenceImpl
 
         // The initial sources may include the base audio source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
@@ -1614,6 +1647,7 @@ public class JitsiMeetConferenceImpl
 
         // The participant (a potential translation sender) is gone; drop any synthetic translation sources for it.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -2980,6 +3014,8 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+            // Voice-agent consent is carried in presence.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
 
         @Override

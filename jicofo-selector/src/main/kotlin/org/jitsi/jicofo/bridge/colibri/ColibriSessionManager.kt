@@ -187,12 +187,14 @@ data class TranslationRequest(
  *
  * @param endpointId the id of the agent's (synthetic) endpoint, which must have been allocated already.
  * @param syntheticSourceName the agent's synthetic audio source name, requested back from the agent service.
+ * @param exports the audio source names exported to the agent: only those of the members that consented to it.
  * @param url the websocket URL template for the connect ([AgentConfig.REGION_TEMPLATE] is resolved per bridge).
  * @param httpHeaders headers for the connect, or null to use the static config headers.
  */
 data class AgentConnectRequest(
     val endpointId: String,
     val syntheticSourceName: String,
+    val exports: List<String>,
     val url: TemplatedUrl,
     val urlParams: Map<String, String>? = null,
     val httpHeaders: Map<String, String>? = null
