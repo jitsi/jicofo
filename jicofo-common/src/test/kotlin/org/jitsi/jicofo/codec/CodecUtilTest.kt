@@ -115,6 +115,20 @@ class CodecUtilTest : ShouldSpec() {
                     val h264 = CodecUtil.createVideoPayloadTypeExtensions().find { it.name == "H264" }
                     h264!!.id shouldBe 123
                 }
+                context("Default profile-level-id") {
+                    val h264 = CodecUtil.createVideoPayloadTypeExtensions().find { it.name == "H264" }
+                    h264!!.parameters.any {
+                        it.name == "profile-level-id" &&
+                            it.value == "42e01f;level-asymmetry-allowed=1;packetization-mode=1;"
+                    } shouldBe true
+                }
+                withNewConfig("jicofo.codec.video.h264.profile-level-id=\"42001f\"") {
+                    val h264 = CodecUtil.createVideoPayloadTypeExtensions().find { it.name == "H264" }
+                    h264!!.parameters.any {
+                        it.name == "profile-level-id" &&
+                            it.value == "42001f;level-asymmetry-allowed=1;packetization-mode=1;"
+                    } shouldBe true
+                }
             }
         }
         context("Audio") {

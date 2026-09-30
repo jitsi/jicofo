@@ -74,6 +74,39 @@ private class RtxCodecConfigWithLegacy(
     }
 }
 
+open class H264CodecConfig(base: String, name: String) : RtxCodecConfig(base, name) {
+    private val profileLevelId: String by config {
+        "$base.profile-level-id".from(JitsiConfig.newConfig)
+    }
+
+    fun profileLevelId(): String = profileLevelId
+}
+
+private class H264CodecConfigWithLegacy(
+    legacyBase: String,
+    newBase: String,
+    name: String
+) : H264CodecConfig(newBase, name) {
+    override val enabled: Boolean by config {
+        "$legacyBase.ENABLE_$name".from(JitsiConfig.legacyConfig)
+        "$newBase.enabled".from(JitsiConfig.newConfig)
+    }
+
+    override val pt: Int by config {
+        "$legacyBase.${name}_PT".from(JitsiConfig.legacyConfig)
+        "$newBase.pt".from(JitsiConfig.newConfig)
+    }
+
+    override val rtxPt: Int by config {
+        "$legacyBase.${name}_RTX_PT".from(JitsiConfig.legacyConfig)
+        "$newBase.rtx-pt".from(JitsiConfig.newConfig)
+    }
+
+    override val enableRemb: Boolean by config {
+        "$newBase.enable-remb".from(JitsiConfig.newConfig)
+    }
+}
+
 class OpusConfig : CodecConfig("jicofo.codec.audio.opus", "opus") {
     private val minptime: Int by config {
         "$base.minptime".from(JitsiConfig.newConfig)
@@ -124,7 +157,7 @@ class Config {
     val vp9: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.vp9", "VP9")
 
     @JvmField
-    val h264: RtxCodecConfig = RtxCodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.h264", "H264")
+    val h264: H264CodecConfig = H264CodecConfigWithLegacy(LEGACY_BASE, "jicofo.codec.video.h264", "H264")
 
     @JvmField
     val opus = OpusConfig()
