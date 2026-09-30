@@ -471,7 +471,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         url = agent.url.resolve(AgentConfig.REGION_TEMPLATE, session.bridge.region ?: "").withParams(agent.urlParams),
         // TODO: use a dedicated AGENT type once available in jitsi-xmpp-extensions.
         type = Connect.Types.TRANSLATOR,
-        exports = emptyList(),
+        exports = agent.exports,
         requests = listOf(agent.syntheticSourceName),
         httpHeaders = agent.httpHeaders ?: AgentConfig.config.httpHeaders,
         ping = if (AgentConfig.config.pingEnabled) {

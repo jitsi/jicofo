@@ -33,6 +33,8 @@ import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
+import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.RoomMetadata
@@ -53,8 +55,16 @@ class ConferenceAgentManagerTest : ShouldSpec() {
     private val conferenceSources = ValidatingConferenceSourceMap(20, 20)
     private val colibriSessionManager = mockk<ColibriSessionManager>(relaxed = true)
     private val statusReporter = mockk<AgentStatusReporter>(relaxed = true)
-    private val manager =
-        ConferenceAgentManager(conferenceSources, "room@muc.example.com", LoggerImpl("test"), statusReporter)
+
+    /** Endpoint id -> consented agent ids, as the conference would derive it from presence. */
+    private var consent: Map<String, Set<String>> = emptyMap()
+    private val manager = ConferenceAgentManager(
+        conferenceSources,
+        "room@muc.example.com",
+        LoggerImpl("test"),
+        consentingMembers = { consent },
+        statusReporter = statusReporter
+    )
     private val agent = RoomMetadata.Metadata.Agent(urlParams = mapOf("session" to "s1"))
 
     private val urlConfig = "jicofo.agent.url-template=\"wss://agents.example.com/{{MEETING_ID}}\""
@@ -125,6 +135,66 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     verify { colibriSessionManager.allocate(capture(allParams)) }
                     allParams.map { it.id } shouldBe listOf("agent1", "agent2")
                     allParams.first { it.id == "agent1" }.sources.sources.single().ssrc shouldBe firstSsrc
+                }
+            }
+        }
+
+        context("Agent exports") {
+            withNewConfig(urlConfig) {
+                /** The exports of each agent in the last connect update, keyed by agent id. */
+                fun lastExports(): Map<String, List<String>> {
+                    val connects = mutableListOf<List<AgentConnectRequest>>()
+                    verify { colibriSessionManager.setAgents(capture(connects)) }
+                    return connects.last().associate { it.endpointId to it.exports }
+                }
+
+                context("when nobody consented") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("be empty") {
+                        lastExports() shouldBe mapOf("agent1" to emptyList())
+                    }
+                }
+
+                context("when a member with a known audio source consented") {
+                    conferenceSources.tryToAdd("p1", EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "p1-a0")))
+                    consent = mapOf("p1" to setOf("agent1"))
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("export that source") {
+                        lastExports() shouldBe mapOf("agent1" to listOf("p1-a0"))
+                    }
+                }
+
+                context("when a consenting member has no known audio source yet") {
+                    consent = mapOf("p2" to setOf("agent1"))
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("fall back to the conventional first audio source name") {
+                        lastExports() shouldBe mapOf("agent1" to listOf("p2-a0"))
+                    }
+                }
+
+                context("when consent changes") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    lastExports() shouldBe mapOf("agent1" to emptyList())
+
+                    consent = mapOf("p1" to setOf("agent1"))
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    should("add the exports on re-apply") {
+                        lastExports() shouldBe mapOf("agent1" to listOf("p1-a0"))
+                    }
+
+                    consent = emptyMap()
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    should("drop the exports once consent is withdrawn") {
+                        lastExports() shouldBe mapOf("agent1" to emptyList())
+                    }
+                }
+
+                context("when a member consented to another agent") {
+                    consent = mapOf("p1" to setOf("agent2"))
+                    manager.setRequests(mapOf("agent1" to agent, "agent2" to agent), colibriSessionManager, "meeting1")
+                    should("only export to that agent") {
+                        lastExports() shouldBe mapOf("agent1" to emptyList(), "agent2" to listOf("p1-a0"))
+                    }
                 }
             }
         }
