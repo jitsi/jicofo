@@ -18,6 +18,8 @@ package org.jitsi.jicofo.conference.agent
 import org.jitsi.jicofo.AgentConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
+import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
+import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -39,7 +41,8 @@ import java.util.concurrent.ThreadLocalRandom
  * delivered over the bridge channel (AudioSourcesMap).
  *
  * Endpoint allocation involves a blocking colibri round-trip, so it runs on the IO pool; connects are (re)applied
- * once the allocation completes. All state ([allocated], [ready], [pending]) is guarded by this object's monitor.
+ * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
+ * monitor.
  *
  * The lifecycle transitions jicofo can observe are reported through [statusReporter] (see [AgentStatusReporter]).
  */
@@ -62,6 +65,12 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
     /** Agents with an allocation in flight on the IO pool. */
     private val pending = mutableSetOf<String>()
+
+    /**
+     * Agents whose allocation failed. Terminal until the id leaves the request map: every status report makes
+     * prosody rebroadcast the metadata that triggers [apply], so retrying here would loop.
+     */
+    private val failed = mutableSetOf<String>()
 
     /** Update the requested agents (agent id -> connect config) and re-apply. */
     @Synchronized
@@ -97,6 +106,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
             logger.info("Removing agent $id")
             allocated.remove(id)
             pending.remove(id)
+            failed.remove(id)
             if (ready.remove(id)) {
                 colibriSessionManager.removeParticipant(id)
             }
@@ -106,7 +116,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
             val source = allocated.getOrPut(id) {
                 Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
-            if (id !in ready && id !in pending) {
+            if (id !in ready && id !in pending && id !in failed) {
                 logger.info("Allocating synthetic endpoint for agent $id (${source.name}, ssrc ${source.ssrc})")
                 pending.add(id)
                 statusReporter.report(id, AgentStatusReporter.CONNECTING)
@@ -147,8 +157,13 @@ class ConferenceAgentManager @JvmOverloads constructor(
             colibriSessionManager.updateParticipant(id, sources = EndpointSourceSet(source))
         } catch (e: Exception) {
             logger.error("Failed to allocate synthetic endpoint for agent $id", e)
-            statusReporter.report(id, AgentStatusReporter.FAILED, e.message ?: e.javaClass.simpleName)
-            synchronized(this) { pending.remove(id) }
+            statusReporter.report(id, AgentStatusReporter.FAILED, failureReason(e))
+            synchronized(this) {
+                pending.remove(id)
+                if (id in allocated) {
+                    failed.add(id)
+                }
+            }
             return
         }
 
@@ -202,5 +217,20 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
         /** The agent's synthetic audio source name, derived from its endpoint id like a client's first audio source. */
         fun sourceName(agentId: String) = "$agentId-a0"
+
+        /**
+         * The reason reported to the provisioning API (and on to the customer): short and stable. A colibri failure
+         * message embeds the bridge's error stanza, which belongs in the log, not in a webhook.
+         */
+        fun failureReason(e: Exception): String = when (e) {
+            is BridgeSelectionFailedException -> "no bridge available"
+
+            is ColibriAllocationFailedException -> {
+                val summary = e.message?.substringBefore('<')?.trim()?.trimEnd(':')
+                if (summary.isNullOrEmpty()) "bridge allocation failed" else "bridge allocation failed: $summary"
+            }
+
+            else -> "internal error"
+        }
     }
 }

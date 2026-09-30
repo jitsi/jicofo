@@ -29,6 +29,8 @@ import io.mockk.verifyOrder
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
+import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
+import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -140,11 +142,37 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                 }
 
                 context("when allocation fails") {
-                    every { colibriSessionManager.allocate(any()) } throws RuntimeException("no bridge")
+                    every { colibriSessionManager.allocate(any()) } throws BridgeSelectionFailedException()
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
                     should("report failed with the reason, and never active") {
-                        verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "no bridge") }
+                        verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "no bridge available") }
                         verify(exactly = 0) { statusReporter.report("agent1", AgentStatusReporter.ACTIVE) }
+                    }
+                    should("not retry on re-apply, since the status rebroadcast would otherwise loop") {
+                        manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                        manager.reapply(colibriSessionManager, "meeting1")
+                        verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                        verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    }
+                    should("retry once the provisioning API removes and re-adds the agent") {
+                        every { colibriSessionManager.allocate(any()) } returns mockk(relaxed = true)
+                        manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
+                        manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                        verify(exactly = 2) { colibriSessionManager.allocate(any()) }
+                        verify { statusReporter.report("agent1", AgentStatusReporter.ACTIVE) }
+                    }
+                }
+
+                context("when the bridge rejects the allocation") {
+                    every { colibriSessionManager.allocate(any()) } throws ColibriAllocationFailedException(
+                        "Bad request: <error xmlns='jabber:client' type='modify'><bad-request/></error>",
+                        false
+                    )
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("report a short reason without the error stanza") {
+                        val reason = slot<String>()
+                        verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, capture(reason)) }
+                        reason.captured shouldBe "bridge allocation failed: Bad request"
                     }
                 }
 
