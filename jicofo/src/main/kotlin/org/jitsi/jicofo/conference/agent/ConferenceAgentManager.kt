@@ -45,12 +45,15 @@ import java.util.concurrent.ThreadLocalRandom
  * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
  * monitor.
  *
- * The lifecycle transitions jicofo can observe are reported through [statusReporter] (see [AgentStatusReporter]).
+ * Lifecycle reporting is split with the media relay that dials the agent. Jicofo reports `connecting` (allocation
+ * submitted) and `failed` (allocation error) through [statusReporter] (see [AgentStatusReporter]). The relay
+ * reports `active`, `failed` for dial failures and `ended`, identifying the agent by the `conference` and `agentId`
+ * query parameters put on every connect URL.
  */
 class ConferenceAgentManager @JvmOverloads constructor(
     /** Read to avoid SSRC conflicts when minting and to name consenting members' audio sources; never modified. */
     private val conferenceSources: ValidatingConferenceSourceMap,
-    conferenceJid: String,
+    private val conferenceJid: String,
     parentLogger: Logger,
     /** Endpoint id -> ids of the agents that member consented to share audio with, read on every (re)apply. */
     private val consentingMembers: () -> Map<String, Set<String>> = { emptyMap() },
@@ -176,7 +179,6 @@ class ConferenceAgentManager @JvmOverloads constructor(
             if (id in allocated) {
                 ready.add(id)
                 updateConnects(colibriSessionManager, meetingId)
-                statusReporter.report(id, AgentStatusReporter.ACTIVE)
             } else {
                 // The agent was removed while its allocation was in flight.
                 logger.info("Agent $id was removed during allocation, expiring its endpoint.")
@@ -196,7 +198,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
                 syntheticSourceName = sourceName(id),
                 exports = exportsFor(id, consent),
                 url = url,
-                urlParams = agent.urlParams,
+                // The relay keys its status reports on these, so they go last and win over the agent's own params.
+                urlParams = agent.urlParams.orEmpty() + mapOf("conference" to conferenceJid, "agentId" to id),
                 httpHeaders = agent.httpHeaders
             )
         }

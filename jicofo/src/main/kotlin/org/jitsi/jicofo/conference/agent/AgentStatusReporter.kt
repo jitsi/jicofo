@@ -32,10 +32,10 @@ import java.util.concurrent.TimeUnit
  * drives the agent's client-facing state and the customer's lifecycle webhooks. Disabled unless
  * `jicofo.agent.status.url` is configured.
  *
- * What jicofo can observe: [CONNECTING] once the synthetic endpoint allocation is submitted, [ACTIVE] once the
- * bridge has accepted the endpoint and the `<connect>` is dispatched (the bridge's dial to the agent follows
- * immediately; jicofo has no signal for the media leg itself), and [FAILED] when the allocation throws. Teardown
- * initiated by the provisioning API is not reported back — it already knows.
+ * Jicofo reports only what it can observe: [CONNECTING] once the synthetic endpoint allocation is submitted, and
+ * [FAILED] when the allocation throws. The media relay that dials the agent reports the rest: [ACTIVE] once its
+ * socket to the agent opens, `failed` when the dial fails, and `ended` when the agent ends. Teardown initiated by
+ * the provisioning API is not reported back — it already knows.
  *
  * Delivery is best-effort and never on the caller's thread: bounded retries with exponential backoff. A 404 means
  * the API has already removed the agent and is not retried.
@@ -98,8 +98,10 @@ class AgentStatusReporter @JvmOverloads constructor(
 
     companion object {
         const val CONNECTING = "connecting"
-        const val ACTIVE = "active"
         const val FAILED = "failed"
+
+        /** Reported by the media relay (along with `failed` for dial failures and `ended`), never by jicofo. */
+        const val ACTIVE = "active"
 
         private val sharedClient: HttpClient by lazy {
             HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()
