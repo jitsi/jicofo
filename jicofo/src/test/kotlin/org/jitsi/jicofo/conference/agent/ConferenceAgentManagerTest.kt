@@ -239,6 +239,43 @@ class ConferenceAgentManagerTest : ShouldSpec() {
             }
         }
 
+        context("When the bridge loses the agent's endpoint") {
+            withNewConfig(urlConfig) {
+                context("after it was allocated") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.endpointsRemoved(listOf("agent1", "p1"), colibriSessionManager, "meeting1")
+
+                    should("re-allocate it with the same SSRC and report connecting again") {
+                        val allParams = mutableListOf<ParticipantAllocationParameters>()
+                        verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
+                        allParams.map { it.id } shouldBe listOf("agent1", "agent1")
+                        allParams[0].sources.sources.single().ssrc shouldBe allParams[1].sources.sources.single().ssrc
+                        verify(exactly = 2) { statusReporter.report("agent1", AgentStatusReporter.CONNECTING) }
+                    }
+                    should("only know its own endpoints") {
+                        manager.manages("agent1") shouldBe true
+                        manager.manages("p1") shouldBe false
+                    }
+                }
+
+                context("before anything was requested") {
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    should("not touch colibri") {
+                        verify { colibriSessionManager wasNot Called }
+                    }
+                }
+
+                context("after its allocation failed") {
+                    every { colibriSessionManager.allocate(any()) } throws BridgeSelectionFailedException()
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    should("stay failed") {
+                        verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+            }
+        }
+
         context("Lifecycle reporting") {
             withNewConfig(urlConfig) {
                 context("when an agent is allocated") {
