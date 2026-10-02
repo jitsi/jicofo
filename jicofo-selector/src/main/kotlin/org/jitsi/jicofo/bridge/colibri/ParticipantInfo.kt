@@ -37,6 +37,7 @@ class ParticipantInfo(
     val useRtpMidDemux = parameters.useRtpMidDemux
     val visitor = parameters.visitor
     val diarize = parameters.diarize
+    val synthetic = parameters.synthetic
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo

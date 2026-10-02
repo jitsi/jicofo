@@ -216,7 +216,8 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
                     (participant.getChatMember().getRole() == MemberRole.VISITOR),
                     privateAddresses,
                     participant.getChatMember().getDiarize(),
-                    medias);
+                    medias,
+                    /* synthetic */ false);
             colibriAllocation = colibriSessionManager.allocate(participantOptions);
         }
         catch (BridgeSelectionFailedException e)
