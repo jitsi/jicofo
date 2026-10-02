@@ -45,10 +45,10 @@ import java.util.concurrent.ThreadLocalRandom
  * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
  * monitor.
  *
- * Lifecycle reporting is split with the media relay that dials the agent. Jicofo reports `connecting` (allocation
- * submitted) and `failed` (allocation error) through [statusReporter] (see [AgentStatusReporter]). The relay
- * reports `active`, `failed` for dial failures and `ended`, identifying the agent by the `conference` and `agentId`
- * query parameters put on every connect URL.
+ * The connect carries no dial config, only the `conference` and `agentId` query parameters: the media relay fetches
+ * the customer endpoint by them, so no customer secret passes through jicofo or the bridge. Lifecycle reporting is
+ * split the same way. Jicofo reports `connecting` (allocation submitted) and `failed` (allocation error) through
+ * [statusReporter] (see [AgentStatusReporter]); the relay reports `active`, `failed` for dial failures and `ended`.
  */
 class ConferenceAgentManager @JvmOverloads constructor(
     /** Read to avoid SSRC conflicts when minting and to name consenting members' audio sources; never modified. */
@@ -214,16 +214,13 @@ class ConferenceAgentManager @JvmOverloads constructor(
     private fun updateConnects(colibriSessionManager: ColibriSessionManager, meetingId: String) {
         val url = AgentConfig.config.getUrl(meetingId) ?: return
         val consent = consentingMembers()
-        val connects = ready.mapNotNull { id ->
-            val agent = requests[id] ?: return@mapNotNull null
+        val connects = ready.filter { it in requests }.map { id ->
             AgentConnectRequest(
                 endpointId = id,
                 syntheticSourceName = sourceName(id),
                 exports = exportsFor(id, consent),
                 url = url,
-                // The relay keys its status reports on these, so they go last and win over the agent's own params.
-                urlParams = agent.urlParams.orEmpty() + mapOf("conference" to conferenceJid, "agentId" to id),
-                httpHeaders = agent.httpHeaders
+                urlParams = mapOf("conference" to conferenceJid, "agentId" to id)
             )
         }
         colibriSessionManager.setAgents(connects)

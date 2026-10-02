@@ -64,7 +64,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
         consentingMembers = { consent },
         statusReporter = statusReporter
     )
-    private val agent = RoomMetadata.Metadata.Agent(urlParams = mapOf("session" to "s1"))
+    private val agent = RoomMetadata.Metadata.Agent()
 
     private val urlConfig = "jicofo.agent.url-template=\"wss://agents.example.com/{{MEETING_ID}}\""
 
@@ -100,48 +100,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     last.size shouldBe 1
                     last.first().endpointId shouldBe "agent1"
                     last.first().syntheticSourceName shouldBe "agent1-a0"
-                    last.first().urlParams shouldBe mapOf(
-                        "session" to "s1",
-                        "conference" to "room@muc.example.com",
-                        "agentId" to "agent1"
-                    )
-                }
-            }
-        }
-
-        context("Internal URL params") {
-            withNewConfig(urlConfig) {
-                /** The URL params of the single connect in the last connect update. */
-                fun lastUrlParams(): Map<String, String>? {
-                    val connects = mutableListOf<List<AgentConnectRequest>>()
-                    verify { colibriSessionManager.setAgents(capture(connects)) }
-                    return connects.last().single().urlParams
-                }
-
-                context("when the agent has no params of its own") {
-                    val bare = RoomMetadata.Metadata.Agent()
-                    manager.setRequests(mapOf("agent1" to bare), colibriSessionManager, "meeting1")
-                    should("still carry the conference JID and agent id") {
-                        lastUrlParams() shouldBe mapOf("conference" to "room@muc.example.com", "agentId" to "agent1")
-                    }
-                }
-
-                context("when the agent's params collide with them") {
-                    val colliding = RoomMetadata.Metadata.Agent(
-                        urlParams = mapOf(
-                            "conference" to "other@muc.example.com",
-                            "agentId" to "agent2",
-                            "session" to "s1"
-                        )
-                    )
-                    manager.setRequests(mapOf("agent1" to colliding), colibriSessionManager, "meeting1")
-                    should("win over the agent's values") {
-                        lastUrlParams() shouldBe mapOf(
-                            "session" to "s1",
-                            "conference" to "room@muc.example.com",
-                            "agentId" to "agent1"
-                        )
-                    }
+                    last.first().urlParams shouldBe mapOf("conference" to "room@muc.example.com", "agentId" to "agent1")
                 }
             }
         }
