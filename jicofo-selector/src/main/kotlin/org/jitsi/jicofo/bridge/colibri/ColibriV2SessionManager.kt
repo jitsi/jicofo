@@ -473,7 +473,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         type = Connect.Types.TRANSLATOR,
         exports = agent.exports,
         requests = listOf(agent.syntheticSourceName),
-        httpHeaders = agent.httpHeaders ?: AgentConfig.config.httpHeaders,
+        httpHeaders = AgentConfig.config.httpHeaders,
         ping = if (AgentConfig.config.pingEnabled) {
             ConnectSpec.Ping(
                 AgentConfig.config.pingInterval.toMillis().toInt(),

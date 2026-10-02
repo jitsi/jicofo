@@ -152,12 +152,12 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
             override fun toString(): String = "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
         }
 
-        /** A voice agent's connect config (the fields jicofo needs; mirrors [Transcription]). */
+        /**
+         * A voice agent advertised in the room metadata. Jicofo needs only the id: the dial config stays in the
+         * provisioning API, where the media relay fetches it by id.
+         */
         @JsonIgnoreProperties(ignoreUnknown = true)
-        data class Agent(
-            val urlParams: Map<String, String>? = null,
-            val httpHeaders: Map<String, String>? = null
-        )
+        class Agent
     }
 
     companion object {
