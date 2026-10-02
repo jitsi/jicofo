@@ -2339,6 +2339,22 @@ public class JitsiMeetConferenceImpl
 
     private int reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
     {
+        // A voice agent's synthetic endpoint has no Participant: the agent manager re-allocates it instead.
+        List<String> agentIds = new ArrayList<>();
+        for (String id : participantIdsToReinvite)
+        {
+            if (agentManager.manages(id))
+            {
+                agentIds.add(id);
+            }
+        }
+        if (!agentIds.isEmpty())
+        {
+            agentManager.endpointsRemoved(agentIds, colibriSessionManager, meetingId);
+            participantIdsToReinvite = new ArrayList<>(participantIdsToReinvite);
+            participantIdsToReinvite.removeAll(agentIds);
+        }
+
         int n = participantIdsToReinvite.size();
         if (n == 0)
         {

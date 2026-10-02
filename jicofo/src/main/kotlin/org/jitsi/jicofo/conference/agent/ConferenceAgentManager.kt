@@ -97,6 +97,29 @@ class ConferenceAgentManager @JvmOverloads constructor(
     fun reapply(colibriSessionManager: ColibriSessionManager?, meetingId: String?) =
         apply(colibriSessionManager, meetingId)
 
+    /** Whether [endpointId] is one of this manager's synthetic agent endpoints. */
+    @Synchronized
+    fun manages(endpointId: String): Boolean = endpointId in allocated
+
+    /**
+     * The bridge lost these endpoints (its session was removed, or it expired them), so forget they were allocated
+     * and re-allocate right away, like the conference re-invites the humans that were on that bridge. A failed agent
+     * stays failed, and an allocation still in flight completes on its own.
+     */
+    @Synchronized
+    fun endpointsRemoved(
+        endpointIds: Collection<String>,
+        colibriSessionManager: ColibriSessionManager?,
+        meetingId: String?
+    ) {
+        val lost = endpointIds.filter { ready.remove(it) }
+        if (lost.isEmpty()) {
+            return
+        }
+        logger.info("Re-allocating agents whose endpoint the bridge lost: $lost")
+        apply(colibriSessionManager, meetingId)
+    }
+
     @Synchronized
     private fun apply(colibriSessionManager: ColibriSessionManager?, meetingId: String?) {
         if (colibriSessionManager == null || meetingId == null) {
