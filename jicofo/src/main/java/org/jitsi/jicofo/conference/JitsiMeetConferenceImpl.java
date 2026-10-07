@@ -610,6 +610,8 @@ public class JitsiMeetConferenceImpl
 
         ChatRoomInfo chatRoomInfo = chatRoom.join();
         setMeetingId(chatRoomInfo.getMeetingId());
+        // Transcription may have been enabled by the initial room metadata, before the meeting ID was known.
+        maybeInitColibriForTranscription();
 
         mainRoomJid = chatRoomInfo.getMainRoomJid();
 
@@ -2611,10 +2613,10 @@ public class JitsiMeetConferenceImpl
         setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, enable ? "true" : "false");
 
         String meetingId = JitsiMeetConferenceImpl.this.meetingId;
-        if (meetingId == null)
+        if (meetingId == null || !started.get())
         {
-            // The new value will take effect when colibriSessionManager is initialized (after the room is joined and
-            // meetingId is set).
+            // The new value will take effect when the room is joined and the meeting ID is set (see joinTheRoom()),
+            // or when colibriSessionManager is initialized.
             return;
         }
 
@@ -2624,15 +2626,7 @@ public class JitsiMeetConferenceImpl
         {
             if (colibriSessionManager == null)
             {
-                if (!enable || TranscriptionConfig.config.getUrl(meetingId) == null)
-                {
-                    // Nothing to signal. The state is applied when the session manager is eventually initialized.
-                    return;
-                }
-                // Nobody has been allocated yet (e.g. we are waiting for min-participants). Initialize the session
-                // manager now (it applies the current transcription state), so that the transcriber connect is
-                // desired, and lowers min-participants, before any participant is allocated.
-                getColibriSessionManager();
+                maybeInitColibriForTranscription();
             }
             else
             {
@@ -2650,6 +2644,37 @@ public class JitsiMeetConferenceImpl
     }
 
     /**
+     * If transcription is enabled with a configured transcriber URL and the colibri session manager does not exist
+     * yet (nobody has been allocated, e.g. because we are waiting for min-participants), initialize it now. The
+     * initialization applies the transcription state, so that the transcriber connect is desired, and lowers
+     * min-participants, before any participant is allocated. Does nothing before the meeting ID is set.
+     */
+    private void maybeInitColibriForTranscription()
+    {
+        String meetingId = this.meetingId;
+        if (meetingId == null || !started.get())
+        {
+            return;
+        }
+        synchronized (participantLock)
+        {
+            if (colibriSessionManager == null && getTranscriberUrl(meetingId) != null)
+            {
+                getColibriSessionManager();
+            }
+        }
+    }
+
+    /**
+     * @return the transcriber URL for this conference if transcription is enabled and a URL is configured, and
+     * {@code null} otherwise.
+     */
+    private TemplatedUrl getTranscriberUrl(@NotNull String meetingId)
+    {
+        return enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null;
+    }
+
+    /**
      * Apply the current transcription state ({@link #enableTranscription} and the room's transcription metadata) to
      * {@code colibriSessionManager}: create or remove the transcriber connect, and (re)apply the text-translation
      * languages to it.
@@ -2658,7 +2683,7 @@ public class JitsiMeetConferenceImpl
             @NotNull ColibriSessionManager colibriSessionManager,
             @NotNull String meetingId)
     {
-        TemplatedUrl uri = enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null;
+        TemplatedUrl uri = getTranscriberUrl(meetingId);
         if (enableTranscription && uri == null)
         {
             logger.info("Transcription enabled, but no URL is configured.");

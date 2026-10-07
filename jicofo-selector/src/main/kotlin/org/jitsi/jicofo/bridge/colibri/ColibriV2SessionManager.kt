@@ -155,7 +155,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     /** Per-room translator connect headers (merged config + room metadata), or null to use config headers. */
     private var translatorCustomHeaders: Map<String, String>? = null
 
-    /** The last value of [hasConnects] signaled via [ColibriSessionManager.Listener.connectsChanged]. */
+    /**
+     * The current value of [hasConnects], i.e. [connectsDesired] as of the last [updateConnects]. Volatile so that
+     * [hasConnects] (called on every member join, under the conference's participant lock) does not need [syncRoot],
+     * which is held during bridge selection and stanza sending.
+     */
+    @Volatile
     private var lastHasConnects = false
 
     /**
@@ -400,12 +405,16 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         }
     }
 
-    override fun hasConnects(): Boolean = synchronized(syncRoot) { connectsDesired() }
+    override fun hasConnects(): Boolean = lastHasConnects
 
     /**
-     * Whether any connects are desired for the conference, independent of whether a session exists to host them yet.
-     * This is the single predicate for "the conference exports media"; the connect specs are built from the same
-     * conditions so [hasConnects] always agrees with what is signaled to the bridges.
+     * Whether any connects are desired for the conference. This is the single predicate for "the conference exports
+     * media", used for [hasConnects].
+     *
+     * Note that "desired" is not "signaled": no connect is signaled while there is no session to host it (by design,
+     * so that a desired transcriber lowers min-participants before anyone is allocated), and in per-source mode a
+     * translator connect is only built once its sender has been allocated. Callers must not assume that a desired
+     * connect is up on a bridge.
      */
     private fun connectsDesired(): Boolean = transcriberUrl != null || translatorDesired()
 
