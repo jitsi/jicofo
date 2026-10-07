@@ -155,6 +155,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     /** Per-room translator connect headers (merged config + room metadata), or null to use config headers. */
     private var translatorCustomHeaders: Map<String, String>? = null
 
+    /** The last value of [hasConnects] signaled via [ColibriSessionManager.Listener.connectsChanged]. */
+    private var lastHasConnects = false
+
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
      */
@@ -191,6 +194,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             session.expire()
         }
         sessions.clear()
+        // The connects were on the expired sessions; a new session must be selected to host them if one is created.
+        connectSession = null
         eventEmitter.fireEvent { bridgeCountChanged(0) }
         clear()
     }
@@ -225,7 +230,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         }
         // Reconcile connects across the remaining sessions (re-place transcriber/translator as needed). Safe because
         // the removed session is already out of [sessions].
-        if (transcriberUrl != null || translatorUrl != null) {
+        if (connectsDesired()) {
             updateConnects()
         }
         return participants.toSet()
@@ -334,7 +339,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // If connects are already desired but no session hosts them yet, this new session becomes the host;
             // pre-populate them so they go out in the create (allocation) request rather than a separate update.
             // Set connectSession first, since computeConnectSpecsFor checks it.
-            if (connectSession == null && (transcriberUrl != null || translatorUrl != null)) {
+            if (connectSession == null && connectsDesired()) {
                 connectSession = session
             }
             session.setInitialConnects(computeConnectSpecsFor(session))
@@ -376,7 +381,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     private fun updateConnects() {
         // The transcriber, and the translator in single-bridge mode, are hosted on a single chosen session.
         val needsConnectSession = transcriberUrl != null ||
-            (translatorUrl != null && TranslationConfig.config.mode == TranslationConfig.Mode.SINGLE_BRIDGE)
+            (translatorDesired() && TranslationConfig.config.mode == TranslationConfig.Mode.SINGLE_BRIDGE)
         connectSession = if (needsConnectSession) {
             (connectSession ?: sessions.values.firstOrNull()).also {
                 if (it == null) logger.info("No session available yet for transcriber/translator connects.")
@@ -387,14 +392,38 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         // Apply to every session, so connects that are no longer desired on a session are expired.
         sessions.values.forEach { it.setConnects(computeConnectSpecsFor(it)) }
+
+        val hasConnects = connectsDesired()
+        if (hasConnects != lastHasConnects) {
+            lastHasConnects = hasConnects
+            eventEmitter.fireEvent { connectsChanged(hasConnects) }
+        }
     }
+
+    override fun hasConnects(): Boolean = synchronized(syncRoot) { connectsDesired() }
+
+    /**
+     * Whether any connects are desired for the conference, independent of whether a session exists to host them yet.
+     * This is the single predicate for "the conference exports media"; the connect specs are built from the same
+     * conditions so [hasConnects] always agrees with what is signaled to the bridges.
+     */
+    private fun connectsDesired(): Boolean = transcriberUrl != null || translatorDesired()
+
+    /**
+     * Whether translator connects are desired. A translator URL without any requests has nothing to export.
+     *
+     * The requests come from room metadata, which the XMPP server maintains: a sender's requests are removed when the
+     * members that requested them leave. So non-empty requests mean that someone is consuming the translation.
+     */
+    private fun translatorDesired(): Boolean = translatorUrl != null && translatorRequests.isNotEmpty()
 
     /** The connects desired on [session] (transcriber and/or translator), with urls resolved for its bridge. */
     private fun computeConnectSpecsFor(session: Colibri2Session): List<ConnectSpec> = buildList {
         if (session == connectSession) {
             transcriberUrl?.let { add(buildTranscriberSpec(session, it)) }
         }
-        translatorUrl?.let { url ->
+        if (translatorDesired()) {
+            val url = checkNotNull(translatorUrl)
             when (TranslationConfig.config.mode) {
                 TranslationConfig.Mode.SINGLE_BRIDGE ->
                     if (session == connectSession) add(buildSingleBridgeTranslatorSpec(session, url))

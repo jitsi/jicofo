@@ -102,6 +102,13 @@ interface ColibriSessionManager {
      */
     fun removeBridge(bridge: Bridge): List<String>
 
+    /**
+     * Whether any colibri2 `<connect>`s (a transcriber, translator, or any other external consumer of the
+     * conference's media) are currently desired for the conference. While this is true, a bridge session is worth
+     * keeping even if only a single participant remains on it, since the media is being exported.
+     */
+    fun hasConnects(): Boolean
+
     val debugState: ObjectNode
 
     /**
@@ -124,6 +131,12 @@ interface ColibriSessionManager {
 
         /** Endpoint removed due to a failure e.g. unknown endpoint */
         fun endpointRemoved(endpointId: String)
+
+        /**
+         * The value of [ColibriSessionManager.hasConnects] changed: the conference started or stopped exporting
+         * media via colibri2 `<connect>`s.
+         */
+        fun connectsChanged(hasConnects: Boolean) {}
 
         /**
          * The bridge performed an ICE restart for an endpoint and rotated its own ICE credentials. The new
