@@ -254,8 +254,12 @@ public class JitsiMeetConferenceImpl
     @Nullable private final AuthenticationAuthority authenticationAuthority;
     @NotNull private final FocusManager focusManager;
 
-    /** Whether to enable transcription via a colibri export. */
-    private boolean enableTranscription = false;
+    /**
+     * Whether to enable transcription via a colibri export. Volatile because it is written from the room metadata
+     * thread and read from the thread joining the room (see {@link #joinTheRoom()}), and vice versa for
+     * {@link #meetingId}: each thread must see the other's write for one of them to initialize colibri.
+     */
+    private volatile boolean enableTranscription = false;
 
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
@@ -297,10 +301,10 @@ public class JitsiMeetConferenceImpl
     /**
      * The unique meeting ID for this conference. We expect this to be set by the XMPP server in the MUC config form.
      * If for some reason it's not present, we'll generate a local UUID. The field is nullable, but always non-null
-     * after the MUC has been joined.
+     * after the MUC has been joined. Volatile, see {@link #enableTranscription}.
      */
     @Nullable
-    private String meetingId;
+    private volatile String meetingId;
 
     /** Presence extensions set from the outside which are to be added to the presence in each MUC. */
     private final Map<QName, ExtensionElement> presenceExtensions = new ConcurrentHashMap<>();
