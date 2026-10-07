@@ -35,6 +35,7 @@ import org.jitsi.jicofo.mock.ConferenceHarness
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.util.shouldBeValidJson
+import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
@@ -104,6 +105,77 @@ class ConferenceTest : ShouldSpec() {
                 chatRoom.removeMember(member2)
                 conference.participantCount shouldBe 0
                 harness.ended shouldBe true
+            }
+            context("Single participant timeout with a transcriber connect") {
+                withNewConfig("jicofo.transcription.url-template = \"wss://example.com/t/{{MEETING_ID}}\"") {
+                    // Transcription enabled via room metadata, creating a transcriber connect on the bridge.
+                    chatRoom.chatRoomListeners.forEach { it.transcribingEnabledChanged(true) }
+
+                    chatRoom.removeMember(member1)
+                    // The bridge is exporting media, so the remaining participant's session must be kept.
+                    conference.participantCount shouldBe 1
+                    member2.getParticipant()!!.jingleSession shouldNotBe null
+                    harness.ended shouldBe false
+
+                    context("And then disabling transcription") {
+                        chatRoom.chatRoomListeners.forEach { it.transcribingEnabledChanged(false) }
+                        // The connect is gone, so the timeout is re-armed (and fires immediately in this test).
+                        conference.participantCount shouldBe 0
+                        harness.ended shouldBe false
+                    }
+                    context("And then the last participant leaving") {
+                        chatRoom.removeMember(member2)
+                        conference.participantCount shouldBe 0
+                        harness.ended shouldBe true
+                    }
+                }
+            }
+            context("Single participant timeout with transcription enabled but no transcriber URL") {
+                chatRoom.chatRoomListeners.forEach { it.transcribingEnabledChanged(true) }
+                chatRoom.removeMember(member1)
+                // Nothing is being exported, so the normal timeout applies.
+                conference.participantCount shouldBe 0
+            }
+        }
+        context("Transcription enabled with one member below min-participants") {
+            // min-participants defaults to 2, so a single member does not start a session.
+            val lone = chatRoom.addMember("lone")
+            conference.participantCount shouldBe 0
+
+            context("With a transcriber URL configured") {
+                withNewConfig("jicofo.transcription.url-template = \"wss://example.com/t/{{MEETING_ID}}\"") {
+                    chatRoom.chatRoomListeners.forEach { it.transcribingEnabledChanged(true) }
+                    // The transcriber connect lowers min-participants to 1, so the member is invited.
+                    conference.participantCount shouldBe 1
+                    lone.getParticipant() shouldNotBe null
+                }
+            }
+            context("With no transcriber URL configured") {
+                chatRoom.chatRoomListeners.forEach { it.transcribingEnabledChanged(true) }
+                // Nothing can be exported, so the normal min-participants applies.
+                conference.participantCount shouldBe 0
+
+                context("And a second member joining") {
+                    chatRoom.addMember("second")
+                    conference.participantCount shouldBe 2
+                }
+            }
+        }
+        context("Transcription enabled in the initial room metadata, before the meeting ID is set") {
+            withNewConfig("jicofo.transcription.url-template = \"wss://example.com/t/{{MEETING_ID}}\"") {
+                // The real ChatRoom fires transcribingEnabledChanged (asynchronously) while join() processes the
+                // initial room metadata, i.e. before the conference has a meeting ID or a colibri session manager.
+                val harness = ConferenceHarness(configureRoom = { room ->
+                    every { room.chatRoom.join() } answers {
+                        room.chatRoomListeners.forEach { it.transcribingEnabledChanged(true) }
+                        ChatRoomInfo(meetingId = null, mainRoomJid = null)
+                    }
+                })
+
+                // min-participants defaults to 2, but the transcriber connect lowers it to 1.
+                val lone = harness.chatRoom.addMember("lone")
+                harness.conference.participantCount shouldBe 1
+                harness.getParticipant(lone) shouldNotBe null
             }
         }
         context("Test inviting more than 2 initially") {

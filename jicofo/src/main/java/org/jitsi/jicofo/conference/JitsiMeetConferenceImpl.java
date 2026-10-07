@@ -254,8 +254,12 @@ public class JitsiMeetConferenceImpl
     @Nullable private final AuthenticationAuthority authenticationAuthority;
     @NotNull private final FocusManager focusManager;
 
-    /** Whether to enable transcription via a colibri export. */
-    private boolean enableTranscription = false;
+    /**
+     * Whether to enable transcription via a colibri export. Volatile because it is written from the room metadata
+     * thread and read from the thread joining the room (see {@link #joinTheRoom()}), and vice versa for
+     * {@link #meetingId}: each thread must see the other's write for one of them to initialize colibri.
+     */
+    private volatile boolean enableTranscription = false;
 
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
@@ -297,10 +301,10 @@ public class JitsiMeetConferenceImpl
     /**
      * The unique meeting ID for this conference. We expect this to be set by the XMPP server in the MUC config form.
      * If for some reason it's not present, we'll generate a local UUID. The field is nullable, but always non-null
-     * after the MUC has been joined.
+     * after the MUC has been joined. Volatile, see {@link #enableTranscription}.
      */
     @Nullable
-    private String meetingId;
+    private volatile String meetingId;
 
     /** Presence extensions set from the outside which are to be added to the presence in each MUC. */
     private final Map<QName, ExtensionElement> presenceExtensions = new ConcurrentHashMap<>();
@@ -402,28 +406,8 @@ public class JitsiMeetConferenceImpl
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
 
-            // Configure transcription if enabled, including custom headers and URL params
-            if (enableTranscription)
-            {
-                TemplatedUrl uri = TranscriptionConfig.config.getUrl(meetingId);
-                if (uri != null)
-                {
-                    Pair<Map<String, String>, Map<String, String>> transcriptionParams =
-                        TranscriptionConfig.processTranscriptionMetadata(
-                            chatRoom != null ? chatRoom.getTranscription() : null,
-                            TranscriptionConfig.config.getHttpHeaders());
-                    colibriSessionManager.setTranscriberUrl(
-                        uri,
-                        transcriptionParams.getFirst(),
-                        transcriptionParams.getSecond());
-
-                    // Apply the text-translation languages the room already asked for before colibri existed.
-                    if (chatRoom != null)
-                    {
-                        colibriSessionManager.setTextTranslationLanguages(chatRoom.getTranslationLanguages());
-                    }
-                }
-            }
+            // Apply the transcription state (and text-translation languages) received before colibri existed.
+            applyTranscriptionState(colibriSessionManager, meetingId);
 
             // Apply any live-translation requests received before colibri was initialized.
             translationManager.reapply(colibriSessionManager, meetingId);
@@ -630,6 +614,8 @@ public class JitsiMeetConferenceImpl
 
         ChatRoomInfo chatRoomInfo = chatRoom.join();
         setMeetingId(chatRoomInfo.getMeetingId());
+        // Transcription may have been enabled by the initial room metadata, before the meeting ID was known.
+        maybeInitColibriForTranscription();
 
         mainRoomJid = chatRoomInfo.getMainRoomJid();
 
@@ -1059,8 +1045,9 @@ public class JitsiMeetConferenceImpl
             return false;
         }
         int minParticipants = ConferenceConfig.config.getMinParticipants();
-        // When transcribing is enabled, start sessions immediately without waiting for min-participants.
-        if (enableTranscription)
+        // When the conference exports media (e.g. to a transcriber), start sessions immediately without waiting for
+        // min-participants: the exported media is consumed even if nobody else is in the conference.
+        if (hasColibriConnects())
         {
             minParticipants = 1;
         }
@@ -2426,6 +2413,14 @@ public class JitsiMeetConferenceImpl
     {
         cancelSingleParticipantTimeout();
 
+        if (hasColibriConnects())
+        {
+            // The bridge is exporting the participant's media (to a transcriber, translator, ...), so the session is
+            // not idle. The timeout is re-armed if the connects go away (see ColibriSessionManagerListener).
+            logger.info("Not scheduling single person timeout, the conference has active connects.");
+            return;
+        }
+
         long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
         singleParticipantTout = TaskPools.getScheduledPool().schedule(
@@ -2510,6 +2505,16 @@ public class JitsiMeetConferenceImpl
         {
             visitorCodecs.removePreference(codecs);
         }
+    }
+
+    /**
+     * Whether any colibri2 connects (transcriber, translator, ...) are desired for the conference, i.e. whether the
+     * bridge is exporting media to an external consumer.
+     */
+    private boolean hasColibriConnects()
+    {
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        return colibriSessionManager != null && colibriSessionManager.hasConnects();
     }
 
     /**
@@ -2611,38 +2616,85 @@ public class JitsiMeetConferenceImpl
         enableTranscription = enable;
         setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, enable ? "true" : "false");
 
-        // If transcription just got enabled and we have members but no invited participants yet (e.g. we were waiting
-        // for min-participants), trigger invitations now.
-        if (enable && chatRoom != null && chatRoom.getMemberCount() > 0)
-        {
-            synchronized (participantLock)
-            {
-                if (participants.isEmpty())
-                {
-                    logger.info("Transcribing enabled with existing participants, starting sessions.");
-                    inviteAllChatMembers();
-                }
-            }
-        }
-
         String meetingId = JitsiMeetConferenceImpl.this.meetingId;
-        ColibriSessionManager colibriSessionManager = JitsiMeetConferenceImpl.this.colibriSessionManager;
-
-        if (meetingId == null || colibriSessionManager == null)
+        if (meetingId == null || !started.get())
         {
-            // The new value will take effect when colibriSessionManager is initialized (after the room is joined and
-            // meetingId is set).
+            // The new value will take effect when the room is joined and the meeting ID is set (see joinTheRoom()),
+            // or when colibriSessionManager is initialized.
             return;
         }
 
-        TemplatedUrl uri = enable ? TranscriptionConfig.config.getUrl(meetingId) : null;
-        if (enable && uri == null)
+        // The session manager is lazily initialized under participantLock (from the invite path); take the same lock
+        // so that we do not race it.
+        synchronized (participantLock)
+        {
+            if (colibriSessionManager == null)
+            {
+                maybeInitColibriForTranscription();
+            }
+            else
+            {
+                applyTranscriptionState(colibriSessionManager, meetingId);
+            }
+
+            // The transcriber connect lowers min-participants to 1 (see checkMinParticipants()). If we have members
+            // but no invited participants yet (because we were waiting for min-participants), start the sessions now.
+            if (enable && participants.isEmpty() && checkMinParticipants())
+            {
+                logger.info("Transcribing enabled with existing members, starting sessions.");
+                inviteAllChatMembers();
+            }
+        }
+    }
+
+    /**
+     * If transcription is enabled with a configured transcriber URL and the colibri session manager does not exist
+     * yet (nobody has been allocated, e.g. because we are waiting for min-participants), initialize it now. The
+     * initialization applies the transcription state, so that the transcriber connect is desired, and lowers
+     * min-participants, before any participant is allocated. Does nothing before the meeting ID is set.
+     */
+    private void maybeInitColibriForTranscription()
+    {
+        String meetingId = this.meetingId;
+        if (meetingId == null || !started.get())
+        {
+            return;
+        }
+        synchronized (participantLock)
+        {
+            if (colibriSessionManager == null && getTranscriberUrl(meetingId) != null)
+            {
+                getColibriSessionManager();
+            }
+        }
+    }
+
+    /**
+     * @return the transcriber URL for this conference if transcription is enabled and a URL is configured, and
+     * {@code null} otherwise.
+     */
+    private TemplatedUrl getTranscriberUrl(@NotNull String meetingId)
+    {
+        return enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null;
+    }
+
+    /**
+     * Apply the current transcription state ({@link #enableTranscription} and the room's transcription metadata) to
+     * {@code colibriSessionManager}: create or remove the transcriber connect, and (re)apply the text-translation
+     * languages to it.
+     */
+    private void applyTranscriptionState(
+            @NotNull ColibriSessionManager colibriSessionManager,
+            @NotNull String meetingId)
+    {
+        TemplatedUrl uri = getTranscriberUrl(meetingId);
+        if (enableTranscription && uri == null)
         {
             logger.info("Transcription enabled, but no URL is configured.");
             return;
         }
 
-        Pair<Map<String, String>, Map<String, String>> transcriptionParams = enable && chatRoom != null
+        Pair<Map<String, String>, Map<String, String>> transcriptionParams = enableTranscription && chatRoom != null
             ? TranscriptionConfig.processTranscriptionMetadata(
                 chatRoom.getTranscription(),
                 TranscriptionConfig.config.getHttpHeaders())
@@ -2721,18 +2773,26 @@ public class JitsiMeetConferenceImpl
             {
                 if (participants.size() == 1)
                 {
-                    Participant p = participants.values().stream().findFirst().orElse(null);
-                    logger.info("Timing out single participant: " + p.getChatMember().getName());
+                    if (hasColibriConnects())
+                    {
+                        // Connects were added after the timeout was scheduled.
+                        logger.info("Not timing out single participant, the conference has active connects.");
+                    }
+                    else
+                    {
+                        Participant p = participants.values().stream().findFirst().orElse(null);
+                        logger.info("Timing out single participant: " + p.getChatMember().getName());
 
-                    terminateParticipant(
-                            p,
-                            Reason.EXPIRED,
-                            "Idle session timeout",
-                            /* send session-terminate */ true,
-                            /* send source-remove */ false,
-                            /* not reinviting */ false);
+                        terminateParticipant(
+                                p,
+                                Reason.EXPIRED,
+                                "Idle session timeout",
+                                /* send session-terminate */ true,
+                                /* send source-remove */ false,
+                                /* not reinviting */ false);
 
-                    expireBridgeSessions();
+                        expireBridgeSessions();
+                    }
                 }
                 else
                 {
@@ -3023,6 +3083,29 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridgeCount)
             );
+        }
+
+        /**
+         * The conference started or stopped exporting media via colibri2 connects. A lone participant's session is
+         * kept alive while connects exist, so (re)evaluate the single participant timeout.
+         */
+        @Override
+        public void connectsChanged(boolean hasConnects)
+        {
+            // The events are delivered asynchronously and may be reordered, so do not trust the argument. Instead
+            // re-evaluate from the current state: rescheduleSingleParticipantTimeout() cancels any pending timeout
+            // and only arms a new one if there are no connects now.
+            if (!started.get())
+            {
+                return;
+            }
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    rescheduleSingleParticipantTimeout();
+                }
+            }
         }
 
         /**

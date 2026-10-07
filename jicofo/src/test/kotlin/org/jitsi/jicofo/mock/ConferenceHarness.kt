@@ -38,13 +38,15 @@ class ConferenceHarness(
     /** The XMPP domain of the main connection. It must match the domain of [roomNameString]. */
     val xmppDomain: String = "example.com",
     /** The names of the visitor nodes to make available to the conference. */
-    visitorNodeNames: List<String> = emptyList()
+    visitorNodeNames: List<String> = emptyList(),
+    /** Configure the mock chat room before the conference is created and started (e.g. to customize join()). */
+    configureRoom: (MockChatRoom) -> Unit = {}
 ) {
     val roomName = JidCreate.entityBareFrom(roomNameString)
     val xmppConnection = ColibriAndJingleXmppConnection()
     val jingleSessions = mutableListOf<JingleSession>()
     val xmppProvider = MockXmppProvider(xmppConnection.xmppConnection, "client", xmppDomain)
-    val chatRoom = xmppProvider.getRoom(roomName)
+    val chatRoom = xmppProvider.getRoom(roomName).also(configureRoom)
 
     /** The mock XMPP connections to the visitor nodes, mapped by node name. */
     val visitorProviders: Map<String, MockXmppProvider> = visitorNodeNames.associateWith {

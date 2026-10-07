@@ -39,6 +39,7 @@ import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
@@ -114,8 +115,15 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
     /** The transports relayed to participants after an ICE restart, in the order they were fired. */
     private val iceRestartedTransports = mutableListOf<Pair<String, IceUdpTransportPacketExtension>>()
+
+    /** The values of [ColibriSessionManager.Listener.connectsChanged], in the order they were fired. */
+    private val connectsChangedEvents = mutableListOf<Boolean>()
+
     private val listener = object : ColibriSessionManager.Listener {
         override fun bridgeCountChanged(bridgeCount: Int) {}
+        override fun connectsChanged(hasConnects: Boolean) {
+            connectsChangedEvents.add(hasConnects)
+        }
         override fun bridgeRemoved(bridge: Bridge, participantIds: List<String>) {
             failedSessions.add(bridge)
         }
@@ -447,6 +455,76 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
 
                     iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
+                }
+            }
+        }
+
+        context("Connects") {
+            val url = TemplatedUrl("wss://{{REGION}}.example.com/x", requiredKeys = setOf("REGION"))
+            allocate("p1")
+
+            should("have no connects initially") {
+                sessionManager.hasConnects() shouldBe false
+                connectsChangedEvents.shouldBeEmpty()
+            }
+            context("With a transcriber") {
+                sessionManager.setTranscriberUrl(url)
+                drain()
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setTranscriberUrl(null)
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+                context("And all sessions expiring, then a participant joining") {
+                    sessionManager.expire()
+                    drain()
+                    colibriRequests.clear()
+                    allocate("p2")
+                    should("still report connects") {
+                        sessionManager.hasConnects() shouldBe true
+                    }
+                    should("re-create the transcriber connect on the new session") {
+                        requestsTo(bridge1).mapNotNull { it.connects }.flatMap { it.getConnects() }
+                            .map { it.id } shouldBe listOf("transcriber")
+                    }
+                }
+                context("And a language change") {
+                    sessionManager.setTextTranslationLanguages(setOf("fr"))
+                    drain()
+                    should("not fire connectsChanged again") {
+                        connectsChangedEvents shouldBe listOf(true)
+                    }
+                }
+            }
+            context("With a translator") {
+                sessionManager.setTranslator(url, listOf(TranslationRequest("p1", "p1-a0", listOf("p1-a0.en"))))
+                drain()
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setTranslator(null)
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+            }
+            context("With a translator URL but no requests") {
+                sessionManager.setTranslator(url, emptyList())
+                drain()
+                should("not report connects") {
+                    sessionManager.hasConnects() shouldBe false
+                    connectsChangedEvents.shouldBeEmpty()
                 }
             }
         }

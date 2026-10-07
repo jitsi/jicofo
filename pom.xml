@@ -44,7 +44,7 @@
     <slf4j.version>1.7.32</slf4j.version>
     <jackson.version>2.21.5</jackson.version>
     <jitsi.utils.version>1.0-153-gd5c0102</jitsi.utils.version>
-    <jicoco.version>1.1-179-g52cf6ef</jicoco.version>
+    <jicoco.version>1.1-183-gfc70624</jicoco.version>
     <ktlint.version>1.8.0</ktlint.version>
     <spotbugs.version>4.9.4</spotbugs.version>
     <spotbugs-maven-plugin.version>4.9.4.2</spotbugs-maven-plugin.version>
