@@ -27,6 +27,8 @@ import io.mockk.slot
 import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.bridge.Bridge
+import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
 import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
@@ -52,7 +54,9 @@ class ConferenceAgentManagerTest : ShouldSpec() {
     }
 
     private val conferenceSources = ValidatingConferenceSourceMap(20, 20)
-    private val colibriSessionManager = mockk<ColibriSessionManager>(relaxed = true)
+    private val colibriSessionManager = mockk<ColibriSessionManager>(relaxed = true).also {
+        every { it.getBridges() } returns emptyMap()
+    }
     private val statusReporter = mockk<AgentStatusReporter>(relaxed = true)
 
     /** Endpoint id -> consented agent ids, as the conference would derive it from presence. */
@@ -101,6 +105,24 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     last.first().endpointId shouldBe "agent1"
                     last.first().syntheticSourceName shouldBe "agent1-a0"
                     last.first().urlParams shouldBe mapOf("conference" to "room@muc.example.com", "agentId" to "agent1")
+                }
+            }
+        }
+
+        context("Placement") {
+            withNewConfig(urlConfig) {
+                fun bridgeIn(r: String?) = mockk<Bridge> { every { region } returns r }
+                every { colibriSessionManager.getBridges() } returns mapOf(
+                    bridgeIn("eu-west") to ConferenceBridgeProperties(1),
+                    bridgeIn("us-east") to ConferenceBridgeProperties(3),
+                    bridgeIn("ap-south") to ConferenceBridgeProperties(5, visitor = true)
+                )
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+
+                should("allocate in the region of the bridge hosting most of the humans, ignoring visitor bridges") {
+                    val params = slot<ParticipantAllocationParameters>()
+                    verify { colibriSessionManager.allocate(capture(params)) }
+                    params.captured.region shouldBe "us-east"
                 }
             }
         }

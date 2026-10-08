@@ -17,6 +17,7 @@ package org.jitsi.jicofo.conference.agent
 
 import org.jitsi.jicofo.AgentConfig
 import org.jitsi.jicofo.TaskPools
+import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
 import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
@@ -44,6 +45,9 @@ import java.util.concurrent.ThreadLocalRandom
  * Endpoint allocation involves a blocking colibri round-trip, so it runs on the IO pool; connects are (re)applied
  * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
  * monitor.
+ *
+ * The agent's endpoint is allocated in the region of the bridge hosting most of the conference, so it lands with the
+ * humans; the bridge keeps it alive while any human remains in the conference, local or relayed.
  *
  * The connect carries no dial config, only the `conference` and `agentId` query parameters: the media relay fetches
  * the customer endpoint by them, so no customer secret passes through jicofo or the bridge. Lifecycle reporting is
@@ -147,10 +151,13 @@ class ConferenceAgentManager @JvmOverloads constructor(
                 Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
             if (id !in ready && id !in pending && id !in failed) {
-                logger.info("Allocating synthetic endpoint for agent $id (${source.name}, ssrc ${source.ssrc})")
+                val region = primaryRegion(colibriSessionManager)
+                logger.info(
+                    "Allocating agent $id's synthetic endpoint (${source.name}, ssrc ${source.ssrc}, region $region)"
+                )
                 pending.add(id)
                 statusReporter.report(id, AgentStatusReporter.CONNECTING)
-                TaskPools.ioPool.submit { allocateAgent(id, source, colibriSessionManager, meetingId) }
+                TaskPools.ioPool.submit { allocateAgent(id, source, region, colibriSessionManager, meetingId) }
             }
         }
 
@@ -161,6 +168,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
     private fun allocateAgent(
         id: String,
         source: Source,
+        region: String?,
         colibriSessionManager: ColibriSessionManager,
         meetingId: String
     ) {
@@ -169,7 +177,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
                 ParticipantAllocationParameters(
                     id = id,
                     statsId = null,
-                    region = null,
+                    region = region,
                     sources = EndpointSourceSet(source),
                     useSsrcRewriting = false,
                     useRtpMidDemux = false,
@@ -225,6 +233,12 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
         colibriSessionManager.setAgents(connects)
     }
+
+    /** The region of the non-visitor bridge hosting the most participants, or null when there is none to prefer. */
+    private fun primaryRegion(colibriSessionManager: ColibriSessionManager): String? =
+        colibriSessionManager.getBridges().entries
+            .filter { (_, properties: ConferenceBridgeProperties) -> !properties.visitor }
+            .maxByOrNull { it.value.participantCount }?.key?.region
 
     /**
      * The audio source names exported to [agentId]: those of every member that consented to it. Synthetic sources
