@@ -116,6 +116,9 @@ internal fun ParticipantInfo.toEndpoint(
         if (useRtpMidDemux) {
             addCapability(Capability.CAP_RTP_MID_DEMUX_SUPPORT)
         }
+        if (synthetic) {
+            addCapability(Capability.CAP_SYNTHETIC_ENDPOINT)
+        }
         if (diarize) {
             // Call setDiarize on the Colibri2Endpoint.Builder directly: the fluent builder chain returns a parent
             // Builder type after setId(...) which does not expose setDiarize.

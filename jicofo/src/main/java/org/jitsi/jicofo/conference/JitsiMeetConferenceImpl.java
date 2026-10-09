@@ -27,6 +27,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.conference.agent.*;
 import org.jitsi.jicofo.conference.translation.*;
 import org.jitsi.jicofo.metrics.IceRestartMetrics;
 import org.jitsi.jicofo.util.*;
@@ -262,6 +263,12 @@ public class JitsiMeetConferenceImpl
     private volatile boolean enableTranscription = false;
 
     /**
+     * Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge
+     * for a lone human.
+     */
+    private boolean hasAgents = false;
+
+    /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
      */
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap(
@@ -274,6 +281,11 @@ public class JitsiMeetConferenceImpl
      * {@code audioTranslationRequests} room metadata.
      */
     private final ConferenceTranslationManager translationManager;
+
+    /**
+     * Manages voice-agent synthetic endpoints and their connects, driven by the {@code agents} room metadata.
+     */
+    private final ConferenceAgentManager agentManager;
 
     /**
      * Whether the limit on the number of audio senders is currently hit.
@@ -335,6 +347,8 @@ public class JitsiMeetConferenceImpl
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
         clientRequirementsHandler = new ClientRequirementsHandler(logger);
+        agentManager = new ConferenceAgentManager(
+                conferenceSources, roomName.toString(), logger, this::getVoiceAgentConsent);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -411,8 +425,36 @@ public class JitsiMeetConferenceImpl
 
             // Apply any live-translation requests received before colibri was initialized.
             translationManager.reapply(colibriSessionManager, meetingId);
+
+            // Apply any voice-agent requests received before colibri was initialized.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
         return colibriSessionManager;
+    }
+
+    /**
+     * The voice-agent consent advertised in presence: endpoint id (the MUC nickname) to the ids of the agents the
+     * member consented to share audio with. Members without consent are omitted.
+     */
+    @NotNull
+    private Map<String, Set<String>> getVoiceAgentConsent()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom == null)
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Set<String>> consent = new HashMap<>();
+        for (ChatRoomMember member : chatRoom.getMembers())
+        {
+            Set<String> agentIds = member.getVoiceAgentConsent();
+            if (!agentIds.isEmpty())
+            {
+                consent.put(member.getName(), agentIds);
+            }
+        }
+        return consent;
     }
 
     /**
@@ -1046,8 +1088,9 @@ public class JitsiMeetConferenceImpl
         }
         int minParticipants = ConferenceConfig.config.getMinParticipants();
         // When the conference exports media (e.g. to a transcriber), start sessions immediately without waiting for
-        // min-participants: the exported media is consumed even if nobody else is in the conference.
-        if (hasColibriConnects())
+        // min-participants: the exported media is consumed even if nobody else is in the conference. A requested
+        // voice agent counts too: its connect can only exist once a session does.
+        if (hasColibriConnects() || hasAgents)
         {
             minParticipants = 1;
         }
@@ -1118,6 +1161,9 @@ public class JitsiMeetConferenceImpl
                 expireBridgeSessions();
             }
         }
+
+        // The member's consent left with it.
+        agentManager.reapply(colibriSessionManager, meetingId);
 
         maybeStop(chatRoomMember);
     }
@@ -1470,6 +1516,8 @@ public class JitsiMeetConferenceImpl
 
         // A newly-added audio source may be the base source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        // Agent exports name the consenting members' audio sources.
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1509,6 +1557,7 @@ public class JitsiMeetConferenceImpl
 
         // A sender may have removed the audio source being translated; re-evaluate synthetic translation sources.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1549,6 +1598,7 @@ public class JitsiMeetConferenceImpl
 
         // The initial sources may include the base audio source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
@@ -1588,6 +1638,7 @@ public class JitsiMeetConferenceImpl
 
         // The participant (a potential translation sender) is gone; drop any synthetic translation sources for it.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -2279,6 +2330,22 @@ public class JitsiMeetConferenceImpl
 
     private int reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
     {
+        // A voice agent's synthetic endpoint has no Participant: the agent manager re-allocates it instead.
+        List<String> agentIds = new ArrayList<>();
+        for (String id : participantIdsToReinvite)
+        {
+            if (agentManager.manages(id))
+            {
+                agentIds.add(id);
+            }
+        }
+        if (!agentIds.isEmpty())
+        {
+            agentManager.endpointsRemoved(agentIds, colibriSessionManager, meetingId);
+            participantIdsToReinvite = new ArrayList<>(participantIdsToReinvite);
+            participantIdsToReinvite.removeAll(agentIds);
+        }
+
         int n = participantIdsToReinvite.size();
         if (n == 0)
         {
@@ -3027,6 +3094,8 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+            // Voice-agent consent is carried in presence.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
 
         @Override
@@ -3067,6 +3136,30 @@ public class JitsiMeetConferenceImpl
                     translationHeaders,
                     colibriSessionManager,
                     meetingId);
+        }
+
+        @Override
+        public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
+        {
+            boolean nowHasAgents = agents.values().stream().anyMatch(RoomMetadata.Metadata.Agent::isRequested);
+            boolean wasEmpty = !hasAgents;
+            hasAgents = nowHasAgents;
+
+            // Store requests first so the invite below (inits colibri, calls reapply) picks them up.
+            agentManager.setRequests(agents, colibriSessionManager, meetingId);
+
+            // Agent added while members waited for min-participants: invite them so a bridge is allocated.
+            if (nowHasAgents && wasEmpty && chatRoom != null && chatRoom.getMemberCount() > 0)
+            {
+                synchronized (participantLock)
+                {
+                    if (participants.isEmpty())
+                    {
+                        logger.info("Voice agent added with existing members, starting sessions.");
+                        inviteAllChatMembers();
+                    }
+                }
+            }
         }
     }
 
