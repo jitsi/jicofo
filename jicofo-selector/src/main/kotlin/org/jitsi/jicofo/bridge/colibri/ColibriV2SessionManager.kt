@@ -469,8 +469,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     private fun buildAgentSpec(session: Colibri2Session, agent: AgentConnectRequest) = ConnectSpec(
         id = "$AGENT_CONNECT_ID_PREFIX${agent.endpointId}",
         url = agent.url.resolve(AgentConfig.REGION_TEMPLATE, session.bridge.region ?: "").withParams(agent.urlParams),
-        // TODO: use a dedicated AGENT type once available in jitsi-xmpp-extensions.
-        type = Connect.Types.TRANSLATOR,
+        type = Connect.Types.AGENT,
         exports = agent.exports,
         requests = listOf(agent.syntheticSourceName),
         httpHeaders = AgentConfig.config.httpHeaders,

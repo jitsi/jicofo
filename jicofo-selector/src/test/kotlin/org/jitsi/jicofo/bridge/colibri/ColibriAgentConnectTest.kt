@@ -37,6 +37,7 @@ import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
 
@@ -130,6 +131,7 @@ class ColibriAgentConnectTest : ShouldSpec() {
                 connect.expire shouldBe false
                 connect.getExports() shouldBe listOf("p1-a0")
                 connect.getRequests() shouldBe listOf("agent1-a0")
+                connect.type shouldBe Connect.Types.AGENT
                 connect.url.toString() shouldBe "wss://us-east.agents.example.com/m1"
             }
         }
