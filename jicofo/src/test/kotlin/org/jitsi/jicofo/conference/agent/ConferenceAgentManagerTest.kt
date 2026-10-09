@@ -56,6 +56,8 @@ class ConferenceAgentManagerTest : ShouldSpec() {
     private val conferenceSources = ValidatingConferenceSourceMap(20, 20)
     private val colibriSessionManager = mockk<ColibriSessionManager>(relaxed = true).also {
         every { it.getBridges() } returns emptyMap()
+        // Allocated endpoints stay on their session unless a test expires them.
+        every { it.getBridgeSessionId(any()) } returns Pair(mockk<Bridge>(), "session1")
     }
     private val statusReporter = mockk<AgentStatusReporter>(relaxed = true)
 
@@ -69,6 +71,8 @@ class ConferenceAgentManagerTest : ShouldSpec() {
         statusReporter = statusReporter
     )
     private val agent = RoomMetadata.Metadata.Agent()
+    private val failedAgent = RoomMetadata.Metadata.Agent(state = "failed")
+    private val endedAgent = RoomMetadata.Metadata.Agent(state = "ended")
 
     private val urlConfig = "jicofo.agent.url-template=\"wss://agents.example.com/{{MEETING_ID}}\""
 
@@ -252,6 +256,57 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
                     should("stay failed") {
                         verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+            }
+        }
+
+        context("When every bridge session expired") {
+            withNewConfig(urlConfig) {
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                // The last human left: colibri expired the sessions, and the agent's endpoint with them.
+                every { colibriSessionManager.getBridgeSessionId("agent1") } returns Pair(null, null)
+                manager.reapply(colibriSessionManager, "meeting1")
+
+                should("re-allocate the agent with the same SSRC on the next apply") {
+                    val allParams = mutableListOf<ParticipantAllocationParameters>()
+                    verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
+                    allParams.map { it.id } shouldBe listOf("agent1", "agent1")
+                    allParams[0].sources.sources.single().ssrc shouldBe allParams[1].sources.sources.single().ssrc
+                }
+            }
+        }
+
+        context("An agent the provisioning API marked as over") {
+            withNewConfig(urlConfig) {
+                context("when it is failed from the start") {
+                    manager.setRequests(mapOf("agent1" to failedAgent), colibriSessionManager, "meeting1")
+                    should("not be allocated") {
+                        verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                        verify(exactly = 0) { statusReporter.report("agent1", any(), any()) }
+                    }
+                }
+
+                context("when it fails after being allocated") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.setRequests(mapOf("agent1" to failedAgent), colibriSessionManager, "meeting1")
+                    should("expire its endpoint and drop its connect, so the bridge stops redialing") {
+                        verify { colibriSessionManager.removeParticipant("agent1") }
+                        val connects = mutableListOf<List<AgentConnectRequest>>()
+                        verify { colibriSessionManager.setAgents(capture(connects)) }
+                        connects.last() shouldBe emptyList()
+                    }
+                    should("not be re-allocated while it stays failed") {
+                        manager.reapply(colibriSessionManager, "meeting1")
+                        verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+
+                context("when it ended") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.setRequests(mapOf("agent1" to endedAgent), colibriSessionManager, "meeting1")
+                    should("expire its endpoint") {
+                        verify { colibriSessionManager.removeParticipant("agent1") }
                     }
                 }
             }

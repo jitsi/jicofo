@@ -527,6 +527,44 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     connectsChangedEvents.shouldBeEmpty()
                 }
             }
+            context("With a voice agent") {
+                allocate("agent1")
+                val agent = AgentConnectRequest("agent1", "agent1-a0", emptyList(), url)
+                sessionManager.setAgents(listOf(agent))
+                drain()
+                fun connectIds() = requestsTo(bridge1).mapNotNull { it.connects }.flatMap { it.getConnects() }
+                    .map { it.id }
+
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setAgents(emptyList())
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+                context("And all sessions expiring, then a participant joining") {
+                    sessionManager.expire()
+                    drain()
+                    colibriRequests.clear()
+                    allocate("p2")
+                    should("still report connects") {
+                        sessionManager.hasConnects() shouldBe true
+                    }
+                    should("only re-create the agent connect once its endpoint is allocated again") {
+                        // The endpoint expired with the old session, so there is nothing to attach the connect to.
+                        connectIds().shouldBeEmpty()
+                        allocate("agent1")
+                        sessionManager.setAgents(listOf(agent))
+                        drain()
+                        connectIds() shouldBe listOf("agent-agent1")
+                    }
+                }
+            }
         }
 
         context("Debug state") {

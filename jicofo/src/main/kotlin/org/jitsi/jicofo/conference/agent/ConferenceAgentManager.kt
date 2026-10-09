@@ -135,8 +135,20 @@ class ConferenceAgentManager @JvmOverloads constructor(
             return
         }
 
+        // When the last human left, colibri expired every session and the agent endpoints with them. Forget those
+        // were allocated so this apply allocates them again (same SSRC) on the session the next human creates.
+        val expired = ready.filter { colibriSessionManager.getBridgeSessionId(it).first == null }
+        if (expired.isNotEmpty()) {
+            logger.info("Re-allocating agents whose endpoint expired with its session: $expired")
+            ready.removeAll(expired.toSet())
+        }
+
+        // A record the provisioning API marked failed (the media relay could not reach the agent) is a request
+        // nobody will answer: drop its connect so the bridge stops redialing and it no longer counts as an export.
+        val requested = requests.filterValues { it.isRequested() }
+
         // Removals originate from the provisioning API (dismiss / room end), so there is nothing to report back.
-        (allocated.keys - requests.keys).toList().forEach { id ->
+        (allocated.keys - requested.keys).toList().forEach { id ->
             logger.info("Removing agent $id")
             allocated.remove(id)
             pending.remove(id)
@@ -146,7 +158,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
             }
         }
 
-        requests.keys.forEach { id ->
+        requested.keys.forEach { id ->
             val source = allocated.getOrPut(id) {
                 Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
@@ -222,7 +234,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
     private fun updateConnects(colibriSessionManager: ColibriSessionManager, meetingId: String) {
         val url = AgentConfig.config.getUrl(meetingId) ?: return
         val consent = consentingMembers()
-        val connects = ready.filter { it in requests }.map { id ->
+        val connects = ready.filter { requests[it]?.isRequested() == true }.map { id ->
             AgentConnectRequest(
                 endpointId = id,
                 syntheticSourceName = sourceName(id),

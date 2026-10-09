@@ -112,12 +112,10 @@ class TestColibri2Server {
                 if (endpoints.containsKey(c2endpoint.id)) {
                     throw IqProcessingException(conflict, "Endpoint with ID ${c2endpoint.id} already exists")
                 }
-                val transport = c2endpoint.transport ?: throw IqProcessingException(
-                    bad_request,
-                    "Attempt to create endpoint ${c2endpoint.id} with no <transport>"
-                )
+                // A synthetic endpoint (voice agent) is created without a transport: the bridge injects its media.
+                val transport = c2endpoint.transport
                 val newEndpoint = Endpoint(c2endpoint.id).apply {
-                    transport.sctp?.let { sctp ->
+                    transport?.sctp?.let { sctp ->
                         if (sctp.role != null && sctp.role != Sctp.Role.SERVER) {
                             throw IqProcessingException(
                                 feature_not_implemented,
@@ -141,7 +139,7 @@ class TestColibri2Server {
             }
 
             // c2endpoint.transport?.iceUdpTransport?.let { endpoint.setTransportInfo(it) }
-            if (c2endpoint.create) {
+            if (c2endpoint.create && c2endpoint.transport != null) {
                 val transBuilder = Transport.getBuilder()
                 transBuilder.setIceUdpExtension(endpoint.describeTransport())
                 if (c2endpoint.transport?.sctp != null) {

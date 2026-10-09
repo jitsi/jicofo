@@ -153,11 +153,14 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         }
 
         /**
-         * A voice agent advertised in the room metadata. Jicofo needs only the id: the dial config stays in the
-         * provisioning API, where the media relay fetches it by id.
+         * A voice agent advertised in the room metadata. Jicofo needs its id and lifecycle state; the dial config
+         * stays in the provisioning API, where the media relay fetches it by id.
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
-        class Agent
+        data class Agent(val state: String? = null) {
+            /** Whether jicofo should host this agent: a failed or ended record is a request nobody will answer. */
+            fun isRequested() = state != "failed" && state != "ended"
+        }
     }
 
     companion object {

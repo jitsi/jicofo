@@ -262,7 +262,7 @@ public class JitsiMeetConferenceImpl
      */
     private volatile boolean enableTranscription = false;
 
-    /** Whether the room has any voice agent; like transcription, forces a bridge for a lone human. */
+    /** Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge for a lone human. */
     private boolean hasAgents = false;
 
     /**
@@ -3138,7 +3138,7 @@ public class JitsiMeetConferenceImpl
         @Override
         public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
         {
-            boolean nowHasAgents = !agents.isEmpty();
+            boolean nowHasAgents = agents.values().stream().anyMatch(RoomMetadata.Metadata.Agent::isRequested);
             boolean wasEmpty = !hasAgents;
             hasAgents = nowHasAgents;
 

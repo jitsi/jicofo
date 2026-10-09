@@ -435,7 +435,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      * translator connect is only built once its sender has been allocated. Callers must not assume that a desired
      * connect is up on a bridge.
      */
-    private fun connectsDesired(): Boolean = transcriberUrl != null || translatorDesired()
+    private fun connectsDesired(): Boolean = transcriberUrl != null || translatorDesired() || agentRequests.isNotEmpty()
 
     /**
      * Whether translator connects are desired. A translator URL without any requests has nothing to export.
