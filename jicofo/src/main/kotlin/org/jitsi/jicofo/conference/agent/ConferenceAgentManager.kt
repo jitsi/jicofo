@@ -136,12 +136,14 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
 
         // When the last human left, colibri expired every session and the agent endpoints with them. Forget those
-        // were allocated so this apply allocates them again (same SSRC) on the session the next human creates.
+        // were allocated so they are allocated again (same SSRC) on the session the next human creates.
         val expired = ready.filter { colibriSessionManager.getBridgeSessionId(it).first == null }
         if (expired.isNotEmpty()) {
-            logger.info("Re-allocating agents whose endpoint expired with its session: $expired")
+            logger.info("Agent endpoints expired with their session, re-allocating once a session exists: $expired")
             ready.removeAll(expired.toSet())
         }
+        // Re-allocating with no session left would create one for the agent alone (and race the conference stopping).
+        val canReallocate = colibriSessionManager.bridgeCount > 0
 
         // A record the provisioning API marked failed (the media relay could not reach the agent) is a request
         // nobody will answer: drop its connect so the bridge stops redialing and it no longer counts as an export.
@@ -159,10 +161,11 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
 
         requested.keys.forEach { id ->
+            val firstAllocation = id !in allocated
             val source = allocated.getOrPut(id) {
                 Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
-            if (id !in ready && id !in pending && id !in failed) {
+            if (id !in ready && id !in pending && id !in failed && (firstAllocation || canReallocate)) {
                 val region = primaryRegion(colibriSessionManager)
                 logger.info(
                     "Allocating agent $id's synthetic endpoint (${source.name}, ssrc ${source.ssrc}, region $region)"

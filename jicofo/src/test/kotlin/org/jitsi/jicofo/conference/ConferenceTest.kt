@@ -68,6 +68,8 @@ class ConferenceTest : ShouldSpec() {
     private fun setAgents(agents: Map<String, RoomMetadata.Metadata.Agent>) =
         chatRoom.chatRoomListeners.forEach { it.agentsChanged(agents) }
     private val agentConfig = "jicofo.agent.url-template = \"wss://example.com/a/{{MEETING_ID}}\""
+    private fun agentCreates() = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
+        .flatMap { it.endpoints }.count { it.id == "agent1" && it.create }
     private fun ChatRoomMember.getParticipant() = harness.getParticipant(this)
     private fun ChatRoomMember.getRemoteParticipant() = harness.getRemoteParticipant(this)
 
@@ -168,6 +170,8 @@ class ConferenceTest : ShouldSpec() {
                         chatRoom.removeMember(member2)
                         conference.participantCount shouldBe 0
                         harness.ended shouldBe true
+                        // The agent's endpoint expired with the sessions; it must not get a session of its own.
+                        agentCreates() shouldBe 1
                     }
                 }
             }

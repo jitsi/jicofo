@@ -58,6 +58,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
         every { it.getBridges() } returns emptyMap()
         // Allocated endpoints stay on their session unless a test expires them.
         every { it.getBridgeSessionId(any()) } returns Pair(mockk<Bridge>(), "session1")
+        every { it.bridgeCount } returns 1
     }
     private val statusReporter = mockk<AgentStatusReporter>(relaxed = true)
 
@@ -250,6 +251,18 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     }
                 }
 
+                context("when it was the only bridge") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    every { colibriSessionManager.bridgeCount } returns 0
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    should("wait for the humans' new session before re-allocating") {
+                        verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                        every { colibriSessionManager.bridgeCount } returns 1
+                        manager.reapply(colibriSessionManager, "meeting1")
+                        verify(exactly = 2) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+
                 context("after its allocation failed") {
                     every { colibriSessionManager.allocate(any()) } throws BridgeSelectionFailedException()
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
@@ -266,9 +279,16 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                 manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
                 // The last human left: colibri expired the sessions, and the agent's endpoint with them.
                 every { colibriSessionManager.getBridgeSessionId("agent1") } returns Pair(null, null)
+                every { colibriSessionManager.bridgeCount } returns 0
                 manager.reapply(colibriSessionManager, "meeting1")
 
-                should("re-allocate the agent with the same SSRC on the next apply") {
+                should("not re-allocate while no session exists") {
+                    verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.CONNECTING) }
+                }
+                should("re-allocate the agent with the same SSRC once a human's session exists") {
+                    every { colibriSessionManager.bridgeCount } returns 1
+                    manager.reapply(colibriSessionManager, "meeting1")
                     val allParams = mutableListOf<ParticipantAllocationParameters>()
                     verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
                     allParams.map { it.id } shouldBe listOf("agent1", "agent1")
