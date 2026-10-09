@@ -262,7 +262,10 @@ public class JitsiMeetConferenceImpl
      */
     private volatile boolean enableTranscription = false;
 
-    /** Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge for a lone human. */
+    /**
+     * Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge
+     * for a lone human.
+     */
     private boolean hasAgents = false;
 
     /**
