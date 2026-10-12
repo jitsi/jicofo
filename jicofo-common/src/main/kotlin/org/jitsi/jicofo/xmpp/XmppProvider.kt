@@ -25,6 +25,7 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoom
 import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.utils.logging2.createLogger
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.ConnectionListener
@@ -259,9 +260,15 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
     }
 
+    /**
+     * Create a [ChatRoom] for [name]. There can be only one [ChatRoom] for a given JID (on this connection) at a time.
+     * This is because all instances for the same JID share the Smack `MultiUserChat`, so they would interfere with
+     * each other. If a room with the same JID exists and still has listeners (i.e. it is in use by another component)
+     * this throws a [RoomExistsException]. If it exists but has no listeners, it was left behind and is replaced.
+     */
+    @JvmOverloads
     @Throws(RoomExistsException::class)
-    fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name, null)
-    fun findOrCreateRoom(name: EntityBareJid, logLevel: Level): ChatRoom = muc.findOrCreateRoom(name, logLevel)
+    fun createRoom(name: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom = muc.createChatRoom(name, logLevel)
 
     fun discoverFeatures(jid: EntityFullJid): FeatureDiscoveryResult {
         if (!xmppConnection.isConnected) {
@@ -360,15 +367,23 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
     return connection
 }
 
-private class Muc(val xmppProvider: XmppProvider) {
+internal class Muc(val xmppProvider: XmppProvider) {
+    private val logger = createLogger()
+
     /** The active chat rooms mapped by their name. */
     private val rooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
 
     @Throws(RoomExistsException::class)
     fun createChatRoom(roomJid: EntityBareJid, logLevel: Level? = Level.ALL): ChatRoom {
         synchronized(rooms) {
-            if (rooms.containsKey(roomJid)) {
-                throw RoomExistsException("Room '$roomJid' exists")
+            rooms[roomJid]?.let { existing ->
+                if (existing.hasListeners) {
+                    throw RoomExistsException("A ChatRoom for '$roomJid' is still in use.")
+                }
+                // Nobody listens to this room anymore. It was left behind, e.g. by a conference that ended without
+                // leaving the room. Leave it (this also removes it from the map) and replace it.
+                logger.warn("Replacing an orphaned ChatRoom for $roomJid.")
+                existing.leave()
             }
             return ChatRoomImpl(xmppProvider, roomJid, logLevel) { removeRoom(it) }.also {
                 rooms[roomJid] = it
@@ -376,17 +391,8 @@ private class Muc(val xmppProvider: XmppProvider) {
         }
     }
 
-    fun findOrCreateRoom(roomJid: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom {
-        synchronized(rooms) {
-            try {
-                return rooms[roomJid] ?: createChatRoom(roomJid, logLevel)
-            } catch (e: RoomExistsException) {
-                throw RuntimeException("Unexpected RoomExistsException.")
-            }
-        }
-    }
-
+    /** Remove [chatRoom] from the map. Only remove the entry if it is this exact instance. */
     fun removeRoom(chatRoom: ChatRoomImpl) = synchronized(rooms) {
-        rooms.remove(chatRoom.roomJid)
+        rooms.remove(chatRoom.roomJid, chatRoom)
     }
 }

@@ -608,7 +608,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName, logger.getLevel());
+        ChatRoom chatRoom = getClientXmppProvider().createRoom(roomName, logger.getLevel());
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
@@ -785,26 +785,32 @@ public class JitsiMeetConferenceImpl
 
         TaskPools.getIoPool().submit(() ->
         {
-            if (!disconnectVnodeExtensions.isEmpty())
+            try
             {
-                xmppServices.getVisitorsManager()
-                        .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                if (!disconnectVnodeExtensions.isEmpty())
+                {
+                    xmppServices.getVisitorsManager()
+                            .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                }
+
+                visitorChatRoomsToLeave.forEach(visitorChatRoom ->
+                {
+                    try
+                    {
+                        visitorChatRoom.removeAllListeners();
+                        visitorChatRoom.leave();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Failed to leave visitor room", e);
+                    }
+                });
             }
-
-            visitorChatRoomsToLeave.forEach(visitorChatRoom ->
+            finally
             {
-                try
-                {
-                    visitorChatRoom.removeAllListeners();
-                    visitorChatRoom.leave();
-                }
-                catch (Exception e)
-                {
-                    logger.error("Failed to leave visitor room", e);
-                }
-            });
-
-            chatRoomToLeave.leave();
+                // Always leave the room. Otherwise it stays active and blocks a new conference for the same room.
+                chatRoomToLeave.leave();
+            }
         });
     }
 
@@ -2123,7 +2129,7 @@ public class JitsiMeetConferenceImpl
                     xmppProvider);
 
             // Will call join after releasing the lock
-            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid, logger.getLevel());
+            chatRoomToJoin = xmppProvider.createRoom(visitorMucJid, logger.getLevel());
 
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 

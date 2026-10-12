@@ -60,9 +60,11 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 
 private val jsonMapper = jacksonObjectMapper()
@@ -75,6 +77,12 @@ class ChatRoomImpl(
     override val xmppProvider: XmppProvider,
     override val roomJid: EntityBareJid,
     logLevel: Level?,
+    /**
+     * How long to wait for a previous [ChatRoomImpl] instance for the same room to leave the Smack [MultiUserChat]
+     * before giving up on joining (see [waitForPreviousInstanceToLeave]). Defaults to the reply timeout of the
+     * connection plus a margin, because leaving can take a full reply timeout when the server does not respond.
+     */
+    private val previousInstanceLeaveTimeout: Duration? = null,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
@@ -143,8 +151,23 @@ class ChatRoomImpl(
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
 
+    /** Whether [join] has been called. A [ChatRoomImpl] can only be joined once. */
+    private val joinCalled = AtomicBoolean(false)
+
+    /** Whether [leave] has been called. Leaving more than once must have no effect. */
+    private val leaveCalled = AtomicBoolean(false)
+
+    /** Whether any [ChatRoomListener]s are registered, i.e. whether some component is still using this room. */
+    internal val hasListeners: Boolean
+        get() = eventEmitter.eventHandlers.isNotEmpty()
+
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
+        // Only track available presence. Smack sends an unavailable presence when it leaves the MUC, and that must
+        // never be used as the base for a presence update (sending it again would make us leave the MUC).
+        if (presenceBuilder.type == Presence.Type.unavailable) {
+            return@Consumer
+        }
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
         // it indicates that the client lost its synchronization and causes
@@ -334,31 +357,41 @@ class ChatRoomImpl(
     override fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean =
         avModeration(mediaType).isAllowedToUnmute(jid)
 
+    /**
+     * Join the MUC. This can be called only once for a [ChatRoomImpl] instance. A room that has been left can not be
+     * joined again, a new instance has to be created instead (see [XmppProvider.createRoom]).
+     *
+     * @throws IllegalStateException if this instance has already been joined.
+     */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     override fun join(): ChatRoomInfo {
+        if (!joinCalled.compareAndSet(false, true)) {
+            throw IllegalStateException("The room has already been joined, a ChatRoomImpl can only be joined once.")
+        }
         // TODO: clean-up the way we figure out what nickname to use.
-        resetState()
         return joinAs(xmppProvider.config.username)
     }
 
     /**
-     * Prepare this [ChatRoomImpl] for a call to [.joinAs], which sends initial presence to the MUC. Resets any state
-     * that might have been set the previous time the MUC was joined.
+     * The Smack [MultiUserChat] is shared by all [ChatRoomImpl] instances for the same room JID on the same
+     * connection. A previous instance (for example the room of a conference that just ended) may still be in the
+     * process of leaving. Wait for it to finish, because joining while it is still joined makes the two instances
+     * interfere with each other (the leave of the previous instance removes the Smack listeners that we rely on).
+     *
+     * @throws IllegalStateException if the MUC is still joined after [previousInstanceLeaveTimeout].
      */
-    private fun resetState() {
-        synchronized(membersMap) {
-            if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
-                membersMap.clear()
-                visitorMemberCount = 0
-                audioSendersCount = 0
-                videoSendersCount = 0
-            }
+    private fun waitForPreviousInstanceToLeave() {
+        if (!muc.isJoined) {
+            return
         }
-        synchronized(this) {
-            lastPresenceSent = null
-            logger.removeContext("meeting_id")
-            avModerationByMediaType.values.forEach { it.reset() }
+        val timeout = previousInstanceLeaveTimeout ?: xmppProvider.config.replyTimeout.plusSeconds(5)
+        logger.info("The MUC is still joined by a previous instance, waiting up to $timeout for it to leave.")
+        val deadline = System.nanoTime() + timeout.toNanos()
+        while (muc.isJoined) {
+            if (System.nanoTime() > deadline) {
+                throw IllegalStateException("The MUC is still joined by a previous instance.")
+            }
+            Thread.sleep(20)
         }
     }
 
@@ -368,11 +401,7 @@ class ChatRoomImpl(
         xmppTaskQueue.add { roomJoinedLatch.await() }
 
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
-        synchronized(muc) {
-            if (muc.isJoined) {
-                muc.leave()
-            }
-        }
+        waitForPreviousInstanceToLeave()
 
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
@@ -451,6 +480,10 @@ class ChatRoomImpl(
     }
 
     override fun leave() {
+        if (!leaveCalled.compareAndSet(false, true)) {
+            logger.debug("Already left.")
+            return
+        }
         muc.removePresenceInterceptor(presenceInterceptor)
         muc.removeUserStatusListener(userListener)
         muc.removeParticipantListener(this)
@@ -573,6 +606,11 @@ class ChatRoomImpl(
     ): Presence? = synchronized(this) {
         val presence = lastPresenceSent ?: run {
             logger.error("No presence packet obtained yet")
+            return null
+        }
+        if (presence.type == Presence.Type.unavailable) {
+            // This should never happen (see presenceInterceptor), but sending it would make us leave the MUC.
+            logger.error("The last presence sent is unavailable, will not update it.")
             return null
         }
         var changed = false
@@ -820,11 +858,6 @@ class ChatRoomImpl(
             }
 
         fun isAllowedToUnmute(jid: Jid) = !enabled || whitelist.contains(jid.toString())
-
-        fun reset() {
-            enabled = false
-            whitelist = emptyList()
-        }
     }
 
     companion object {
