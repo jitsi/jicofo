@@ -19,6 +19,8 @@ package org.jitsi.jicofo.xmpp;
 
 import org.jetbrains.annotations.*;
 import org.jitsi.jicofo.*;
+import org.jitsi.jicofo.metrics.*;
+import org.jitsi.metrics.*;
 import org.jitsi.jicofo.xmpp.muc.*;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
@@ -27,9 +29,11 @@ import org.jivesoftware.smack.tcp.*;
 import org.jxmpp.jid.*;
 
 import java.lang.*;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
+import java.util.logging.Level;
 
 /**
  * <tt>BaseBrewery</tt> manages the pool of service instances which
@@ -82,6 +86,17 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      */
     private Future<?> reconnectTimeout;
 
+    /** How often to check that the brewery room is still joined. */
+    static final Duration JOIN_CHECK_INTERVAL = Duration.ofSeconds(15);
+
+    /** The periodic task that checks that the brewery room is still joined. */
+    private ScheduledFuture<?> joinCheckTask;
+
+    /** Counts the times a brewery room was re-joined because it was found not joined. */
+    private static final CounterMetric rejoinCounter = JicofoMetricsContainer.Companion.getInstance().registerCounter(
+        "brewery_rejoins",
+        "Number of times a brewery room was re-joined because it was found not joined.");
+
     /**
      * Creates new instance of <tt>BaseBrewery</tt>
      * @param breweryJid the MUC JID of the room which this detector will join,
@@ -125,12 +140,61 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         xmppProvider.addListener(this);
 
         maybeStart();
+        joinCheckTask = TaskPools.getScheduledPool().scheduleAtFixedRate(
+            this::checkJoined,
+            JOIN_CHECK_INTERVAL.toMillis(),
+            JOIN_CHECK_INTERVAL.toMillis(),
+            TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * @return whether the brewery room is currently joined.
+     */
+    public boolean isJoined()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        return chatRoom != null && chatRoom.isJoined();
+    }
+
+    /**
+     * Check that the brewery room is still joined, and re-join it if it is not. The room can be left without this
+     * class being notified, for example when the XMPP server removes us from the room. In that case the presence of
+     * the instances is no longer received, so the list of instances goes stale. Re-joining makes the server re-send
+     * the presence of all occupants. After that the instances that are no longer in the room are removed.
+     *
+     * Package-private for the purpose of testing.
+     */
+    synchronized void checkJoined()
+    {
+        if (chatRoom == null || !xmppProvider.getRegistered())
+        {
+            return;
+        }
+        if (chatRoom.isJoined())
+        {
+            return;
+        }
+
+        logger.warn("The brewery room is not joined, re-joining.");
+        rejoinCounter.inc();
+
+        ChatRoom oldChatRoom = chatRoom;
+        chatRoom = null;
+        oldChatRoom.removeListener(chatRoomListener);
+        oldChatRoom.leave();
+
+        start();
+
+        ChatRoom newChatRoom = chatRoom;
+        instances.stream()
+            .filter(i -> newChatRoom == null || newChatRoom.getChatMember(i.jid) == null)
+            .forEach(this::removeInstance);
     }
 
     /**
      * Starts the whole thing if we have XMPP connection up and running.
      */
-    private void maybeStart()
+    private synchronized void maybeStart()
     {
         if (chatRoom == null && xmppProvider.getRegistered())
         {
@@ -144,6 +208,11 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     public void shutdown()
     {
         xmppProvider.removeListener(this);
+        if (joinCheckTask != null)
+        {
+            joinCheckTask.cancel(false);
+            joinCheckTask = null;
+        }
 
         stop();
     }
@@ -188,17 +257,18 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * Starts the detector by joining it to the brewery room.
      */
-    private void start()
+    private synchronized void start()
     {
         try
         {
-            chatRoom = xmppProvider.createRoom(breweryJid);
+            chatRoom = xmppProvider.createRoom(breweryJid, Level.ALL);
             chatRoom.addListener(chatRoomListener);
             chatRoom.join();
 
             logger.info("Joined the room.");
         }
-        catch (InterruptedException | SmackException | XMPPException | XmppProvider.RoomExistsException e)
+        catch (InterruptedException | SmackException | XMPPException | XmppProvider.RoomExistsException
+            | IllegalStateException e)
         {
             logger.error("Failed to create room.", e);
 
@@ -224,7 +294,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
     /**
      * Stops detector by removing listeners and leaving brewery room.
      */
-    private void stop()
+    private synchronized void stop()
     {
         try
         {
