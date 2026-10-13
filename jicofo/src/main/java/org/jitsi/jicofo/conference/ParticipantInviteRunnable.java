@@ -231,6 +231,13 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             return;
         }
+        catch (ColibriConferenceNotFoundException e)
+        {
+            // The session has been removed and its participants (including this one) are being re-invited.
+            logger.warn("Can not allocate colibri channels, the conference was not found on the bridge.");
+            cancel();
+            return;
+        }
         catch (ColibriAllocationFailedException e)
         {
             logger.error("Failed to allocate colibri channels", e);

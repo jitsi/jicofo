@@ -27,3 +27,13 @@ class ConferenceAlreadyExistsException(
     message: String,
     removeBridge: Boolean
 ) : ColibriAllocationFailedException(message, removeBridge)
+
+/**
+ * The bridge responded with conference_not_found: the colibri2 conference does not exist on the bridge any more
+ * (e.g. the bridge expired it when its last endpoint was removed). The session is out of sync and is removed, and
+ * its participants are re-invited, but the bridge itself is healthy.
+ */
+class ColibriConferenceNotFoundException(
+    message: String,
+    removeBridge: Boolean
+) : ColibriAllocationFailedException(message, removeBridge)

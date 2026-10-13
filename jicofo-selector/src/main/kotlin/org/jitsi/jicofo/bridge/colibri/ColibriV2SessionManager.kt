@@ -698,7 +698,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             try {
                 return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
-                if (e is ConferenceAlreadyExistsException) {
+                if (e is ConferenceAlreadyExistsException || e is ColibriConferenceNotFoundException) {
+                    // Jicofo's and the bridge's state are out of sync. This has a recovery path (below) which does
+                    // not involve the bridge being considered failed, so it is not an error.
                     logger.warn("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
                 } else {
                     logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
@@ -763,7 +765,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                         // The conference on the bridge has expired. The state between jicofo and the bridge is out of
                         // sync.
-                        throw ColibriAllocationFailedException("Conference not found", true)
+                        throw ColibriConferenceNotFoundException("Conference not found", true)
                     } else {
                         // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
                         // because the occupant left.

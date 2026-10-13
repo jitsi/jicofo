@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -28,6 +29,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
@@ -267,6 +269,53 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     should("not fail any sessions") {
                         failedSessions.shouldBeEmpty()
                     }
+                }
+            }
+        }
+
+        context("The bridge expired the conference (state out of sync)") {
+            context("With a participant remaining in the session") {
+                allocate("p1", region = "region-jvb1")
+                allocate("p2", region = "region-jvb1")
+                // The bridge drops the conference, e.g. because it expired its endpoints locally.
+                colibriServers[bridge1.jid]!!.stop()
+
+                context("And removing a participant") {
+                    sessionManager.removeParticipant("p1").also { drain() }
+                    should("fail the session so the remaining participants are re-invited") {
+                        failedSessions shouldBe listOf(bridge1)
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+                context("And allocating another participant") {
+                    val e = shouldThrow<ColibriConferenceNotFoundException> {
+                        allocate("p3", region = "region-jvb1")
+                    }
+                    drain()
+                    should("remove the session and report its participants") {
+                        e.removeBridge shouldBe true
+                        failedSessions shouldBe listOf(bridge1)
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+            }
+            context("While expiring the conference") {
+                allocate("p1", region = "region-jvb1")
+                colibriServers[bridge1.jid]!!.stop()
+                // Removing the last participant expires the conference, which the bridge has already expired.
+                sessionManager.removeParticipant("p1").also { drain() }
+
+                should("send the expire") {
+                    requestsTo(bridge1).count { it.expire } shouldBe 1
+                }
+                should("not treat the conference_not_found response as a failure") {
+                    failedSessions.shouldBeEmpty()
                 }
             }
         }
