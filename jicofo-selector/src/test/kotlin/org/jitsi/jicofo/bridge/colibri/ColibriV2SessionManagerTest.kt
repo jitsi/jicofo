@@ -113,6 +113,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     }
 
     private val failedSessions = mutableListOf<Bridge>()
+
+    /** The participants reported for re-invite by [ColibriSessionManager.Listener.bridgeRemoved]. */
+    private val reinvitedParticipants = mutableListOf<String>()
     private val removedEndpoints = mutableListOf<String>()
 
     /** The transports relayed to participants after an ICE restart, in the order they were fired. */
@@ -128,6 +131,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         }
         override fun bridgeRemoved(bridge: Bridge, participantIds: List<String>) {
             failedSessions.add(bridge)
+            reinvitedParticipants.addAll(participantIds)
         }
         override fun endpointRemoved(endpointId: String) {
             removedEndpoints.add(endpointId)
@@ -284,6 +288,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     sessionManager.removeParticipant("p1").also { drain() }
                     should("fail the session so the remaining participants are re-invited") {
                         failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants shouldBe listOf("p2")
                         sessionManager.getBridges().keys.shouldBeEmpty()
                     }
                     should("not mark the bridge as non-operational") {
@@ -295,9 +300,10 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         allocate("p3", region = "region-jvb1")
                     }
                     drain()
-                    should("remove the session and report its participants") {
+                    should("remove the session and report its participants, including the new one") {
                         e.removeBridge shouldBe true
                         failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants.toSet() shouldBe setOf("p1", "p2", "p3")
                         sessionManager.getBridges().keys.shouldBeEmpty()
                     }
                     should("not mark the bridge as non-operational") {

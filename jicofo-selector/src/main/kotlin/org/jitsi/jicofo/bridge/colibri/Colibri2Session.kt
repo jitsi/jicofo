@@ -463,11 +463,14 @@ class Colibri2Session(
                 if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                     if (iq is ConferenceModifyIQ && iq.expire) {
                         // We were expiring the conference and it is already gone. Nothing to recover from.
-                        logger.info("The conference was already expired on the bridge.")
+                        logger.info("The conference was already expired on the bridge ($name request).")
                     } else {
                         // The bridge expired the conference (e.g. when its last endpoint was removed) while we still
                         // think it has participants. The bridge is healthy, re-invite the participants of this session.
-                        logger.warn("The conference was not found on the bridge, session failed: ${error.toXML()}")
+                        logger.warn(
+                            "Conference not found on the bridge for $name request, session failed: " +
+                                "${error.toXML()}, request was: ${iq.toXML()}"
+                        )
                         colibriSessionManager.sessionFailed(this@Colibri2Session)
                     }
                     return@sendIqAndHandleResponseAsync

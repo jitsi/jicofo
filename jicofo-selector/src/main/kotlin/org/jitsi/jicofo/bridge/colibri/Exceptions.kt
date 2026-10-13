@@ -23,17 +23,17 @@ open class ColibriAllocationFailedException(
     val removeBridge: Boolean = false
 ) : Exception(message)
 
-class ConferenceAlreadyExistsException(
-    message: String,
-    removeBridge: Boolean
-) : ColibriAllocationFailedException(message, removeBridge)
+/**
+ * Jicofo's view of a colibri2 session and the bridge's disagree (e.g. the conference exists on the bridge when we
+ * think we are creating it, or no longer exists when we think it does). The bridge itself is healthy. The session is
+ * removed and its participants re-invited, so this is recoverable and not an error.
+ */
+open class ColibriStateOutOfSyncException(message: String) : ColibriAllocationFailedException(message, true)
+
+class ConferenceAlreadyExistsException(message: String) : ColibriStateOutOfSyncException(message)
 
 /**
  * The bridge responded with conference_not_found: the colibri2 conference does not exist on the bridge any more
- * (e.g. the bridge expired it when its last endpoint was removed). The session is out of sync and is removed, and
- * its participants are re-invited, but the bridge itself is healthy.
+ * (e.g. the bridge expired it when its last endpoint was removed).
  */
-class ColibriConferenceNotFoundException(
-    message: String,
-    removeBridge: Boolean
-) : ColibriAllocationFailedException(message, removeBridge)
+class ColibriConferenceNotFoundException(message: String) : ColibriStateOutOfSyncException(message)

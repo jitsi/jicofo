@@ -698,9 +698,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             try {
                 return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
-                if (e is ConferenceAlreadyExistsException || e is ColibriConferenceNotFoundException) {
-                    // Jicofo's and the bridge's state are out of sync. This has a recovery path (below) which does
-                    // not involve the bridge being considered failed, so it is not an error.
+                if (e is ColibriStateOutOfSyncException) {
+                    // This has a recovery path (below) which does not involve the bridge being considered failed, so
+                    // it is not an error.
                     logger.warn("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
                 } else {
                     logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
@@ -765,7 +765,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                         // The conference on the bridge has expired. The state between jicofo and the bridge is out of
                         // sync.
-                        throw ColibriConferenceNotFoundException("Conference not found", true)
+                        throw ColibriConferenceNotFoundException("Conference not found")
                     } else {
                         // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
                         // because the occupant left.
@@ -785,7 +785,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
                         // The conference on the bridge already exists. The state between jicofo and the bridge
                         // is out of sync.
-                        throw ConferenceAlreadyExistsException("Conference already exists error", true)
+                        throw ConferenceAlreadyExistsException("Conference already exists error")
                     } else {
                         // An error coming from the bridge. The state between jicofo and the bridge must be out of sync.
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
