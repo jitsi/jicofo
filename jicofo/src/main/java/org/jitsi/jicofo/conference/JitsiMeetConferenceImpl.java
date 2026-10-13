@@ -2129,7 +2129,17 @@ public class JitsiMeetConferenceImpl
                     xmppProvider);
 
             // Will call join after releasing the lock
-            chatRoomToJoin = xmppProvider.createRoom(visitorMucJid, logger.getLevel());
+            try
+            {
+                chatRoomToJoin = xmppProvider.createRoom(visitorMucJid, logger.getLevel());
+            }
+            catch (XmppProvider.RoomExistsException e)
+            {
+                // Most likely a conference for the same room just ended and has not left its visitor room yet.
+                logger.warn(
+                        "The visitor room on node " + node + " is still in use, not redirecting: " + e.getMessage());
+                return null;
+            }
 
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 

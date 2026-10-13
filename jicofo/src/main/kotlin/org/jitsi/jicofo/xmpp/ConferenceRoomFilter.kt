@@ -32,8 +32,12 @@ import org.jxmpp.jid.EntityBareJid
  *  - its domain is the conference MUC domain ([conferenceMucJid]),
  *  - its domain is a tenant sub-domain of the conference MUC domain, that is `conference.<tenant>.example.com` for a
  *    conference MUC domain `conference.example.com`,
- *  - its domain is the breakout rooms domain ([breakoutAddress], discovered from the XMPP server), or
+ *  - its domain is the breakout rooms domain ([breakoutAddress], discovered from the XMPP server) or a tenant
+ *    sub-domain of it, or
  *  - its domain is listed in the configuration (`jicofo.conference.room-domain-filter.additional-domains`).
+ *
+ * While the discovery of the breakout rooms domain is still pending ([discoveryPending]), all rooms are accepted.
+ * Otherwise breakout rooms would be rejected in the short window after jicofo connects.
  *
  * The domain checks can be disabled in the configuration. A room that is listed in [reservedRooms] (the brewery rooms)
  * is always rejected.
@@ -42,6 +46,8 @@ class ConferenceRoomFilter(
     private val conferenceMucJid: DomainBareJid,
     /** Rooms that are used internally (brewery rooms). They are rejected regardless of the configuration. */
     private val reservedRooms: Set<EntityBareJid> = emptySet(),
+    /** Whether the discovery of XMPP components (which provides the breakout rooms domain) is still pending. */
+    private val discoveryPending: () -> Boolean = { false },
     private val enabled: Boolean = ConferenceConfig.config.roomDomainFilterEnabled,
     private val additionalDomains: List<DomainBareJid> = ConferenceConfig.config.roomDomainFilterAdditionalDomains
 ) {
@@ -53,7 +59,7 @@ class ConferenceRoomFilter(
      * The labels of the conference MUC domain, e.g. ["conference", "example", "com"]. The domain part is already
      * normalized by jxmpp, so "." is the label separator and no further string preparation is needed.
      */
-    private val mucLabels = conferenceMucJid.toString().split('.')
+    private val mucLabels = conferenceMucJid.labels()
 
     /**
      * Check whether a conference request for [room] is accepted.
@@ -68,26 +74,32 @@ class ConferenceRoomFilter(
         }
 
         val domain = room.asDomainBareJid()
-        if (domain == conferenceMucJid || domain == breakoutAddress || additionalDomains.contains(domain)) {
+        if (domain == conferenceMucJid || additionalDomains.contains(domain)) {
             return null
         }
-        if (isTenantSubdomain(domain)) {
+        if (isTenantSubdomain(domain.labels(), mucLabels)) {
+            return null
+        }
+        val breakoutAddress = this.breakoutAddress
+        if (breakoutAddress == null) {
+            if (discoveryPending()) {
+                // The breakout rooms domain is not known yet, so this may be a breakout room.
+                return null
+            }
+        } else if (domain == breakoutAddress || isTenantSubdomain(domain.labels(), breakoutAddress.labels())) {
             return null
         }
         return "the domain is not a conference MUC domain"
     }
 
-    fun isAllowed(room: EntityBareJid) = rejectionReason(room) == null
+    private fun DomainBareJid.labels() = toString().split('.')
 
     /**
-     * Whether [domain] is `<first label>.<tenant labels>.<rest>` for a conference MUC domain `<first label>.<rest>`,
-     * with at least one tenant label.
+     * Whether [labels] is `<first label>.<tenant labels>.<rest>` for a base domain `<first label>.<rest>` with labels
+     * [baseLabels], with at least one tenant label.
      */
-    private fun isTenantSubdomain(domain: DomainBareJid): Boolean {
-        val labels = domain.toString().split('.')
-        return mucLabels.size >= 2 &&
-            labels.size > mucLabels.size &&
-            labels.first() == mucLabels.first() &&
-            labels.takeLast(mucLabels.size - 1) == mucLabels.drop(1)
-    }
+    private fun isTenantSubdomain(labels: List<String>, baseLabels: List<String>): Boolean = baseLabels.size >= 2 &&
+        labels.size > baseLabels.size &&
+        labels.first() == baseLabels.first() &&
+        labels.takeLast(baseLabels.size - 1) == baseLabels.drop(1)
 }

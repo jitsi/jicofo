@@ -34,7 +34,6 @@ import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
-import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.Boolean.parseBoolean
@@ -60,7 +59,6 @@ class ConferenceIqHandler(
     IQRequestHandler.Mode.sync
 ) {
     private val connection = xmppProvider.xmppConnection
-    private var breakoutAddress: DomainBareJid? = null
     private val logger = createLogger()
     private val tracer: Tracer = sdk.getTracer("org.jitsi.jicofo.xmpp")
 
@@ -72,7 +70,7 @@ class ConferenceIqHandler(
 
     val debugState: ObjectNode
         get() = JsonNodeFactory.instance.objectNode().apply {
-            put("breakout_address", breakoutAddress.toString())
+            put("breakout_address", roomFilter.breakoutAddress.toString())
             put("focus_auth_jid", focusAuthJid)
             put("jigasi_enabled", jigasiEnabled)
             put("auth_authority", authAuthority?.javaClass?.simpleName ?: "null")
@@ -249,6 +247,7 @@ class ConferenceIqHandler(
         response: ConferenceIq?,
         roomExists: Boolean
     ): IQ? {
+        val breakoutAddress = roomFilter.breakoutAddress
         val isBreakoutRoom = breakoutAddress != null && room.domain == breakoutAddress
 
         // Authentication. We do not perform authentication for breakout rooms, expecting the breakout room prosody
@@ -290,7 +289,17 @@ class ConferenceIqHandler(
         iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
 
         TaskPools.ioPool.execute {
-            val response = handleConferenceIq(iqRequest).apply { to = originalFrom }
+            val response = try {
+                handleConferenceIq(iqRequest)
+            } catch (e: Exception) {
+                // Always respond, otherwise the client waits for a timeout.
+                logger.error("Failed to handle conference request for ${iqRequest.room}", e)
+                IQ.createErrorResponse(
+                    iqRequest,
+                    StanzaError.from(StanzaError.Condition.internal_server_error, "Failed to handle the request.")
+                        .build()
+                )
+            }.apply { to = originalFrom }
 
             try {
                 connection.sendStanza(response)
@@ -305,14 +314,13 @@ class ConferenceIqHandler(
     override fun componentsChanged(components: Set<XmppProvider.Component>) {
         val address = components.find { it.type == "breakout_rooms" }?.address
 
-        breakoutAddress = if (address == null) {
+        roomFilter.breakoutAddress = if (address == null) {
             logger.info("No breakout room component discovered.")
             null
         } else {
             logger.info("Using breakout room component at $address.")
             JidCreate.domainBareFrom(address)
         }
-        roomFilter.breakoutAddress = breakoutAddress
     }
 
     companion object {

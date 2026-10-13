@@ -19,17 +19,23 @@ package org.jitsi.jicofo
 
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.core.test.TestCase
+import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.jitsi.jicofo.conference.JitsiMeetConference
+import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
 import org.jitsi.jicofo.xmpp.ConferenceRoomFilter
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
+import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.impl.JidCreate
 
@@ -47,8 +53,16 @@ class ConferenceIqHandlerTest : ShouldSpec() {
         }
     }
 
+    private val xmppConnection: AbstractXMPPConnection = mockk(relaxed = true)
+    private val xmppProvider: XmppProvider = mockk(relaxed = true) {
+        every { xmppConnection } returns this@ConferenceIqHandlerTest.xmppConnection
+    }
+
+    /** Whether the discovery of XMPP components is still pending. */
+    private var discoveryPending = false
+
     private fun createHandler(roomFilterEnabled: Boolean = true) = ConferenceIqHandler(
-        xmppProvider = mockk(relaxed = true),
+        xmppProvider = xmppProvider,
         focusManager = focusManager,
         focusAuthJid = "",
         authAuthority = null,
@@ -57,10 +71,19 @@ class ConferenceIqHandlerTest : ShouldSpec() {
         roomFilter = ConferenceRoomFilter(
             conferenceMucJid,
             reservedRooms = setOf(breweryJid),
+            discoveryPending = { discoveryPending },
             enabled = roomFilterEnabled,
             additionalDomains = emptyList()
         )
     )
+
+    override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
+        TaskPools.ioPool = inPlaceExecutor
+    }
+
+    override suspend fun afterAny(testCase: TestCase, result: TestResult) = super.afterAny(testCase, result).also {
+        TaskPools.resetIoPool()
+    }
 
     private fun conferenceIq(room: String) = ConferenceIq().apply {
         from = JidCreate.from("user@example.com/resource")
@@ -107,6 +130,24 @@ class ConferenceIqHandlerTest : ShouldSpec() {
                 handler.handleConferenceIq(conferenceIq("testRoom@breakout.example.com"))
                     .shouldBeInstanceOf<ConferenceIq>()
                 verify(exactly = 1) { focusManager.conferenceRequest(any(), any()) }
+            }
+            should("accept a breakout room while the discovery of components is pending") {
+                discoveryPending = true
+                handler.handleConferenceIq(conferenceIq("testRoom@breakout.example.com"))
+                    .shouldBeInstanceOf<ConferenceIq>()
+            }
+        }
+        context("When handling the request throws") {
+            every { focusManager.getConference(any()) } throws RuntimeException("test")
+            val iq = conferenceIq("testRoom@conference.example.com")
+            createHandler().handleIQRequest(iq)
+
+            should("still send an error response") {
+                val sent = slot<Stanza>()
+                verify(exactly = 1) { xmppConnection.sendStanza(capture(sent)) }
+                val response = sent.captured.shouldBeInstanceOf<IQ>()
+                response.shouldBeError(StanzaError.Condition.internal_server_error)
+                response.to shouldBe iq.from
             }
         }
         context("With the room domain filter disabled") {

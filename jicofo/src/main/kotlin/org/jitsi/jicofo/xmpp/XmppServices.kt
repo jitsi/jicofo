@@ -129,7 +129,11 @@ class XmppServices(
                 JibriConfig.config.breweryJid,
                 JibriConfig.config.sipBreweryJid,
                 JigasiConfig.config.breweryJid
-            )
+            ),
+            // Components (and thus the breakout rooms domain) are discovered only when an XMPP domain is configured.
+            discoveryPending = {
+                clientConnection.config.xmppDomain != null && !clientConnection.componentsDiscovered
+            }
         )
     ).apply {
         clientConnection.xmppConnection.registerIQRequestHandler(this)
