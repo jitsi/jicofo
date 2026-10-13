@@ -28,7 +28,9 @@ import io.mockk.every
 import io.mockk.mockk
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.mock.MockXmppConnection
+import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.inPlaceExecutor
+import org.jitsi.jicofo.xmpp.muc.ChatRoomImpl
 import org.jxmpp.jid.impl.JidCreate
 
 class MucTest : ShouldSpec() {
@@ -51,25 +53,37 @@ class MucTest : ShouldSpec() {
     init {
         context("Creating rooms") {
             val room = muc.createChatRoom(roomJid)
-            should("refuse a second room with the same JID while the first one is in use") {
-                room.addListener(mockk(relaxed = true))
+            should("refuse a second room with the same JID while the first one is active") {
                 shouldThrow<XmppProvider.RoomExistsException> { muc.createChatRoom(roomJid) }
             }
-            should("replace a room with the same JID that has no listeners") {
-                // E.g. a conference removed its listener, but its leave() did not run.
-                val newRoom = muc.createChatRoom(roomJid)
-                newRoom shouldNotBe room
-                room.isJoined shouldBe false
-            }
             should("allow a new room with the same JID after the first one was left") {
-                room.addListener(mockk(relaxed = true))
                 room.leave()
                 muc.createChatRoom(roomJid) shouldNotBe room
+            }
+            should("make a new room wait for the previous one while it is still leaving") {
+                // Leaving the MUC happens in an IO pool task. Hold the task back to simulate a slow leave.
+                val pendingExecutor = PendingExecutor()
+                TaskPools.ioPool = pendingExecutor.executor
+                val otherJid = JidCreate.entityBareFrom("other@conference.example.com")
+                val first = muc.createChatRoom(otherJid) as ChatRoomImpl
+
+                first.leave()
+                first.leftFuture.isDone shouldBe false
+                val second = muc.createChatRoom(otherJid) as ChatRoomImpl
+                second shouldNotBe first
+                second.previousInstanceLeft shouldBe first.leftFuture
+
+                pendingExecutor.runAll()
+                first.leftFuture.isDone shouldBe true
+            }
+            should("not make a new room wait for a room that has finished leaving") {
+                room.leave()
+                (room as ChatRoomImpl).leftFuture.isDone shouldBe true
+                (muc.createChatRoom(roomJid) as ChatRoomImpl).previousInstanceLeft shouldBe null
             }
             should("keep the new room when the old one leaves again") {
                 room.leave()
                 val newRoom = muc.createChatRoom(roomJid)
-                newRoom.addListener(mockk(relaxed = true))
                 newRoom shouldNotBe room
                 // Leaving the old room a second time must not remove the new room from the map.
                 room.leave()

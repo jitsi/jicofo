@@ -60,10 +60,12 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
-import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 
@@ -78,11 +80,10 @@ class ChatRoomImpl(
     override val roomJid: EntityBareJid,
     logLevel: Level?,
     /**
-     * How long to wait for a previous [ChatRoomImpl] instance for the same room to leave the Smack [MultiUserChat]
-     * before giving up on joining (see [waitForPreviousInstanceToLeave]). Defaults to the reply timeout of the
-     * connection plus a margin, because leaving can take a full reply timeout when the server does not respond.
+     * Completes when the previous [ChatRoomImpl] instance for the same room has finished leaving the MUC, or null if
+     * there is no such instance. See [waitForPreviousInstanceToLeave].
      */
-    private val previousInstanceLeaveTimeout: Duration? = null,
+    internal val previousInstanceLeft: CompletableFuture<Unit>? = null,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
@@ -157,9 +158,12 @@ class ChatRoomImpl(
     /** Whether [leave] has been called. Leaving more than once must have no effect. */
     private val leaveCalled = AtomicBoolean(false)
 
-    /** Whether any [ChatRoomListener]s are registered, i.e. whether some component is still using this room. */
-    internal val hasListeners: Boolean
-        get() = eventEmitter.eventHandlers.isNotEmpty()
+    /**
+     * Completes when this instance has finished leaving the MUC, that is when the Smack leave has completed (or
+     * failed) and the previous instance for the same room, if any, has finished leaving too. A new instance for the
+     * same room waits for this before it joins.
+     */
+    val leftFuture = CompletableFuture<Unit>()
 
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
@@ -183,12 +187,13 @@ class ChatRoomImpl(
         }
     }
 
-    /** Smack multi user chat backend instance. */
+    /**
+     * Smack multi user chat backend instance. It is shared with any other [ChatRoomImpl] instances for the same room
+     * on the same connection. The listeners are registered in [joinAs], after the previous instance has left, so that
+     * this instance does not receive presence that belongs to the previous instance.
+     */
     private val muc: MultiUserChat =
-        MultiUserChatManager.getInstanceFor(xmppProvider.xmppConnection).getMultiUserChat(this.roomJid).apply {
-            addUserStatusListener(userListener)
-            addParticipantListener(this@ChatRoomImpl)
-        }
+        MultiUserChatManager.getInstanceFor(xmppProvider.xmppConnection).getMultiUserChat(this.roomJid)
 
     override val isJoined
         get() = muc.isJoined && roomJoinedLatch.count <= 0
@@ -375,23 +380,31 @@ class ChatRoomImpl(
     /**
      * The Smack [MultiUserChat] is shared by all [ChatRoomImpl] instances for the same room JID on the same
      * connection. A previous instance (for example the room of a conference that just ended) may still be in the
-     * process of leaving. Wait for it to finish, because joining while it is still joined makes the two instances
-     * interfere with each other (the leave of the previous instance removes the Smack listeners that we rely on).
+     * process of leaving, which happens asynchronously. Wait for it to finish, because its leave would otherwise
+     * interfere with this instance: it removes the Smack listeners, and it sends an unavailable presence for the
+     * nickname that this instance is about to use.
      *
-     * @throws IllegalStateException if the MUC is still joined after [previousInstanceLeaveTimeout].
+     * The wait is bounded by the reply timeout of the connection plus a margin, because a leave takes a full reply
+     * timeout when the server does not respond.
+     *
+     * @throws IllegalStateException if the previous instance does not leave in time, or if the MUC is still joined.
      */
     private fun waitForPreviousInstanceToLeave() {
-        if (!muc.isJoined) {
-            return
-        }
-        val timeout = previousInstanceLeaveTimeout ?: xmppProvider.config.replyTimeout.plusSeconds(5)
-        logger.info("The MUC is still joined by a previous instance, waiting up to $timeout for it to leave.")
-        val deadline = System.nanoTime() + timeout.toNanos()
-        while (muc.isJoined) {
-            if (System.nanoTime() > deadline) {
-                throw IllegalStateException("The MUC is still joined by a previous instance.")
+        previousInstanceLeft?.let { previous ->
+            if (!previous.isDone) {
+                val timeout = xmppProvider.config.replyTimeout.plusSeconds(5)
+                logger.info("Waiting up to $timeout for the previous instance to leave the MUC.")
+                try {
+                    previous.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                } catch (e: TimeoutException) {
+                    throw IllegalStateException("The previous instance did not leave the MUC in time.")
+                } catch (e: ExecutionException) {
+                    // The future only completes normally.
+                }
             }
-            Thread.sleep(20)
+        }
+        if (muc.isJoined) {
+            throw IllegalStateException("The MUC is still joined by another instance.")
         }
     }
 
@@ -403,6 +416,8 @@ class ChatRoomImpl(
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
         waitForPreviousInstanceToLeave()
 
+        muc.addUserStatusListener(userListener)
+        muc.addParticipantListener(this)
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
         val config = muc.configurationForm
@@ -517,7 +532,19 @@ class ChatRoomImpl(
                 if (connection.isConnected || e !is SmackException.NotConnectedException) {
                     logger.error("Failed to properly leave $muc", e)
                 }
+            } finally {
+                completeLeft()
             }
+        }
+    }
+
+    /** Complete [leftFuture] once this instance and the previous instance (if any) have finished leaving. */
+    private fun completeLeft() {
+        val previous = previousInstanceLeft
+        if (previous == null || previous.isDone) {
+            leftFuture.complete(Unit)
+        } else {
+            previous.whenComplete { _, _ -> leftFuture.complete(Unit) }
         }
     }
 

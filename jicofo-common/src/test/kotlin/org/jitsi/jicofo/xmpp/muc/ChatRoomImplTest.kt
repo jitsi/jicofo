@@ -34,6 +34,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.RoomMetadata
+import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.Presence
@@ -52,6 +53,7 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 import kotlin.concurrent.thread
@@ -61,12 +63,13 @@ class ChatRoomImplTest : ShouldSpec() {
 
     private val roomJid = JidCreate.entityBareFrom("room@conference.example.com")
     private val xmppConnection = MockXmppConnection().xmppConnection
+    private val xmppConfig: XmppConnectionConfig = mockk(relaxed = true) {
+        every { username } returns Resourcepart.from("focus")
+        every { replyTimeout } returns Duration.ofSeconds(15)
+    }
     private val xmppProvider: XmppProvider = mockk(relaxed = true) {
         every { xmppConnection } returns this@ChatRoomImplTest.xmppConnection
-        every { config } returns mockk(relaxed = true) {
-            every { username } returns Resourcepart.from("focus")
-            every { replyTimeout } returns Duration.ofSeconds(15)
-        }
+        every { config } returns xmppConfig
     }
 
     /** The role/affiliation of each occupant, as would be reported by the MUC. */
@@ -79,14 +82,14 @@ class ChatRoomImplTest : ShouldSpec() {
     private val chatRoom by lazy { newChatRoom() }
 
     /** Create a [ChatRoomImpl] which uses the mock [muc]. */
-    private fun newChatRoom(previousInstanceLeaveTimeout: Duration? = null): ChatRoomImpl {
+    private fun newChatRoom(previousInstanceLeft: CompletableFuture<Unit>? = null): ChatRoomImpl {
         mockkStatic(MultiUserChatManager::class)
         val manager = mockk<MultiUserChatManager> {
             every { getMultiUserChat(any()) } returns muc
         }
         every { MultiUserChatManager.getInstanceFor(any()) } returns manager
         try {
-            return ChatRoomImpl(xmppProvider, roomJid, Level.INFO, previousInstanceLeaveTimeout) { left = true }.apply {
+            return ChatRoomImpl(xmppProvider, roomJid, Level.INFO, previousInstanceLeft) { left = true }.apply {
                 addListener(
                     object : ChatRoomListener {
                         override fun memberJoined(member: ChatRoomMember) {
@@ -168,6 +171,14 @@ class ChatRoomImplTest : ShouldSpec() {
                 verify(exactly = 1) { muc.createOrJoin(Resourcepart.from("focus")) }
                 verify(exactly = 0) { muc.leave() }
             }
+            should("register its MUC listeners only when joining") {
+                chatRoom shouldNotBe null
+                verify(exactly = 0) { muc.addParticipantListener(any()) }
+                verify(exactly = 0) { muc.addUserStatusListener(any()) }
+                chatRoom.join()
+                verify(exactly = 1) { muc.addParticipantListener(chatRoom) }
+                verify(exactly = 1) { muc.addUserStatusListener(any()) }
+            }
             should("refuse to join a second time") {
                 chatRoom.join()
                 shouldThrow<IllegalStateException> { chatRoom.join() }
@@ -175,21 +186,34 @@ class ChatRoomImplTest : ShouldSpec() {
                 verify(exactly = 0) { muc.leave() }
             }
             should("wait for a previous instance to leave the MUC") {
-                val stillJoined = AtomicBoolean(true)
-                every { muc.isJoined } answers { stillJoined.get() }
-                thread {
-                    Thread.sleep(200)
-                    stillJoined.set(false)
+                val previousLeft = CompletableFuture<Unit>()
+                val room = newChatRoom(previousInstanceLeft = previousLeft)
+                val joined = AtomicBoolean(false)
+                val joinThread = thread {
+                    room.join()
+                    joined.set(true)
                 }
-                chatRoom.join()
+                Thread.sleep(200)
+                joined.get() shouldBe false
+                verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
+
+                previousLeft.complete(Unit)
+                joinThread.join(5000)
+                joined.get() shouldBe true
                 verify(exactly = 1) { muc.createOrJoin(any<Resourcepart>()) }
                 // It must never leave the MUC on behalf of the previous instance.
                 verify(exactly = 0) { muc.leave() }
             }
-            should("give up when a previous instance does not leave the MUC") {
-                every { muc.isJoined } returns true
-                val room = newChatRoom(previousInstanceLeaveTimeout = Duration.ofMillis(200))
+            should("give up when a previous instance does not leave the MUC in time") {
+                every { xmppConfig.replyTimeout } returns Duration.ofMillis(100)
+                val room = newChatRoom(previousInstanceLeft = CompletableFuture())
                 shouldThrow<IllegalStateException> { room.join() }
+                verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("refuse to join while the MUC is joined by another instance") {
+                every { muc.isJoined } returns true
+                shouldThrow<IllegalStateException> { chatRoom.join() }
                 verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
                 verify(exactly = 0) { muc.leave() }
             }
@@ -294,11 +318,21 @@ class ChatRoomImplTest : ShouldSpec() {
             left shouldBe true
             // Not joined, so a single unavailable presence is sent to avoid leaking the MUC on the server.
             verify(exactly = 1) { xmppConnection.sendStanza(any()) }
+            chatRoom.leftFuture.isDone shouldBe true
 
             should("have no effect when called again") {
                 chatRoom.leave()
                 verify(exactly = 1) { xmppConnection.sendStanza(any()) }
             }
+        }
+        context("Leaving the room while the previous instance is still leaving") {
+            val previousLeft = CompletableFuture<Unit>()
+            val room = newChatRoom(previousInstanceLeft = previousLeft)
+            room.leave()
+            // Our own leave is complete (in-place executor), but the previous instance has not left yet.
+            room.leftFuture.isDone shouldBe false
+            previousLeft.complete(Unit)
+            room.leftFuture.isDone shouldBe true
         }
         context("Room metadata") {
             chatRoom.setRoomMetadata(
