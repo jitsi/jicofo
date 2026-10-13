@@ -36,6 +36,7 @@ import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.MemberRole
+import org.jivesoftware.smack.SmackException
 
 /**
  * Tests the way a conference handles the visitor node that it uses, in particular the node restarting.
@@ -121,6 +122,29 @@ class ConferenceVisitorsTest : ShouldSpec() {
                     }
                 }
 
+                context("When the conference stops while the connection is down") {
+                    conference.redirectVisitor(true, null, null) shouldBe "v1"
+                    // Sending the IQ to disconnect the node fails without a connection.
+                    every {
+                        harness.visitorsManager.sendIqToComponentAndGetResponse(any(), any())
+                    } throws SmackException.NotConnectedException()
+                    conference.stop()
+                    // Otherwise the rooms stay active, and no later conference for the same room can use them.
+                    should("still leave the visitor room") {
+                        verify(exactly = 1) { visitorRoom.chatRoom.leave() }
+                    }
+                    should("still leave the main room") {
+                        verify(exactly = 1) { harness.chatRoom.chatRoom.leave() }
+                    }
+                }
+                context("When discarding a stale visitor room fails") {
+                    conference.redirectVisitor(true, null, null) shouldBe "v1"
+                    every { visitorRoom.chatRoom.members } throws RuntimeException("test")
+                    conference.visitorConnectionReset("v1")
+                    should("still leave the stale visitor room") {
+                        verify(exactly = 1) { visitorRoom.chatRoom.leave() }
+                    }
+                }
                 context("When a node that the conference does not use is restarted") {
                     conference.redirectVisitor(true, null, null) shouldBe "v1"
 

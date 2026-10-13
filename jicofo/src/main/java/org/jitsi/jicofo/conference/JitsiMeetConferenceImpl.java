@@ -792,7 +792,15 @@ public class JitsiMeetConferenceImpl
                     xmppServices.getVisitorsManager()
                             .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
                 }
-
+            }
+            catch (Exception e)
+            {
+                // Expected when the connection is down. The rooms below must still be left.
+                logger.warn("Failed to disconnect the visitor nodes: " + e.getMessage());
+            }
+            finally
+            {
+                // Always leave the rooms. Otherwise they stay active and block a new conference for the same room.
                 visitorChatRoomsToLeave.forEach(visitorChatRoom ->
                 {
                     try
@@ -805,10 +813,6 @@ public class JitsiMeetConferenceImpl
                         logger.error("Failed to leave visitor room", e);
                     }
                 });
-            }
-            finally
-            {
-                // Always leave the room. Otherwise it stays active and blocks a new conference for the same room.
                 chatRoomToLeave.leave();
             }
         });
@@ -2251,13 +2255,23 @@ public class JitsiMeetConferenceImpl
                         onMemberLeft(member);
                     }
                 }
-
-                staleChatRoom.removeAllListeners();
-                staleChatRoom.leave();
             }
             catch (Exception e)
             {
-                logger.error("Failed to discard the visitor room on node " + node, e);
+                logger.error("Failed to terminate the visitors of the stale room on node " + node, e);
+            }
+            finally
+            {
+                // Always leave the room. Otherwise it stays active and blocks a new room on this node.
+                try
+                {
+                    staleChatRoom.removeAllListeners();
+                    staleChatRoom.leave();
+                }
+                catch (Exception e)
+                {
+                    logger.error("Failed to leave the stale visitor room on node " + node, e);
+                }
             }
         });
 
