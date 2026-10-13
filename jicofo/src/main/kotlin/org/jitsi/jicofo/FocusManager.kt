@@ -156,7 +156,8 @@ class FocusManager(
         synchronized(conferencesSyncRoot) {
             conferences.remove(roomName)
             conferencesCache.remove(conference)
-            conferencesByMeetingId.remove(conference.meetingId)
+            // The meeting ID is not set when the conference fails to join the room.
+            conference.meetingId?.let { conferencesByMeetingId.remove(it) }
             if (conference.includeInStatistics()) {
                 ConferenceMetrics.conferenceCount.dec()
             }
