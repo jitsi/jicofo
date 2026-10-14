@@ -20,6 +20,8 @@ package org.jitsi.jicofo.xmpp
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
+import org.jitsi.jicofo.bridge.BridgeConfig
+import org.jitsi.jicofo.jibri.JibriConfig
 import org.jitsi.jicofo.jigasi.JigasiConfig
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
@@ -111,7 +113,20 @@ class XmppServices(
         focusAuthJid = XmppConfig.client.jid,
         authAuthority = authenticationAuthority,
         jigasiEnabled = jigasiDetector != null,
-        visitorsManager
+        visitorsManager = visitorsManager,
+        roomFilter = ConferenceRoomFilter(
+            conferenceMucJid = XmppConfig.client.conferenceMucJid,
+            reservedRooms = setOfNotNull(
+                BridgeConfig.config.breweryJid,
+                JibriConfig.config.breweryJid,
+                JibriConfig.config.sipBreweryJid,
+                JigasiConfig.config.breweryJid
+            ),
+            // Components (and thus the breakout rooms domain) are discovered only when an XMPP domain is configured.
+            discoveryPending = {
+                clientConnection.config.xmppDomain != null && !clientConnection.componentsDiscovered
+            }
+        )
     ).apply {
         clientConnection.xmppConnection.registerIQRequestHandler(this)
     }

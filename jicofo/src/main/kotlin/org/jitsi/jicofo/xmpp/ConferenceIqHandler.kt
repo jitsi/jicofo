@@ -30,7 +30,6 @@ import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.iqrequest.IQRequestHandler
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
-import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
 import java.lang.Boolean.parseBoolean
@@ -45,7 +44,9 @@ class ConferenceIqHandler(
     val focusAuthJid: String,
     val authAuthority: AuthenticationAuthority?,
     val jigasiEnabled: Boolean,
-    val visitorsManager: VisitorsManager
+    val visitorsManager: VisitorsManager,
+    /** Decides which rooms conference requests are accepted for. */
+    private val roomFilter: ConferenceRoomFilter
 ) : XmppProvider.Listener, AbstractIqRequestHandler(
     ConferenceIq.ELEMENT,
     ConferenceIq.NAMESPACE,
@@ -53,7 +54,6 @@ class ConferenceIqHandler(
     IQRequestHandler.Mode.sync
 ) {
     private val connection = xmppProvider.xmppConnection
-    private var breakoutAddress: DomainBareJid? = null
     private val logger = createLogger()
 
     init {
@@ -64,7 +64,7 @@ class ConferenceIqHandler(
 
     val debugState: OrderedJsonObject
         get() = OrderedJsonObject().apply {
-            this["breakout_address"] = breakoutAddress.toString()
+            this["breakout_address"] = roomFilter.breakoutAddress.toString()
             this["focus_auth_jid"] = focusAuthJid
             this["jigasi_enabled"] = jigasiEnabled
             this["auth_authority"] = authAuthority?.javaClass?.simpleName ?: "null"
@@ -103,6 +103,17 @@ class ConferenceIqHandler(
         logger.info("Conference request for room $room, from ${query.from}, token=${query.token != null}")
         logger.debug { "User ID: $userId, Group ID: $groupId" }
         conferenceRequestCounter.inc()
+
+        roomFilter.rejectionReason(room)?.let { reason ->
+            logger.warn(
+                "Rejecting conference request for room $room: $reason. See jicofo.conference.room-domain-filter."
+            )
+            rejectedConferenceRequestCounter.inc()
+            return IQ.createErrorResponse(
+                query,
+                StanzaError.from(StanzaError.Condition.bad_request, "Room not allowed: $reason.").build()
+            )
+        }
         var conference = focusManager.getConference(room)
         val roomExists = conference != null
         if (!roomExists) {
@@ -133,7 +144,25 @@ class ConferenceIqHandler(
         }
 
         // If the conference didn't exist previously, it will be created and the MUC will be joined here (blocking).
-        conference = focusManager.conferenceRequest(room, query.propertiesMap)
+        val requestedConference = try {
+            focusManager.conferenceRequest(room, query.propertiesMap)
+        } catch (e: XmppProvider.RoomExistsException) {
+            // Another component of jicofo (e.g. a brewery) still uses a ChatRoom object for this JID. This is not
+            // about the MUC existing on the server, which is the normal case.
+            logger.warn("Rejecting conference request for room $room: ${e.message}")
+            return IQ.createErrorResponse(
+                query,
+                StanzaError.from(StanzaError.Condition.conflict, "The room is in use.").build()
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to start the conference for room $room", e)
+            return IQ.createErrorResponse(
+                query,
+                StanzaError.from(StanzaError.Condition.internal_server_error, "Failed to start the conference.")
+                    .build()
+            )
+        }
+        conference = requestedConference
         response.isReady = conference.isStarted && (conference.chatRoom?.isJoined == true)
 
         // We've now joined the MUC and room metadata has been set.
@@ -196,6 +225,7 @@ class ConferenceIqHandler(
         response: ConferenceIq?,
         roomExists: Boolean
     ): IQ? {
+        val breakoutAddress = roomFilter.breakoutAddress
         val isBreakoutRoom = breakoutAddress != null && room.domain == breakoutAddress
 
         // Authentication. We do not perform authentication for breakout rooms, expecting the breakout room prosody
@@ -237,7 +267,17 @@ class ConferenceIqHandler(
         iqRequest.from = parseJidFromClientProxyJid(XmppConfig.client.clientProxy, originalFrom)
 
         TaskPools.ioPool.execute {
-            val response = handleConferenceIq(iqRequest).apply { to = originalFrom }
+            val response = try {
+                handleConferenceIq(iqRequest)
+            } catch (e: Exception) {
+                // Always respond, otherwise the client waits for a timeout.
+                logger.error("Failed to handle conference request for ${iqRequest.room}", e)
+                IQ.createErrorResponse(
+                    iqRequest,
+                    StanzaError.from(StanzaError.Condition.internal_server_error, "Failed to handle the request.")
+                        .build()
+                )
+            }.apply { to = originalFrom }
 
             try {
                 connection.sendStanza(response)
@@ -252,7 +292,7 @@ class ConferenceIqHandler(
     override fun componentsChanged(components: Set<XmppProvider.Component>) {
         val address = components.find { it.type == "breakout_rooms" }?.address
 
-        breakoutAddress = if (address == null) {
+        roomFilter.breakoutAddress = if (address == null) {
             logger.info("No breakout room component discovered.")
             null
         } else {
@@ -269,6 +309,10 @@ class ConferenceIqHandler(
         val newConferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
             "conference_requests_new",
             "Number of conference requests received for new conferences."
+        )
+        val rejectedConferenceRequestCounter = JicofoMetricsContainer.instance.registerCounter(
+            "conference_requests_rejected",
+            "Number of conference requests rejected because of the room they were for."
         )
     }
 }

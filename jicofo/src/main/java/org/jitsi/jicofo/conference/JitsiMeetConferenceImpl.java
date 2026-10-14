@@ -578,7 +578,7 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName, logger.getLevel());
+        ChatRoom chatRoom = getClientXmppProvider().createRoom(roomName, logger.getLevel());
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
@@ -754,26 +754,36 @@ public class JitsiMeetConferenceImpl
 
         TaskPools.getIoPool().submit(() ->
         {
-            if (!disconnectVnodeExtensions.isEmpty())
+            try
             {
-                jicofoServices.getXmppServices().getVisitorsManager()
-                        .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                if (!disconnectVnodeExtensions.isEmpty())
+                {
+                    jicofoServices.getXmppServices().getVisitorsManager()
+                            .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                }
             }
-
-            visitorChatRoomsToLeave.forEach(visitorChatRoom ->
+            catch (Exception e)
             {
-                try
+                // Expected when the connection is down. The rooms below must still be left.
+                logger.warn("Failed to disconnect the visitor nodes: " + e.getMessage());
+            }
+            finally
+            {
+                // Always leave the rooms. Otherwise they stay active and block a new conference for the same room.
+                visitorChatRoomsToLeave.forEach(visitorChatRoom ->
                 {
-                    visitorChatRoom.removeAllListeners();
-                    visitorChatRoom.leave();
-                }
-                catch (Exception e)
-                {
-                    logger.error("Failed to leave visitor room", e);
-                }
-            });
-
-            chatRoomToLeave.leave();
+                    try
+                    {
+                        visitorChatRoom.removeAllListeners();
+                        visitorChatRoom.leave();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Failed to leave visitor room", e);
+                    }
+                });
+                chatRoomToLeave.leave();
+            }
         });
     }
 
@@ -2025,7 +2035,17 @@ public class JitsiMeetConferenceImpl
                     xmppProvider);
 
             // Will call join after releasing the lock
-            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid, logger.getLevel());
+            try
+            {
+                chatRoomToJoin = xmppProvider.createRoom(visitorMucJid, logger.getLevel());
+            }
+            catch (XmppProvider.RoomExistsException e)
+            {
+                // Most likely a conference for the same room just ended and has not left its visitor room yet.
+                logger.warn(
+                        "The visitor room on node " + node + " is still in use, not redirecting: " + e.getMessage());
+                return null;
+            }
 
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 
