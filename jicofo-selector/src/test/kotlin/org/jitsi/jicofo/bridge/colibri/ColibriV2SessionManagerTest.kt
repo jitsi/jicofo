@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -28,6 +29,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
@@ -111,6 +113,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     }
 
     private val failedSessions = mutableListOf<Bridge>()
+
+    /** The participants reported for re-invite by [ColibriSessionManager.Listener.bridgeRemoved]. */
+    private val reinvitedParticipants = mutableListOf<String>()
     private val removedEndpoints = mutableListOf<String>()
 
     /** The transports relayed to participants after an ICE restart, in the order they were fired. */
@@ -126,6 +131,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         }
         override fun bridgeRemoved(bridge: Bridge, participantIds: List<String>) {
             failedSessions.add(bridge)
+            reinvitedParticipants.addAll(participantIds)
         }
         override fun endpointRemoved(endpointId: String) {
             removedEndpoints.add(endpointId)
@@ -267,6 +273,55 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     should("not fail any sessions") {
                         failedSessions.shouldBeEmpty()
                     }
+                }
+            }
+        }
+
+        context("The bridge expired the conference (state out of sync)") {
+            context("With a participant remaining in the session") {
+                allocate("p1", region = "region-jvb1")
+                allocate("p2", region = "region-jvb1")
+                // The bridge drops the conference, e.g. because it expired its endpoints locally.
+                colibriServers[bridge1.jid]!!.stop()
+
+                context("And removing a participant") {
+                    sessionManager.removeParticipant("p1").also { drain() }
+                    should("fail the session so the remaining participants are re-invited") {
+                        failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants shouldBe listOf("p2")
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+                context("And allocating another participant") {
+                    val e = shouldThrow<ColibriConferenceNotFoundException> {
+                        allocate("p3", region = "region-jvb1")
+                    }
+                    drain()
+                    should("remove the session and report its participants, including the new one") {
+                        e.removeBridge shouldBe true
+                        failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants.toSet() shouldBe setOf("p1", "p2", "p3")
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+            }
+            context("While expiring the conference") {
+                allocate("p1", region = "region-jvb1")
+                colibriServers[bridge1.jid]!!.stop()
+                // Removing the last participant expires the conference, which the bridge has already expired.
+                sessionManager.removeParticipant("p1").also { drain() }
+
+                should("send the expire") {
+                    requestsTo(bridge1).count { it.expire } shouldBe 1
+                }
+                should("not treat the conference_not_found response as a failure") {
+                    failedSessions.shouldBeEmpty()
                 }
             }
         }

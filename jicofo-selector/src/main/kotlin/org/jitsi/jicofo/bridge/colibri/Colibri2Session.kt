@@ -460,6 +460,21 @@ class Colibri2Session(
                 // If colibri2 error extension is present then the message came from
                 // a jitsi-videobridge instance. Otherwise, it might come from another component
                 // (e.g. the XMPP server or MUC component).
+                if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
+                    if (iq is ConferenceModifyIQ && iq.expire) {
+                        // We were expiring the conference and it is already gone. Nothing to recover from.
+                        logger.info("The conference was already expired on the bridge ($name request).")
+                    } else {
+                        // The bridge expired the conference (e.g. when its last endpoint was removed) while we still
+                        // think it has participants. The bridge is healthy, re-invite the participants of this session.
+                        logger.warn(
+                            "Conference not found on the bridge for $name request, session failed: " +
+                                "${error.toXML()}, request was: ${iq.toXML()}"
+                        )
+                        colibriSessionManager.sessionFailed(this@Colibri2Session)
+                    }
+                    return@sendIqAndHandleResponseAsync
+                }
                 val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
                 if (reInvite) {
                     logger.warn(

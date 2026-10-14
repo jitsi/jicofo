@@ -225,9 +225,10 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             return;
         }
-        catch (ConferenceAlreadyExistsException e)
+        catch (ColibriStateOutOfSyncException e)
         {
-            logger.warn("Can not allocate colibri channels, conference already exists.");
+            // The session has been removed and its participants (including this one) are being re-invited.
+            logger.warn("Can not allocate colibri channels: " + e.getMessage());
             cancel();
             return;
         }
