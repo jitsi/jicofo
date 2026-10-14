@@ -36,7 +36,7 @@ class FocusManagerTest : ShouldSpec() {
             }
             val jicofoServices: JicofoServices = mockk(relaxed = true) {
                 every { xmppServices.clientConnection.registered } returns true
-                every { xmppServices.clientConnection.findOrCreateRoom(any(), any()) } returns chatRoom
+                every { xmppServices.clientConnection.createRoom(any(), any()) } returns chatRoom
             }
             val focusManager = FocusManager(jicofoServices = jicofoServices)
             val conferenceCount = ConferenceMetrics.conferenceCount.get()
