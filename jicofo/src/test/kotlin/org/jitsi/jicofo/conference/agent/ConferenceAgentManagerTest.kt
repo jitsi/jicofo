@@ -20,6 +20,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.mockk.Called
 import io.mockk.every
 import io.mockk.mockk
@@ -231,12 +232,21 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
                     manager.endpointsRemoved(listOf("agent1", "p1"), colibriSessionManager, "meeting1")
 
-                    should("re-allocate it with the same SSRC and report connecting again") {
+                    should("re-allocate it under the same source name with a new SSRC, and report connecting again") {
                         val allParams = mutableListOf<ParticipantAllocationParameters>()
                         verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
                         allParams.map { it.id } shouldBe listOf("agent1", "agent1")
-                        allParams[0].sources.sources.single().ssrc shouldBe allParams[1].sources.sources.single().ssrc
+                        val (first, second) = allParams.map { it.sources.sources.single() }
+                        second.name shouldBe first.name
+                        second.ssrc shouldNotBe first.ssrc
                         verify(exactly = 2) { statusReporter.report("agent1", AgentStatusReporter.CONNECTING) }
+                    }
+                    should("signal the new SSRC to the bridge") {
+                        val sources = mutableListOf<EndpointSourceSet>()
+                        verify(exactly = 2) {
+                            colibriSessionManager.updateParticipant("agent1", any(), capture(sources), any(), any())
+                        }
+                        sources[1].sources.single().ssrc shouldNotBe sources[0].sources.single().ssrc
                     }
                     should("only know its own endpoints") {
                         manager.manages("agent1") shouldBe true
@@ -286,13 +296,15 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     verify(exactly = 1) { colibriSessionManager.allocate(any()) }
                     verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.CONNECTING) }
                 }
-                should("re-allocate the agent with the same SSRC once a human's session exists") {
+                should("re-allocate it under the same source name with a new SSRC once a human's session exists") {
                     every { colibriSessionManager.bridgeCount } returns 1
                     manager.reapply(colibriSessionManager, "meeting1")
                     val allParams = mutableListOf<ParticipantAllocationParameters>()
                     verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
                     allParams.map { it.id } shouldBe listOf("agent1", "agent1")
-                    allParams[0].sources.sources.single().ssrc shouldBe allParams[1].sources.sources.single().ssrc
+                    val (first, second) = allParams.map { it.sources.sources.single() }
+                    second.name shouldBe first.name
+                    second.ssrc shouldNotBe first.ssrc
                 }
             }
         }

@@ -2349,7 +2349,7 @@ public class JitsiMeetConferenceImpl
         int n = participantIdsToReinvite.size();
         if (n == 0)
         {
-            return 0;
+            return agentIds.size();
         }
 
         List<Participant> participantsToReinvite = new ArrayList<>();
@@ -2373,7 +2373,8 @@ public class JitsiMeetConferenceImpl
             reInviteParticipants(participantsToReinvite, updateParticipant);
         }
         ConferenceMetrics.participantsMoved.addAndGet(participantsToReinvite.size());
-        return participantsToReinvite.size();
+        // Re-allocated agents count as moved too (the move-endpoint API reports this number).
+        return participantsToReinvite.size() + agentIds.size();
     }
 
     /**

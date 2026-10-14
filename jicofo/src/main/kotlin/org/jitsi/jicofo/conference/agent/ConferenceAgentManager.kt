@@ -67,7 +67,10 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
     private var requests: Map<String, RoomMetadata.Metadata.Agent> = emptyMap()
 
-    /** Agent id -> its synthetic audio source. Kept stable across updates (an existing agent keeps its SSRC). */
+    /**
+     * Agent id -> its synthetic audio source. Stable across metadata updates; an endpoint that is lost and re-allocated
+     * keeps the source name but gets a new SSRC (see [remint]).
+     */
     private val allocated = mutableMapOf<String, Source>()
 
     /** Agents whose synthetic endpoint has been allocated on a bridge. */
@@ -107,8 +110,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
     /**
      * The bridge lost these endpoints (its session was removed, or it expired them), so forget they were allocated
-     * and re-allocate right away, like the conference re-invites the humans that were on that bridge. A failed agent
-     * stays failed, and an allocation still in flight completes on its own.
+     * and re-allocate right away with a new SSRC, like the conference re-invites the humans that were on that bridge.
+     * A failed agent stays failed, and an allocation still in flight completes on its own.
      */
     @Synchronized
     fun endpointsRemoved(
@@ -121,6 +124,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
             return
         }
         logger.info("Re-allocating agents whose endpoint the bridge lost: $lost")
+        lost.forEach { remint(it) }
         apply(colibriSessionManager, meetingId)
     }
 
@@ -136,11 +140,12 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
 
         // When the last human left, colibri expired every session and the agent endpoints with them. Forget those
-        // were allocated so they are allocated again (same SSRC) on the session the next human creates.
+        // were allocated so they are allocated again (new SSRC) on the session the next human creates.
         val expired = ready.filter { colibriSessionManager.getBridgeSessionId(it).first == null }
         if (expired.isNotEmpty()) {
             logger.info("Agent endpoints expired with their session, re-allocating once a session exists: $expired")
             ready.removeAll(expired.toSet())
+            expired.forEach { remint(it) }
         }
         // Re-allocating with no session left would create one for the agent alone (and race the conference stopping).
         val canReallocate = colibriSessionManager.bridgeCount > 0
@@ -267,6 +272,17 @@ class ConferenceAgentManager @JvmOverloads constructor(
                 .mapNotNull { it.name }
             audio.ifEmpty { listOf(Source.nameForIdAndMediaType(endpointId, MediaType.AUDIO, 0)) }
         }
+
+    /**
+     * Gives a lost agent endpoint a new SSRC under the same source name: the next bridge cannot continue the old
+     * stream's RTP sequence numbers and timestamps, so receivers must see a new stream rather than a discontinuity.
+     */
+    private fun remint(id: String) {
+        val old = allocated[id] ?: return
+        val source = Source(mintSsrc(), MediaType.AUDIO, name = old.name, synthetic = true)
+        logger.info("Agent $id gets a new SSRC: ${old.ssrc} -> ${source.ssrc}")
+        allocated[id] = source
+    }
 
     /** Whether an SSRC is already used by a source in the conference or by another agent. */
     private fun ssrcInUse(ssrc: Long): Boolean = allocated.values.any { it.ssrc == ssrc } ||
