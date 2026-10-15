@@ -40,6 +40,9 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.impl.JidCreate
+import java.util.logging.Handler
+import java.util.logging.Level
+import java.util.logging.LogRecord
 
 /**
  * Tests that custom transcription HTTP headers and URL parameters are correctly included in Colibri2 requests,
@@ -102,14 +105,31 @@ class ColibriTranscriptionTest : ShouldSpec() {
             )
         )
 
+    /** The errors that [ColibriV2SessionManager] logs. */
+    private val errors = mutableListOf<String>()
+
+    /** Keep a strong reference: java.util.logging holds its loggers only weakly. */
+    private val managerJulLogger = java.util.logging.Logger.getLogger(ColibriV2SessionManager::class.java.name)
+    private val errorHandler = object : Handler() {
+        override fun publish(record: LogRecord) {
+            if (record.level == Level.SEVERE) errors.add(record.message)
+        }
+        override fun flush() {}
+        override fun close() {}
+    }
+
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         TaskPools.ioPool = inPlaceExecutor
         TaskPools.scheduledPool = inPlaceScheduledExecutor
+        // beforeAny runs for both the container and the leaf, so remove the handler first to not add it twice.
+        managerJulLogger.removeHandler(errorHandler)
+        managerJulLogger.addHandler(errorHandler)
     }
 
     override suspend fun afterAny(testCase: TestCase, result: TestResult) = super.afterAny(testCase, result).also {
         TaskPools.resetIoPool()
         TaskPools.resetScheduledPool()
+        managerJulLogger.removeHandler(errorHandler)
     }
 
     init {
@@ -175,6 +195,87 @@ class ColibriTranscriptionTest : ShouldSpec() {
                 urlStr shouldContain "$expectedBaseUrl?"
                 urlStr shouldContain "key1=value1"
                 urlStr shouldContain "key2=hello+world"
+            }
+        }
+
+        context("Setting the same transcriber URL again from a new TemplatedUrl instance") {
+            // The conference creates a new TemplatedUrl for each call, and TemplatedUrl has no value equality.
+            fun newTranscriberUrl(template: String = "wss://{{REGION}}.transcriber.example.com/rec") =
+                TemplatedUrl(template, requiredKeys = setOf("REGION")).apply { set("MEETING_ID", "test-meeting-id") }
+
+            val manager = createSessionManager()
+            allocateParticipant(manager)
+            manager.setTranscriberUrl(newTranscriberUrl(), customHeaders, urlParams)
+            val connect = colibriRequests.flatMap { it.connects?.getConnects() ?: emptyList() }.single()
+            colibriRequests.clear()
+
+            context("With the same headers and params") {
+                manager.setTranscriberUrl(newTranscriberUrl(), customHeaders, urlParams)
+
+                should("not log an error") { errors shouldBe emptyList() }
+                should("not send a request") { colibriRequests shouldBe emptyList() }
+                should("keep the connect") { manager.hasConnects() shouldBe true }
+            }
+            context("With different headers and params") {
+                // The bridge does not support changing the headers or the URL of a running connect, so the new values
+                // are not applied.
+                manager.setTranscriberUrl(newTranscriberUrl(), mapOf("X-Custom-Header" to "other"), null)
+
+                should("not log an error") { errors shouldBe emptyList() }
+                should("not send a request") { colibriRequests shouldBe emptyList() }
+                should("keep the connect") { manager.hasConnects() shouldBe true }
+                context("And then removing the transcriber") {
+                    manager.setTranscriberUrl(null, null, null)
+
+                    should("expire the original connect") {
+                        val expired = colibriRequests.flatMap { it.connects?.getConnects() ?: emptyList() }.single()
+                        expired.expire shouldBe true
+                        expired.url shouldBe connect.url
+                    }
+                }
+            }
+            context("With a different URL") {
+                manager.setTranscriberUrl(
+                    newTranscriberUrl("wss://{{REGION}}.other.example.com/rec"),
+                    customHeaders,
+                    urlParams
+                )
+
+                should("log an error") { errors.size shouldBe 1 }
+                should("not send a request") { colibriRequests shouldBe emptyList() }
+            }
+            context("Removing the transcriber") {
+                manager.setTranscriberUrl(null, null, null)
+
+                should("not log an error") { errors shouldBe emptyList() }
+                should("remove the connect") { manager.hasConnects() shouldBe false }
+            }
+        }
+
+        context("sameTemplatedUrl") {
+            fun url(template: String, meetingId: String = "m1") =
+                TemplatedUrl(template, requiredKeys = setOf("REGION")).apply { set("MEETING_ID", meetingId) }
+            val template = "wss://{{REGION}}.example.com/rec?meeting={{MEETING_ID}}"
+
+            should("match null to null") { sameTemplatedUrl(null, null) shouldBe true }
+            should("not match null to a URL") {
+                sameTemplatedUrl(null, url(template)) shouldBe false
+                sameTemplatedUrl(url(template), null) shouldBe false
+            }
+            should("match two instances with the same template and values") {
+                sameTemplatedUrl(url(template), url(template)) shouldBe true
+            }
+            should("not match different values") {
+                sameTemplatedUrl(url(template, "m1"), url(template, "m2")) shouldBe false
+            }
+            should("not match different templates") {
+                sameTemplatedUrl(url(template), url("wss://{{REGION}}.other.example.com/rec")) shouldBe false
+            }
+            should("not match a template without a region placeholder") {
+                sameTemplatedUrl(
+                    url("wss://region-a.example.com/rec?meeting={{MEETING_ID}}"),
+                    url(template)
+                ) shouldBe false
             }
         }
 
