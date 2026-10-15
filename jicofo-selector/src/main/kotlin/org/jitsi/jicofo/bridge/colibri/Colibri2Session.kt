@@ -547,7 +547,17 @@ class Colibri2Session(
                 // transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
                 logger.trace { "Received response: ${response?.toXML()}" }
                 if (response !is ConferenceModifiedIQ) {
-                    logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    val reason = response?.error?.getExtension<Colibri2Error>(
+                        Colibri2Error.ELEMENT,
+                        Colibri2Error.NAMESPACE
+                    )?.reason
+                    if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
+                        // The bridge expired the conference while we still think it has participants. The bridge is
+                        // healthy, re-invite the participants of this session.
+                        logger.warn("Conference not found on the bridge for create relay request: ${response?.toXML()}")
+                    } else {
+                        logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    }
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                     return@sendIqAndHandleResponseAsync
                 }

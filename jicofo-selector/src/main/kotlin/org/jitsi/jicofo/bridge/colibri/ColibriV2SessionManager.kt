@@ -683,17 +683,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // that case we shouldn't act on this error (hence removeBridge=false).
             if (!sessions.containsValue(session)) {
                 logger.info("Ignoring response for a session that's no longer active (bridge=${session.bridge.jid})")
-                throw ColibriAllocationFailedException(
-                    "Session no longer active (bridge=${session.bridge.jid})",
-                    removeBridge = false
-                )
+                throw ColibriAllocationObsoleteException("Session no longer active (bridge=${session.bridge.jid})")
             }
             if (!participants.containsValue(participantInfo)) {
                 logger.info("Ignoring response for a participant that's no longer active: ${participantInfo.id}")
-                throw ColibriAllocationFailedException(
-                    "Participant no longer active: ${participantInfo.id}",
-                    removeBridge = false
-                )
+                throw ColibriAllocationObsoleteException("Participant no longer active: ${participantInfo.id}")
             }
             try {
                 return handleResponse(response, session, created, participantInfo)
@@ -963,8 +957,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val participantInfo = participants[participantId]
             ?: run {
                 // This can happen after a colibri session is removed due to a failure to allocate, since we never
-                // notify the JitsiMeetConferenceImpl object of the failure.
-                logger.error("No ParticipantInfo for $participantId")
+                // notify the JitsiMeetConferenceImpl object of the failure. It also happens when the participant is
+                // being re-invited (e.g. moved to another bridge), until its new allocation completes.
+                logger.warn("No ParticipantInfo for $participantId")
                 return
             }
         transport?.let { stampIceGeneration(participantInfo, it) }
