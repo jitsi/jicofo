@@ -20,6 +20,7 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
+import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
@@ -35,10 +36,12 @@ import org.jitsi.jicofo.mock.ConferenceHarness
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.util.shouldBeValidJson
+import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
+import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jivesoftware.smack.packet.IQ
 
@@ -62,6 +65,11 @@ class ConferenceTest : ShouldSpec() {
     }
 
     private fun addParticipants(n: Int): List<ChatRoomMember> = harness.addParticipants(n)
+    private fun setAgents(agents: Map<String, RoomMetadata.Metadata.Agent>) =
+        chatRoom.chatRoomListeners.forEach { it.agentsChanged(agents) }
+    private val agentConfig = "jicofo.agent.url-template = \"wss://example.com/a/{{MEETING_ID}}\""
+    private fun agentCreates() = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
+        .flatMap { it.endpoints }.count { it.id == "agent1" && it.create }
     private fun ChatRoomMember.getParticipant() = harness.getParticipant(this)
     private fun ChatRoomMember.getRemoteParticipant() = harness.getRemoteParticipant(this)
 
@@ -135,6 +143,50 @@ class ConferenceTest : ShouldSpec() {
                 chatRoom.removeMember(member1)
                 // Nothing is being exported, so the normal timeout applies.
                 conference.participantCount shouldBe 0
+            }
+            context("Single participant timeout with a voice agent") {
+                withNewConfig(agentConfig) {
+                    // An agent requested via room metadata: its synthetic endpoint and connect land on the bridge.
+                    setAgents(mapOf("agent1" to RoomMetadata.Metadata.Agent()))
+
+                    chatRoom.removeMember(member1)
+                    // The bridge is exporting media to the agent, so the remaining participant's session must be kept.
+                    conference.participantCount shouldBe 1
+                    member2.getParticipant()!!.jingleSession shouldNotBe null
+                    harness.ended shouldBe false
+
+                    context("And then dismissing the agent") {
+                        setAgents(emptyMap())
+                        // The connect is gone, so the timeout is re-armed (and fires immediately in this test).
+                        conference.participantCount shouldBe 0
+                        harness.ended shouldBe false
+                    }
+                    context("And then the agent failing") {
+                        setAgents(mapOf("agent1" to RoomMetadata.Metadata.Agent(state = "failed")))
+                        // A failed agent is no longer exported to, so the timeout applies again.
+                        conference.participantCount shouldBe 0
+                    }
+                    context("And then the last participant leaving") {
+                        chatRoom.removeMember(member2)
+                        conference.participantCount shouldBe 0
+                        harness.ended shouldBe true
+                        // The agent's endpoint expired with the sessions; it must not get a session of its own.
+                        agentCreates() shouldBe 1
+                    }
+                }
+            }
+        }
+        context("Voice agent requested with one member below min-participants") {
+            val lone = chatRoom.addMember("lone")
+            conference.participantCount shouldBe 0
+
+            withNewConfig(agentConfig) {
+                setAgents(mapOf("agent1" to RoomMetadata.Metadata.Agent()))
+                // The agent lowers min-participants to 1, so the member is invited and the agent's endpoint allocated.
+                conference.participantCount shouldBe 1
+                lone.getParticipant() shouldNotBe null
+                xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
+                    .flatMap { it.endpoints }.map { it.id } shouldContain "agent1"
             }
         }
         context("Transcription enabled with one member below min-participants") {
