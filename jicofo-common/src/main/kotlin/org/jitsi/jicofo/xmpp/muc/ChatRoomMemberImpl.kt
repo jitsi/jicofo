@@ -289,7 +289,7 @@ class ChatRoomMemberImpl(
         // Update the stats once when the features are discovered.
         capsNodeVer?.let {
             XmppCapsStats.update(it, result.features)
-        } ?: logger.error("No caps nodeVer found")
+        } ?: logger.warn("No caps nodeVer found")
 
         result
     }

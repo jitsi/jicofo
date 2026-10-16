@@ -232,6 +232,13 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
             cancel();
             return;
         }
+        catch (ColibriAllocationObsoleteException e)
+        {
+            // The participant left, or its session was removed while the request was pending. Nothing to recover.
+            logger.info("Colibri allocation no longer needed: " + e.getMessage());
+            cancel();
+            return;
+        }
         catch (ColibriAllocationFailedException e)
         {
             logger.error("Failed to allocate colibri channels", e);
