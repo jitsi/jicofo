@@ -75,6 +75,11 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
             }
         }
 
+    /** Whether the discovery of components has completed at least once (successfully or not). */
+    @Volatile
+    var componentsDiscovered = false
+        private set
+
     var components: Set<Component> = emptySet()
         private set(value) {
             if (value != field) {
@@ -259,9 +264,16 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
     }
 
+    /**
+     * Create a [ChatRoom] for [name]. There can be only one [ChatRoom] for a given JID (on this connection) at a time.
+     * This is because all instances for the same JID share the Smack `MultiUserChat`, so they would interfere with
+     * each other. If a room with the same JID exists (it has been created and [ChatRoom.leave] has not been called)
+     * this throws a [RoomExistsException]. A room that has been left but has not finished leaving the MUC does not
+     * count, the new room waits for it before it joins.
+     */
+    @JvmOverloads
     @Throws(RoomExistsException::class)
-    fun createRoom(name: EntityBareJid): ChatRoom = muc.createChatRoom(name, null)
-    fun findOrCreateRoom(name: EntityBareJid, logLevel: Level): ChatRoom = muc.findOrCreateRoom(name, logLevel)
+    fun createRoom(name: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom = muc.createChatRoom(name, logLevel)
 
     fun discoverFeatures(jid: EntityFullJid): FeatureDiscoveryResult {
         if (!xmppConnection.isConnected) {
@@ -312,6 +324,7 @@ class XmppProvider(val config: XmppConnectionConfig, parentLogger: Logger) {
         }
 
         this.components = components
+        componentsDiscovered = true
     }
 
     class RoomExistsException(message: String) : Exception(message)
@@ -360,33 +373,40 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
     return connection
 }
 
-private class Muc(val xmppProvider: XmppProvider) {
+internal class Muc(val xmppProvider: XmppProvider) {
     /** The active chat rooms mapped by their name. */
     private val rooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
+
+    /**
+     * Rooms that have been left, until they finish leaving the MUC. A new room for the same JID waits for them, see
+     * [ChatRoomImpl.leftFuture].
+     */
+    private val leavingRooms: MutableMap<EntityBareJid, ChatRoomImpl> = HashMap()
 
     @Throws(RoomExistsException::class)
     fun createChatRoom(roomJid: EntityBareJid, logLevel: Level? = Level.ALL): ChatRoom {
         synchronized(rooms) {
             if (rooms.containsKey(roomJid)) {
-                throw RoomExistsException("Room '$roomJid' exists")
+                throw RoomExistsException("A ChatRoom for '$roomJid' is still in use.")
             }
-            return ChatRoomImpl(xmppProvider, roomJid, logLevel) { removeRoom(it) }.also {
+            val previous = leavingRooms[roomJid]
+            return ChatRoomImpl(xmppProvider, roomJid, logLevel, previous?.leftFuture) { removeRoom(it) }.also {
                 rooms[roomJid] = it
             }
         }
     }
 
-    fun findOrCreateRoom(roomJid: EntityBareJid, logLevel: Level = Level.ALL): ChatRoom {
+    /** Remove [chatRoom] from the active rooms. Only remove the entry if it is this exact instance. */
+    private fun removeRoom(chatRoom: ChatRoomImpl) {
         synchronized(rooms) {
-            try {
-                return rooms[roomJid] ?: createChatRoom(roomJid, logLevel)
-            } catch (e: RoomExistsException) {
-                throw RuntimeException("Unexpected RoomExistsException.")
+            if (rooms.remove(chatRoom.roomJid, chatRoom)) {
+                leavingRooms[chatRoom.roomJid] = chatRoom
+                chatRoom.leftFuture.thenRun {
+                    synchronized(rooms) {
+                        leavingRooms.remove(chatRoom.roomJid, chatRoom)
+                    }
+                }
             }
         }
-    }
-
-    fun removeRoom(chatRoom: ChatRoomImpl) = synchronized(rooms) {
-        rooms.remove(chatRoom.roomJid)
     }
 }

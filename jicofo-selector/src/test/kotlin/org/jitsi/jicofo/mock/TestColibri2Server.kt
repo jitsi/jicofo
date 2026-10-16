@@ -58,7 +58,12 @@ class TestColibri2Server {
             newConference
         } else {
             conferences[request.meetingId]
-                ?: return createError(request, item_not_found, "Conference not found")
+                ?: return createError(
+                    request,
+                    item_not_found,
+                    "Conference not found",
+                    Colibri2Error(Colibri2Error.Reason.CONFERENCE_NOT_FOUND)
+                )
         }
 
         return try {

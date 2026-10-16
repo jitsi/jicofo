@@ -15,25 +15,34 @@
  */
 package org.jitsi.jicofo.xmpp.muc
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.RoomMetadata
+import org.jitsi.jicofo.xmpp.XmppConnectionConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jivesoftware.smack.packet.ExtensionElement
 import org.jivesoftware.smack.packet.Presence
+import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.packet.StandardExtensionElement
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.StanzaBuilder
+import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
 import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
@@ -42,15 +51,25 @@ import org.jivesoftware.smackx.muc.Occupant
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.parts.Resourcepart
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
+import kotlin.concurrent.thread
 
 class ChatRoomImplTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
 
     private val roomJid = JidCreate.entityBareFrom("room@conference.example.com")
     private val xmppConnection = MockXmppConnection().xmppConnection
+    private val xmppConfig: XmppConnectionConfig = mockk(relaxed = true) {
+        every { username } returns Resourcepart.from("focus")
+        every { replyTimeout } returns Duration.ofSeconds(15)
+    }
     private val xmppProvider: XmppProvider = mockk(relaxed = true) {
         every { xmppConnection } returns this@ChatRoomImplTest.xmppConnection
+        every { config } returns xmppConfig
     }
 
     /** The role/affiliation of each occupant, as would be reported by the MUC. */
@@ -60,14 +79,17 @@ class ChatRoomImplTest : ShouldSpec() {
     }
 
     private var left = false
-    private val chatRoom by lazy {
+    private val chatRoom by lazy { newChatRoom() }
+
+    /** Create a [ChatRoomImpl] which uses the mock [muc]. */
+    private fun newChatRoom(previousInstanceLeft: CompletableFuture<Unit>? = null): ChatRoomImpl {
         mockkStatic(MultiUserChatManager::class)
         val manager = mockk<MultiUserChatManager> {
             every { getMultiUserChat(any()) } returns muc
         }
         every { MultiUserChatManager.getInstanceFor(any()) } returns manager
         try {
-            ChatRoomImpl(xmppProvider, roomJid, Level.INFO) { left = true }.apply {
+            return ChatRoomImpl(xmppProvider, roomJid, Level.INFO, previousInstanceLeft) { left = true }.apply {
                 addListener(
                     object : ChatRoomListener {
                         override fun memberJoined(member: ChatRoomMember) {
@@ -116,8 +138,18 @@ class ChatRoomImplTest : ShouldSpec() {
         chatRoom.processPresence(memberPresence(nick, Presence.Type.available, *extensions))
     }
 
+    /** Build a presence to our own occupant JID, as Smack would when joining or leaving. */
+    private fun ownPresence(type: Presence.Type) = xmppConnection.stanzaFactory.buildPresenceStanza()
+        .ofType(type)
+        .to(JidCreate.entityFullFrom("$roomJid/focus"))
+
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
-        TaskPools.ioPool = inPlaceExecutor
+        // Joining blocks the XMPP task queue until the join completes, so the "Joining" tests need a real executor.
+        if (testCase.descriptor.path().value.contains("Joining")) {
+            TaskPools.resetIoPool()
+        } else {
+            TaskPools.ioPool = inPlaceExecutor
+        }
     }
 
     override suspend fun afterAny(testCase: TestCase, result: TestResult) = super.afterAny(testCase, result).also {
@@ -130,6 +162,78 @@ class ChatRoomImplTest : ShouldSpec() {
         .build()
 
     init {
+        context("Joining") {
+            val interceptor = slot<Consumer<PresenceBuilder>>()
+            every { muc.addPresenceInterceptor(capture(interceptor)) } returns Unit
+
+            should("join the MUC once") {
+                chatRoom.join()
+                verify(exactly = 1) { muc.createOrJoin(Resourcepart.from("focus")) }
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("register its MUC listeners only when joining") {
+                chatRoom shouldNotBe null
+                verify(exactly = 0) { muc.addParticipantListener(any()) }
+                verify(exactly = 0) { muc.addUserStatusListener(any()) }
+                chatRoom.join()
+                verify(exactly = 1) { muc.addParticipantListener(chatRoom) }
+                verify(exactly = 1) { muc.addUserStatusListener(any()) }
+            }
+            should("refuse to join a second time") {
+                chatRoom.join()
+                shouldThrow<IllegalStateException> { chatRoom.join() }
+                verify(exactly = 1) { muc.createOrJoin(any<Resourcepart>()) }
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("wait for a previous instance to leave the MUC") {
+                val previousLeft = CompletableFuture<Unit>()
+                val room = newChatRoom(previousInstanceLeft = previousLeft)
+                val joined = AtomicBoolean(false)
+                val joinThread = thread {
+                    room.join()
+                    joined.set(true)
+                }
+                Thread.sleep(200)
+                joined.get() shouldBe false
+                verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
+
+                previousLeft.complete(Unit)
+                joinThread.join(5000)
+                joined.get() shouldBe true
+                verify(exactly = 1) { muc.createOrJoin(any<Resourcepart>()) }
+                // It must never leave the MUC on behalf of the previous instance.
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("give up when a previous instance does not leave the MUC in time") {
+                every { xmppConfig.replyTimeout } returns Duration.ofMillis(100)
+                val room = newChatRoom(previousInstanceLeft = CompletableFuture())
+                shouldThrow<IllegalStateException> { room.join() }
+                verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("refuse to join while the MUC is joined by another instance") {
+                every { muc.isJoined } returns true
+                shouldThrow<IllegalStateException> { chatRoom.join() }
+                verify(exactly = 0) { muc.createOrJoin(any<Resourcepart>()) }
+                verify(exactly = 0) { muc.leave() }
+            }
+            should("not use an unavailable presence as the base for presence updates") {
+                chatRoom.join()
+                // The join presence intercepted by smack.
+                interceptor.captured.accept(ownPresence(Presence.Type.available))
+                // An unavailable presence, as smack sends when it leaves the MUC.
+                interceptor.captured.accept(ownPresence(Presence.Type.unavailable))
+
+                val extension = StandardExtensionElement.builder("test", "test:ns").build()
+                chatRoom.addPresenceExtensions(listOf(extension))
+
+                val sent = slot<Stanza>()
+                verify(exactly = 1) { xmppConnection.sendStanza(capture(sent)) }
+                val presence = sent.captured.shouldBeInstanceOf<Presence>()
+                presence.type shouldBe Presence.Type.available
+                presence.getExtension<StandardExtensionElement>("test", "test:ns") shouldNotBe null
+            }
+        }
         context("Members joining") {
             join("member1")
             chatRoom.memberCount shouldBe 1
@@ -212,6 +316,23 @@ class ChatRoomImplTest : ShouldSpec() {
         context("Leaving the room") {
             chatRoom.leave()
             left shouldBe true
+            // Not joined, so a single unavailable presence is sent to avoid leaking the MUC on the server.
+            verify(exactly = 1) { xmppConnection.sendStanza(any()) }
+            chatRoom.leftFuture.isDone shouldBe true
+
+            should("have no effect when called again") {
+                chatRoom.leave()
+                verify(exactly = 1) { xmppConnection.sendStanza(any()) }
+            }
+        }
+        context("Leaving the room while the previous instance is still leaving") {
+            val previousLeft = CompletableFuture<Unit>()
+            val room = newChatRoom(previousInstanceLeft = previousLeft)
+            room.leave()
+            // Our own leave is complete (in-place executor), but the previous instance has not left yet.
+            room.leftFuture.isDone shouldBe false
+            previousLeft.complete(Unit)
+            room.leftFuture.isDone shouldBe true
         }
         context("Room metadata") {
             chatRoom.setRoomMetadata(

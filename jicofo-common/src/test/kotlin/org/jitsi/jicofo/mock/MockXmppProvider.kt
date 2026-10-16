@@ -37,7 +37,7 @@ class MockXmppProvider(
 
     val xmppProvider = mockk<XmppProvider>(relaxed = true) {
         every { registered } answers { this@MockXmppProvider.registered }
-        every { findOrCreateRoom(any(), any()) } answers { getRoom(arg(0)).chatRoom }
+        every { createRoom(any(), any()) } answers { getRoom(arg(0)).chatRoom }
         every { xmppConnection } returns this@MockXmppProvider.xmppConnection
         every { config } returns mockk(relaxed = true) {
             every { this@mockk.name } returns this@MockXmppProvider.name
