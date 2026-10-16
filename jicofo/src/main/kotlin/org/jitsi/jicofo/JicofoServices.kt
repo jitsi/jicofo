@@ -111,7 +111,13 @@ class JicofoServices {
         null
     }
     val sipJibriDetector: JibriDetector? = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
-        JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
+        JibriDetector(
+            xmppServices.getXmppConnectionByName(JibriConfig.config.sipXmppConnectionName),
+            breweryJid,
+            true
+        ).apply {
+            init()
+        }
     } ?: run {
         logger.info("No SIP Jibri detector configured.")
         null

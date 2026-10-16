@@ -71,6 +71,10 @@ class JibriConfig private constructor() {
         "jicofo.jibri.xmpp-connection-name".from(newConfig)
     }
 
+    val sipXmppConnectionName: XmppConnectionEnum by config {
+        "jicofo.jibri-sip.xmpp-connection-name".from(newConfig)
+    }
+
     val privateAddressConnectivity: Boolean by config {
         "jicofo.jibri.use-private-address-connectivity".from(newConfig)
     }
