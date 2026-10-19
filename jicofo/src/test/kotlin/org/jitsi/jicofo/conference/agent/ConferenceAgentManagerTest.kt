@@ -19,6 +19,7 @@ import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
+import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.Called
@@ -32,7 +33,10 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
 import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
+import org.jitsi.jicofo.bridge.colibri.ColibriAllocation
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
+import org.jitsi.jicofo.bridge.colibri.ColibriConferenceNotFoundException
+import org.jitsi.jicofo.bridge.colibri.ColibriSessionGoneException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -42,6 +46,26 @@ import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.LoggerImpl
+import java.util.concurrent.AbstractExecutorService
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
+
+/** Holds submitted tasks until [runAll], so a test can interleave events with an allocation in flight. */
+private class QueuedExecutor(private val reject: Boolean = false) : AbstractExecutorService() {
+    private val tasks = ArrayDeque<Runnable>()
+    override fun execute(command: Runnable) {
+        if (reject) throw RejectedExecutionException("rejected")
+        tasks.addLast(command)
+    }
+    fun runAll() {
+        while (tasks.isNotEmpty()) tasks.removeFirst().run()
+    }
+    override fun shutdown() {}
+    override fun shutdownNow(): MutableList<Runnable> = mutableListOf()
+    override fun isShutdown() = false
+    override fun isTerminated() = false
+    override fun awaitTermination(timeout: Long, unit: TimeUnit) = true
+}
 
 class ConferenceAgentManagerTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -230,6 +254,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
             withNewConfig(urlConfig) {
                 context("after it was allocated") {
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    every { colibriSessionManager.getBridgeSessionId("agent1") } returns Pair(null, null)
                     manager.endpointsRemoved(listOf("agent1", "p1"), colibriSessionManager, "meeting1")
 
                     should("re-allocate it under the same source name with a new SSRC, and report connecting again") {
@@ -264,6 +289,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                 context("when it was the only bridge") {
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
                     every { colibriSessionManager.bridgeCount } returns 0
+                    every { colibriSessionManager.getBridgeSessionId("agent1") } returns Pair(null, null)
                     manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
                     should("wait for the humans' new session before re-allocating") {
                         verify(exactly = 1) { colibriSessionManager.allocate(any()) }
@@ -394,6 +420,149 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     should("not report anything further") {
                         verify(exactly = 0) { statusReporter.report("agent1", "ended", any()) }
                     }
+                }
+            }
+        }
+
+        context("Media on the synthetic endpoint") {
+            withNewConfig(urlConfig) {
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                should("carry the audio payload types and header extensions jicofo offers everyone") {
+                    val params = slot<ParticipantAllocationParameters>()
+                    verify { colibriSessionManager.allocate(capture(params)) }
+                    val media = params.captured.medias.single()
+                    media.type shouldBe MediaType.AUDIO
+                    media.payloadTypes.shouldNotBeEmpty()
+                    media.rtpHdrExts.shouldNotBeEmpty()
+                }
+            }
+        }
+
+        context("Before any bridge session exists") {
+            withNewConfig(urlConfig) {
+                every { colibriSessionManager.bridgeCount } returns 0
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                should("wait for the first human's session rather than allocate in jicofo's own region") {
+                    verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                    every { colibriSessionManager.bridgeCount } returns 1
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                }
+            }
+        }
+
+        context("When the allocation loses its session") {
+            withNewConfig(urlConfig) {
+                context("once, with the state out of sync") {
+                    every { colibriSessionManager.allocate(any()) } throws
+                        ColibriConferenceNotFoundException("conference not found") andThen mockk<ColibriAllocation>()
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("allocate again with a new SSRC instead of failing the agent") {
+                        val allParams = mutableListOf<ParticipantAllocationParameters>()
+                        verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
+                        val (first, second) = allParams.map { it.sources.sources.single() }
+                        second.name shouldBe first.name
+                        second.ssrc shouldNotBe first.ssrc
+                        verify(exactly = 0) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    }
+                }
+                context("once, with the session gone when the response arrived") {
+                    every { colibriSessionManager.allocate(any()) } throws
+                        ColibriSessionGoneException("Session no longer active") andThen mockk<ColibriAllocation>()
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("allocate again") {
+                        verify(exactly = 2) { colibriSessionManager.allocate(any()) }
+                        verify(exactly = 0) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    }
+                }
+                context("every time") {
+                    every { colibriSessionManager.allocate(any()) } throws ColibriConferenceNotFoundException("gone")
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("give up after a few attempts and report failed once") {
+                        verify(exactly = 4) { colibriSessionManager.allocate(any()) }
+                        verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    }
+                }
+            }
+        }
+
+        context("When the source update fails after the allocation") {
+            withNewConfig(urlConfig) {
+                every { colibriSessionManager.updateParticipant("agent1", any(), any(), any(), any()) } throws
+                    ColibriAllocationFailedException("update failed")
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                should("expire the endpoint, so a re-invite with the same id can allocate again") {
+                    verify(exactly = 1) { colibriSessionManager.removeParticipant("agent1") }
+                    verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                }
+            }
+        }
+
+        context("A removal notice") {
+            withNewConfig(urlConfig) {
+                context("for an endpoint that has a session again") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    should("be ignored, so the endpoint is not allocated twice") {
+                        verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+                context("while the allocation is in flight") {
+                    val executor = QueuedExecutor()
+                    TaskPools.ioPool = executor
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    executor.runAll()
+                    should("re-allocate once it completes") {
+                        val allParams = mutableListOf<ParticipantAllocationParameters>()
+                        verify(exactly = 2) { colibriSessionManager.allocate(capture(allParams)) }
+                        allParams.map { it.sources.sources.single().ssrc }.distinct().size shouldBe 2
+                    }
+                }
+            }
+        }
+
+        context("After the conference stopped") {
+            withNewConfig(urlConfig) {
+                context("with an allocation queued") {
+                    val executor = QueuedExecutor()
+                    TaskPools.ioPool = executor
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.stop()
+                    executor.runAll()
+                    should("not allocate") {
+                        verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+                context("with an allocation that completes after it") {
+                    every { colibriSessionManager.allocate(any()) } answers {
+                        manager.stop()
+                        mockk<ColibriAllocation>()
+                    }
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("expire the endpoint rather than keep a session for the agent alone") {
+                        verify(exactly = 1) { colibriSessionManager.removeParticipant("agent1") }
+                        verify(exactly = 0) { colibriSessionManager.setAgents(match { it.isNotEmpty() }) }
+                    }
+                }
+                context("when a request arrives") {
+                    manager.stop()
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    should("not allocate") {
+                        verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                    }
+                }
+            }
+        }
+
+        context("When the IO pool rejects the allocation task") {
+            withNewConfig(urlConfig) {
+                TaskPools.ioPool = QueuedExecutor(reject = true)
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                should("retry on the next apply instead of leaving the agent pending") {
+                    TaskPools.ioPool = inPlaceExecutor
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { colibriSessionManager.allocate(any()) }
                 }
             }
         }

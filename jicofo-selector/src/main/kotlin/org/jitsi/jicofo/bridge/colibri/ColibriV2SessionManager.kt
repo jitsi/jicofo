@@ -724,17 +724,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // that case we shouldn't act on this error (hence removeBridge=false).
             if (!sessions.containsValue(session)) {
                 logger.info("Ignoring response for a session that's no longer active (bridge=${session.bridge.jid})")
-                throw ColibriAllocationFailedException(
-                    "Session no longer active (bridge=${session.bridge.jid})",
-                    removeBridge = false
-                )
+                throw ColibriSessionGoneException("Session no longer active (bridge=${session.bridge.jid})")
             }
             if (!participants.containsValue(participantInfo)) {
                 logger.info("Ignoring response for a participant that's no longer active: ${participantInfo.id}")
-                throw ColibriAllocationFailedException(
-                    "Participant no longer active: ${participantInfo.id}",
-                    removeBridge = false
-                )
+                throw ColibriSessionGoneException("Participant no longer active: ${participantInfo.id}")
             }
             try {
                 return handleResponse(response, session, created, participantInfo)

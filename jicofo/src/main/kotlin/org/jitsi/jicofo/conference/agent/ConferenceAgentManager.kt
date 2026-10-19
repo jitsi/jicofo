@@ -21,15 +21,22 @@ import org.jitsi.jicofo.bridge.ConferenceBridgeProperties
 import org.jitsi.jicofo.bridge.colibri.AgentConnectRequest
 import org.jitsi.jicofo.bridge.colibri.BridgeSelectionFailedException
 import org.jitsi.jicofo.bridge.colibri.ColibriAllocationFailedException
+import org.jitsi.jicofo.bridge.colibri.ColibriSessionGoneException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
+import org.jitsi.jicofo.bridge.colibri.ColibriStateOutOfSyncException
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
+import org.jitsi.jicofo.codec.JingleOfferFactory
+import org.jitsi.jicofo.codec.OfferOptions
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
+import org.jitsi.jicofo.conference.toMedia
 import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
+import org.jitsi.xmpp.extensions.colibri2.Media
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadLocalRandom
 
 /**
@@ -85,6 +92,22 @@ class ConferenceAgentManager @JvmOverloads constructor(
      */
     private val failed = mutableSetOf<String>()
 
+    /** Agents in [pending] whose endpoint the bridge reported lost before the allocation completed. */
+    private val lostWhilePending = mutableSetOf<String>()
+
+    /** Consecutive allocations per agent that lost their session midway; bounds the re-allocation loop. */
+    private val sessionLosses = mutableMapOf<String, Int>()
+
+    /** Set by [stop]: the conference is over, so no allocation may create a session for the agent alone. */
+    @Volatile
+    private var stopped = false
+
+    /** The conference stopped: nothing is allocated from here on, and an allocation that completes is expired. */
+    @Synchronized
+    fun stop() {
+        stopped = true
+    }
+
     /** Update the requested agents (agent id -> connect config) and re-apply. */
     @Synchronized
     fun setRequests(
@@ -111,7 +134,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
     /**
      * The bridge lost these endpoints (its session was removed, or it expired them), so forget they were allocated
      * and re-allocate right away with a new SSRC, like the conference re-invites the humans that were on that bridge.
-     * A failed agent stays failed, and an allocation still in flight completes on its own.
+     * The notice arrives asynchronously: an endpoint that [apply] already noticed and re-allocated has a session
+     * again and is left alone. A failed agent stays failed; an allocation still in flight is re-done once it completes.
      */
     @Synchronized
     fun endpointsRemoved(
@@ -119,11 +143,15 @@ class ConferenceAgentManager @JvmOverloads constructor(
         colibriSessionManager: ColibriSessionManager?,
         meetingId: String?
     ) {
-        val lost = endpointIds.filter { ready.remove(it) }
+        lostWhilePending.addAll(endpointIds.filter { it in pending })
+        val lost = endpointIds.filter { id ->
+            id in ready && (colibriSessionManager == null || colibriSessionManager.getBridgeSessionId(id).first == null)
+        }
         if (lost.isEmpty()) {
             return
         }
         logger.info("Re-allocating agents whose endpoint the bridge lost: $lost")
+        ready.removeAll(lost.toSet())
         lost.forEach { remint(it) }
         apply(colibriSessionManager, meetingId)
     }
@@ -147,8 +175,10 @@ class ConferenceAgentManager @JvmOverloads constructor(
             ready.removeAll(expired.toSet())
             expired.forEach { remint(it) }
         }
-        // Re-allocating with no session left would create one for the agent alone (and race the conference stopping).
-        val canReallocate = colibriSessionManager.bridgeCount > 0
+        // Allocating with no session would create one for the agent alone (and race the conference stopping), and
+        // would place it by jicofo's own region rather than the humans'; `hasAgents` makes the first human's
+        // allocation happen, and its session triggers a re-apply.
+        val canAllocate = colibriSessionManager.bridgeCount > 0
 
         // A record the provisioning API marked failed (the media relay could not reach the agent) is a request
         // nobody will answer: drop its connect so the bridge stops redialing and it no longer counts as an export.
@@ -166,18 +196,22 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
 
         requested.keys.forEach { id ->
-            val firstAllocation = id !in allocated
             val source = allocated.getOrPut(id) {
                 Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
-            if (id !in ready && id !in pending && id !in failed && (firstAllocation || canReallocate)) {
+            if (id !in ready && id !in pending && id !in failed && canAllocate && !stopped) {
                 val region = primaryRegion(colibriSessionManager)
                 logger.info(
                     "Allocating agent $id's synthetic endpoint (${source.name}, ssrc ${source.ssrc}, region $region)"
                 )
                 pending.add(id)
                 statusReporter.report(id, AgentStatusReporter.CONNECTING)
-                TaskPools.ioPool.submit { allocateAgent(id, source, region, colibriSessionManager, meetingId) }
+                try {
+                    TaskPools.ioPool.submit { allocateAgent(id, source, region, colibriSessionManager, meetingId) }
+                } catch (e: RejectedExecutionException) {
+                    pending.remove(id)
+                    logger.warn("Could not schedule agent $id's allocation, will retry on the next apply", e)
+                }
             }
         }
 
@@ -192,6 +226,11 @@ class ConferenceAgentManager @JvmOverloads constructor(
         colibriSessionManager: ColibriSessionManager,
         meetingId: String
     ) {
+        if (stopped) {
+            synchronized(this) { pending.remove(id) }
+            return
+        }
+        var allocatedOnBridge = false
         try {
             colibriSessionManager.allocate(
                 ParticipantAllocationParameters(
@@ -207,17 +246,42 @@ class ConferenceAgentManager @JvmOverloads constructor(
                     visitor = false,
                     supportsPrivateAddresses = false,
                     diarize = false,
-                    medias = emptySet(),
+                    medias = agentMedias(),
                     synthetic = true
                 )
             )
+            allocatedOnBridge = true
             // The allocation request doesn't carry sources; signal them now.
             colibriSessionManager.updateParticipant(id, sources = EndpointSourceSet(source))
         } catch (e: Exception) {
+            if (allocatedOnBridge) {
+                // Don't leave the endpoint on the bridge: it would block a re-invite with the same id.
+                runCatching { colibriSessionManager.removeParticipant(id) }
+                    .onFailure { logger.warn("Failed to expire agent $id's endpoint after a failed update", it) }
+            }
+            if (e.isSessionLost()) {
+                val losses = synchronized(this) { sessionLosses.merge(id, 1, Int::plus)!! }
+                if (losses <= MAX_SESSION_LOSSES) {
+                    // The session went away under the allocation (bridge removed, state out of sync, expired), as
+                    // happens to the humans being re-invited from it: not the agent's failure, so allocate again.
+                    logger.warn("Agent $id lost its session while allocating, re-allocating: ${e.message}")
+                    synchronized(this) {
+                        pending.remove(id)
+                        lostWhilePending.remove(id)
+                        if (id in allocated) {
+                            remint(id)
+                        }
+                    }
+                    reapply(colibriSessionManager, meetingId)
+                    return
+                }
+            }
             logger.error("Failed to allocate synthetic endpoint for agent $id", e)
             statusReporter.report(id, AgentStatusReporter.FAILED, failureReason(e))
             synchronized(this) {
                 pending.remove(id)
+                lostWhilePending.remove(id)
+                sessionLosses.remove(id)
                 if (id in allocated) {
                     failed.add(id)
                 }
@@ -227,16 +291,50 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
         synchronized(this) {
             pending.remove(id)
-            if (id in allocated) {
-                ready.add(id)
-                updateConnects(colibriSessionManager, meetingId)
-            } else {
-                // The agent was removed while its allocation was in flight.
-                logger.info("Agent $id was removed during allocation, expiring its endpoint.")
-                colibriSessionManager.removeParticipant(id)
+            sessionLosses.remove(id)
+            when {
+                id !in allocated -> {
+                    // The agent was removed while its allocation was in flight.
+                    logger.info("Agent $id was removed during allocation, expiring its endpoint.")
+                    colibriSessionManager.removeParticipant(id)
+                }
+
+                stopped -> {
+                    logger.info("The conference stopped during agent $id's allocation, expiring its endpoint.")
+                    colibriSessionManager.removeParticipant(id)
+                }
+
+                lostWhilePending.remove(id) -> {
+                    logger.info("The bridge lost agent $id's endpoint during its allocation, re-allocating.")
+                    remint(id)
+                    apply(colibriSessionManager, meetingId)
+                }
+
+                else -> {
+                    ready.add(id)
+                    updateConnects(colibriSessionManager, meetingId)
+                }
             }
         }
     }
+
+    /**
+     * Whether an allocation failed because its session went away, which the humans on that session recover from by
+     * being re-invited, rather than because the agent could not be allocated.
+     */
+    private fun Exception.isSessionLost() = this is ColibriStateOutOfSyncException ||
+        this is ColibriSessionGoneException ||
+        (this is ColibriAllocationFailedException && removeBridge)
+
+    /**
+     * The audio media (payload types and header extensions) jicofo offers every participant, so the synthetic
+     * endpoint's audio is described wherever it is allocated: a bridge whose humans are all behind relays has no
+     * local endpoint the injected audio could borrow a payload type from.
+     */
+    private fun agentMedias(): Set<Media> =
+        JingleOfferFactory.INSTANCE.createOffer(OfferOptions(audio = true, video = false, sctp = false))
+            .mapNotNull { it.toMedia() }
+            .toSet()
 
     @Synchronized
     private fun updateConnects(colibriSessionManager: ColibriSessionManager, meetingId: String) {
@@ -301,6 +399,9 @@ class ConferenceAgentManager @JvmOverloads constructor(
     companion object {
         private const val MAX_SSRC = 0x1_0000_0000L
         private const val MAX_MINT_ATTEMPTS = 1000
+
+        /** Consecutive session losses during an agent's allocation before it is reported as failed. */
+        private const val MAX_SESSION_LOSSES = 3
 
         /** The agent's synthetic audio source name, derived from its endpoint id like a client's first audio source. */
         fun sourceName(agentId: String) = "$agentId-a0"

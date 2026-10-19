@@ -37,3 +37,9 @@ class ConferenceAlreadyExistsException(message: String) : ColibriStateOutOfSyncE
  * (e.g. the bridge expired it when its last endpoint was removed).
  */
 class ColibriConferenceNotFoundException(message: String) : ColibriStateOutOfSyncException(message)
+
+/**
+ * The session or participant a request was for had already been removed when its response arrived (e.g. the bridge
+ * was removed meanwhile). Nothing is wrong with the bridge, so [removeBridge] is false.
+ */
+class ColibriSessionGoneException(message: String) : ColibriAllocationFailedException(message, removeBridge = false)

@@ -266,7 +266,7 @@ public class JitsiMeetConferenceImpl
      * Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge
      * for a lone human.
      */
-    private boolean hasAgents = false;
+    private volatile boolean hasAgents = false;
 
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
@@ -564,6 +564,8 @@ public class JitsiMeetConferenceImpl
             colibriSessionManager.removeListener(colibriSessionManagerListener);
         }
 
+        // No agent allocation may create a session for the agent alone once the conference is over.
+        agentManager.stop();
         try
         {
             expireBridgeSessions();
@@ -3172,7 +3174,9 @@ public class JitsiMeetConferenceImpl
         @Override
         public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
         {
-            boolean nowHasAgents = agents.values().stream().anyMatch(RoomMetadata.Metadata.Agent::isRequested);
+            // Without an agent URL nothing will be allocated, so an agent must not force a bridge either.
+            boolean nowHasAgents = AgentConfig.config.getEnabled()
+                    && agents.values().stream().anyMatch(RoomMetadata.Metadata.Agent::isRequested);
             boolean wasEmpty = !hasAgents;
             hasAgents = nowHasAgents;
 
@@ -3207,6 +3211,12 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridgeCount)
             );
+            // A requested agent waits for a session to exist (so it is placed by the humans' region, not jicofo's);
+            // the first one has just been created.
+            if (bridgeCount > 0)
+            {
+                agentManager.reapply(colibriSessionManager, meetingId);
+            }
         }
 
         /**
