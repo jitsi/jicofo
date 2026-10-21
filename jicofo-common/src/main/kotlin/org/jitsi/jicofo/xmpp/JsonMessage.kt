@@ -91,7 +91,13 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
          * a separate field from [recording], which carries the client-visible recording state, so that the
          * admin-only path can add it without overwriting that.
          */
-        val recordingParams: RecordingParams? = null
+        val recordingParams: RecordingParams? = null,
+
+        /**
+         * The voice agents requested in the room, keyed by agent id (which becomes the agent's endpoint id). The
+         * metadata also carries client-facing fields (display name, kind) that jicofo ignores.
+         */
+        val agents: Map<String, Agent>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Visitors(
@@ -144,6 +150,16 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
             val httpHeaders: Map<String, String>? = null
         ) {
             override fun toString(): String = "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
+        }
+
+        /**
+         * A voice agent advertised in the room metadata. Jicofo needs its id and lifecycle state; the dial config
+         * stays in the provisioning API, where the media relay fetches it by id.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Agent(val state: String? = null) {
+            /** Whether jicofo should host this agent: a failed or ended record is a request nobody will answer. */
+            fun isRequested() = state != "failed" && state != "ended"
         }
     }
 
