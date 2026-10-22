@@ -161,7 +161,7 @@ class Colibri2Session(
         participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())
 
-        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toRedactedXml()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
@@ -444,7 +444,7 @@ class Colibri2Session(
      * order — anything order-sensitive needs its own guard.
      */
     private fun sendRequest(iq: IQ, name: String, onSuccess: ((ConferenceModifiedIQ) -> Unit)? = null) {
-        logger.debug { "Sending $name request: ${iq.toXML()}" }
+        logger.debug { "Sending $name request: ${iq.toRedactedXml()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) { response ->
             if (response == null) {
                 logger.info("$name request timed out. Ignoring.")
@@ -472,7 +472,7 @@ class Colibri2Session(
                         // think it has participants. The bridge is healthy, re-invite the participants of this session.
                         logger.warn(
                             "Conference not found on the bridge for $name request, session failed: " +
-                                "${error.toXML()}, request was: ${iq.toXML()}"
+                                "${error.toXML()}, request was: ${iq.toRedactedXml()}"
                         )
                         colibriSessionManager.sessionFailed(this@Colibri2Session)
                     }
@@ -482,7 +482,7 @@ class Colibri2Session(
                 if (reInvite) {
                     logger.warn(
                         "Endpoint [$endpointId] is not found, session failed: ${error.toXML()}, " +
-                            "request was: ${iq.toXML()}"
+                            "request was: ${iq.toRedactedXml()}"
                     )
                     colibriSessionManager.endpointFailed(endpointId!!)
                 } else {

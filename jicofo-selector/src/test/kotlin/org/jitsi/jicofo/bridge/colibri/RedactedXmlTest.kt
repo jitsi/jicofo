@@ -1,0 +1,44 @@
+/*
+ * Jicofo, the Jitsi Conference Focus.
+ *
+ * Copyright @ 2026 - present 8x8, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.jitsi.jicofo.bridge.colibri
+
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.string.shouldNotContain
+import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
+import java.net.URI
+
+class RedactedXmlTest : ShouldSpec({
+    should("redact the header values of a connect, keeping the rest of the request") {
+        val spec = ConnectSpec(
+            id = "agent-1",
+            url = URI("wss://relay.example.com/agent"),
+            type = Connect.Types.AGENT,
+            httpHeaders = mapOf("X-Agent-Token" to "s3cret-token")
+        )
+        val request = ConferenceModifyIQ.builder("id").setMeetingId("m").addConnect(spec.toConnect(create = true))
+
+        val xml = request.build().toRedactedXml()
+
+        xml shouldNotContain "s3cret-token"
+        xml shouldContain "name=\"X-Agent-Token\""
+        xml shouldContain "value=\"[redacted]\""
+        xml shouldContain "wss://relay.example.com/agent"
+    }
+})
