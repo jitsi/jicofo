@@ -20,9 +20,12 @@ package org.jitsi.impl.protocol.xmpp.log
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import org.jitsi.jicofo.xmpp.toRedactedXml
+import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
+import org.jitsi.xmpp.extensions.colibri2.Connect
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
-import org.jitsi.xmpp.util.RedactColibri.Companion.redactToken
 import org.jxmpp.jid.impl.JidCreate
+import java.net.URI
 
 class PacketDebuggerTest : ShouldSpec({
     should("redact the token attribute of a logged ConferenceIq, as done by PacketDebugger") {
@@ -33,10 +36,26 @@ class PacketDebuggerTest : ShouldSpec({
             stanzaId = "id1"
         }
 
-        val redacted = redactToken(iq.toXML().toString())
+        val redacted = iq.toRedactedXml()
 
         redacted shouldNotContain token
         redacted shouldContain "room=\"room@conference.example.com\""
         redacted shouldContain "token=\"[redacted]\""
+    }
+
+    should("redact a colibri connect's header values, as done by PacketDebugger") {
+        val connect = Connect(
+            id = "agent-1",
+            url = URI("wss://relay.example.com/agent"),
+            protocol = Connect.Protocols.MEDIAJSON,
+            type = Connect.Types.AGENT,
+            audio = true
+        ).apply { addHttpHeader("X-Agent-Token", "s3cret-token") }
+        val iq = ConferenceModifyIQ.builder("id").setMeetingId("m").addConnect(connect).build()
+
+        val redacted = iq.toRedactedXml()
+
+        redacted shouldNotContain "s3cret-token"
+        redacted shouldContain "value=\"[redacted]\""
     }
 })
