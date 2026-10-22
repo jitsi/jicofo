@@ -16,8 +16,8 @@
 package org.jitsi.impl.protocol.xmpp.log;
 
 import edu.umd.cs.findbugs.annotations.*;
+import org.jitsi.jicofo.xmpp.RedactedXmlKt;
 import org.jitsi.utils.logging2.*;
-import org.jitsi.xmpp.util.RedactColibri;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
 import org.jivesoftware.smack.packet.*;
@@ -78,7 +78,7 @@ public class PacketDebugger
 
     private static String redact(TopLevelStreamElement streamElement)
     {
-        return RedactColibri.Companion.redactToken(streamElement.toXML().toString());
+        return RedactedXmlKt.toRedactedXml(streamElement);
     }
 
     /**
