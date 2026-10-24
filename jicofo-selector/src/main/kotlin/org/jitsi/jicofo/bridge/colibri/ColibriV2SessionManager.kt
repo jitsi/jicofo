@@ -115,6 +115,19 @@ internal fun perSourceTranslatorSpecs(
 }
 
 /**
+ * Whether [a] and [b] describe the same URL. [TemplatedUrl] does not implement value equality, and the conference
+ * creates a new instance for each call, so we compare the URLs that they resolve to. We resolve the region with two
+ * different values, so that a template with a region placeholder does not match a template without one.
+ */
+internal fun sameTemplatedUrl(a: TemplatedUrl?, b: TemplatedUrl?): Boolean {
+    if (a === b) return true
+    if (a == null || b == null) return false
+    return listOf("region-a", "region-b").all {
+        a.resolve(TranscriptionConfig.REGION_TEMPLATE, it) == b.resolve(TranscriptionConfig.REGION_TEMPLATE, it)
+    }
+}
+
+/**
  * Implements [ColibriSessionManager] using colibri2.
  */
 @SuppressFBWarnings("BC_IMPOSSIBLE_INSTANCEOF")
@@ -375,7 +388,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         customHeaders: Map<String, String>?,
         urlParams: Map<String, String>?
     ) = synchronized(syncRoot) {
-        if (transcriberUrl == url) {
+        if (sameTemplatedUrl(transcriberUrl, url)) {
+            // The bridge does not support changing the headers or the URL of a running connect, so we do not apply
+            // new headers or URL params for the same URL.
+            if (url != null && (customHeaders != transcriberCustomHeaders || urlParams != transcriberUrlParams)) {
+                logger.info("Ignoring new transcriber HTTP headers or URL params for the same transcriber URL.")
+            }
             return@synchronized
         }
         if (transcriberUrl != null && url != null) {
