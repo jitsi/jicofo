@@ -68,11 +68,11 @@ class BaseJibriRoomNameTest : ShouldSpec({
         }
     }
 
-    fun sendStartRequest(room: String) {
+    fun sendRequest(room: String, action: JibriIq.Action) {
         val roomName = JidCreate.entityBareFrom(room)
         val iq = JibriIq().apply {
             type = IQ.Type.set
-            action = JibriIq.Action.START
+            this.action = action
             recordingMode = JibriIq.RecordingMode.STREAM
             streamId = "abcd-1234-efgh-5678"
             from = JidCreate.from("$room/member")
@@ -80,6 +80,8 @@ class BaseJibriRoomNameTest : ShouldSpec({
         }
         createJibri(roomName).handleJibriRequest(IqRequest(iq, connection))
     }
+
+    fun sendStartRequest(room: String) = sendRequest(room, JibriIq.Action.START)
 
     fun lastErrorCondition(): StanzaError.Condition? = sentStanzas.lastOrNull()?.error?.condition
 
@@ -98,6 +100,12 @@ class BaseJibriRoomNameTest : ShouldSpec({
             sendStartRequest("room@conference.tenant?x.example.com")
             startRequestsHandled shouldBe 0
             lastErrorCondition() shouldBe StanzaError.Condition.bad_request
+        }
+    }
+    context("A stop request") {
+        should("not be rejected for a room in a different form") {
+            sendRequest("lockedvictim?x@conference.example.com", JibriIq.Action.STOP)
+            lastErrorCondition() shouldBe StanzaError.Condition.item_not_found
         }
     }
 })

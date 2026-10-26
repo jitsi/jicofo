@@ -26,19 +26,25 @@ private const val URI_COMPONENT_UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
 private val ENCODED_URI_COMPONENT = Regex("(?:[A-Za-z0-9\\-_.!~*'()]|%[0-9A-Fa-f]{2})+")
 private val TENANT_LOCALPART = Regex("\\[([^\\]]*)](.*)")
 
+// nginx decodes the tenant from the URL path and config.js maps "." to "_", so jitsi-meet never joins a tenant with a
+// "%" or a "." in the MUC.
+private val TENANT = Regex("[A-Za-z0-9_-]+")
+private val HOST_NAME = Regex("[A-Za-z0-9._-]+")
+
 /**
- * Whether [name] is a room name (or tenant) exactly as jitsi-meet's getBackendSafeRoomName produces it. Jibri builds
- * a URL from the room JID, and jitsi-meet decodes and encodes again the name it finds in the URL path, so a name in any
- * other form makes Jibri join a room other than the one the request was authorized for. For example, "a?b" is cut at
- * the "?", and "%61" becomes "a". This is the same check that Jibri does.
+ * Whether [name] is a room name equal, ignoring case, to what jitsi-meet's getBackendSafeRoomName produces. Jibri
+ * builds a URL from the room JID, and jitsi-meet decodes and encodes again the name it finds in the URL path, so a name
+ * in any other form makes Jibri join a room other than the one the request was authorized for. For example, the
+ * browser cuts "a?b" at the "?" and resolves ".." as a path, and jitsi-meet decodes "%61" to "a". Jibri does a similar
+ * check.
  */
 internal fun isBackendSafeRoomName(name: String): Boolean {
-    if (!ENCODED_URI_COMPONENT.matches(name)) {
+    if (name == "." || name == ".." || !ENCODED_URI_COMPONENT.matches(name)) {
         return false
     }
     val decoded = URLDecoder.decode(name, Charsets.UTF_8)
     val normalized = Normalizer.normalize(decoded, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
-    // Prosody makes the localpart lowercase, so a name that differs only in case is the same room.
+    // XMPP nodeprep makes the localpart lowercase, so a name that differs only in case is the same room.
     return encodeUriComponent(normalized).equals(name, ignoreCase = true)
 }
 
@@ -49,9 +55,11 @@ internal fun isBackendSafeRoomName(name: String): Boolean {
  */
 internal fun isBackendSafeRoomJid(room: EntityBareJid): Boolean {
     val localpart = room.localpart.toString()
-    val roomNames = TENANT_LOCALPART.matchEntire(localpart)?.destructured?.toList() ?: listOf(localpart)
-    // A host name (letters, digits, "-" and ".") is always backend-safe, so checking the whole domain checks the tenant.
-    return (roomNames + room.domain.toString()).all { isBackendSafeRoomName(it) }
+    val tenantMatch = TENANT_LOCALPART.matchEntire(localpart)
+    val roomName = tenantMatch?.groupValues?.get(2) ?: localpart
+    val tenantIsSafe = tenantMatch == null || TENANT.matches(tenantMatch.groupValues[1])
+    // A tenant in the domain cannot be told apart from the rest of the domain, so a "." in it is not detected.
+    return isBackendSafeRoomName(roomName) && tenantIsSafe && HOST_NAME.matches(room.domain.toString())
 }
 
 private fun encodeUriComponent(str: String): String = buildString {

@@ -27,6 +27,7 @@ class BackendSafeRoomNameTest : ShouldSpec({
                 "my%20room",
                 "caf%c3%a9",
                 "a%3fb",
+                "a%2bb",
                 "vpaas-magic-cookie-0123456789abcdef",
                 "a-b_c.d!e~f*g'h(i)j"
             ).forEach {
@@ -50,7 +51,11 @@ class BackendSafeRoomNameTest : ShouldSpec({
                 "a%ff",
                 "a b",
                 "a/b",
-                "tenant?x"
+                "tenant?x",
+                ".",
+                "..",
+                "cafe%cc%81",
+                "%ef%bd%81"
             ).forEach {
                 isBackendSafeRoomName(it) shouldBe false
             }
@@ -79,6 +84,13 @@ class BackendSafeRoomNameTest : ShouldSpec({
             safe("room@conference.tenant?x.example.com") shouldBe false
             safe("[tenant?x]room@conference.example.com") shouldBe false
             safe("[tenant]room?x@conference.example.com") shouldBe false
+            safe("[victim%2fx]room@conference.example.com") shouldBe false
+            safe("room@conference.victim%2fx.example.com") shouldBe false
+            safe("[a.b]room@conference.example.com") shouldBe false
+        }
+        should("reject an empty tenant or room name") {
+            safe("[]room@conference.example.com") shouldBe false
+            safe("[tenant]@conference.example.com") shouldBe false
         }
     }
 })
