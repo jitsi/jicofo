@@ -81,6 +81,10 @@ class BackendSafeRoomNameTest : ShouldSpec({
             safe("room@conference.vpaas-magic-cookie-0123456789abcdef.example.com") shouldBe true
             safe("[vpaas-magic-cookie-0123456789abcdef]room@conference.example.com") shouldBe true
         }
+        should("accept a non-ASCII tenant, which the MUC domain keeps raw") {
+            safe("room@conference.caf\u00e9.example.com") shouldBe true
+            safe("[caf\u00e9]room@conference.example.com") shouldBe true
+        }
         should("reject rooms in a different form") {
             safe("myroom?x@conference.example.com") shouldBe false
             safe("myroom#config.startsilent=true@conference.example.com") shouldBe false
@@ -95,6 +99,8 @@ class BackendSafeRoomNameTest : ShouldSpec({
             safe("[myroom%2fx]room@conference.example.com") shouldBe false
             safe("room@conference.myroom%2fx.example.com") shouldBe false
             safe("[a.b]room@conference.example.com") shouldBe false
+            safe("[caf%c3%a9]room@conference.example.com") shouldBe false
+            safe("[tenant*]room@conference.example.com") shouldBe false
         }
         should("reject an empty tenant or room name") {
             safe("[]room@conference.example.com") shouldBe false

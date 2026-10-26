@@ -31,10 +31,11 @@ private val TENANT_LOCALPART = Regex("\\[([^\\]]*)](.*)")
 // unreserved for encodeURIComponent, so a round trip through decode and encode alone does not detect them.
 private val REMOVED_BY_JITSI_MEET = Regex("[:?#\\[\\]@!$&'()*+,;=></\"]")
 
-// nginx decodes the tenant from the URL path and config.js maps "." to "_", so jitsi-meet never joins a tenant with a
-// "%" or a "." in the MUC.
-private val TENANT = Regex("[A-Za-z0-9_-]+")
-private val HOST_NAME = Regex("[A-Za-z0-9._-]+")
+// A tenant comes from a label of the MUC domain, which the XMPP server prepares: nameprep makes it lowercase and
+// keeps non-ASCII characters raw. nginx decodes the tenant from the URL path and config.js maps "." to "_", so
+// jitsi-meet never joins a tenant with a "%" or a "." in the MUC. Jibri and the Prosody modules use the same rule.
+private val TENANT = Regex("(?:[A-Za-z0-9_-]|[^\\x00-\\x7f])+")
+private val HOST_NAME = Regex("(?:[A-Za-z0-9._-]|[^\\x00-\\x7f])+")
 
 /**
  * Whether [name] is a room name equal, ignoring case, to what jitsi-meet's getBackendSafeRoomName produces. Jibri
