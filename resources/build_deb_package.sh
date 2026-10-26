@@ -66,6 +66,7 @@ echo "-----"
 ls -l ../{*.changes,*.deb,*.buildinfo}
 echo "-----"
 
-# Let's try deploying
+# The version of the new package, used to build the jitsi-meet meta package
 cd ..
-([ ! -x deploy.sh ] || ./deploy.sh "jicofo" ${BUILD_NUMBER} )
+echo "NEW_COMPONENT_NAME=jicofo" > jicofo-version.properties
+echo "NEW_COMPONENT_VER=${BUILD_NUMBER}" >> jicofo-version.properties
