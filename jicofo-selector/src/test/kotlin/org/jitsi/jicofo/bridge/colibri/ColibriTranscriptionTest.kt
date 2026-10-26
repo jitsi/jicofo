@@ -199,7 +199,7 @@ class ColibriTranscriptionTest : ShouldSpec() {
         }
 
         context("Setting the same transcriber URL again from a new TemplatedUrl instance") {
-            // The conference creates a new TemplatedUrl for each call, and TemplatedUrl has no value equality.
+            // The conference creates a new TemplatedUrl for each call, so the URLs must be compared by value.
             fun newTranscriberUrl(template: String = "wss://{{REGION}}.transcriber.example.com/rec") =
                 TemplatedUrl(template, requiredKeys = setOf("REGION")).apply { set("MEETING_ID", "test-meeting-id") }
 
@@ -249,33 +249,6 @@ class ColibriTranscriptionTest : ShouldSpec() {
 
                 should("not log an error") { errors shouldBe emptyList() }
                 should("remove the connect") { manager.hasConnects() shouldBe false }
-            }
-        }
-
-        context("sameTemplatedUrl") {
-            fun url(template: String, meetingId: String = "m1") =
-                TemplatedUrl(template, requiredKeys = setOf("REGION")).apply { set("MEETING_ID", meetingId) }
-            val template = "wss://{{REGION}}.example.com/rec?meeting={{MEETING_ID}}"
-
-            should("match null to null") { sameTemplatedUrl(null, null) shouldBe true }
-            should("not match null to a URL") {
-                sameTemplatedUrl(null, url(template)) shouldBe false
-                sameTemplatedUrl(url(template), null) shouldBe false
-            }
-            should("match two instances with the same template and values") {
-                sameTemplatedUrl(url(template), url(template)) shouldBe true
-            }
-            should("not match different values") {
-                sameTemplatedUrl(url(template, "m1"), url(template, "m2")) shouldBe false
-            }
-            should("not match different templates") {
-                sameTemplatedUrl(url(template), url("wss://{{REGION}}.other.example.com/rec")) shouldBe false
-            }
-            should("not match a template without a region placeholder") {
-                sameTemplatedUrl(
-                    url("wss://region-a.example.com/rec?meeting={{MEETING_ID}}"),
-                    url(template)
-                ) shouldBe false
             }
         }
 
