@@ -26,6 +26,11 @@ private const val URI_COMPONENT_UNRESERVED = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefgh
 private val ENCODED_URI_COMPONENT = Regex("(?:[A-Za-z0-9\\-_.!~*'()]|%[0-9A-Fa-f]{2})+")
 private val TENANT_LOCALPART = Regex("\\[([^\\]]*)](.*)")
 
+// jitsi-meet removes these characters from a URL path segment (_ROOM_EXCLUDE_PATTERN in
+// react/features/base/util/uri.ts) before it decodes and normalizes the name. "!", "(", ")", "*" and "'" are
+// unreserved for encodeURIComponent, so a round trip through decode and encode alone does not detect them.
+private val REMOVED_BY_JITSI_MEET = Regex("[:?#\\[\\]@!$&'()*+,;=></\"]")
+
 // nginx decodes the tenant from the URL path and config.js maps "." to "_", so jitsi-meet never joins a tenant with a
 // "%" or a "." in the MUC.
 private val TENANT = Regex("[A-Za-z0-9_-]+")
@@ -35,11 +40,14 @@ private val HOST_NAME = Regex("[A-Za-z0-9._-]+")
  * Whether [name] is a room name equal, ignoring case, to what jitsi-meet's getBackendSafeRoomName produces. Jibri
  * builds a URL from the room JID, and jitsi-meet decodes and encodes again the name it finds in the URL path, so a name
  * in any other form makes Jibri join a room other than the one the request was authorized for. For example, the
- * browser cuts "a?b" at the "?" and resolves ".." as a path, and jitsi-meet decodes "%61" to "a". Jibri does a similar
- * check.
+ * browser cuts "a?b" at the "?" and resolves ".." as a path, jitsi-meet decodes "%61" to "a", and jitsi-meet removes
+ * the "*" from "a*". Jibri does a similar check.
  */
 internal fun isBackendSafeRoomName(name: String): Boolean {
     if (name == "." || name == ".." || !ENCODED_URI_COMPONENT.matches(name)) {
+        return false
+    }
+    if (REMOVED_BY_JITSI_MEET.containsMatchIn(name)) {
         return false
     }
     val decoded = URLDecoder.decode(name, Charsets.UTF_8)

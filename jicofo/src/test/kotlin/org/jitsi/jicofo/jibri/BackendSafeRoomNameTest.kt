@@ -29,7 +29,7 @@ class BackendSafeRoomNameTest : ShouldSpec({
                 "a%3fb",
                 "a%2bb",
                 "vpaas-magic-cookie-0123456789abcdef",
-                "a-b_c.d!e~f*g'h(i)j"
+                "a-b_c.d~e"
             ).forEach {
                 isBackendSafeRoomName(it) shouldBe true
             }
@@ -42,8 +42,8 @@ class BackendSafeRoomNameTest : ShouldSpec({
         should("reject names in a different form") {
             listOf(
                 "",
-                "lockedvictim?x",
-                "victim#config.startsilent=true",
+                "myroom?x",
+                "myroom#config.startsilent=true",
                 "%61",
                 "a%2",
                 "room+x",
@@ -55,7 +55,14 @@ class BackendSafeRoomNameTest : ShouldSpec({
                 ".",
                 "..",
                 "cafe%cc%81",
-                "%ef%bd%81"
+                "%ef%bd%81",
+                // jitsi-meet removes these from the URL path before it decodes the name, so "myroom*" joins
+                // "myroom". encodeURIComponent keeps them, so a round trip alone does not detect them.
+                "myroom*",
+                "myroom!",
+                "myroom()",
+                "myroom%2a",
+                "myroom%21"
             ).forEach {
                 isBackendSafeRoomName(it) shouldBe false
             }
@@ -75,17 +82,18 @@ class BackendSafeRoomNameTest : ShouldSpec({
             safe("[vpaas-magic-cookie-0123456789abcdef]room@conference.example.com") shouldBe true
         }
         should("reject rooms in a different form") {
-            safe("lockedvictim?x@conference.example.com") shouldBe false
-            safe("victim#config.startsilent=true@conference.example.com") shouldBe false
+            safe("myroom?x@conference.example.com") shouldBe false
+            safe("myroom#config.startsilent=true@conference.example.com") shouldBe false
             safe("%61@conference.example.com") shouldBe false
             safe("room+x@conference.example.com") shouldBe false
+            safe("myroom*@conference.example.com") shouldBe false
         }
         should("reject a tenant in a different form") {
             safe("room@conference.tenant?x.example.com") shouldBe false
             safe("[tenant?x]room@conference.example.com") shouldBe false
             safe("[tenant]room?x@conference.example.com") shouldBe false
-            safe("[victim%2fx]room@conference.example.com") shouldBe false
-            safe("room@conference.victim%2fx.example.com") shouldBe false
+            safe("[myroom%2fx]room@conference.example.com") shouldBe false
+            safe("room@conference.myroom%2fx.example.com") shouldBe false
             safe("[a.b]room@conference.example.com") shouldBe false
         }
         should("reject an empty tenant or room name") {

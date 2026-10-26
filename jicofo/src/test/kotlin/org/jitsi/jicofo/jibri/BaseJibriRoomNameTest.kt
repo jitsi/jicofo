@@ -92,7 +92,7 @@ class BaseJibriRoomNameTest : ShouldSpec({
             lastErrorCondition() shouldBe null
         }
         should("be rejected for a room in a different form") {
-            sendStartRequest("lockedvictim?x@conference.example.com")
+            sendStartRequest("myroom?x@conference.example.com")
             startRequestsHandled shouldBe 0
             lastErrorCondition() shouldBe StanzaError.Condition.bad_request
         }
@@ -104,7 +104,7 @@ class BaseJibriRoomNameTest : ShouldSpec({
     }
     context("A stop request") {
         should("not be rejected for a room in a different form") {
-            sendRequest("lockedvictim?x@conference.example.com", JibriIq.Action.STOP)
+            sendRequest("myroom?x@conference.example.com", JibriIq.Action.STOP)
             lastErrorCondition() shouldBe StanzaError.Condition.item_not_found
         }
     }
