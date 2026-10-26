@@ -62,7 +62,10 @@ class BackendSafeRoomNameTest : ShouldSpec({
                 "myroom!",
                 "myroom()",
                 "myroom%2a",
-                "myroom%21"
+                "myroom%21",
+                // a web server can decode "%2f" before it splits the path
+                "a%2fb",
+                "a%2Fb"
             ).forEach {
                 isBackendSafeRoomName(it) shouldBe false
             }

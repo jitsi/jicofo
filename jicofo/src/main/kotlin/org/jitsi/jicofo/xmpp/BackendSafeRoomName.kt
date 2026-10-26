@@ -53,6 +53,11 @@ internal fun isBackendSafeRoomName(name: String): Boolean {
     }
     val decoded = URLDecoder.decode(name, Charsets.UTF_8)
     val normalized = Normalizer.normalize(decoded, Normalizer.Form.NFKC).lowercase(Locale.ROOT)
+    // A web server can decode "%2f" before it splits the tenant from the room, so "a%2fb" can land in tenant "a".
+    // Jibri and the Prosody modules refuse it too.
+    if (normalized.contains('/')) {
+        return false
+    }
     // XMPP nodeprep makes the localpart lowercase, so a name that differs only in case is the same room.
     return encodeUriComponent(normalized).equals(name, ignoreCase = true)
 }
