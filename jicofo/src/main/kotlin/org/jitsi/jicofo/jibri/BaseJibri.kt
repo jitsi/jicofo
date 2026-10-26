@@ -182,6 +182,11 @@ abstract class BaseJibri internal constructor(
             }
         }
 
+        if (iq.action == Action.START && !isBackendSafeRoomJid(conference.roomName)) {
+            logger.warn("Rejecting a Jibri start request, the room name is not in the form jitsi-meet uses.")
+            return error(iq, StanzaError.Condition.bad_request, "The room name is not in the form jitsi-meet uses")
+        }
+
         return when (iq.action) {
             Action.START -> when (session) {
                 null -> when (startRequestsRateLimit.accept()) {
