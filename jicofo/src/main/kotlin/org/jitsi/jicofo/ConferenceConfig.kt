@@ -154,6 +154,14 @@ class ConferenceConfig private constructor() {
             .convertFrom<List<String>> { l -> l.map { JidCreate.domainBareFrom(it) } }
     }
 
+    /**
+     * Whether to reject conference requests for room names that are not in the form jitsi-meet uses. See
+     * [org.jitsi.jicofo.xmpp.ConferenceRoomFilter].
+     */
+    val roomNameFilterEnabled: Boolean by config {
+        "jicofo.conference.room-name-filter.enabled".from(newConfig)
+    }
+
     companion object {
         @JvmField
         val config = ConferenceConfig()

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.jibri
+package org.jitsi.jicofo.xmpp
 
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.shouldBe

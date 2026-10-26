@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jitsi.jicofo.jibri
+package org.jitsi.jicofo.xmpp
 
 import org.jxmpp.jid.EntityBareJid
 import java.net.URLDecoder
@@ -38,11 +38,11 @@ private val TENANT = Regex("(?:[A-Za-z0-9_-]|[^\\x00-\\x7f])+")
 private val HOST_NAME = Regex("(?:[A-Za-z0-9._-]|[^\\x00-\\x7f])+")
 
 /**
- * Whether [name] is a room name equal, ignoring case, to what jitsi-meet's getBackendSafeRoomName produces. Jibri
- * builds a URL from the room JID, and jitsi-meet decodes and encodes again the name it finds in the URL path, so a name
- * in any other form makes Jibri join a room other than the one the request was authorized for. For example, the
+ * Whether [name] is a room name equal, ignoring case, to what jitsi-meet's getBackendSafeRoomName produces. Components
+ * such as Jibri build a URL from the room JID, and jitsi-meet decodes and encodes again the name it finds in the URL
+ * path, so a name in any other form makes them join a room other than the one the request was for. For example, the
  * browser cuts "a?b" at the "?" and resolves ".." as a path, jitsi-meet decodes "%61" to "a", and jitsi-meet removes
- * the "*" from "a*". Jibri does a similar check.
+ * the "*" from "a*". Jibri and the Prosody modules do a similar check.
  */
 internal fun isBackendSafeRoomName(name: String): Boolean {
     if (name == "." || name == ".." || !ENCODED_URI_COMPONENT.matches(name)) {

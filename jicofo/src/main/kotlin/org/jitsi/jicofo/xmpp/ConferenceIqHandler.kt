@@ -129,7 +129,8 @@ class ConferenceIqHandler(
 
         roomFilter.rejectionReason(room)?.let { reason ->
             logger.warn(
-                "Rejecting conference request for room $room: $reason. See jicofo.conference.room-domain-filter."
+                "Rejecting conference request for room $room: $reason. " +
+                    "See jicofo.conference.room-domain-filter and jicofo.conference.room-name-filter."
             )
             rejectedConferenceRequestCounter.inc()
             return IQ.createErrorResponse(

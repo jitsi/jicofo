@@ -33,13 +33,15 @@ class ConferenceRoomFilterTest : ShouldSpec() {
         conferenceMucJid: DomainBareJid = this.conferenceMucJid,
         enabled: Boolean = true,
         discoveryPending: Boolean = false,
-        additionalDomains: List<DomainBareJid> = emptyList()
+        additionalDomains: List<DomainBareJid> = emptyList(),
+        canonicalNamesOnly: Boolean = true
     ) = ConferenceRoomFilter(
         conferenceMucJid,
         reservedRooms = setOf(brewery),
         discoveryPending = { discoveryPending },
         enabled = enabled,
-        additionalDomains = additionalDomains
+        additionalDomains = additionalDomains,
+        canonicalNamesOnly = canonicalNamesOnly
     )
 
     init {
@@ -125,6 +127,26 @@ class ConferenceRoomFilterTest : ShouldSpec() {
             val filter = filter(conferenceMucJid = JidCreate.domainBareFrom("conference"))
             filter.allows("room@conference") shouldBe true
             filter.allows("room@conference.tenant") shouldBe false
+        }
+        context("Room names") {
+            val filter = filter()
+            should("accept room names in the form jitsi-meet uses") {
+                filter.allows("my%20room@conference.example.com") shouldBe true
+                filter.allows("caf%c3%a9@conference.tenant.example.com") shouldBe true
+                filter.allows("[tenant]room@conference.example.com") shouldBe true
+            }
+            should("reject room names in a different form") {
+                filter.allows("myroom?x@conference.example.com") shouldBe false
+                filter.allows("myroom*@conference.example.com") shouldBe false
+                filter.allows("%61@conference.example.com") shouldBe false
+                filter.allows("[tenant?x]room@conference.example.com") shouldBe false
+            }
+            should("reject room names in a different form when the domain filter is disabled") {
+                filter(enabled = false).allows("myroom?x@conference.example.com") shouldBe false
+            }
+            should("accept room names in a different form when the room name filter is disabled") {
+                filter(canonicalNamesOnly = false).allows("myroom?x@conference.example.com") shouldBe true
+            }
         }
     }
 }

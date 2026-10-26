@@ -27,6 +27,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.NotProcessed
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
+import org.jitsi.jicofo.xmpp.isBackendSafeRoomJid
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.tracing.TracingGlobal

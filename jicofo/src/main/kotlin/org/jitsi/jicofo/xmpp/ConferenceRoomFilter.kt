@@ -41,6 +41,10 @@ import org.jxmpp.jid.EntityBareJid
  *
  * The domain checks can be disabled in the configuration. A room that is listed in [reservedRooms] (the brewery rooms)
  * is always rejected.
+ *
+ * Independently of the domain, a room name that is not in the form jitsi-meet uses (see [isBackendSafeRoomJid]) is
+ * rejected when [canonicalNamesOnly] is set. Components such as Jibri build a URL from the room name, and jitsi-meet
+ * joins a different room for a URL with a name in another form, so jicofo does not create such rooms.
  */
 class ConferenceRoomFilter(
     private val conferenceMucJid: DomainBareJid,
@@ -49,7 +53,9 @@ class ConferenceRoomFilter(
     /** Whether the discovery of XMPP components (which provides the breakout rooms domain) is still pending. */
     private val discoveryPending: () -> Boolean = { false },
     private val enabled: Boolean = ConferenceConfig.config.roomDomainFilterEnabled,
-    private val additionalDomains: List<DomainBareJid> = ConferenceConfig.config.roomDomainFilterAdditionalDomains
+    private val additionalDomains: List<DomainBareJid> = ConferenceConfig.config.roomDomainFilterAdditionalDomains,
+    /** Whether to reject room names that are not in the form jitsi-meet uses. */
+    private val canonicalNamesOnly: Boolean = ConferenceConfig.config.roomNameFilterEnabled
 ) {
     /** The domain of the breakout rooms component, if one was discovered. */
     @Volatile
@@ -68,6 +74,9 @@ class ConferenceRoomFilter(
     fun rejectionReason(room: EntityBareJid): String? {
         if (reservedRooms.contains(room)) {
             return "the room is reserved for internal use"
+        }
+        if (canonicalNamesOnly && !isBackendSafeRoomJid(room)) {
+            return "the room name is not in the form jitsi-meet uses"
         }
         if (!enabled) {
             return null
