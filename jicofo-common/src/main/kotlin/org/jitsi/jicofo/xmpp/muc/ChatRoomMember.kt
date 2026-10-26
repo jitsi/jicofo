@@ -71,6 +71,10 @@ interface ChatRoomMember {
      */
     val translationLanguage: String?
 
+    /** The ids of the voice agents this member consented to share audio with ("voiceAgentConsent" property). */
+    val voiceAgentConsent: Set<String>
+        get() = emptySet()
+
     /** Gets the region (e.g. "us-east") of this [ChatRoomMember]. */
     val region: String?
 

@@ -39,7 +39,7 @@ class ConferenceAlreadyExistsException(message: String) : ColibriStateOutOfSyncE
 class ColibriConferenceNotFoundException(message: String) : ColibriStateOutOfSyncException(message)
 
 /**
- * The session or the participant was removed while the allocation request was pending (e.g. the participant left, or
- * the session failed and its participants are being re-invited). The response is ignored, there is nothing to recover.
+ * The session or participant a request was for had already been removed when its response arrived (e.g. the bridge
+ * was removed meanwhile). Nothing is wrong with the bridge, so [removeBridge] is false.
  */
-class ColibriAllocationObsoleteException(message: String) : ColibriAllocationFailedException(message, false)
+class ColibriSessionGoneException(message: String) : ColibriAllocationFailedException(message, removeBridge = false)

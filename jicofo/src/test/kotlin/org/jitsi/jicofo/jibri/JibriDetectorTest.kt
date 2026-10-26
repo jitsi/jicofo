@@ -48,7 +48,10 @@ class JibriDetectorTest : ShouldSpec({
     isolationMode = IsolationMode.InstancePerLeaf
 
     val mockXmppConnection = mockk<AbstractXMPPConnection>()
-    val mockXmppProvider = mockk<XmppProvider>().apply { every { xmppConnection } returns mockXmppConnection }
+    val mockXmppProvider = mockk<XmppProvider>().apply {
+        every { xmppConnection } returns mockXmppConnection
+        every { config.name } returns "client"
+    }
     val clock = FakeClock().apply { elapse(10.mins) }
     val detector = JibriDetector(mockXmppProvider, JidCreate.entityBareFrom("brewery_name@example.com"), false, clock)
     val jibriJids = listOf(

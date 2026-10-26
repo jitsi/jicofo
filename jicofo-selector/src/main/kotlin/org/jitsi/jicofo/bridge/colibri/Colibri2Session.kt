@@ -30,6 +30,7 @@ import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.xmpp.toRedactedXml
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -143,22 +144,25 @@ class Colibri2Session(
             if (participant.visitor) {
                 setMucRole(MUCRole.visitor)
             }
-            setTransport(
-                Transport.getBuilder().apply {
-                    // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
-                    //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
-                    //  failures with firefox but not chrome).
-                    setIceControlling(true)
-                    if (participant.useSctp) {
-                        setSctp(Sctp.Builder().build())
-                    }
-                }.build()
-            )
+            // Synthetic endpoints (e.g. voice agents) have no media transport.
+            if (!participant.synthetic) {
+                setTransport(
+                    Transport.getBuilder().apply {
+                        // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to
+                        //  the client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic
+                        //  ICE/DTLS failures with firefox but not chrome).
+                        setIceControlling(true)
+                        if (participant.useSctp) {
+                            setSctp(Sctp.Builder().build())
+                        }
+                    }.build()
+                )
+            }
         }
         participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())
 
-        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toRedactedXml()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
@@ -441,7 +445,7 @@ class Colibri2Session(
      * order — anything order-sensitive needs its own guard.
      */
     private fun sendRequest(iq: IQ, name: String, onSuccess: ((ConferenceModifiedIQ) -> Unit)? = null) {
-        logger.debug { "Sending $name request: ${iq.toXML()}" }
+        logger.debug { "Sending $name request: ${iq.toRedactedXml()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) { response ->
             if (response == null) {
                 logger.info("$name request timed out. Ignoring.")
@@ -469,7 +473,7 @@ class Colibri2Session(
                         // think it has participants. The bridge is healthy, re-invite the participants of this session.
                         logger.warn(
                             "Conference not found on the bridge for $name request, session failed: " +
-                                "${error.toXML()}, request was: ${iq.toXML()}"
+                                "${error.toXML()}, request was: ${iq.toRedactedXml()}"
                         )
                         colibriSessionManager.sessionFailed(this@Colibri2Session)
                     }
@@ -479,7 +483,7 @@ class Colibri2Session(
                 if (reInvite) {
                     logger.warn(
                         "Endpoint [$endpointId] is not found, session failed: ${error.toXML()}, " +
-                            "request was: ${iq.toXML()}"
+                            "request was: ${iq.toRedactedXml()}"
                     )
                     colibriSessionManager.endpointFailed(endpointId!!)
                 } else {

@@ -131,10 +131,13 @@ class JigasiIqHandler(
             }
             if (conference.hasTranscriber()) {
                 logger.warn("Request failed, transcriber already available: ${request.iq.toXML()}")
-                IQ.createErrorResponse(
-                    request.iq,
-                    StanzaError.getBuilder(StanzaError.Condition.conflict).build()
+                request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(
+                        request.iq,
+                        StanzaError.getBuilder(StanzaError.Condition.conflict).build()
+                    )
                 )
+                Stats.rejectedRequests.inc()
                 return
             }
             jigasiDetector::selectTranscriber

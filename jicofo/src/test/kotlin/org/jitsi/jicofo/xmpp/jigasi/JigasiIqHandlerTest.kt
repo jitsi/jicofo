@@ -34,6 +34,7 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
+import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.xmpp.extensions.rayo.DialIq
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
@@ -155,6 +156,32 @@ class JigasiIqHandlerTest : ShouldSpec() {
                     dialResponses.last().let {
                         it.shouldBeInstanceOf<IQ>()
                         it.shouldBeSuccessful()
+                    }
+                }
+                context("And a transcriber is requested when one is already in the room") {
+                    val transcriber: ChatRoomMember = mockk {
+                        every { isTranscriber } returns true
+                    }
+                    every { conference.chatRoom } returns mockk {
+                        every { asyncTranscription } returns false
+                        every { members } returns listOf(transcriber)
+                    }
+                    val transcriberRequest = IqRequest(
+                        DialIq().apply {
+                            from = participant
+                            to = jicofo
+                            type = IQ.Type.set
+                            destination = "jitsi_meet_transcribe"
+                        },
+                        dialRequest.connection
+                    )
+                    val responsesBefore = dialResponses.size
+
+                    jigasiIqHandler.handleRequest(transcriberRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                    dialResponses.size shouldBe responsesBefore + 1
+                    dialResponses.last().let {
+                        it.shouldBeInstanceOf<IQ>()
+                        it.shouldBeError(Condition.conflict)
                     }
                 }
             }

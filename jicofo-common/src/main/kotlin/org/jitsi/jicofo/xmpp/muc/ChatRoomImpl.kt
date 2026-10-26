@@ -491,6 +491,9 @@ class ChatRoomImpl(
             audioTranslationRequestsChanged(roomMetadata.metadata?.audioTranslationRequests ?: emptyMap())
         }
         visitorTranslationLanguages = parseVisitorTranslationLanguages(roomMetadata)
+        eventEmitter.fireEvent {
+            agentsChanged(roomMetadata.metadata?.agents ?: emptyMap())
+        }
         roomMetadataLatch.countDown()
     }
 
