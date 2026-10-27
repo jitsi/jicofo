@@ -1042,6 +1042,14 @@ public class JitsiMeetConferenceImpl
         TaskPools.getIoPool().execute(Context.current().wrap(channelAllocator));
     }
 
+    /**
+     * Whether {@code participant} is still part of the conference, i.e. it has not been terminated or replaced.
+     */
+    private boolean isParticipantPresent(@NotNull Participant participant)
+    {
+        return participants.get(participant.getMucJid()) == participant;
+    }
+
     @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
     {
         EndpointSourceSet s = conferenceSources.get(participant.getEndpointId());
@@ -1584,10 +1592,21 @@ public class JitsiMeetConferenceImpl
     {
         String participantId = participant.getEndpointId();
 
+        // The session-accept is processed on the Jingle IQ queue, so the participant may have left (and had its
+        // sources removed) in the meantime. Check under participantLock, which terminateParticipant also holds, so
+        // that the sources of a participant which already left are not added back to the conference.
         EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
-        if (!sourcesAdvertised.isEmpty())
+        synchronized (participantLock)
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            if (!isParticipantPresent(participant))
+            {
+                logger.info("Ignoring session-accept from " + participantId + ", the participant is not present.");
+                return;
+            }
+            if (!sourcesAdvertised.isEmpty())
+            {
+                sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            }
         }
 
         getColibriSessionManager().updateParticipant(
@@ -1600,8 +1619,15 @@ public class JitsiMeetConferenceImpl
         if (!sourcesAccepted.isEmpty())
         {
             logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
-            // Propagate [participant]'s sources to the other participants.
-            propagateNewSources(participant, sourcesAccepted);
+            synchronized (participantLock)
+            {
+                // The participant may have left while the bridge was updated. Its sources were removed then.
+                if (isParticipantPresent(participant))
+                {
+                    // Propagate [participant]'s sources to the other participants.
+                    propagateNewSources(participant, sourcesAccepted);
+                }
+            }
         }
         else
         {

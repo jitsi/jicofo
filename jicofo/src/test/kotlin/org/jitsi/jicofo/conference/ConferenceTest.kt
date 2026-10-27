@@ -273,6 +273,24 @@ class ConferenceTest : ShouldSpec() {
             conference.participantCount shouldBe 0
             harness.ended shouldBe true
         }
+        context("A session-accept processed after the participant left") {
+            // The session-accept is handled on the Jingle IQ queue, so the participant can leave the MUC before it
+            // is processed.
+            val members = addParticipants(2)
+            val remoteParticipants = members.map { it.getRemoteParticipant()!! }
+            val member3 = chatRoom.addMember("member3")
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val requestCounts = remoteParticipants.map { it.requests.size }
+
+            chatRoom.removeMember(member3)
+            conference.participantCount shouldBe 2
+            conference.acceptSession(participant3, remoteParticipant3.sources, null, null)
+
+            // The departed participant's sources must not be added to the conference, or signaled to the others.
+            conference.sources[participant3.endpointId] shouldBe null
+            remoteParticipants.map { it.requests.size } shouldBe requestCounts
+        }
         context("Sender limits") {
             withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
                 context("Configuration") {

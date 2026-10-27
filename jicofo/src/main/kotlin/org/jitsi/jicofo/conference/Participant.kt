@@ -319,7 +319,8 @@ open class Participant @JvmOverloads constructor(
     fun sendQueuedRemoteSources() {
         val jingleSession = jingleSession
         if (jingleSession?.isActive() != true) {
-            logger.warn("Can not signal remote sources, Jingle session not established.")
+            // The session became active before this was scheduled, so it has ended since (e.g. the participant left).
+            logger.info("Not signaling queued remote sources, the Jingle session is no longer active.")
             return
         }
         var modifiedSources: List<SourcesToAddOrRemove>
