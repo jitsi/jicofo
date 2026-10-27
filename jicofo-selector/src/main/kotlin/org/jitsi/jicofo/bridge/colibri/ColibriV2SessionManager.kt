@@ -376,6 +376,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         urlParams: Map<String, String>?
     ) = synchronized(syncRoot) {
         if (transcriberUrl == url) {
+            // The bridge does not support changing the headers or the URL of a running connect, so we do not apply
+            // new headers or URL params for the same URL.
+            if (url != null && (customHeaders != transcriberCustomHeaders || urlParams != transcriberUrlParams)) {
+                logger.info("Ignoring new transcriber HTTP headers or URL params for the same transcriber URL.")
+            }
             return@synchronized
         }
         if (transcriberUrl != null && url != null) {
