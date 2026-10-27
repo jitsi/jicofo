@@ -350,7 +350,15 @@ public class JibriSession
         }
         catch (Exception e)
         {
-            logger.error("Failed to send start Jibri IQ: " + e, e);
+            if (e instanceof StartException.OneBusy && !maxRetriesExceeded())
+            {
+                // A busy Jibri is expected (e.g. a race with another conference), we retry with another one.
+                logger.warn("Jibri " + jibriJid + " was busy, will retry with another Jibri.");
+            }
+            else
+            {
+                logger.error("Failed to send start Jibri IQ: " + e, e);
+            }
             jibriDetector.instanceFailed(jibriJid);
             if (!maxRetriesExceeded())
             {

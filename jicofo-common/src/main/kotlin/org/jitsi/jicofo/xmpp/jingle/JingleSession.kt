@@ -298,7 +298,7 @@ class JingleSession(
             sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
         }
         logger.debug { "Sending source-remove, sources=$sourcesToRemove" }
-        if (state != State.ACTIVE) logger.error("Sending source-remove for session in state $state")
+        checkStateForSourceUpdate("source-remove")
         connection.tryToSendStanza(removeSourceIq)
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
     }
@@ -340,8 +340,20 @@ class JingleSession(
     fun addSource(sources: ConferenceSourceMap) {
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
-        if (state != State.ACTIVE) logger.error("Sending source-add for session in state $state")
+        checkStateForSourceUpdate("source-add")
         connection.tryToSendStanza(createAddSourceIq(sources))
+    }
+
+    /**
+     * Log if a source update is sent in a state other than ACTIVE. An ENDED session is not an error: the session can
+     * end while an update for it is already queued.
+     */
+    private fun checkStateForSourceUpdate(action: String) {
+        when (state) {
+            State.ACTIVE -> {}
+            State.ENDED -> logger.warn("Sending $action for session in state $state")
+            else -> logger.error("Sending $action for session in state $state")
+        }
     }
 
     @Throws(SmackException.NotConnectedException::class)

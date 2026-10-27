@@ -1015,8 +1015,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val participantInfo = participants[participantId]
             ?: run {
                 // This can happen after a colibri session is removed due to a failure to allocate, since we never
-                // notify the JitsiMeetConferenceImpl object of the failure.
-                logger.error("No ParticipantInfo for $participantId")
+                // notify the JitsiMeetConferenceImpl object of the failure. It also happens when the participant is
+                // being re-invited (e.g. moved to another bridge), until its new allocation completes.
+                logger.warn("No ParticipantInfo for $participantId")
                 return
             }
         transport?.let { stampIceGeneration(participantInfo, it) }
