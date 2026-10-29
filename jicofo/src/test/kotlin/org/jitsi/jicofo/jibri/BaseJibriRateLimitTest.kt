@@ -89,8 +89,17 @@ class BaseJibriRateLimitTest : ShouldSpec({
         jibri.handleJibriRequest(IqRequest(iq, connection))
     }
 
-    /** The error condition of the last stanza that jicofo sent, or null if it was not an error. */
-    fun lastErrorCondition(): StanzaError.Condition? = sentStanzas.lastOrNull()?.error?.condition
+    /** The error of the last stanza that jicofo sent, or null if it was not an error. */
+    fun lastError(): StanzaError? = sentStanzas.lastOrNull()?.error
+
+    /**
+     * Prosody's mod_filter_iq_jibri rejects requests that come too quickly with the same error, and the client
+     * shows "too quickly" for it. A resource-constraint error would show "all recorders are busy" instead.
+     */
+    fun shouldBeRateLimitedError(error: StanzaError?) {
+        error?.condition shouldBe StanzaError.Condition.policy_violation
+        error?.type shouldBe StanzaError.Type.WAIT
+    }
 
     context("A conference which repeats start requests") {
         should("stop being served once it exceeds its budget") {
@@ -101,7 +110,7 @@ class BaseJibriRateLimitTest : ShouldSpec({
             }
 
             startRequestsHandled shouldBe 5
-            lastErrorCondition() shouldBe StanzaError.Condition.resource_constraint
+            shouldBeRateLimitedError(lastError())
         }
 
         should("be served again after the interval passes") {
@@ -125,7 +134,7 @@ class BaseJibriRateLimitTest : ShouldSpec({
             clock.elapse(Duration.ofSeconds(1))
             sendStartRequest()
             startRequestsHandled shouldBe 1
-            lastErrorCondition() shouldBe StanzaError.Condition.resource_constraint
+            shouldBeRateLimitedError(lastError())
         }
     }
 })
