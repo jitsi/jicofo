@@ -24,7 +24,6 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
-import io.mockk.mockk
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
@@ -33,6 +32,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.mock.ConferenceHarness
+import org.jitsi.jicofo.mock.DeferredExecutor
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.util.shouldBeValidJson
@@ -281,17 +281,95 @@ class ConferenceTest : ShouldSpec() {
             val member3 = chatRoom.addMember("member3")
             val participant3 = member3.getParticipant()!!
             val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
             val requestCounts = remoteParticipants.map { it.requests.size }
 
             chatRoom.removeMember(member3)
             conference.participantCount shouldBe 2
-            conference.acceptSession(participant3, remoteParticipant3.sources, null, null)
+            val sources3 = remoteParticipant3.sources
+            val accepted = conference.acceptSession(participant3, jingleSession3, sources3, null, null)
+            accepted shouldBe false
 
             // The departed participant's sources must not be added to the conference, or signaled to the others.
             conference.sources[participant3.endpointId] shouldBe null
             remoteParticipants.map { it.requests.size } shouldBe requestCounts
         }
+        context("A session-accept processed for a session replaced by a re-invite") {
+            addParticipants(2)
+            val member3 = chatRoom.addMember("member3")
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val oldSession = participant3.jingleSession!!
+
+            conference.moveEndpoint(participant3.endpointId, null) shouldBe true
+            participant3.jingleSession shouldNotBe oldSession
+            conference.acceptSession(participant3, oldSession, remoteParticipant3.sources, null, null) shouldBe false
+
+            conference.sources[participant3.endpointId] shouldBe null
+        }
+        context("A session-accept queued before the session ended") {
+            val members = addParticipants(2)
+            val remoteParticipants = members.map { it.getRemoteParticipant()!! }
+
+            // Run the invite and the Jingle IQ queue of member3 only when we call runAll().
+            val ioPool = DeferredExecutor()
+            TaskPools.ioPool = ioPool
+            val member3 = chatRoom.addMember("member3")
+            ioPool.runAll()
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+            val requestCounts = remoteParticipants.map { it.requests.size }
+
+            val accept = remoteParticipant3.createSessionAccept()
+            jingleSession3.processIq(accept)
+            fun acceptResponse() = xmppConnection.requests.filterIsInstance<IQ>().find {
+                it.stanzaId == accept.stanzaId && it.type != IQ.Type.set
+            }
+
+            context("And the participant leaving") {
+                // beforeAny() resets the pool for each nested context.
+                TaskPools.ioPool = ioPool
+                chatRoom.removeMember(member3)
+                ioPool.runAll()
+
+                conference.sources[participant3.endpointId] shouldBe null
+                remoteParticipants.map { it.requests.size } shouldBe requestCounts
+                jingleSession3.isActive() shouldBe false
+                acceptResponse()!!.type shouldBe IQ.Type.error
+            }
+            context("And the participant being re-invited") {
+                // beforeAny() resets the pool for each nested context.
+                TaskPools.ioPool = ioPool
+                conference.moveEndpoint(participant3.endpointId, null) shouldBe true
+                ioPool.runAll()
+
+                // The accept for the old session must not add sources. The participant has a new, pending session.
+                conference.sources[participant3.endpointId] shouldBe null
+                participant3.jingleSession shouldNotBe null
+                participant3.jingleSession shouldNotBe jingleSession3
+                jingleSession3.isActive() shouldBe false
+                acceptResponse()!!.type shouldBe IQ.Type.error
+            }
+        }
+        context("A source-add processed after the participant left") {
+            val members = addParticipants(3)
+            val remoteParticipants = members.take(2).map { it.getRemoteParticipant()!! }
+            val participant3 = members[2].getParticipant()!!
+            val remoteParticipant3 = members[2].getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+            val requestCounts = remoteParticipants.map { it.requests.size }
+
+            chatRoom.removeMember(members[2])
+            val newSource = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.VIDEO))
+            conference.addSource(participant3, jingleSession3, newSource) shouldBe false
+
+            conference.sources[participant3.endpointId] shouldBe null
+            remoteParticipants.map { it.requests.size } shouldBe requestCounts
+        }
         context("Sender limits") {
+            // Jicofo invites participants only once there are at least two.
+            val participant = addParticipants(2)[0].getParticipant()!!
             withNewConfig("jicofo.conference.max-video-senders=5, jicofo.conference.max-audio-senders=5") {
                 context("Configuration") {
                     ConferenceConfig.config.maxVideoSenders shouldBe 5
@@ -299,44 +377,47 @@ class ConferenceTest : ShouldSpec() {
                 }
                 chatRoom.chatRoom.apply { every { videoSendersCount } returns 0 }
                 chatRoom.chatRoom.apply { every { audioSendersCount } returns 0 }
-                var ssrcs = 1L
+                // Use SSRCs which do not conflict with the ones of the participants created by the harness.
+                var ssrcs = 1000L
                 fun nextSource(mediaType: MediaType) = EndpointSourceSet(Source(ssrcs++, mediaType))
+                fun addSource(sources: EndpointSourceSet) =
+                    conference.addSource(participant, participant.jingleSession!!, sources)
 
                 context("Video") {
                     val videoSource = nextSource(MediaType.VIDEO)
-                    conference.addSource(mockk(relaxed = true), videoSource)
+                    addSource(videoSource)
                     shouldThrow<ValidationFailedException> {
-                        conference.addSource(mockk(relaxed = true), videoSource)
+                        addSource(videoSource)
                     }
                     shouldThrow<ValidationFailedException> {
-                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.VIDEO)))
+                        addSource(EndpointSourceSet(Source(-1, MediaType.VIDEO)))
                     }
 
                     chatRoom.chatRoom.apply { every { videoSendersCount } returns 10 }
                     shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
-                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
+                        addSource(nextSource(MediaType.VIDEO))
                     }
 
                     chatRoom.chatRoom.apply { every { videoSendersCount } returns 2 }
-                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.VIDEO))
+                    addSource(nextSource(MediaType.VIDEO))
                 }
                 context("Audio") {
                     val audioSource = nextSource(MediaType.AUDIO)
-                    conference.addSource(mockk(relaxed = true), audioSource)
+                    addSource(audioSource)
                     shouldThrow<ValidationFailedException> {
-                        conference.addSource(mockk(relaxed = true), audioSource)
+                        addSource(audioSource)
                     }
                     shouldThrow<ValidationFailedException> {
-                        conference.addSource(mockk(relaxed = true), EndpointSourceSet(Source(-1, MediaType.AUDIO)))
+                        addSource(EndpointSourceSet(Source(-1, MediaType.AUDIO)))
                     }
 
                     chatRoom.chatRoom.apply { every { audioSendersCount } returns 10 }
                     shouldThrow<JitsiMeetConferenceImpl.SenderCountExceededException> {
-                        conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
+                        addSource(nextSource(MediaType.AUDIO))
                     }
 
                     chatRoom.chatRoom.apply { every { audioSendersCount } returns 2 }
-                    conference.addSource(mockk(relaxed = true), nextSource(MediaType.AUDIO))
+                    addSource(nextSource(MediaType.AUDIO))
                 }
             }
         }

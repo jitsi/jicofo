@@ -166,6 +166,18 @@ class JingleSession(
         private set
 
     private fun doProcessIq(iq: JingleIQ) {
+        if (state == State.ENDED) {
+            // The session ended while the IQ was queued.
+            logger.info("Ignoring ${iq.action}, the session has ended.")
+            connection.tryToSendStanza(
+                IQ.createErrorResponse(
+                    iq,
+                    StanzaError.getBuilder(StanzaError.Condition.gone).setConditionText("session ended").build()
+                )
+            )
+            return
+        }
+
         val error = when (iq.action) {
             JingleAction.SESSION_ACCEPT -> {
                 // The client includes its version in the session-accept that it sends to us.
