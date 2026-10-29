@@ -1042,6 +1042,16 @@ public class JitsiMeetConferenceImpl
         TaskPools.getIoPool().execute(Context.current().wrap(channelAllocator));
     }
 
+    /**
+     * Whether {@code participant} is still part of the conference and {@code jingleSession} is still its current
+     * session, i.e. the participant has not left and has not been re-invited since. Call with participantLock held.
+     */
+    private boolean isSessionCurrent(@NotNull Participant participant, @NotNull JingleSession jingleSession)
+    {
+        return participants.get(participant.getMucJid()) == participant
+                && participant.getJingleSession() == jingleSession;
+    }
+
     @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
     {
         EndpointSourceSet s = conferenceSources.get(participant.getEndpointId());
@@ -1480,15 +1490,19 @@ public class JitsiMeetConferenceImpl
      * Attempts to add sources from {@code participant} to the conference.
      *
      * @param participant the participant that is adding the sources.
+     * @param jingleSession the Jingle session on which the participant signaled the sources.
      * @param sourcesAdvertised the sources that the participant is adding
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      *
      * @throws SenderCountExceededException if the sender limits in the conference have been exceeded
      * @throws ValidationFailedException if the addition of the sources would result in an invalid state of the
      * conference sources (e.g. if there is a conflict with another participant, or the resulting source set for the
      * participant is invalid).
      */
-    public void addSource(
+    public boolean addSource(
             @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
             @NotNull EndpointSourceSet sourcesAdvertised)
     throws SenderCountExceededException, ValidationFailedException
     {
@@ -1504,7 +1518,17 @@ public class JitsiMeetConferenceImpl
                             + (rejectedVideoSource ? "video" : ""));
         }
 
-        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
+        // Check under participantLock, so that the sources of a participant which already left (or was re-invited)
+        // are not added back to the conference. See acceptSession.
+        EndpointSourceSet sourcesAccepted;
+        synchronized (participantLock)
+        {
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
+        }
         logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
@@ -1512,7 +1536,7 @@ public class JitsiMeetConferenceImpl
             // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been an
             // exception above)
             logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
-            return;
+            return true;
         }
 
         // Updates source groups on the bridge
@@ -1524,12 +1548,21 @@ public class JitsiMeetConferenceImpl
                 participant.getSources(),
                 null,
                 false);
-        propagateNewSources(participant, sourcesAccepted);
+        synchronized (participantLock)
+        {
+            // The participant may have left while the bridge was updated. Its sources were removed then.
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            propagateNewSources(participant, sourcesAccepted);
+        }
 
         // A newly-added audio source may be the base source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
         // Agent exports name the consenting members' audio sources.
         agentManager.reapply(colibriSessionManager, meetingId);
+        return true;
     }
 
     /**
@@ -1574,9 +1607,13 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles a "session-accept" or "transport-accept" request from a participant.
+     * @param jingleSession the Jingle session on which the request was received.
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      */
-    void acceptSession(
+    boolean acceptSession(
             @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
             @NotNull EndpointSourceSet sourcesAdvertised,
             IceUdpTransportPacketExtension transport,
             @Nullable InitialLastN initialLastN)
@@ -1584,10 +1621,20 @@ public class JitsiMeetConferenceImpl
     {
         String participantId = participant.getEndpointId();
 
+        // The request is processed on the Jingle IQ queue, so the participant may have left or been re-invited (and
+        // had its sources removed) in the meantime. Check under participantLock, which is also held when the session
+        // is terminated, so that the old sources are not added back to the conference.
         EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
-        if (!sourcesAdvertised.isEmpty())
+        synchronized (participantLock)
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            if (!sourcesAdvertised.isEmpty())
+            {
+                sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            }
         }
 
         getColibriSessionManager().updateParticipant(
@@ -1600,8 +1647,16 @@ public class JitsiMeetConferenceImpl
         if (!sourcesAccepted.isEmpty())
         {
             logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
-            // Propagate [participant]'s sources to the other participants.
-            propagateNewSources(participant, sourcesAccepted);
+            synchronized (participantLock)
+            {
+                // The participant may have left while the bridge was updated. Its sources were removed then.
+                if (!isSessionCurrent(participant, jingleSession))
+                {
+                    return false;
+                }
+                // Propagate [participant]'s sources to the other participants.
+                propagateNewSources(participant, sourcesAccepted);
+            }
         }
         else
         {
@@ -1614,6 +1669,7 @@ public class JitsiMeetConferenceImpl
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
+        return true;
     }
 
     /**
