@@ -30,6 +30,8 @@ import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.StanzaError
+import org.jivesoftware.smack.util.PacketParserUtils
+import org.jivesoftware.smack.xml.XmlPullParser
 import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 
@@ -89,16 +91,34 @@ class BaseJibriRateLimitTest : ShouldSpec({
         jibri.handleJibriRequest(IqRequest(iq, connection))
     }
 
-    /** The error of the last stanza that jicofo sent, or null if it was not an error. */
-    fun lastError(): StanzaError? = sentStanzas.lastOrNull()?.error
+    /** The name of the first child element of `<error>` in the serialized [stanza], or null if there is none. */
+    fun firstErrorChildName(stanza: Stanza): String? {
+        val parser = PacketParserUtils.getParserFor(stanza.toXML().toString())
+        var inError = false
+        var event = parser.next()
+        while (event != XmlPullParser.Event.END_DOCUMENT) {
+            if (event == XmlPullParser.Event.START_ELEMENT) {
+                if (inError) {
+                    return parser.name
+                }
+                inError = parser.name == "error"
+            }
+            event = parser.next()
+        }
+        return null
+    }
 
     /**
      * Prosody's mod_filter_iq_jibri rejects requests that come too quickly with the same error, and the client
      * shows "too quickly" for it. A resource-constraint error would show "all recorders are busy" instead.
+     *
+     * The client reads only the name of the first child element of `<error>` (lib-jitsi-meet
+     * JibriSession._setErrorFromIq), so check the serialized XML too, not only the parsed condition.
      */
-    fun shouldBeRateLimitedError(error: StanzaError?) {
-        error?.condition shouldBe StanzaError.Condition.policy_violation
-        error?.type shouldBe StanzaError.Type.WAIT
+    fun shouldBeRateLimitedError(stanza: Stanza?) {
+        stanza?.error?.condition shouldBe StanzaError.Condition.policy_violation
+        stanza?.error?.type shouldBe StanzaError.Type.WAIT
+        stanza?.let { firstErrorChildName(it) } shouldBe "policy-violation"
     }
 
     context("A conference which repeats start requests") {
@@ -110,7 +130,7 @@ class BaseJibriRateLimitTest : ShouldSpec({
             }
 
             startRequestsHandled shouldBe 5
-            shouldBeRateLimitedError(lastError())
+            shouldBeRateLimitedError(sentStanzas.lastOrNull())
         }
 
         should("be served again after the interval passes") {
@@ -134,7 +154,7 @@ class BaseJibriRateLimitTest : ShouldSpec({
             clock.elapse(Duration.ofSeconds(1))
             sendStartRequest()
             startRequestsHandled shouldBe 1
-            shouldBeRateLimitedError(lastError())
+            shouldBeRateLimitedError(sentStanzas.lastOrNull())
         }
     }
 })
