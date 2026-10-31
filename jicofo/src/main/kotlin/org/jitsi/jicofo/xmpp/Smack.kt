@@ -73,9 +73,9 @@ fun initializeSmack() {
     // by the server. Disable GSSAPI.
     SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
 
-    // Enable Stream Management
-    XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
-    XMPPTCPConnection.setUseStreamManagementDefault(true)
+    // Disable Stream Management until the Smack reader/writer deadlock fix (SMACK-881) is released.
+    XMPPTCPConnection.setUseStreamManagementResumptionDefault(false)
+    XMPPTCPConnection.setUseStreamManagementDefault(false)
 
     registerXmppExtensions()
 }
