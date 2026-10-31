@@ -75,6 +75,7 @@ interface XmppConnectionConfig {
     val replyTimeout: Duration
     val disableCertificateVerification: Boolean
     val useTls: Boolean
+    val useStreamManagement: Boolean
     val name: String
     val xmppDomain: DomainBareJid?
     val jid
@@ -92,6 +93,7 @@ class XmppVisitorConnectionConfig(
     override val replyTimeout: Duration,
     override val disableCertificateVerification: Boolean,
     override val useTls: Boolean,
+    override val useStreamManagement: Boolean,
     override val name: String,
     override val xmppDomain: DomainBareJid?,
     val conferenceService: DomainBareJid
@@ -121,6 +123,7 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
         disableCertificateVerification = c["disable-certificate-verification"]?.unwrapped()?.toString()?.toBoolean()
             ?: false,
         useTls = c["use-tls"]?.unwrapped()?.toString()?.toBoolean() ?: true,
+        useStreamManagement = c["use-stream-management"]?.unwrapped()?.toString()?.toBoolean() ?: true,
         name = name,
         conferenceService = JidCreate.domainBareFrom(conferenceService),
         xmppDomain = if (xmppDomain != null) JidCreate.domainBareFrom(xmppDomain) else null
@@ -188,6 +191,10 @@ class XmppServiceConnectionConfig : XmppConnectionConfig {
 
     override val useTls: Boolean by config {
         "jicofo.xmpp.service.use-tls".from(newConfig)
+    }
+
+    override val useStreamManagement: Boolean by config {
+        "jicofo.xmpp.service.use-stream-management".from(newConfig)
     }
 
     override fun toString(): String = "XmppServiceConnectionConfig[hostname=$hostname, port=$port, username=$username]"
@@ -276,6 +283,10 @@ class XmppClientConnectionConfig : XmppConnectionConfig {
 
     override val useTls: Boolean by config {
         "jicofo.xmpp.client.use-tls".from(newConfig)
+    }
+
+    override val useStreamManagement: Boolean by config {
+        "jicofo.xmpp.client.use-stream-management".from(newConfig)
     }
 
     val clientProxy: DomainBareJid? by optionalconfig {
