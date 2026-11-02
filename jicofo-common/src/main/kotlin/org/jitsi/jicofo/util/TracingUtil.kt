@@ -66,6 +66,11 @@ class TracingUtil {
             if (parts.size < 4) {
                 return root
             }
+            val version = parts[0]
+            // Version "ff" is invalid. Version "00" has exactly 4 fields. Later versions can add fields.
+            if (!isLowerHex(version, 2) || version == "ff" || (version == "00" && parts.size != 4)) {
+                return root
+            }
             val span = remoteSpan(parts[1], parts[2], parts[3]) ?: return root
             return root.with(span)
         }
@@ -81,14 +86,13 @@ class TracingUtil {
             if (!TraceId.isValid(traceId) || !SpanId.isValid(spanId)) {
                 return null
             }
-            val flags = try {
-                TraceFlags.fromHex(flagsHex, 0)
-            } catch (e: Exception) {
-                TraceFlags.getDefault()
-            }
+            val flags = if (isLowerHex(flagsHex, 2)) TraceFlags.fromHex(flagsHex, 0) else TraceFlags.getDefault()
             return Span.wrap(
                 SpanContext.createFromRemoteParent(traceId, spanId, flags, TraceState.getDefault())
             )
         }
+
+        private fun isLowerHex(value: String, length: Int): Boolean =
+            value.length == length && value.all { it in '0'..'9' || it in 'a'..'f' }
     }
 }

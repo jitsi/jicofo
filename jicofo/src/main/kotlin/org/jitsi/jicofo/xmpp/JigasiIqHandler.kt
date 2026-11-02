@@ -34,6 +34,8 @@ import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
 import org.jitsi.tracing.TracingGlobal
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.extensions.rayo.HeaderExtension
+import org.jitsi.xmpp.extensions.rayo.RayoIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
@@ -106,7 +108,9 @@ class JigasiIqHandler(
             // what RayoIqProvider preserves when parsing).
             var remoteContext = TracingUtil.remoteContextFromIq(request.iq)
             if (Span.fromContextOrNull(remoteContext) == null) {
-                remoteContext = TracingUtil.remoteContextFromW3CHeader(request.iq.getHeader("X-Traceparent"))
+                remoteContext = TracingUtil.remoteContextFromW3CHeader(
+                    request.iq.getHeaderIgnoreCase(TRACEPARENT_HEADER)
+                )
             }
 
             val span = tracer.spanBuilder("jigasi.dial")
@@ -196,9 +200,10 @@ class JigasiIqHandler(
             to = jigasiJid
             stanzaId = stanzaIdSource.newStanzaId
             // Stamp our trace context on the forwarded IQ as an X-Traceparent rayo header, which
-            // jigasi parents its dial-out span from.
-            Span.fromContextOrNull(Context.current())?.let {
-                setHeader("X-Traceparent", TracingUtil.toW3CHeader(it.spanContext))
+            // jigasi parents its dial-out span from. When tracing is disabled the current span is a
+            // noop span with an invalid (all-zero) context, which must not be sent.
+            Span.fromContextOrNull(Context.current())?.spanContext?.takeIf { it.isValid }?.let {
+                replaceHeaderIgnoreCase(TRACEPARENT_HEADER, TracingUtil.toW3CHeader(it))
             }
         }
         val responseFromJigasi = try {
@@ -253,6 +258,9 @@ class JigasiIqHandler(
 
     companion object {
         private val stanzaIdSourceFactory = StandardStanzaIdSource.Factory()
+
+        /** The rayo header which carries a W3C trace context. */
+        private const val TRACEPARENT_HEADER = "X-Traceparent"
     }
 
     class Stats {
@@ -306,6 +314,21 @@ class JigasiIqHandler(
             }
         }
     }
+}
+
+/** Get the value of the first rayo header with the given name, ignoring case (as jigasi does). */
+private fun RayoIq.getHeaderIgnoreCase(name: String): String? =
+    getExtensions(HeaderExtension::class.java).firstOrNull { name.equals(it.name, ignoreCase = true) }?.value
+
+/**
+ * Set a rayo header, replacing any existing headers with the same name (ignoring case). Adds a new extension instead
+ * of updating the existing one, because a copied IQ shares its extension instances with the original.
+ */
+private fun RayoIq.replaceHeaderIgnoreCase(name: String, value: String) {
+    getExtensions(HeaderExtension::class.java)
+        .filter { name.equals(it.name, ignoreCase = true) }
+        .forEach { removeExtension(it) }
+    setHeader(name, value)
 }
 
 private fun JitsiMeetConference.hasTranscriber(): Boolean = this.chatRoom?.members?.any { it.isTranscriber } ?: false

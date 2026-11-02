@@ -352,14 +352,10 @@ class JingleSession(
             if (encodeSourcesAsJson) {
                 addExtension(sources.toJsonMessageExtension())
             }
-            Span.fromContextOrNull(Context.current())?.let {
-                addExtension(
-                    TraceParent(
-                        it.spanContext.traceId,
-                        it.spanContext.spanId,
-                        it.spanContext.traceFlags.asHex()
-                    )
-                )
+            // When tracing is disabled the current span is a noop span with an invalid (all-zero) context, which
+            // must not be sent.
+            Span.fromContextOrNull(Context.current())?.spanContext?.takeIf { it.isValid }?.let {
+                addExtension(TraceParent(it.traceId, it.spanId, it.traceFlags.asHex()))
             }
         }
 
