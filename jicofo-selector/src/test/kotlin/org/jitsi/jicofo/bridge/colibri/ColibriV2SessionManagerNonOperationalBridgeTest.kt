@@ -299,6 +299,38 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
             }
         }
 
+        // The conference's bridge is operational: keep the old behavior (fail the selection).
+        context("Octo enabled, an operational bridge and a new bridge with no relay ID") {
+            withNewConfig(
+                """
+                jicofo.octo.enabled=true
+                jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
+                """.trimIndent()
+            ) {
+                val bridgeSelector = BridgeSelector(clock)
+                val jvb1 = bridgeSelector.addJvbAddress(jid("jvb1")).apply {
+                    setStats(stress = 0.1, region = "r1", relayId = "jvb1")
+                }
+                val jvb2 = bridgeSelector.addJvbAddress(jid("jvb2")).apply {
+                    setStats(stress = 0.1, region = "r2", relayId = null)
+                }
+                val sessionManager = createSessionManager(bridgeSelector)
+                sessionManager.allocate("p1", region = "r1")
+                sessionManager.getBridges().keys shouldBe setOf(jvb1)
+
+                // The selector returns jvb2 for the participant's region, but jvb2 does not support Octo.
+                val e = runCatching { sessionManager.allocate("p2", region = "r2") }.exceptionOrNull()
+                drain()
+
+                should("fail bridge selection, and not use the conference's bridge") {
+                    (e is BridgeSelectionFailedException) shouldBe true
+                    requestsTo(jvb2).shouldBeEmpty()
+                    failedSessions.shouldBeEmpty()
+                    sessionManager.getParticipants(jvb1) shouldBe listOf("p1")
+                }
+            }
+        }
+
         // More than one session: keep the old behavior (fail the selection).
         context("Octo enabled, two non-operational bridges and a new bridge with no relay ID") {
             withNewConfig(
