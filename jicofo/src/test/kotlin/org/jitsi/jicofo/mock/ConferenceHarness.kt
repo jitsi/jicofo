@@ -18,6 +18,7 @@ package org.jitsi.jicofo.mock
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import io.mockk.every
 import io.mockk.mockk
+import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl
 import org.jitsi.jicofo.conference.Participant
 import org.jitsi.jicofo.xmpp.VisitorsManager
@@ -40,7 +41,14 @@ class ConferenceHarness(
     /** The names of the visitor nodes to make available to the conference. */
     visitorNodeNames: List<String> = emptyList(),
     /** Configure the mock chat room before the conference is created and started (e.g. to customize join()). */
-    configureRoom: (MockChatRoom) -> Unit = {}
+    configureRoom: (MockChatRoom) -> Unit = {},
+    /** The bridge selector to use. The default always selects the same mock bridge. */
+    bridgeSelector: BridgeSelector = mockk(relaxed = true) {
+        every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
+            every { jid } returns JidCreate.from("jvb@example.com/jvb1")
+            every { debugState } returns JsonNodeFactory.instance.objectNode()
+        }
+    }
 ) {
     val roomName = JidCreate.entityBareFrom(roomNameString)
     val xmppConnection = ColibriAndJingleXmppConnection()
@@ -106,12 +114,7 @@ class ConferenceHarness(
             }
             every { visitorsManager } returns this@ConferenceHarness.visitorsManager
         },
-        mockk(relaxed = true) {
-            every { selectBridge(any(), any(), any()) } returns mockk(relaxed = true) {
-                every { jid } returns JidCreate.from("jvb@example.com/jvb1")
-                every { debugState } returns JsonNodeFactory.instance.objectNode()
-            }
-        },
+        bridgeSelector,
         null,
         null,
         null,
