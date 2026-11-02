@@ -41,6 +41,7 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
+import org.jitsi.xmpp.extensions.TraceParent
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jivesoftware.smack.packet.IQ
@@ -103,6 +104,10 @@ class ConferenceTest : ShouldSpec() {
             context("And then inviting one more") {
                 addParticipants(1)
                 conference.participantCount shouldBe 3
+            }
+            context("The session-initiate has no traceparent when tracing is disabled") {
+                remoteParticipant1.sessionInitiate.getExtension(TraceParent::class.java) shouldBe null
+                remoteParticipant2.sessionInitiate.getExtension(TraceParent::class.java) shouldBe null
             }
             context("Single participant timeout") {
                 chatRoom.removeMember(member1)
