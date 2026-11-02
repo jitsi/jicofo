@@ -41,8 +41,14 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
     // IQs sent by jicofo
     val requests = mutableListOf<IQ>()
 
+    /** Called with each colibri2 request, before it is handled. It runs on the thread that sends the request. */
+    var conferenceModifyHook: ((ConferenceModifyIQ) -> Unit)? = null
+
     override fun handleIq(iq: IQ): IQ? = when (iq) {
-        is ConferenceModifyIQ -> colibri2Server.handleConferenceModifyIq(iq)
+        is ConferenceModifyIQ -> {
+            conferenceModifyHook?.invoke(iq)
+            colibri2Server.handleConferenceModifyIq(iq)
+        }
 
         is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
 

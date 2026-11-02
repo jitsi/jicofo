@@ -100,6 +100,8 @@ class JingleSession(
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
+    /** Read on the IQ queue thread, and written by [terminate] from other threads. */
+    @Volatile
     private var state = State.PENDING
     fun isActive() = state == State.ACTIVE
 

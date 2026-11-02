@@ -32,7 +32,7 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet.Companion.fromJingle
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.mock.ConferenceHarness
-import org.jitsi.jicofo.mock.DeferredExecutor
+import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.util.shouldBeValidJson
@@ -44,6 +44,7 @@ import org.jitsi.utils.MediaType
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jivesoftware.smack.packet.IQ
+import kotlin.concurrent.thread
 
 class ConferenceTest : ShouldSpec() {
     private val harness = ConferenceHarness()
@@ -307,13 +308,44 @@ class ConferenceTest : ShouldSpec() {
 
             conference.sources[participant3.endpointId] shouldBe null
         }
+        context("A participant leaving while its session-accept updates the bridge") {
+            addParticipants(2)
+            val member3 = chatRoom.addMember("member3")
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+
+            // When the session-accept sends member3's transport to the bridge, start the leave on another thread.
+            // The leave must wait until the session-accept has finished, i.e. the check that the session is current
+            // and the bridge update must be atomic. Otherwise a re-invite in the same window can get the old
+            // transport on its new bridge endpoint.
+            var sessionEndedDuringUpdate: Boolean? = null
+            val leave = thread(start = false) { chatRoom.removeMember(member3) }
+            xmppConnection.conferenceModifyHook = { iq ->
+                val updatesMember3 = iq.endpoints.any { it.id == participant3.endpointId && it.transport != null }
+                if (updatesMember3 && sessionEndedDuringUpdate == null) {
+                    leave.start()
+                    // The leave is expected to block, so give it time to get as far as it can.
+                    leave.join(500)
+                    sessionEndedDuringUpdate = participant3.jingleSession == null
+                }
+            }
+            jingleSession3.processIq(remoteParticipant3.createSessionAccept())
+            leave.join(5000)
+
+            sessionEndedDuringUpdate shouldBe false
+            leave.isAlive shouldBe false
+            // The leave ran after the session-accept, and removed the sources.
+            participant3.jingleSession shouldBe null
+            conference.sources[participant3.endpointId] shouldBe null
+        }
         context("A session-accept queued before the session ended") {
             val members = addParticipants(2)
             val remoteParticipants = members.map { it.getRemoteParticipant()!! }
 
             // Run the invite and the Jingle IQ queue of member3 only when we call runAll().
-            val ioPool = DeferredExecutor()
-            TaskPools.ioPool = ioPool
+            val ioPool = PendingExecutor()
+            TaskPools.ioPool = ioPool.executor
             val member3 = chatRoom.addMember("member3")
             ioPool.runAll()
             val participant3 = member3.getParticipant()!!
@@ -329,7 +361,7 @@ class ConferenceTest : ShouldSpec() {
 
             context("And the participant leaving") {
                 // beforeAny() resets the pool for each nested context.
-                TaskPools.ioPool = ioPool
+                TaskPools.ioPool = ioPool.executor
                 chatRoom.removeMember(member3)
                 ioPool.runAll()
 
@@ -340,7 +372,7 @@ class ConferenceTest : ShouldSpec() {
             }
             context("And the participant being re-invited") {
                 // beforeAny() resets the pool for each nested context.
-                TaskPools.ioPool = ioPool
+                TaskPools.ioPool = ioPool.executor
                 conference.moveEndpoint(participant3.endpointId, null) shouldBe true
                 ioPool.runAll()
 
