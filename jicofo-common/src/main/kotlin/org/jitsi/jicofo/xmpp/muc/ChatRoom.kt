@@ -69,8 +69,41 @@ interface ChatRoom {
     /** Transcription configuration from room metadata. */
     val transcription: RoomMetadata.Metadata.Transcription?
 
+    /**
+     * Whether the room is configured for async (backend/proxy) transcription rather than a live Jigasi
+     * transcriber. Read from room metadata. When true, a client-initiated transcriber dial-out request
+     * should be rejected -- the client is expected to enable transcription via room metadata instead.
+     */
+    val asyncTranscription: Boolean
+
     /** Translation configuration from room metadata (e.g. per-customer connect headers). */
     val translation: RoomMetadata.Metadata.Translation?
+
+    /** What a recording of this room must look like. Read from room metadata, and passed on to Jibri. */
+    val recordingParams: RoomMetadata.Metadata.RecordingParams?
+
+    /**
+     * The languages the visitors want transcriptions translated into, from room metadata.
+     *
+     * Visitor presence is not visible in this room, so their requests arrive this way instead. Use
+     * [getTranslationLanguages] to get the whole room's set.
+     */
+    val visitorTranslationLanguages: Set<String>
+
+    /**
+     * All the languages this room wants transcriptions translated into: the members' requested languages together
+     * with [visitorTranslationLanguages].
+     */
+    fun getTranslationLanguages(): Set<String> = translationLanguages(members, visitorTranslationLanguages)
+
+    companion object {
+        /**
+         * The union of the languages [members] request and the [visitorLanguages] the visitors request. Split out
+         * from [getTranslationLanguages] so it can be tested without an implementation of this interface.
+         */
+        fun translationLanguages(members: List<ChatRoomMember>, visitorLanguages: Set<String>): Set<String> =
+            members.mapNotNullTo(mutableSetOf()) { it.translationLanguage } + visitorLanguages
+    }
 
     val debugState: ObjectNode
 

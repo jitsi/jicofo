@@ -153,6 +153,12 @@ public class JibriSession
     private final boolean rtcStatsEnabled;
 
     /**
+     * What a recording of this conference must look like, or {@code null} if the room asks for the default
+     * recording. Jibri decides how to satisfy it, and refuses a request it cannot serve.
+     */
+    private final RoomMetadata.Metadata.RecordingParams recordingParams;
+
+    /**
      * The maximum amount of retries we'll attempt
      */
     private final int maxNumRetries;
@@ -160,7 +166,7 @@ public class JibriSession
     /**
      * How many times we've retried this request to another Jibri
      */
-    private int numRetries = 0;
+    private final AtomicInteger numRetries = new AtomicInteger(0);
 
     /**
      * The full JID of the entity that has initiated the recording flow.
@@ -206,6 +212,7 @@ public class JibriSession
             String sessionId,
             String applicationData,
             boolean rtcStatsEnabled,
+            RoomMetadata.Metadata.RecordingParams recordingParams,
             Logger parentLogger)
     {
         this.stateListener = stateListener;
@@ -222,6 +229,7 @@ public class JibriSession
         this.sessionId = sessionId;
         this.applicationData = applicationData;
         this.rtcStatsEnabled = rtcStatsEnabled;
+        this.recordingParams = recordingParams;
         jibriDetector.addHandler(jibriEventHandler);
         logger = parentLogger.createChildLogger(getClass().getName());
     }
@@ -295,6 +303,11 @@ public class JibriSession
         {
             JibriStats.sessionFailed(getJibriType());
 
+            if (e instanceof StartException.NotAvailable || e instanceof StartException.AllBusy)
+            {
+                JibriStats.noInstanceFailed();
+            }
+
             throw e;
         }
     }
@@ -327,9 +340,25 @@ public class JibriSession
 
             sendJibriStartIq(jibriJid);
         }
+        catch (StartException.NotRetryable e)
+        {
+            // The Jibri is healthy, it just refused this request. Retrying with another Jibri would only waste more
+            // instances, so fail the session immediately.
+            currentJibriJid = null;
+            clearPendingTimeout(true);
+            throw e;
+        }
         catch (Exception e)
         {
-            logger.error("Failed to send start Jibri IQ: " + e, e);
+            if (e instanceof StartException.OneBusy && !maxRetriesExceeded())
+            {
+                // A busy Jibri is expected (e.g. a race with another conference), we retry with another one.
+                logger.warn("Jibri " + jibriJid + " was busy, will retry with another Jibri.");
+            }
+            else
+            {
+                logger.error("Failed to send start Jibri IQ: " + e, e);
+            }
             jibriDetector.instanceFailed(jibriJid);
             if (!maxRetriesExceeded())
             {
@@ -402,14 +431,14 @@ public class JibriSession
 
         // Clean up immediately - this makes any in-flight callbacks from previous operations ignore this session
         currentJibriJid = null;
-        numRetries = 0;
+        numRetries.set(0);
     }
 
     private void cleanupSession()
     {
         logger.info("Cleaning up current JibriSession");
         currentJibriJid = null;
-        numRetries = 0;
+        numRetries.set(0);
         jibriDetector.removeHandler(jibriEventHandler);
     }
 
@@ -482,6 +511,34 @@ public class JibriSession
     }
 
     /**
+     * Adds the recording parameters of this room to a start request, if the room has any.
+     *
+     * We do not check the values. Jibri decides which values it accepts, and refuses a request it cannot serve. A
+     * parameter which the room does not set stays absent, so that Jibri uses its own default for it.
+     */
+    private void addRecordingParams(JibriIq startIq)
+    {
+        if (recordingParams == null)
+        {
+            return;
+        }
+
+        RecordingParamsPacketExt ext = new RecordingParamsPacketExt();
+        ext.setTileResolution(recordingParams.getTileResolution());
+        ext.setTileCount(recordingParams.getTileCount());
+        ext.setMaxFullResolutionParticipants(recordingParams.getMaxFullResolutionParticipants());
+
+        // Every parameter was absent, so the element would say nothing.
+        if (ext.getAttributeNames().isEmpty())
+        {
+            return;
+        }
+
+        logger.info("Requesting a recording with " + recordingParams);
+        startIq.addExtension(ext);
+    }
+
+    /**
      * Sends an IQ to the given Jibri instance and asks it to start
      * recording/SIP call.
      */
@@ -523,6 +580,11 @@ public class JibriSession
         startIq.setSipAddress(sipAddress);
         startIq.setDisplayName(displayName);
         startIq.setRtcStatsEnabled(rtcStatsEnabled);
+        // Tell Jibri it may refuse an invalid request in the response to this IQ. Without this it must report such a
+        // failure asynchronously instead, because a Jicofo which does not understand the response would treat it as
+        // unexpected and retry the same doomed request with other instances.
+        startIq.setSupportsBadRequest(true);
+        addRecordingParams(startIq);
 
         // Insert name of the room into Jibri START IQ
         startIq.setRoom(roomName);
@@ -595,6 +657,20 @@ public class JibriSession
             logger.info("Jibri " + jibriIq.getFrom() + " was busy");
             throw new StartException.OneBusy();
         }
+        BadRequestPacketExt badRequest = jibriIq.getExtension(BadRequestPacketExt.class);
+        if (badRequest != null)
+        {
+            String detail = badRequest.getDetail();
+            logger.info("Jibri " + jibriIq.getFrom() + " refused the request as invalid: " + detail);
+            throw new StartException.NotRetryable(
+                detail == null ? "Jibri refused the request as invalid" : detail);
+        }
+        if (isNotRetryableFailureResponse(jibriIq))
+        {
+            logger.info("Jibri " + jibriIq.getFrom()
+                + " rejected the request and signaled that we should not retry: " + jibriIq.toXML());
+            throw new StartException.NotRetryable("Jibri rejected the request");
+        }
         if (!isPendingResponse(jibriIq))
         {
             logger.error(
@@ -651,7 +727,7 @@ public class JibriSession
      */
     private boolean maxRetriesExceeded()
     {
-        return (maxNumRetries >= 0 && numRetries >= maxNumRetries);
+        return (maxNumRetries >= 0 && numRetries.get() >= maxNumRetries);
     }
 
     /**
@@ -661,7 +737,7 @@ public class JibriSession
     private void retryRequestWithAnotherJibri()
         throws StartException
     {
-        numRetries++;
+        numRetries.incrementAndGet();
         start();
     }
 
@@ -900,6 +976,17 @@ public class JibriSession
                 super("Unexpected response");
             }
         }
+        /**
+         * The Jibri rejected the request and signaled that it must not be retried (for example because the RTMP URL
+         * is invalid). Another Jibri would reject the same request, so we must not try one.
+         */
+        static public class NotRetryable extends StartException
+        {
+            public NotRetryable(String message)
+            {
+                super(message);
+            }
+        }
         static public class OneBusy extends StartException
         {
             public OneBusy()
@@ -956,6 +1043,16 @@ public class JibriSession
     private boolean isPendingResponse(JibriIq iq)
     {
         return Status.PENDING.equals(iq.getStatus());
+    }
+
+    /**
+     * Whether {@code iq} is a response which reports a failure that must not be retried with another Jibri.
+     */
+    private boolean isNotRetryableFailureResponse(JibriIq iq)
+    {
+        return Status.OFF.equals(iq.getStatus()) &&
+            iq.isFailure() &&
+            Boolean.FALSE.equals(iq.getShouldRetry());
     }
 
 }

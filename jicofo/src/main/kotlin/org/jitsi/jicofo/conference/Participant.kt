@@ -319,7 +319,8 @@ open class Participant @JvmOverloads constructor(
     fun sendQueuedRemoteSources() {
         val jingleSession = jingleSession
         if (jingleSession?.isActive() != true) {
-            logger.warn("Can not signal remote sources, Jingle session not established.")
+            // Called only after the session became active, so it has ended since (e.g. the participant left).
+            logger.info("Not signaling queued remote sources, the Jingle session is no longer active.")
             return
         }
         var modifiedSources: List<SourcesToAddOrRemove>
@@ -401,7 +402,10 @@ open class Participant @JvmOverloads constructor(
             }
 
             try {
-                conference.addSource(this@Participant, sourcesAdvertised)
+                if (!conference.addSource(this@Participant, jingleSession, sourcesAdvertised)) {
+                    logger.info("Rejecting source-add, the participant left or the session has been replaced.")
+                    return sessionGoneError()
+                }
             } catch (e: SenderCountExceededException) {
                 logger.warn("Rejecting source-add: ${e.message}")
                 return StanzaError.from(StanzaError.Condition.resource_constraint, e.message).build()
@@ -442,9 +446,10 @@ open class Participant @JvmOverloads constructor(
             contents: List<ContentPacketExtension>,
             action: JingleAction
         ): StanzaError? {
-            if (this@Participant.jingleSession != null && this@Participant.jingleSession != jingleSession) {
-                logger.error("Rejecting $action for a session that has been replaced.")
-                return StanzaError.from(StanzaError.Condition.gone, "session has been replaced").build()
+            // The session is null after it was terminated (e.g. while a re-invite is in progress).
+            if (this@Participant.jingleSession !== jingleSession) {
+                logger.info("Rejecting $action for a session that has been terminated or replaced.")
+                return sessionGoneError()
             }
 
             logger.info("Received $action")
@@ -456,13 +461,27 @@ open class Participant @JvmOverloads constructor(
                 contents.find { it.name == "video" }?.getChildExtension(InitialLastN::class.java)
 
             try {
-                conference.acceptSession(this@Participant, sourcesAdvertised, contents.getTransport(), initialLastN)
+                val accepted = conference.acceptSession(
+                    this@Participant,
+                    jingleSession,
+                    sourcesAdvertised,
+                    contents.getTransport(),
+                    initialLastN
+                )
+                if (!accepted) {
+                    logger.info("Rejecting $action, the participant left or the session has been replaced.")
+                    // Returning an error also makes the JingleSession end.
+                    return sessionGoneError()
+                }
             } catch (e: ValidationFailedException) {
                 return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
             }
 
             return null
         }
+
+        private fun sessionGoneError() =
+            StanzaError.from(StanzaError.Condition.gone, "session has been terminated or replaced").build()
 
         override fun onSessionInfo(jingleSession: JingleSession, iq: JingleIQ): StanzaError? {
             checkJingleSession(jingleSession)?.let { return it }

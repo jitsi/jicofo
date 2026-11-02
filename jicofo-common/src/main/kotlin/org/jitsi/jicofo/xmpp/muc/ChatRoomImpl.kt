@@ -60,9 +60,13 @@ import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 
 private val jsonMapper = jacksonObjectMapper()
@@ -75,6 +79,11 @@ class ChatRoomImpl(
     override val xmppProvider: XmppProvider,
     override val roomJid: EntityBareJid,
     logLevel: Level?,
+    /**
+     * Completes when the previous [ChatRoomImpl] instance for the same room has finished leaving the MUC, or null if
+     * there is no such instance. See [waitForPreviousInstanceToLeave].
+     */
+    internal val previousInstanceLeft: CompletableFuture<Unit>? = null,
     /** Callback to call when the room is left. */
     private val leaveCallback: (ChatRoomImpl) -> Unit
 ) : ChatRoom, PresenceListener {
@@ -127,7 +136,13 @@ class ChatRoomImpl(
         get() = synchronized(membersMap) { return membersMap.values.toList() }
     override val memberCount
         get() = membersMap.size
+
+    @field:SuppressFBWarnings(
+        value = ["AT_STALE_THREAD_WRITE_OF_PRIMITIVE"],
+        justification = "Only accessed while synchronized on membersMap."
+    )
     private var visitorMemberCount: Int = 0
+
     override val visitorCount: Int
         get() = synchronized(membersMap) { visitorMemberCount } +
             pendingVisitorsCounter.getCount().toInt()
@@ -137,8 +152,26 @@ class ChatRoomImpl(
     private val memberListener: MemberListener = MemberListener()
     private val userListener = LocalUserStatusListener()
 
+    /** Whether [join] has been called. A [ChatRoomImpl] can only be joined once. */
+    private val joinCalled = AtomicBoolean(false)
+
+    /** Whether [leave] has been called. Leaving more than once must have no effect. */
+    private val leaveCalled = AtomicBoolean(false)
+
+    /**
+     * Completes when this instance has finished leaving the MUC, that is when the Smack leave has completed (or
+     * failed) and the previous instance for the same room, if any, has finished leaving too. A new instance for the
+     * same room waits for this before it joins.
+     */
+    val leftFuture = CompletableFuture<Unit>()
+
     /** Listener for presence that smack sends on our behalf. */
     private var presenceInterceptor = Consumer<PresenceBuilder> { presenceBuilder ->
+        // Only track available presence. Smack sends an unavailable presence when it leaves the MUC, and that must
+        // never be used as the base for a presence update (sending it again would make us leave the MUC).
+        if (presenceBuilder.type == Presence.Type.unavailable) {
+            return@Consumer
+        }
         // The initial presence sent by smack contains an empty "x"
         // extension. If this extension is included in a subsequent stanza,
         // it indicates that the client lost its synchronization and causes
@@ -154,12 +187,13 @@ class ChatRoomImpl(
         }
     }
 
-    /** Smack multi user chat backend instance. */
+    /**
+     * Smack multi user chat backend instance. It is shared with any other [ChatRoomImpl] instances for the same room
+     * on the same connection. The listeners are registered in [joinAs], after the previous instance has left, so that
+     * this instance does not receive presence that belongs to the previous instance.
+     */
     private val muc: MultiUserChat =
-        MultiUserChatManager.getInstanceFor(xmppProvider.xmppConnection).getMultiUserChat(this.roomJid).apply {
-            addUserStatusListener(userListener)
-            addParticipantListener(this@ChatRoomImpl)
-        }
+        MultiUserChatManager.getInstanceFor(xmppProvider.xmppConnection).getMultiUserChat(this.roomJid)
 
     override val isJoined
         get() = muc.isJoined && roomJoinedLatch.count <= 0
@@ -205,6 +239,30 @@ class ChatRoomImpl(
     /** Translation configuration from room metadata. */
     override var translation: RoomMetadata.Metadata.Translation? = null
         private set
+
+    /** What a recording of this room must look like. Read from room metadata. */
+    override var recordingParams: RoomMetadata.Metadata.RecordingParams? = null
+        private set
+
+    /** Whether the room is configured for async (backend/proxy) transcription. Read from room metadata. */
+    override var asyncTranscription: Boolean = false
+        private set
+
+    /**
+     * The languages the visitors want transcriptions translated into, from room metadata.
+     *
+     * Visitor presence is not visible in this room, so the visitors' requests reach us this way instead: each visitor
+     * node collects them and the main prosody aggregates them into the room metadata. Fires
+     * [ChatRoomListener.translationLanguagesChanged] on change, like the per-member languages do.
+     */
+    override var visitorTranslationLanguages: Set<String> = emptySet()
+        private set(value) {
+            if (value != field) {
+                logger.info("Visitor translation languages are now: $value")
+                field = value
+                eventEmitter.fireEvent { translationLanguagesChanged() }
+            }
+        }
 
     /**
      * List of user IDs which the room is configured to allow to be moderators.
@@ -275,6 +333,7 @@ class ChatRoomImpl(
             set<ArrayNode>("moderators", jsonMapper.valueToTree(moderators))
             put("visitors_enabled", visitorsEnabled?.toString() ?: "null")
             put("visitors_live", visitorsLive)
+            put("async_transcription", asyncTranscription)
             set<ObjectNode>(
                 "av_moderation",
                 JsonNodeFactory.instance.objectNode().apply {
@@ -303,31 +362,49 @@ class ChatRoomImpl(
     override fun isMemberAllowedToUnmute(jid: Jid, mediaType: MediaType): Boolean =
         avModeration(mediaType).isAllowedToUnmute(jid)
 
+    /**
+     * Join the MUC. This can be called only once for a [ChatRoomImpl] instance. A room that has been left can not be
+     * joined again, a new instance has to be created instead (see [XmppProvider.createRoom]).
+     *
+     * @throws IllegalStateException if this instance has already been joined.
+     */
     @Throws(SmackException::class, XMPPException::class, InterruptedException::class)
     override fun join(): ChatRoomInfo {
+        if (!joinCalled.compareAndSet(false, true)) {
+            throw IllegalStateException("The room has already been joined, a ChatRoomImpl can only be joined once.")
+        }
         // TODO: clean-up the way we figure out what nickname to use.
-        resetState()
         return joinAs(xmppProvider.config.username)
     }
 
     /**
-     * Prepare this [ChatRoomImpl] for a call to [.joinAs], which sends initial presence to the MUC. Resets any state
-     * that might have been set the previous time the MUC was joined.
+     * The Smack [MultiUserChat] is shared by all [ChatRoomImpl] instances for the same room JID on the same
+     * connection. A previous instance (for example the room of a conference that just ended) may still be in the
+     * process of leaving, which happens asynchronously. Wait for it to finish, because its leave would otherwise
+     * interfere with this instance: it removes the Smack listeners, and it sends an unavailable presence for the
+     * nickname that this instance is about to use.
+     *
+     * The wait is bounded by the reply timeout of the connection plus a margin, because a leave takes a full reply
+     * timeout when the server does not respond.
+     *
+     * @throws IllegalStateException if the previous instance does not leave in time, or if the MUC is still joined.
      */
-    private fun resetState() {
-        synchronized(membersMap) {
-            if (membersMap.isNotEmpty()) {
-                logger.warn("Removing ${membersMap.size} stale members ($visitorMemberCount stale visitors).")
-                membersMap.clear()
-                visitorMemberCount = 0
-                audioSendersCount = 0
-                videoSendersCount = 0
+    private fun waitForPreviousInstanceToLeave() {
+        previousInstanceLeft?.let { previous ->
+            if (!previous.isDone) {
+                val timeout = xmppProvider.config.replyTimeout.plusSeconds(5)
+                logger.info("Waiting up to $timeout for the previous instance to leave the MUC.")
+                try {
+                    previous.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                } catch (e: TimeoutException) {
+                    throw IllegalStateException("The previous instance did not leave the MUC in time.")
+                } catch (e: ExecutionException) {
+                    // The future only completes normally.
+                }
             }
         }
-        synchronized(this) {
-            lastPresenceSent = null
-            logger.removeContext("meeting_id")
-            avModerationByMediaType.values.forEach { it.reset() }
+        if (muc.isJoined) {
+            throw IllegalStateException("The MUC is still joined by another instance.")
         }
     }
 
@@ -337,12 +414,10 @@ class ChatRoomImpl(
         xmppTaskQueue.add { roomJoinedLatch.await() }
 
         myOccupantJid = JidCreate.entityFullFrom(roomJid, nickname)
-        synchronized(muc) {
-            if (muc.isJoined) {
-                muc.leave()
-            }
-        }
+        waitForPreviousInstanceToLeave()
 
+        muc.addUserStatusListener(userListener)
+        muc.addParticipantListener(this)
         muc.addPresenceInterceptor(presenceInterceptor)
         muc.createOrJoin(nickname)
         val config = muc.configurationForm
@@ -404,6 +479,8 @@ class ChatRoomImpl(
         }
         transcription = roomMetadata.metadata?.transcription
         translation = roomMetadata.metadata?.translation
+        recordingParams = roomMetadata.metadata?.recordingParams
+        asyncTranscription = roomMetadata.metadata?.asyncTranscription == true
         eventEmitter.fireEvent {
             transcribingEnabledChanged(
                 roomMetadata.metadata?.recording?.isTranscribingEnabled == true &&
@@ -413,10 +490,18 @@ class ChatRoomImpl(
         eventEmitter.fireEvent {
             audioTranslationRequestsChanged(roomMetadata.metadata?.audioTranslationRequests ?: emptyMap())
         }
+        visitorTranslationLanguages = parseVisitorTranslationLanguages(roomMetadata)
+        eventEmitter.fireEvent {
+            agentsChanged(roomMetadata.metadata?.agents ?: emptyMap())
+        }
         roomMetadataLatch.countDown()
     }
 
     override fun leave() {
+        if (!leaveCalled.compareAndSet(false, true)) {
+            logger.debug("Already left.")
+            return
+        }
         muc.removePresenceInterceptor(presenceInterceptor)
         muc.removeUserStatusListener(userListener)
         muc.removeParticipantListener(this)
@@ -450,7 +535,19 @@ class ChatRoomImpl(
                 if (connection.isConnected || e !is SmackException.NotConnectedException) {
                     logger.error("Failed to properly leave $muc", e)
                 }
+            } finally {
+                completeLeft()
             }
+        }
+    }
+
+    /** Complete [leftFuture] once this instance and the previous instance (if any) have finished leaving. */
+    private fun completeLeft() {
+        val previous = previousInstanceLeft
+        if (previous == null || previous.isDone) {
+            leftFuture.complete(Unit)
+        } else {
+            previous.whenComplete { _, _ -> leftFuture.complete(Unit) }
         }
     }
 
@@ -539,6 +636,11 @@ class ChatRoomImpl(
     ): Presence? = synchronized(this) {
         val presence = lastPresenceSent ?: run {
             logger.error("No presence packet obtained yet")
+            return null
+        }
+        if (presence.type == Presence.Type.unavailable) {
+            // This should never happen (see presenceInterceptor), but sending it would make us leave the MUC.
+            logger.error("The last presence sent is unavailable, will not update it.")
             return null
         }
         var changed = false
@@ -648,6 +750,7 @@ class ChatRoomImpl(
             }
         }
         if (member != null) {
+            val previousTranslationLanguage = member.translationLanguage
             member.processPresence(presence)
             if (memberJoined) {
                 // Trigger member "joined"
@@ -661,6 +764,13 @@ class ChatRoomImpl(
             }
             if (!memberLeft) {
                 eventEmitter.fireEvent { memberPresenceChanged(member) }
+            }
+            // This member picked a translation language, changed it, or gave it up, so the room's set may have
+            // changed. A member joining with one set is covered too, because its language is null before its first
+            // presence is processed. A member leaving is handled by MemberListener instead, because it can also be
+            // removed without an unavailable presence.
+            if (member.translationLanguage != previousTranslationLanguage) {
+                eventEmitter.fireEvent { translationLanguagesChanged() }
             }
         }
     }
@@ -727,14 +837,29 @@ class ChatRoomImpl(
             logger.debug { "Left $occupantJid room: $roomJid" }
 
             val member = synchronized(membersMap) { removeMember(occupantJid) }
-            member?.let { eventEmitter.fireEvent { memberLeft(it) } }
-                ?: logger.info("Member left event for non-existing member: $occupantJid")
+            member?.let {
+                eventEmitter.fireEvent { memberLeft(it) }
+                translationLanguageReleased(it)
+            } ?: logger.info("Member left event for non-existing member: $occupantJid")
         }
 
         fun kicked(occupantJid: EntityFullJid) {
             val member = synchronized(membersMap) { removeMember(occupantJid) }
-            member?.let { eventEmitter.fireEvent { memberKicked(it) } }
-                ?: logger.error("Kicked member does not exist: $occupantJid")
+            member?.let {
+                eventEmitter.fireEvent { memberKicked(it) }
+                translationLanguageReleased(it)
+            } ?: logger.error("Kicked member does not exist: $occupantJid")
+        }
+
+        /**
+         * A member that was removed from the room may have been the only one wanting its translation language, so the
+         * room's set may have shrunk. Fired here rather than from presence handling, because a member can also be
+         * removed without an unavailable presence (e.g. the stale-member cleanup).
+         */
+        private fun translationLanguageReleased(member: ChatRoomMemberImpl) {
+            if (member.translationLanguage != null) {
+                eventEmitter.fireEvent { translationLanguagesChanged() }
+            }
         }
     }
 
@@ -763,10 +888,22 @@ class ChatRoomImpl(
             }
 
         fun isAllowedToUnmute(jid: Jid) = !enabled || whitelist.contains(jid.toString())
+    }
 
-        fun reset() {
-            enabled = false
-            whitelist = emptyList()
-        }
+    companion object {
+        /**
+         * The visitors' requested translation languages from [roomMetadata], as a set.
+         *
+         * Prosody sends them as one comma-separated string, and an empty string when there are none. Note that this
+         * must clear the set when the string is empty, so that the languages are released when the last visitor that
+         * wanted them goes away.
+         */
+        private fun parseVisitorTranslationLanguages(roomMetadata: RoomMetadata): Set<String> =
+            roomMetadata.metadata?.visitors?.transcribingLanguages
+                ?.split(",")
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?.toSet()
+                ?: emptySet()
     }
 }

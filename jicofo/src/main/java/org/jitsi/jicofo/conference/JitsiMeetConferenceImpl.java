@@ -27,6 +27,7 @@ import org.jitsi.jicofo.auth.*;
 import org.jitsi.jicofo.bridge.*;
 import org.jitsi.jicofo.bridge.colibri.*;
 import org.jitsi.jicofo.conference.source.*;
+import org.jitsi.jicofo.conference.agent.*;
 import org.jitsi.jicofo.conference.translation.*;
 import org.jitsi.jicofo.metrics.IceRestartMetrics;
 import org.jitsi.jicofo.util.*;
@@ -118,6 +119,12 @@ public class JitsiMeetConferenceImpl
     private final JitsiMeetConfig config;
 
     private final ChatRoomListener chatRoomListener = new ChatRoomListenerImpl();
+
+    /**
+     * Checks that the endpoints in this conference advertise the capabilities that the deployment requires, and
+     * notifies the ones that do not.
+     */
+    private final ClientRequirementsHandler clientRequirementsHandler;
 
     /**
      * Conference room chat instance.
@@ -248,8 +255,18 @@ public class JitsiMeetConferenceImpl
     @Nullable private final AuthenticationAuthority authenticationAuthority;
     @NotNull private final FocusManager focusManager;
 
-    /** Whether to enable transcription via a colibri export. */
-    private boolean enableTranscription = false;
+    /**
+     * Whether to enable transcription via a colibri export. Volatile because it is written from the room metadata
+     * thread and read from the thread joining the room (see {@link #joinTheRoom()}), and vice versa for
+     * {@link #meetingId}: each thread must see the other's write for one of them to initialize colibri.
+     */
+    private volatile boolean enableTranscription = false;
+
+    /**
+     * Whether the room has a voice agent still to be served (not failed/ended); like transcription, forces a bridge
+     * for a lone human.
+     */
+    private volatile boolean hasAgents = false;
 
     /**
      * Stores the sources advertised by all participants in the conference, mapped by their JID.
@@ -264,6 +281,11 @@ public class JitsiMeetConferenceImpl
      * {@code audioTranslationRequests} room metadata.
      */
     private final ConferenceTranslationManager translationManager;
+
+    /**
+     * Manages voice-agent synthetic endpoints and their connects, driven by the {@code agents} room metadata.
+     */
+    private final ConferenceAgentManager agentManager;
 
     /**
      * Whether the limit on the number of audio senders is currently hit.
@@ -291,10 +313,10 @@ public class JitsiMeetConferenceImpl
     /**
      * The unique meeting ID for this conference. We expect this to be set by the XMPP server in the MUC config form.
      * If for some reason it's not present, we'll generate a local UUID. The field is nullable, but always non-null
-     * after the MUC has been joined.
+     * after the MUC has been joined. Volatile, see {@link #enableTranscription}.
      */
     @Nullable
-    private String meetingId;
+    private volatile String meetingId;
 
     /** Presence extensions set from the outside which are to be added to the presence in each MUC. */
     private final Map<QName, ExtensionElement> presenceExtensions = new ConcurrentHashMap<>();
@@ -324,6 +346,9 @@ public class JitsiMeetConferenceImpl
         logger.addContext("room", roomName.toString());
 
         translationManager = new ConferenceTranslationManager(conferenceSources, logger);
+        clientRequirementsHandler = new ClientRequirementsHandler(logger);
+        agentManager = new ConferenceAgentManager(
+                conferenceSources, roomName.toString(), logger, this::getVoiceAgentConsent);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -395,27 +420,41 @@ public class JitsiMeetConferenceImpl
                     logger);
             colibriSessionManager.addListener(colibriSessionManagerListener);
 
-            // Configure transcription if enabled, including custom headers and URL params
-            if (enableTranscription)
-            {
-                TemplatedUrl uri = TranscriptionConfig.config.getUrl(meetingId);
-                if (uri != null)
-                {
-                    Pair<Map<String, String>, Map<String, String>> transcriptionParams =
-                        TranscriptionConfig.processTranscriptionMetadata(
-                            chatRoom != null ? chatRoom.getTranscription() : null,
-                            TranscriptionConfig.config.getHttpHeaders());
-                    colibriSessionManager.setTranscriberUrl(
-                        uri,
-                        transcriptionParams.getFirst(),
-                        transcriptionParams.getSecond());
-                }
-            }
+            // Apply the transcription state (and text-translation languages) received before colibri existed.
+            applyTranscriptionState(colibriSessionManager, meetingId);
 
             // Apply any live-translation requests received before colibri was initialized.
             translationManager.reapply(colibriSessionManager, meetingId);
+
+            // Apply any voice-agent requests received before colibri was initialized.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
         return colibriSessionManager;
+    }
+
+    /**
+     * The voice-agent consent advertised in presence: endpoint id (the MUC nickname) to the ids of the agents the
+     * member consented to share audio with. Members without consent are omitted.
+     */
+    @NotNull
+    private Map<String, Set<String>> getVoiceAgentConsent()
+    {
+        ChatRoom chatRoom = this.chatRoom;
+        if (chatRoom == null)
+        {
+            return Collections.emptyMap();
+        }
+
+        Map<String, Set<String>> consent = new HashMap<>();
+        for (ChatRoomMember member : chatRoom.getMembers())
+        {
+            Set<String> agentIds = member.getVoiceAgentConsent();
+            if (!agentIds.isEmpty())
+            {
+                consent.put(member.getName(), agentIds);
+            }
+        }
+        return consent;
     }
 
     /**
@@ -525,6 +564,8 @@ public class JitsiMeetConferenceImpl
             colibriSessionManager.removeListener(colibriSessionManagerListener);
         }
 
+        // No agent allocation may create a session for the agent alone once the conference is over.
+        agentManager.stop();
         try
         {
             expireBridgeSessions();
@@ -611,12 +652,14 @@ public class JitsiMeetConferenceImpl
     {
         logger.info("Joining " + roomName);
 
-        ChatRoom chatRoom = getClientXmppProvider().findOrCreateRoom(roomName, logger.getLevel());
+        ChatRoom chatRoom = getClientXmppProvider().createRoom(roomName, logger.getLevel());
         this.chatRoom = chatRoom;
         chatRoom.addListener(chatRoomListener);
 
         ChatRoomInfo chatRoomInfo = chatRoom.join();
         setMeetingId(chatRoomInfo.getMeetingId());
+        // Transcription may have been enabled by the initial room metadata, before the meeting ID was known.
+        maybeInitColibriForTranscription();
 
         mainRoomJid = chatRoomInfo.getMainRoomJid();
 
@@ -786,26 +829,36 @@ public class JitsiMeetConferenceImpl
 
         TaskPools.getIoPool().submit(() ->
         {
-            if (!disconnectVnodeExtensions.isEmpty())
+            try
             {
-                xmppServices.getVisitorsManager()
-                        .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                if (!disconnectVnodeExtensions.isEmpty())
+                {
+                    xmppServices.getVisitorsManager()
+                            .sendIqToComponentAndGetResponse(roomName, disconnectVnodeExtensions);
+                }
             }
-
-            visitorChatRoomsToLeave.forEach(visitorChatRoom ->
+            catch (Exception e)
             {
-                try
+                // Expected when the connection is down. The rooms below must still be left.
+                logger.warn("Failed to disconnect the visitor nodes: " + e.getMessage());
+            }
+            finally
+            {
+                // Always leave the rooms. Otherwise they stay active and block a new conference for the same room.
+                visitorChatRoomsToLeave.forEach(visitorChatRoom ->
                 {
-                    visitorChatRoom.removeAllListeners();
-                    visitorChatRoom.leave();
-                }
-                catch (Exception e)
-                {
-                    logger.error("Failed to leave visitor room", e);
-                }
-            });
-
-            chatRoomToLeave.leave();
+                    try
+                    {
+                        visitorChatRoom.removeAllListeners();
+                        visitorChatRoom.leave();
+                    }
+                    catch (Exception e)
+                    {
+                        logger.error("Failed to leave visitor room", e);
+                    }
+                });
+                chatRoomToLeave.leave();
+            }
         });
     }
 
@@ -930,6 +983,14 @@ public class JitsiMeetConferenceImpl
             // the hash is not cached. In practice this should happen rarely (once for each unique set of features),
             // and when it does happen we only block the Smack thread processing presence *for this conference/MUC*.
             Set<Features> features = chatRoomMember.getFeatures();
+
+            // An endpoint which does not advertise the capabilities that the deployment requires is not invited. It
+            // stays in the MUC, so it can still use the features which do not need a media session (e.g. chat).
+            if (!clientRequirementsHandler.checkAndNotify(chatRoomMember))
+            {
+                return;
+            }
+
             logger.info("Creating participant " + chatRoomMember.getName() + " with features=" + features);
             final Participant participant = new Participant(
                     chatRoomMember,
@@ -979,6 +1040,16 @@ public class JitsiMeetConferenceImpl
 
         participant.setInviteRunnable(channelAllocator);
         TaskPools.getIoPool().execute(Context.current().wrap(channelAllocator));
+    }
+
+    /**
+     * Whether {@code participant} is still part of the conference and {@code jingleSession} is still its current
+     * session, i.e. the participant has not left and has not been re-invited since. Call with participantLock held.
+     */
+    private boolean isSessionCurrent(@NotNull Participant participant, @NotNull JingleSession jingleSession)
+    {
+        return participants.get(participant.getMucJid()) == participant
+                && participant.getJingleSession() == jingleSession;
     }
 
     @NotNull EndpointSourceSet getSourcesForParticipant(@NotNull Participant participant)
@@ -1038,13 +1109,18 @@ public class JitsiMeetConferenceImpl
             return false;
         }
         int minParticipants = ConferenceConfig.config.getMinParticipants();
-        // When transcribing is enabled, start sessions immediately without waiting for min-participants.
-        if (enableTranscription)
+        // When the conference exports media (e.g. to a transcriber), start sessions immediately without waiting for
+        // min-participants: the exported media is consumed even if nobody else is in the conference. A requested
+        // voice agent counts too: its connect can only exist once a session does.
+        if (hasColibriConnects() || hasAgents)
         {
             minParticipants = 1;
         }
+        // Members which were not invited because they miss a required capability do not count, because they can not
+        // send or receive media.
         int memberCount = chatRoom.getMemberCount()
-                + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum();
+                + visitorChatRooms.values().stream().mapToInt(ChatRoom::getMemberCount).sum()
+                - clientRequirementsHandler.getRejectedCount();
         return memberCount >= minParticipants;
     }
 
@@ -1078,6 +1154,7 @@ public class JitsiMeetConferenceImpl
         synchronized (participantLock)
         {
             logger.info("Member left:" + chatRoomMember.getName());
+            boolean wasRejected = clientRequirementsHandler.memberLeft(chatRoomMember);
             Participant leftParticipant = participants.get(chatRoomMember.getOccupantJid());
             if (leftParticipant != null)
             {
@@ -1091,7 +1168,7 @@ public class JitsiMeetConferenceImpl
                         /* no need to send source-remove */ false,
                         /* not reinviting */ false);
             }
-            else
+            else if (!wasRejected)
             {
                 logger.warn("Participant not found for " + chatRoomMember.getName()
                         + ". Terminated already or never started?");
@@ -1106,6 +1183,9 @@ public class JitsiMeetConferenceImpl
                 expireBridgeSessions();
             }
         }
+
+        // The member's consent left with it.
+        agentManager.reapply(colibriSessionManager, meetingId);
 
         maybeStop(chatRoomMember);
     }
@@ -1410,15 +1490,19 @@ public class JitsiMeetConferenceImpl
      * Attempts to add sources from {@code participant} to the conference.
      *
      * @param participant the participant that is adding the sources.
+     * @param jingleSession the Jingle session on which the participant signaled the sources.
      * @param sourcesAdvertised the sources that the participant is adding
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      *
      * @throws SenderCountExceededException if the sender limits in the conference have been exceeded
      * @throws ValidationFailedException if the addition of the sources would result in an invalid state of the
      * conference sources (e.g. if there is a conflict with another participant, or the resulting source set for the
      * participant is invalid).
      */
-    public void addSource(
+    public boolean addSource(
             @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
             @NotNull EndpointSourceSet sourcesAdvertised)
     throws SenderCountExceededException, ValidationFailedException
     {
@@ -1434,7 +1518,17 @@ public class JitsiMeetConferenceImpl
                             + (rejectedVideoSource ? "video" : ""));
         }
 
-        EndpointSourceSet sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
+        // Check under participantLock, so that the sources of a participant which already left (or was re-invited)
+        // are not added back to the conference. See acceptSession.
+        EndpointSourceSet sourcesAccepted;
+        synchronized (participantLock)
+        {
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
+        }
         logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
         if (sourcesAccepted.isEmpty())
@@ -1442,7 +1536,7 @@ public class JitsiMeetConferenceImpl
             // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been an
             // exception above)
             logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
-            return;
+            return true;
         }
 
         // Updates source groups on the bridge
@@ -1454,10 +1548,21 @@ public class JitsiMeetConferenceImpl
                 participant.getSources(),
                 null,
                 false);
-        propagateNewSources(participant, sourcesAccepted);
+        synchronized (participantLock)
+        {
+            // The participant may have left while the bridge was updated. Its sources were removed then.
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            propagateNewSources(participant, sourcesAccepted);
+        }
 
         // A newly-added audio source may be the base source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        // Agent exports name the consenting members' audio sources.
+        agentManager.reapply(colibriSessionManager, meetingId);
+        return true;
     }
 
     /**
@@ -1497,13 +1602,18 @@ public class JitsiMeetConferenceImpl
 
         // A sender may have removed the audio source being translated; re-evaluate synthetic translation sources.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
      * Handles a "session-accept" or "transport-accept" request from a participant.
+     * @param jingleSession the Jingle session on which the request was received.
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      */
-    void acceptSession(
+    boolean acceptSession(
             @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
             @NotNull EndpointSourceSet sourcesAdvertised,
             IceUdpTransportPacketExtension transport,
             @Nullable InitialLastN initialLastN)
@@ -1511,10 +1621,20 @@ public class JitsiMeetConferenceImpl
     {
         String participantId = participant.getEndpointId();
 
+        // The request is processed on the Jingle IQ queue, so the participant may have left or been re-invited (and
+        // had its sources removed) in the meantime. Check under participantLock, which is also held when the session
+        // is terminated, so that the old sources are not added back to the conference.
         EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
-        if (!sourcesAdvertised.isEmpty())
+        synchronized (participantLock)
         {
-            sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            if (!sourcesAdvertised.isEmpty())
+            {
+                sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
+            }
         }
 
         getColibriSessionManager().updateParticipant(
@@ -1527,8 +1647,16 @@ public class JitsiMeetConferenceImpl
         if (!sourcesAccepted.isEmpty())
         {
             logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
-            // Propagate [participant]'s sources to the other participants.
-            propagateNewSources(participant, sourcesAccepted);
+            synchronized (participantLock)
+            {
+                // The participant may have left while the bridge was updated. Its sources were removed then.
+                if (!isSessionCurrent(participant, jingleSession))
+                {
+                    return false;
+                }
+                // Propagate [participant]'s sources to the other participants.
+                propagateNewSources(participant, sourcesAccepted);
+            }
         }
         else
         {
@@ -1537,9 +1665,11 @@ public class JitsiMeetConferenceImpl
 
         // The initial sources may include the base audio source for a pending translation request.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
 
         // Now that the Jingle session is ready, signal any sources from other participants to [participant].
         participant.sendQueuedRemoteSources();
+        return true;
     }
 
     /**
@@ -1576,6 +1706,7 @@ public class JitsiMeetConferenceImpl
 
         // The participant (a potential translation sender) is gone; drop any synthetic translation sources for it.
         translationManager.reapply(colibriSessionManager, meetingId);
+        agentManager.reapply(colibriSessionManager, meetingId);
     }
 
     /**
@@ -1758,6 +1889,7 @@ public class JitsiMeetConferenceImpl
             participantsJson.set(participant.getEndpointId(), participant.getDebugState(full));
         }
         o.set("participants", participantsJson);
+        o.set("client_requirements", clientRequirementsHandler.getDebugState());
         //o.set("jibri_recorder", jibriRecorder.getDebugState());
         //o.set("jibri_sip_gateway", jibriSipGateway.getDebugState());
         ChatRoomRoleManager chatRoomRoleManager = this.chatRoomRoleManager;
@@ -2110,7 +2242,17 @@ public class JitsiMeetConferenceImpl
                     xmppProvider);
 
             // Will call join after releasing the lock
-            chatRoomToJoin = xmppProvider.findOrCreateRoom(visitorMucJid, logger.getLevel());
+            try
+            {
+                chatRoomToJoin = xmppProvider.createRoom(visitorMucJid, logger.getLevel());
+            }
+            catch (XmppProvider.RoomExistsException e)
+            {
+                // Most likely a conference for the same room just ended and has not left its visitor room yet.
+                logger.warn(
+                        "The visitor room on node " + node + " is still in use, not redirecting: " + e.getMessage());
+                return null;
+            }
 
             chatRoomToJoin.addListener(new VisitorChatRoomListenerImpl(chatRoomToJoin));
 
@@ -2118,7 +2260,37 @@ public class JitsiMeetConferenceImpl
             chatRoomToJoin.visitorInvited();
         }
 
-        chatRoomToJoin.join();
+        try
+        {
+            chatRoomToJoin.join();
+        }
+        catch (Exception e)
+        {
+            // Do not keep a room that we failed to join. We would never join it, and we would keep sending visitors
+            // to it because of the check above.
+            logger.error("Failed to join the visitor room on node " + node, e);
+            synchronized (visitorChatRooms)
+            {
+                visitorChatRooms.remove(node, chatRoomToJoin);
+            }
+            chatRoomToJoin.removeAllListeners();
+            chatRoomToJoin.leave();
+            throw e;
+        }
+
+        // The room may have been discarded while we were joining it, for example because the node was restarted.
+        // Leave it, otherwise we stay in a MUC that we do not track anymore.
+        synchronized (visitorChatRooms)
+        {
+            if (visitorChatRooms.get(node) != chatRoomToJoin)
+            {
+                logger.warn("The visitor room on node " + node + " was discarded while we were joining it.");
+                chatRoomToJoin.removeAllListeners();
+                chatRoomToJoin.leave();
+                return null;
+            }
+        }
+
         Collection<ExtensionElement> presenceExtensions = new ArrayList<>();
 
         ComponentVersionsExtension versionsExtension = new ComponentVersionsExtension();
@@ -2147,6 +2319,73 @@ public class JitsiMeetConferenceImpl
             logger.info("Redirected visitor, broadcast not enabled yet.");
         }
         return node;
+    }
+
+    @Override
+    public void visitorConnectionReset(@NotNull String node)
+    {
+        final ChatRoom staleChatRoom;
+        synchronized (visitorChatRooms)
+        {
+            staleChatRoom = visitorChatRooms.remove(node);
+        }
+
+        if (staleChatRoom == null)
+        {
+            // This conference does not use the node.
+            return;
+        }
+
+        logger.info("The connection to visitor node " + node + " was reset, discarding the visitor room.");
+        discardVisitorChatRoom(node, staleChatRoom);
+    }
+
+    /**
+     * Clean up after a visitor {@link ChatRoom} that we are not joined in anymore. Terminate the visitors that were
+     * in the room, leave the room, and tell the visitors component to stop sending visitors to the node.
+     *
+     * The caller must remove the room from {@link #visitorChatRooms} first.
+     *
+     * @param node the ID of the visitor node that the room is on.
+     * @param staleChatRoom the room to discard.
+     */
+    private void discardVisitorChatRoom(@NotNull String node, @NotNull ChatRoom staleChatRoom)
+    {
+        TaskPools.getIoPool().submit(() ->
+        {
+            try
+            {
+                // We are not in the room anymore, so we do not receive presence for the visitors leaving it. Without
+                // this they leak, because each one keeps a Participant and an endpoint on a bridge.
+                for (ChatRoomMember member : staleChatRoom.getMembers())
+                {
+                    if (member.getRole() == MemberRole.VISITOR)
+                    {
+                        onMemberLeft(member);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                logger.error("Failed to terminate the visitors of the stale room on node " + node, e);
+            }
+            finally
+            {
+                // Always leave the room. Otherwise it stays active and blocks a new room on this node.
+                try
+                {
+                    staleChatRoom.removeAllListeners();
+                    staleChatRoom.leave();
+                }
+                catch (Exception e)
+                {
+                    logger.error("Failed to leave the stale visitor room on node " + node, e);
+                }
+            }
+        });
+
+        xmppServices.getVisitorsManager().sendIqToComponent(
+                roomName, Collections.singletonList(new DisconnectVnodePacketExtension(node)));
     }
 
     private void onBridgeUp(Jid bridgeJid)
@@ -2179,10 +2418,26 @@ public class JitsiMeetConferenceImpl
 
     private int reInviteParticipantsById(@NotNull List<String> participantIdsToReinvite, boolean updateParticipant)
     {
+        // A voice agent's synthetic endpoint has no Participant: the agent manager re-allocates it instead.
+        List<String> agentIds = new ArrayList<>();
+        for (String id : participantIdsToReinvite)
+        {
+            if (agentManager.manages(id))
+            {
+                agentIds.add(id);
+            }
+        }
+        if (!agentIds.isEmpty())
+        {
+            agentManager.endpointsRemoved(agentIds, colibriSessionManager, meetingId);
+            participantIdsToReinvite = new ArrayList<>(participantIdsToReinvite);
+            participantIdsToReinvite.removeAll(agentIds);
+        }
+
         int n = participantIdsToReinvite.size();
         if (n == 0)
         {
-            return 0;
+            return agentIds.size();
         }
 
         List<Participant> participantsToReinvite = new ArrayList<>();
@@ -2206,7 +2461,8 @@ public class JitsiMeetConferenceImpl
             reInviteParticipants(participantsToReinvite, updateParticipant);
         }
         ConferenceMetrics.participantsMoved.addAndGet(participantsToReinvite.size());
-        return participantsToReinvite.size();
+        // Re-allocated agents count as moved too (the move-endpoint API reports this number).
+        return participantsToReinvite.size() + agentIds.size();
     }
 
     /**
@@ -2313,6 +2569,14 @@ public class JitsiMeetConferenceImpl
     {
         cancelSingleParticipantTimeout();
 
+        if (hasColibriConnects())
+        {
+            // The bridge is exporting the participant's media (to a transcriber, translator, ...), so the session is
+            // not idle. The timeout is re-armed if the connects go away (see ColibriSessionManagerListener).
+            logger.info("Not scheduling single person timeout, the conference has active connects.");
+            return;
+        }
+
         long timeout = ConferenceConfig.config.getSingleParticipantTimeout().toMillis();
 
         singleParticipantTout = TaskPools.getScheduledPool().schedule(
@@ -2397,6 +2661,16 @@ public class JitsiMeetConferenceImpl
         {
             visitorCodecs.removePreference(codecs);
         }
+    }
+
+    /**
+     * Whether any colibri2 connects (transcriber, translator, ...) are desired for the conference, i.e. whether the
+     * bridge is exporting media to an external consumer.
+     */
+    private boolean hasColibriConnects()
+    {
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        return colibriSessionManager != null && colibriSessionManager.hasConnects();
     }
 
     /**
@@ -2498,38 +2772,85 @@ public class JitsiMeetConferenceImpl
         enableTranscription = enable;
         setConferenceProperty(ConferenceProperties.KEY_AUDIO_RECORDING_ENABLED, enable ? "true" : "false");
 
-        // If transcription just got enabled and we have members but no invited participants yet (e.g. we were waiting
-        // for min-participants), trigger invitations now.
-        if (enable && chatRoom != null && chatRoom.getMemberCount() > 0)
-        {
-            synchronized (participantLock)
-            {
-                if (participants.isEmpty())
-                {
-                    logger.info("Transcribing enabled with existing participants, starting sessions.");
-                    inviteAllChatMembers();
-                }
-            }
-        }
-
         String meetingId = JitsiMeetConferenceImpl.this.meetingId;
-        ColibriSessionManager colibriSessionManager = JitsiMeetConferenceImpl.this.colibriSessionManager;
-
-        if (meetingId == null || colibriSessionManager == null)
+        if (meetingId == null || !started.get())
         {
-            // The new value will take effect when colibriSessionManager is initialized (after the room is joined and
-            // meetingId is set).
+            // The new value will take effect when the room is joined and the meeting ID is set (see joinTheRoom()),
+            // or when colibriSessionManager is initialized.
             return;
         }
 
-        TemplatedUrl uri = enable ? TranscriptionConfig.config.getUrl(meetingId) : null;
-        if (enable && uri == null)
+        // The session manager is lazily initialized under participantLock (from the invite path); take the same lock
+        // so that we do not race it.
+        synchronized (participantLock)
+        {
+            if (colibriSessionManager == null)
+            {
+                maybeInitColibriForTranscription();
+            }
+            else
+            {
+                applyTranscriptionState(colibriSessionManager, meetingId);
+            }
+
+            // The transcriber connect lowers min-participants to 1 (see checkMinParticipants()). If we have members
+            // but no invited participants yet (because we were waiting for min-participants), start the sessions now.
+            if (enable && participants.isEmpty() && checkMinParticipants())
+            {
+                logger.info("Transcribing enabled with existing members, starting sessions.");
+                inviteAllChatMembers();
+            }
+        }
+    }
+
+    /**
+     * If transcription is enabled with a configured transcriber URL and the colibri session manager does not exist
+     * yet (nobody has been allocated, e.g. because we are waiting for min-participants), initialize it now. The
+     * initialization applies the transcription state, so that the transcriber connect is desired, and lowers
+     * min-participants, before any participant is allocated. Does nothing before the meeting ID is set.
+     */
+    private void maybeInitColibriForTranscription()
+    {
+        String meetingId = this.meetingId;
+        if (meetingId == null || !started.get())
+        {
+            return;
+        }
+        synchronized (participantLock)
+        {
+            if (colibriSessionManager == null && getTranscriberUrl(meetingId) != null)
+            {
+                getColibriSessionManager();
+            }
+        }
+    }
+
+    /**
+     * @return the transcriber URL for this conference if transcription is enabled and a URL is configured, and
+     * {@code null} otherwise.
+     */
+    private TemplatedUrl getTranscriberUrl(@NotNull String meetingId)
+    {
+        return enableTranscription ? TranscriptionConfig.config.getUrl(meetingId) : null;
+    }
+
+    /**
+     * Apply the current transcription state ({@link #enableTranscription} and the room's transcription metadata) to
+     * {@code colibriSessionManager}: create or remove the transcriber connect, and (re)apply the text-translation
+     * languages to it.
+     */
+    private void applyTranscriptionState(
+            @NotNull ColibriSessionManager colibriSessionManager,
+            @NotNull String meetingId)
+    {
+        TemplatedUrl uri = getTranscriberUrl(meetingId);
+        if (enableTranscription && uri == null)
         {
             logger.info("Transcription enabled, but no URL is configured.");
             return;
         }
 
-        Pair<Map<String, String>, Map<String, String>> transcriptionParams = enable && chatRoom != null
+        Pair<Map<String, String>, Map<String, String>> transcriptionParams = enableTranscription && chatRoom != null
             ? TranscriptionConfig.processTranscriptionMetadata(
                 chatRoom.getTranscription(),
                 TranscriptionConfig.config.getHttpHeaders())
@@ -2539,6 +2860,36 @@ public class JitsiMeetConferenceImpl
             uri,
             transcriptionParams.getFirst(),
             transcriptionParams.getSecond());
+
+        // The transcriber connect was just created or removed; (re)apply the requested languages to it.
+        updateTextTranslationLanguages();
+    }
+
+    /**
+     * Signal the set of languages the transcriber should translate its transcripts into: the languages the members
+     * request in their presence, together with the visitors' (which reach us through the room metadata).
+     *
+     * This is text translation. It is unrelated to the speech-to-speech translation that
+     * {@link ConferenceTranslationManager} drives.
+     *
+     * Signaling an empty set stops translation, so this is also the path that releases languages when the last
+     * member that wanted them leaves, or when transcription is turned off.
+     */
+    private void updateTextTranslationLanguages()
+    {
+        ColibriSessionManager colibriSessionManager = this.colibriSessionManager;
+        if (colibriSessionManager == null)
+        {
+            // The languages are read from the room when the session manager is initialized.
+            return;
+        }
+
+        ChatRoom chatRoom = this.chatRoom;
+        Set<String> languages = enableTranscription && chatRoom != null
+            ? chatRoom.getTranslationLanguages()
+            : Collections.emptySet();
+
+        colibriSessionManager.setTextTranslationLanguages(languages);
     }
 
     /**
@@ -2578,18 +2929,26 @@ public class JitsiMeetConferenceImpl
             {
                 if (participants.size() == 1)
                 {
-                    Participant p = participants.values().stream().findFirst().orElse(null);
-                    logger.info("Timing out single participant: " + p.getChatMember().getName());
+                    if (hasColibriConnects())
+                    {
+                        // Connects were added after the timeout was scheduled.
+                        logger.info("Not timing out single participant, the conference has active connects.");
+                    }
+                    else
+                    {
+                        Participant p = participants.values().stream().findFirst().orElse(null);
+                        logger.info("Timing out single participant: " + p.getChatMember().getName());
 
-                    terminateParticipant(
-                            p,
-                            Reason.EXPIRED,
-                            "Idle session timeout",
-                            /* send session-terminate */ true,
-                            /* send source-remove */ false,
-                            /* not reinviting */ false);
+                        terminateParticipant(
+                                p,
+                                Reason.EXPIRED,
+                                "Idle session timeout",
+                                /* send session-terminate */ true,
+                                /* send source-remove */ false,
+                                /* not reinviting */ false);
 
-                    expireBridgeSessions();
+                        expireBridgeSessions();
+                    }
                 }
                 else
                 {
@@ -2666,7 +3025,6 @@ public class JitsiMeetConferenceImpl
         public void roomDestroyed(String reason)
         {
             logger.info("Visitor room destroyed with reason=" + reason);
-            ChatRoom chatRoomToLeave = null;
             String vnode = null;
             synchronized (visitorChatRooms)
             {
@@ -2675,33 +3033,14 @@ public class JitsiMeetConferenceImpl
                             .filter(e -> e.getValue() == chatRoom).findFirst().orElse(null);
                 if (entry != null)
                 {
-                    chatRoomToLeave = entry.getValue();
                     vnode = entry.getKey();
                     visitorChatRooms.remove(vnode);
                 }
             }
 
-            if (chatRoomToLeave != null)
+            if (vnode != null)
             {
-                ChatRoom finalChatRoom = chatRoomToLeave;
-                TaskPools.getIoPool().submit(() ->
-                {
-                    try
-                    {
-                        logger.info("Removing visitor chat room");
-                        finalChatRoom.leave();
-                    }
-                    catch (Exception e)
-                    {
-                        logger.warn("Error while leaving chat room.", e);
-                    }
-                });
-
-                if (vnode != null)
-                {
-                    xmppServices.getVisitorsManager().sendIqToComponent(
-                            roomName, Collections.singletonList(new DisconnectVnodePacketExtension(vnode)));
-                }
+                discardVisitorChatRoom(vnode, chatRoom);
             }
         }
 
@@ -2844,6 +3183,8 @@ public class JitsiMeetConferenceImpl
         @Override
         public void memberPresenceChanged(@NotNull ChatRoomMember member)
         {
+            // Voice-agent consent is carried in presence.
+            agentManager.reapply(colibriSessionManager, meetingId);
         }
 
         @Override
@@ -2865,6 +3206,12 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
+        public void translationLanguagesChanged()
+        {
+            updateTextTranslationLanguages();
+        }
+
+        @Override
         public void audioTranslationRequestsChanged(@NotNull Map<String, ? extends List<String>> requests)
         {
             // Merge any per-room translator headers (e.g. a per-customer usage token delivered on the
@@ -2878,6 +3225,32 @@ public class JitsiMeetConferenceImpl
                     translationHeaders,
                     colibriSessionManager,
                     meetingId);
+        }
+
+        @Override
+        public void agentsChanged(@NotNull Map<String, RoomMetadata.Metadata.Agent> agents)
+        {
+            // Without an agent URL nothing will be allocated, so an agent must not force a bridge either.
+            boolean nowHasAgents = AgentConfig.config.getEnabled()
+                    && agents.values().stream().anyMatch(RoomMetadata.Metadata.Agent::isRequested);
+            boolean wasEmpty = !hasAgents;
+            hasAgents = nowHasAgents;
+
+            // Store requests first so the invite below (inits colibri, calls reapply) picks them up.
+            agentManager.setRequests(agents, colibriSessionManager, meetingId);
+
+            // Agent added while members waited for min-participants: invite them so a bridge is allocated.
+            if (nowHasAgents && wasEmpty && chatRoom != null && chatRoom.getMemberCount() > 0)
+            {
+                synchronized (participantLock)
+                {
+                    if (participants.isEmpty())
+                    {
+                        logger.info("Voice agent added with existing members, starting sessions.");
+                        inviteAllChatMembers();
+                    }
+                }
+            }
         }
     }
 
@@ -2894,6 +3267,35 @@ public class JitsiMeetConferenceImpl
                     ConferenceProperties.KEY_BRIDGE_COUNT,
                     Integer.toString(bridgeCount)
             );
+            // A requested agent waits for a session to exist (so it is placed by the humans' region, not jicofo's);
+            // the first one has just been created.
+            if (bridgeCount > 0)
+            {
+                agentManager.reapply(colibriSessionManager, meetingId);
+            }
+        }
+
+        /**
+         * The conference started or stopped exporting media via colibri2 connects. A lone participant's session is
+         * kept alive while connects exist, so (re)evaluate the single participant timeout.
+         */
+        @Override
+        public void connectsChanged(boolean hasConnects)
+        {
+            // The events are delivered asynchronously and may be reordered, so do not trust the argument. Instead
+            // re-evaluate from the current state: rescheduleSingleParticipantTimeout() cancels any pending timeout
+            // and only arms a new one if there are no connects now.
+            if (!started.get())
+            {
+                return;
+            }
+            synchronized (participantLock)
+            {
+                if (participants.size() == 1)
+                {
+                    rescheduleSingleParticipantTimeout();
+                }
+            }
         }
 
         /**

@@ -30,6 +30,7 @@ import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.codec.Config
 import org.jitsi.jicofo.conference.source.ConferenceSourceMap
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.xmpp.toRedactedXml
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
@@ -72,7 +73,11 @@ class Colibri2Session(
         bridge.jid.resourceOrNull?.toString()?.let { addContext("bridge", it) }
     }
     private val xmppConnection = colibriSessionManager.xmppConnection
-    val id = UUID.randomUUID().toString()
+    val id = if (BridgeConfig.config.includeBridgeNameInSessionId) {
+        "${bridge.jid.resourceOrEmpty}-${UUID.randomUUID()}"
+    } else {
+        UUID.randomUUID().toString()
+    }
 
     /**
      * Keep track of the endpoints that this conference recently added to this bridge. Note that this is
@@ -139,22 +144,25 @@ class Colibri2Session(
             if (participant.visitor) {
                 setMucRole(MUCRole.visitor)
             }
-            setTransport(
-                Transport.getBuilder().apply {
-                    // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to the
-                    //  client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic ICE/DTLS
-                    //  failures with firefox but not chrome).
-                    setIceControlling(true)
-                    if (participant.useSctp) {
-                        setSctp(Sctp.Builder().build())
-                    }
-                }.build()
-            )
+            // Synthetic endpoints (e.g. voice agents) have no media transport.
+            if (!participant.synthetic) {
+                setTransport(
+                    Transport.getBuilder().apply {
+                        // TODO: we're hard-coding the role here, and it must be consistent with the role signaled to
+                        //  the client. Signaling inconsistent roles leads to hard to debug issues (e.g. sporadic
+                        //  ICE/DTLS failures with firefox but not chrome).
+                        setIceControlling(true)
+                        if (participant.useSctp) {
+                            setSctp(Sctp.Builder().build())
+                        }
+                    }.build()
+                )
+            }
         }
         participant.medias.forEach { endpoint.addMedia(it) }
         request.addEndpoint(endpoint.build())
 
-        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toXML()}" }
+        logger.trace { "Sending allocation request for ${participant.id}: ${request.build().toRedactedXml()}" }
         created = true
         return xmppConnection.createStanzaCollectorAndSend(request.build())
     }
@@ -323,6 +331,7 @@ class Colibri2Session(
                     request.addConnect(spec.toConnect(create = true))
                     hasDelta = true
                 }
+
                 !current.sameAs(spec) -> {
                     logger.info("Updating connect id=$id")
                     request.addConnect(spec.toConnect())
@@ -436,7 +445,7 @@ class Colibri2Session(
      * order — anything order-sensitive needs its own guard.
      */
     private fun sendRequest(iq: IQ, name: String, onSuccess: ((ConferenceModifiedIQ) -> Unit)? = null) {
-        logger.debug { "Sending $name request: ${iq.toXML()}" }
+        logger.debug { "Sending $name request: ${iq.toRedactedXml()}" }
         xmppConnection.sendIqAndHandleResponseAsync(iq) { response ->
             if (response == null) {
                 logger.info("$name request timed out. Ignoring.")
@@ -455,11 +464,26 @@ class Colibri2Session(
                 // If colibri2 error extension is present then the message came from
                 // a jitsi-videobridge instance. Otherwise, it might come from another component
                 // (e.g. the XMPP server or MUC component).
+                if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
+                    if (iq is ConferenceModifyIQ && iq.expire) {
+                        // We were expiring the conference and it is already gone. Nothing to recover from.
+                        logger.info("The conference was already expired on the bridge ($name request).")
+                    } else {
+                        // The bridge expired the conference (e.g. when its last endpoint was removed) while we still
+                        // think it has participants. The bridge is healthy, re-invite the participants of this session.
+                        logger.warn(
+                            "Conference not found on the bridge for $name request, session failed: " +
+                                "${error.toXML()}, request was: ${iq.toRedactedXml()}"
+                        )
+                        colibriSessionManager.sessionFailed(this@Colibri2Session)
+                    }
+                    return@sendIqAndHandleResponseAsync
+                }
                 val reInvite = reason == Colibri2Error.Reason.UNKNOWN_ENDPOINT && endpointId != null
                 if (reInvite) {
                     logger.warn(
                         "Endpoint [$endpointId] is not found, session failed: ${error.toXML()}, " +
-                            "request was: ${iq.toXML()}"
+                            "request was: ${iq.toRedactedXml()}"
                     )
                     colibriSessionManager.endpointFailed(endpointId!!)
                 } else {
@@ -527,7 +551,17 @@ class Colibri2Session(
                 // transport and forward it to the associated [Relay] for the remote side via [colibriSessionManager]
                 logger.trace { "Received response: ${response?.toXML()}" }
                 if (response !is ConferenceModifiedIQ) {
-                    logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    val reason = response?.error?.getExtension<Colibri2Error>(
+                        Colibri2Error.ELEMENT,
+                        Colibri2Error.NAMESPACE
+                    )?.reason
+                    if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
+                        // The bridge expired the conference while we still think it has participants. The bridge is
+                        // healthy, re-invite the participants of this session.
+                        logger.warn("Conference not found on the bridge for create relay request: ${response?.toXML()}")
+                    } else {
+                        logger.error("Received error: ${response?.toXML() ?: "timeout"}")
+                    }
                     colibriSessionManager.sessionFailed(this@Colibri2Session)
                     return@sendIqAndHandleResponseAsync
                 }

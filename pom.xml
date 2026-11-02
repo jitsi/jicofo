@@ -38,18 +38,19 @@
     <!-- Make sure this matches the version of the jxmpp artifacts inheriteb from smack. -->
     <jxmpp.version>1.0.3</jxmpp.version>
     <smack.version>4.4.8-jitsi-4</smack.version>
-    <kotlin.version>1.9.10</kotlin.version>
+    <kotlin.version>2.4.20</kotlin.version>
     <ktor.version>3.0.0</ktor.version>
-    <kotest.version>5.7.2</kotest.version>
+    <kotest.version>5.9.1</kotest.version>
     <slf4j.version>1.7.32</slf4j.version>
-    <jackson.version>2.19.0</jackson.version>
-    <jitsi.utils.version>1.0-150-g4ab9a3b</jitsi.utils.version>
-    <jicoco.version>1.1-178-ga09ed33</jicoco.version>
-    <ktlint-maven-plugin.version>3.0.0</ktlint-maven-plugin.version>
-    <spotbugs.version>4.8.6</spotbugs.version>
-    <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
-    <junit.version>5.10.0</junit.version>
-    <mockk.version>1.13.8</mockk.version>
+    <jackson.version>2.21.5</jackson.version>
+    <jitsi.utils.version>1.0-157-g01961f9</jitsi.utils.version>
+    <jicoco.version>1.1-183-gfc70624</jicoco.version>
+    <ktlint.version>1.8.0</ktlint.version>
+    <spotbugs.version>4.9.4</spotbugs.version>
+    <spotbugs-maven-plugin.version>4.9.4.2</spotbugs-maven-plugin.version>
+    <junit.version>5.14.4</junit.version>
+    <junit.platform.version>1.14.4</junit.platform.version>
+    <mockk.version>1.14.11</mockk.version>
   </properties>
   <build>
     <plugins>
@@ -82,6 +83,13 @@
   </modules>
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
@@ -125,9 +133,14 @@
       </dependency>
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-stdlib-jdk8</artifactId>
+        <artifactId>kotlin-stdlib</artifactId>
         <version>${kotlin.version}</version>
         <scope>compile</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-reflect</artifactId>
+        <version>${kotlin.version}</version>
       </dependency>
       <!-- org.jitsi -->
       <dependency>
@@ -158,7 +171,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-metaconfig</artifactId>
-        <version>1.0-9-g5e1b624</version>
+        <version>1.0-18-ge06bc45</version>
       </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
@@ -168,7 +181,7 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
-        <version>1.0-119-gc67bc81</version>
+        <version>1.0-128-g1223d2e</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -179,11 +192,6 @@
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
-      </dependency>
-      <dependency>
-          <groupId>com.fasterxml.jackson.module</groupId>
-          <artifactId>jackson-module-kotlin</artifactId>
-          <version>${jackson.version}</version>
       </dependency>
       <!-- https://mvnrepository.com/artifact/com.github.spotbugs/spotbugs-annotations -->
       <dependency>
@@ -203,12 +211,6 @@
         <groupId>org.xmlunit</groupId>
         <artifactId>xmlunit-core</artifactId>
         <version>2.10.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-core</artifactId>
-        <version>4.0.0</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -232,7 +234,13 @@
       <dependency>
         <groupId>org.junit.platform</groupId>
         <artifactId>junit-platform-launcher</artifactId>
-        <version>1.8.1</version>
+        <version>${junit.platform.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.platform</groupId>
+        <artifactId>junit-platform-engine</artifactId>
+        <version>${junit.platform.version}</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -243,7 +251,7 @@
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
@@ -269,7 +277,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.12</version>
+            <version>0.8.14</version>
             <executions>
               <execution>
                 <goals>

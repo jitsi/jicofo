@@ -43,7 +43,9 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
 
     override fun handleIq(iq: IQ): IQ? = when (iq) {
         is ConferenceModifyIQ -> colibri2Server.handleConferenceModifyIq(iq)
+
         is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
+
         else -> {
             println("Not handling ${iq.toXML()}")
             null

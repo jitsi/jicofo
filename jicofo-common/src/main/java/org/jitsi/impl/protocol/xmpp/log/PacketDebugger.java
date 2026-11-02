@@ -16,6 +16,7 @@
 package org.jitsi.impl.protocol.xmpp.log;
 
 import edu.umd.cs.findbugs.annotations.*;
+import org.jitsi.jicofo.xmpp.RedactedXmlKt;
 import org.jitsi.utils.logging2.*;
 import org.jivesoftware.smack.*;
 import org.jivesoftware.smack.debugger.*;
@@ -66,13 +67,18 @@ public class PacketDebugger
     @Override
     public void onIncomingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "RCV PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(() -> "RCV PKT (" + id + "): " + redact(streamElement));
     }
 
     @Override
     public void onOutgoingStreamElement(TopLevelStreamElement streamElement)
     {
-        logger.debug(() -> "SENT PKT (" + id + "): " + streamElement.toXML());
+        logger.debug(() -> "SENT PKT (" + id + "): " + redact(streamElement));
+    }
+
+    private static String redact(TopLevelStreamElement streamElement)
+    {
+        return RedactedXmlKt.toRedactedXml(streamElement);
     }
 
     /**

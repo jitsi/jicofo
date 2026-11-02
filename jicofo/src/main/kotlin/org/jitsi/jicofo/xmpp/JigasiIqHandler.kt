@@ -146,12 +146,29 @@ class JigasiIqHandler(
         exclude: List<Jid> = emptyList()
     ) {
         val selector = if (request.iq.destination == "jitsi_meet_transcribe") {
+            if (conference.chatRoom?.asyncTranscription == true) {
+                logger.warn(
+                    "Rejected transcriber dial-out request, room is configured for async transcription: " +
+                        request.iq.toXML()
+                )
+                request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(
+                        request.iq,
+                        StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
+                    )
+                )
+                Stats.rejectedRequests.inc()
+                return
+            }
             if (conference.hasTranscriber()) {
                 logger.warn("Request failed, transcriber already available: ${request.iq.toXML()}")
-                IQ.createErrorResponse(
-                    request.iq,
-                    StanzaError.getBuilder(StanzaError.Condition.conflict).build()
+                request.connection.tryToSendStanza(
+                    IQ.createErrorResponse(
+                        request.iq,
+                        StanzaError.getBuilder(StanzaError.Condition.conflict).build()
+                    )
                 )
+                Stats.rejectedRequests.inc()
                 return
             }
             jigasiDetector::selectTranscriber

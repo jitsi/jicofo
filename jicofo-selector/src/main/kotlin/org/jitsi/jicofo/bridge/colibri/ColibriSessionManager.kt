@@ -74,6 +74,16 @@ interface ColibriSessionManager {
     )
 
     /**
+     * Set the languages the transcriber should translate its transcripts into (text translation, not the
+     * speech-to-speech translation that [setTranslator] controls).
+     *
+     * The languages are signaled as the `requests` of the transcriber connect, which the bridge forwards to the
+     * transcriber. [languages] is the full set, so an empty set stops all translation. Calling this before the
+     * transcriber connect exists is fine: the languages are kept and applied when it is created.
+     */
+    fun setTextTranslationLanguages(languages: Set<String>)
+
+    /**
      * Enable, update, or disable live translation.
      *
      * @param url the websocket URL template the bridge(s) should connect to, or null to disable translation.
@@ -87,10 +97,24 @@ interface ColibriSessionManager {
     )
 
     /**
+     * Set the desired voice-agent connects. Each entry corresponds to an already-allocated synthetic endpoint; its
+     * connect is placed on the bridge session hosting that endpoint. The full list replaces the previous one:
+     * connects for agents no longer listed are expired.
+     */
+    fun setAgents(agents: List<AgentConnectRequest>)
+
+    /**
      * Stop using [bridge], expiring all endpoints on it (e.g. because it was detected to have failed).
      * @return the list of participant IDs which were on the removed bridge and now need to be re-invited.
      */
     fun removeBridge(bridge: Bridge): List<String>
+
+    /**
+     * Whether any colibri2 `<connect>`s (a transcriber, translator, or any other external consumer of the
+     * conference's media) are currently desired for the conference. While this is true, a bridge session is worth
+     * keeping even if only a single participant remains on it, since the media is being exported.
+     */
+    fun hasConnects(): Boolean
 
     val debugState: ObjectNode
 
@@ -114,6 +138,12 @@ interface ColibriSessionManager {
 
         /** Endpoint removed due to a failure e.g. unknown endpoint */
         fun endpointRemoved(endpointId: String)
+
+        /**
+         * The value of [ColibriSessionManager.hasConnects] changed: the conference started or stopped exporting
+         * media via colibri2 `<connect>`s.
+         */
+        fun connectsChanged(hasConnects: Boolean) {}
 
         /**
          * The bridge performed an ICE restart for an endpoint and rotated its own ICE credentials. The new
@@ -144,7 +174,12 @@ data class ParticipantAllocationParameters(
     val visitor: Boolean,
     val supportsPrivateAddresses: Boolean,
     val diarize: Boolean,
-    val medias: Set<Media>
+    val medias: Set<Media>,
+    /**
+     * Whether this is a synthetic endpoint: a bridge-side entity that owns synthetic (injected) sources, e.g. a
+     * voice agent, and has no media transport of its own.
+     */
+    val synthetic: Boolean = false
 )
 
 /**
@@ -158,4 +193,21 @@ data class TranslationRequest(
     val senderEndpointId: String,
     val sourceName: String,
     val syntheticSourceNames: List<String>
+)
+
+/**
+ * A request for a voice-agent connect on the bridge session hosting the agent's synthetic endpoint.
+ *
+ * @param endpointId the id of the agent's (synthetic) endpoint, which must have been allocated already.
+ * @param syntheticSourceName the agent's synthetic audio source name, requested back from the agent service.
+ * @param exports the audio source names exported to the agent: only those of the members that consented to it.
+ * @param url the websocket URL template for the connect ([AgentConfig.REGION_TEMPLATE] is resolved per bridge).
+ * @param urlParams query parameters added to the URL, identifying the agent to the media relay.
+ */
+data class AgentConnectRequest(
+    val endpointId: String,
+    val syntheticSourceName: String,
+    val exports: List<String>,
+    val url: TemplatedUrl,
+    val urlParams: Map<String, String>? = null
 )

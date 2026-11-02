@@ -48,7 +48,10 @@ class JibriDetectorTest : ShouldSpec({
     isolationMode = IsolationMode.InstancePerLeaf
 
     val mockXmppConnection = mockk<AbstractXMPPConnection>()
-    val mockXmppProvider = mockk<XmppProvider>().apply { every { xmppConnection } returns mockXmppConnection }
+    val mockXmppProvider = mockk<XmppProvider>().apply {
+        every { xmppConnection } returns mockXmppConnection
+        every { config.name } returns "client"
+    }
     val clock = FakeClock().apply { elapse(10.mins) }
     val detector = JibriDetector(mockXmppProvider, JidCreate.entityBareFrom("brewery_name@example.com"), false, clock)
     val jibriJids = listOf(
@@ -142,10 +145,12 @@ class JibriChatRoomMember(
     override val isAudioMuted: Boolean get() = TODO("Not yet implemented")
     override val isVideoMuted: Boolean get() = TODO("Not yet implemented")
     override val diarize: Boolean get() = TODO("Not yet implemented")
+    override val translationLanguage: String? get() = TODO("Not yet implemented")
     override val region: String? get() = TODO("Not yet implemented")
     override val statsId: String? get() = TODO("Not yet implemented")
     override val videoCodecs: List<String>? get() = TODO("Not yet implemented")
     override val features: Set<Features> get() = TODO("Not yet implemented")
+    override val featuresDiscovered: Boolean get() = TODO("Not yet implemented")
     override val debugState: ObjectNode get() = TODO("Not yet implemented")
 
     var idle: Boolean = true

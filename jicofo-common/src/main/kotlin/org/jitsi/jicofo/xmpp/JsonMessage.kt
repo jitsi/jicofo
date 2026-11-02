@@ -43,9 +43,7 @@ sealed class JsonMessage(val type: String) {
 
         @JvmStatic
         @Throws(JsonProcessingException::class, JsonMappingException::class)
-        fun parse(string: String): JsonMessage {
-            return mapper.readValue(string)
-        }
+        fun parse(string: String): JsonMessage = mapper.readValue(string)
     }
 }
 
@@ -87,10 +85,35 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
          */
         val translation: Translation? = null,
         /** Aggregated live-translation requests: sender endpoint id -> set of requested language codes. */
-        val audioTranslationRequests: Map<String, List<String>>? = null
+        val audioTranslationRequests: Map<String, List<String>>? = null,
+        /**
+         * What a recording of this room must look like, delivered to jicofo on the admin-only metadata path. It is
+         * a separate field from [recording], which carries the client-visible recording state, so that the
+         * admin-only path can add it without overwriting that.
+         */
+        val recordingParams: RecordingParams? = null,
+
+        /**
+         * The voice agents requested in the room, keyed by agent id (which becomes the agent's endpoint id). The
+         * metadata also carries client-facing fields (display name, kind) that jicofo ignores.
+         */
+        val agents: Map<String, Agent>? = null
     ) {
         @JsonIgnoreProperties(ignoreUnknown = true)
-        data class Visitors(val live: Boolean?)
+        data class Visitors(
+            val live: Boolean?,
+            /**
+             * The languages the visitors want transcriptions translated into, as a comma-separated list, or an empty
+             * string when they want none.
+             *
+             * Visitors are in a MUC on a visitor node, so their presence is not visible here. Instead each visitor
+             * node's mod_fmuc collects their requested languages and sends them to the main prosody, which aggregates
+             * across nodes into this field (mod_visitors_component). This is the same field jigasi reads.
+             */
+            val transcribingLanguages: String? = null,
+            /** How many visitors are requesting transcription, across all visitor nodes. */
+            val transcribingCount: Long? = null
+        )
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class StartMuted(val audio: Boolean?, val video: Boolean?)
@@ -98,16 +121,46 @@ data class RoomMetadata(val metadata: Metadata?) : JsonMessage(TYPE) {
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Recording(val isTranscribingEnabled: Boolean?)
 
+        /**
+         * What a recording must look like. These say nothing about how Jibri makes it: Jibri selects the screen
+         * resolution, the layout and the client options, and it refuses a request it cannot serve. We only pass
+         * them on.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class RecordingParams(
+            /** The resolution of one tile, in the "WIDTHxHEIGHT" format. */
+            val tileResolution: String? = null,
+            /** How many tiles the recording must show. */
+            val tileCount: Int? = null,
+            /** The value for the maxFullResolutionParticipants option of the recorder's client. */
+            val maxFullResolutionParticipants: Int? = null
+        )
+
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Transcription(
             val urlParams: Map<String, String>? = null,
             val httpHeaders: Map<String, String>? = null
-        )
+        ) {
+            override fun toString(): String = "Transcription(urlParams=${urlParams?.mapValues { "***" }}, " +
+                "httpHeaders=${httpHeaders?.mapValues { "***" }})"
+        }
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         data class Translation(
             val httpHeaders: Map<String, String>? = null
-        )
+        ) {
+            override fun toString(): String = "Translation(httpHeaders=${httpHeaders?.mapValues { "***" }})"
+        }
+
+        /**
+         * A voice agent advertised in the room metadata. Jicofo needs its id and lifecycle state; the dial config
+         * stays in the provisioning API, where the media relay fetches it by id.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        data class Agent(val state: String? = null) {
+            /** Whether jicofo should host this agent: a failed or ended record is a request nobody will answer. */
+            fun isRequested() = state != "failed" && state != "ended"
+        }
     }
 
     companion object {

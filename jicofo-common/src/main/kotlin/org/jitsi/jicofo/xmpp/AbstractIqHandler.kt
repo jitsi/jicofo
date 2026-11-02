@@ -95,8 +95,11 @@ abstract class AbstractIqHandler<T : IQ>(
             )
             return when (result) {
                 is AcceptedWithResponse -> result.response
+
                 is IqProcessingResult.AcceptedWithNoResponse -> null
+
                 is IqProcessingResult.RejectedWithError -> result.response
+
                 is IqProcessingResult.NotProcessed ->
                     IQ.createErrorResponse(iq, StanzaError.Condition.feature_not_implemented)
             }

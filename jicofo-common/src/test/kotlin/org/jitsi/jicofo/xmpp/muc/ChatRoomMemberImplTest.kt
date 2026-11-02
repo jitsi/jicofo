@@ -82,6 +82,7 @@ class ChatRoomMemberImplTest : ShouldSpec() {
             member.sourceInfos shouldBe emptySet()
             member.region shouldBe null
             member.statsId shouldBe null
+            member.voiceAgentConsent shouldBe emptySet()
         }
         context("Mute state") {
             context("Via SourceInfo") {
@@ -163,6 +164,35 @@ class ChatRoomMemberImplTest : ShouldSpec() {
             context("From an untrusted domain") {
                 member.processPresence(presence(jigasiFeature))
                 member.isJigasi shouldBe false
+            }
+        }
+        context("Voice agent consent") {
+            fun consent(json: String) = StandardExtensionElement
+                .builder("jitsi_participant_voiceAgentConsent", "jabber:client").setText(json).build()
+
+            should("parse the agent ids from a JSON array") {
+                member.processPresence(presence(consent("""["agent-support", "agent-sales"]""")))
+                member.voiceAgentConsent shouldBe setOf("agent-support", "agent-sales")
+
+                member.processPresence(presence(consent("[]")))
+                member.voiceAgentConsent shouldBe emptySet()
+            }
+            should("be empty when the element is absent") {
+                member.processPresence(presence(consent("""["agent-support"]""")))
+                member.processPresence(presence())
+                member.voiceAgentConsent shouldBe emptySet()
+            }
+            should("be empty for invalid JSON") {
+                member.processPresence(presence(consent("""["agent-support"]""")))
+                member.processPresence(presence(consent("not json")))
+                member.voiceAgentConsent shouldBe emptySet()
+            }
+            should("be empty when the JSON is not an array of strings") {
+                member.processPresence(presence(consent("""{"agent-support": true}""")))
+                member.voiceAgentConsent shouldBe emptySet()
+
+                member.processPresence(presence(consent("""["agent-support", 1]""")))
+                member.voiceAgentConsent shouldBe emptySet()
             }
         }
         context("Role changes") {

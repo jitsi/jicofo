@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
+import org.jitsi.jicofo.AgentConfig
 import org.jitsi.jicofo.MediaType
 import org.jitsi.jicofo.OctoConfig
 import org.jitsi.jicofo.TaskPools
@@ -68,6 +69,21 @@ private const val TRANSCRIBER_CONNECT_ID = "transcriber"
 
 /** The connect id used for the single-bridge translator connect. */
 private const val TRANSLATOR_CONNECT_ID = "translator"
+
+/** The connect id prefix for voice-agent connects; the agent's endpoint id is appended. */
+private const val AGENT_CONNECT_ID_PREFIX = "agent-"
+
+/** Append [params] to this URI's query string (no-op when null or empty). */
+private fun URI.withParams(params: Map<String, String>?): URI {
+    if (params.isNullOrEmpty()) {
+        return this
+    }
+    val queryString = params.entries.joinToString("&") { (key, value) ->
+        "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+    }
+    val separator = if (query == null) "?" else "&"
+    return URI(toString() + separator + queryString)
+}
 
 /**
  * The per-source translator connect specs for a single [request]: one connect per chunk of at most
@@ -139,6 +155,13 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     /** Custom URL parameters for transcription */
     private var transcriberUrlParams: Map<String, String>? = null
 
+    /**
+     * The languages the transcriber should translate its transcripts into (text translation). Signaled as the
+     * `requests` of the transcriber connect. Kept sorted so the same set always produces the same connect and
+     * [ConnectSpec.sameAs] does not see a spurious change.
+     */
+    private var textTranslationLanguages: List<String> = emptyList()
+
     /** The translator URL template */
     private var translatorUrl: TemplatedUrl? = null
 
@@ -147,6 +170,17 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
     /** Per-room translator connect headers (merged config + room metadata), or null to use config headers. */
     private var translatorCustomHeaders: Map<String, String>? = null
+
+    /** The desired voice-agent connects, each placed on the session hosting the agent's synthetic endpoint. */
+    private var agentRequests: List<AgentConnectRequest> = emptyList()
+
+    /**
+     * The current value of [hasConnects], i.e. [connectsDesired] as of the last [updateConnects]. Volatile so that
+     * [hasConnects] (called on every member join, under the conference's participant lock) does not need [syncRoot],
+     * which is held during bridge selection and stanza sending.
+     */
+    @Volatile
+    private var lastHasConnects = false
 
     /**
      * The colibri2 sessions that are currently active, mapped by the relayId of the [Bridge] that they use.
@@ -184,6 +218,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             session.expire()
         }
         sessions.clear()
+        // The connects were on the expired sessions; a new session must be selected to host them if one is created.
+        connectSession = null
         eventEmitter.fireEvent { bridgeCountChanged(0) }
         clear()
     }
@@ -218,7 +254,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         }
         // Reconcile connects across the remaining sessions (re-place transcriber/translator as needed). Safe because
         // the removed session is already out of [sessions].
-        if (transcriberUrl != null || translatorUrl != null) {
+        if (connectsDesired()) {
             updateConnects()
         }
         return participants.toSet()
@@ -279,8 +315,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     return@forEach
                 }
 
-                if (mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute ||
-                    mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute
+                if ((mediaType == MediaType.AUDIO && participantInfo.audioMuted == doMute) ||
+                    (mediaType == MediaType.VIDEO && participantInfo.videoMuted == doMute)
                 ) {
                     // No change required.
                     return@forEach
@@ -327,7 +363,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // If connects are already desired but no session hosts them yet, this new session becomes the host;
             // pre-populate them so they go out in the create (allocation) request rather than a separate update.
             // Set connectSession first, since computeConnectSpecsFor checks it.
-            if (connectSession == null && (transcriberUrl != null || translatorUrl != null)) {
+            if (connectSession == null && connectsDesired()) {
                 connectSession = session
             }
             session.setInitialConnects(computeConnectSpecsFor(session))
@@ -340,6 +376,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         urlParams: Map<String, String>?
     ) = synchronized(syncRoot) {
         if (transcriberUrl == url) {
+            // The bridge does not support changing the headers or the URL of a running connect, so we do not apply
+            // new headers or URL params for the same URL.
+            if (url != null && (customHeaders != transcriberCustomHeaders || urlParams != transcriberUrlParams)) {
+                logger.info("Ignoring new transcriber HTTP headers or URL params for the same transcriber URL.")
+            }
             return@synchronized
         }
         if (transcriberUrl != null && url != null) {
@@ -352,11 +393,24 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         updateConnects()
     }
 
+    override fun setTextTranslationLanguages(languages: Set<String>) = synchronized(syncRoot) {
+        val sorted = languages.sorted()
+        if (sorted == textTranslationLanguages) {
+            return@synchronized
+        }
+        logger.info("Setting text translation languages: $sorted")
+        textTranslationLanguages = sorted
+        // Only the transcriber connect carries these, and only the requests change, so the bridge updates the
+        // existing connect in place instead of reconnecting its websocket. When there is no transcriber connect yet
+        // this is a no-op and the languages are picked up when it is created.
+        updateConnects()
+    }
+
     /** Recompute and (re)signal the connects (transcriber/translator) to every session. */
     private fun updateConnects() {
         // The transcriber, and the translator in single-bridge mode, are hosted on a single chosen session.
         val needsConnectSession = transcriberUrl != null ||
-            (translatorUrl != null && TranslationConfig.config.mode == TranslationConfig.Mode.SINGLE_BRIDGE)
+            (translatorDesired() && TranslationConfig.config.mode == TranslationConfig.Mode.SINGLE_BRIDGE)
         connectSession = if (needsConnectSession) {
             (connectSession ?: sessions.values.firstOrNull()).also {
                 if (it == null) logger.info("No session available yet for transcriber/translator connects.")
@@ -367,22 +421,72 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         // Apply to every session, so connects that are no longer desired on a session are expired.
         sessions.values.forEach { it.setConnects(computeConnectSpecsFor(it)) }
+
+        val hasConnects = connectsDesired()
+        if (hasConnects != lastHasConnects) {
+            lastHasConnects = hasConnects
+            eventEmitter.fireEvent { connectsChanged(hasConnects) }
+        }
     }
+
+    override fun hasConnects(): Boolean = lastHasConnects
+
+    /**
+     * Whether any connects are desired for the conference. This is the single predicate for "the conference exports
+     * media", used for [hasConnects].
+     *
+     * Note that "desired" is not "signaled": no connect is signaled while there is no session to host it (by design,
+     * so that a desired transcriber lowers min-participants before anyone is allocated), and in per-source mode a
+     * translator connect is only built once its sender has been allocated. Callers must not assume that a desired
+     * connect is up on a bridge.
+     */
+    private fun connectsDesired(): Boolean = transcriberUrl != null || translatorDesired() || agentRequests.isNotEmpty()
+
+    /**
+     * Whether translator connects are desired. A translator URL without any requests has nothing to export.
+     *
+     * The requests come from room metadata, which the XMPP server maintains: a sender's requests are removed when the
+     * members that requested them leave. So non-empty requests mean that someone is consuming the translation.
+     */
+    private fun translatorDesired(): Boolean = translatorUrl != null && translatorRequests.isNotEmpty()
 
     /** The connects desired on [session] (transcriber and/or translator), with urls resolved for its bridge. */
     private fun computeConnectSpecsFor(session: Colibri2Session): List<ConnectSpec> = buildList {
         if (session == connectSession) {
             transcriberUrl?.let { add(buildTranscriberSpec(session, it)) }
         }
-        translatorUrl?.let { url ->
+        // Agent connects are placed on the session hosting the agent's synthetic endpoint.
+        agentRequests.filter { participants[it.endpointId]?.session == session }.forEach { agent ->
+            add(buildAgentSpec(session, agent))
+        }
+        if (translatorDesired()) {
+            val url = checkNotNull(translatorUrl)
             when (TranslationConfig.config.mode) {
                 TranslationConfig.Mode.SINGLE_BRIDGE ->
                     if (session == connectSession) add(buildSingleBridgeTranslatorSpec(session, url))
+
                 TranslationConfig.Mode.PER_SOURCE ->
                     addAll(buildPerSourceTranslatorSpecs(session, url))
             }
         }
     }
+
+    private fun buildAgentSpec(session: Colibri2Session, agent: AgentConnectRequest) = ConnectSpec(
+        id = "$AGENT_CONNECT_ID_PREFIX${agent.endpointId}",
+        url = agent.url.resolve(AgentConfig.REGION_TEMPLATE, session.bridge.region ?: "").withParams(agent.urlParams),
+        type = Connect.Types.AGENT,
+        exports = agent.exports,
+        requests = listOf(agent.syntheticSourceName),
+        httpHeaders = AgentConfig.config.httpHeaders,
+        ping = if (AgentConfig.config.pingEnabled) {
+            ConnectSpec.Ping(
+                AgentConfig.config.pingInterval.toMillis().toInt(),
+                AgentConfig.config.pingTimeout.toMillis().toInt()
+            )
+        } else {
+            null
+        }
+    )
 
     /** The keepalive ping for translator connects, or null when disabled (mirrors the transcriber). */
     private fun translatorPing(): ConnectSpec.Ping? = if (TranslationConfig.config.pingEnabled) {
@@ -435,19 +539,16 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     private fun buildTranscriberSpec(session: Colibri2Session, urlTemplate: TemplatedUrl): ConnectSpec {
-        var url = urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, session.bridge.region ?: "")
-        val params = transcriberUrlParams
-        if (!params.isNullOrEmpty()) {
-            val queryString = params.entries.joinToString("&") { (key, value) ->
-                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
-            }
-            val separator = if (url.query == null) "?" else "&"
-            url = URI(url.toString() + separator + queryString)
-        }
+        val url = urlTemplate.resolve(TranscriptionConfig.REGION_TEMPLATE, session.bridge.region ?: "")
+            .withParams(transcriberUrlParams)
         return ConnectSpec(
             id = TRANSCRIBER_CONNECT_ID,
             url = url,
             type = Connect.Types.TRANSCRIBER,
+            // On a transcriber connect the requests are the text-translation target languages (bare language codes),
+            // not source names. The bridge forwards them to the transcriber, which translates each final transcript
+            // into each of them.
+            requests = textTranslationLanguages,
             httpHeaders = transcriberCustomHeaders ?: TranscriptionConfig.config.httpHeaders,
             ping = if (TranscriptionConfig.config.pingEnabled) {
                 ConnectSpec.Ping(
@@ -468,6 +569,11 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         translatorUrl = url
         translatorRequests = requests
         translatorCustomHeaders = customHeaders
+        updateConnects()
+    }
+
+    override fun setAgents(agents: List<AgentConnectRequest>) = synchronized(syncRoot) {
+        agentRequests = agents
         updateConnects()
     }
 
@@ -521,6 +627,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
     @Throws(ColibriAllocationFailedException::class, BridgeSelectionFailedException::class)
     fun doAllocate(participant: ParticipantAllocationParameters): ColibriAllocation {
+        require(!(participant.synthetic && participant.useSctp)) {
+            "Synthetic endpoints have no transport and can not use SCTP"
+        }
         logger.info("Allocating for ${participant.id}")
         val stanzaCollector: StanzaCollector
         val session: Colibri2Session
@@ -620,22 +729,18 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // that case we shouldn't act on this error (hence removeBridge=false).
             if (!sessions.containsValue(session)) {
                 logger.info("Ignoring response for a session that's no longer active (bridge=${session.bridge.jid})")
-                throw ColibriAllocationFailedException(
-                    "Session no longer active (bridge=${session.bridge.jid})",
-                    removeBridge = false
-                )
+                throw ColibriSessionGoneException("Session no longer active (bridge=${session.bridge.jid})")
             }
             if (!participants.containsValue(participantInfo)) {
                 logger.info("Ignoring response for a participant that's no longer active: ${participantInfo.id}")
-                throw ColibriAllocationFailedException(
-                    "Participant no longer active: ${participantInfo.id}",
-                    removeBridge = false
-                )
+                throw ColibriSessionGoneException("Participant no longer active: ${participantInfo.id}")
             }
             try {
                 return handleResponse(response, session, created, participantInfo)
             } catch (e: Exception) {
-                if (e is ConferenceAlreadyExistsException) {
+                if (e is ColibriStateOutOfSyncException) {
+                    // This has a recovery path (below) which does not involve the bridge being considered failed, so
+                    // it is not an error.
                     logger.warn("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
                 } else {
                     logger.error("Failed to allocate a colibri2 endpoint for ${participantInfo.id}: ${e.message}")
@@ -695,11 +800,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     // If we trigger a re-invite we may cause the same error repeating.
                     throw ColibriAllocationFailedException("Bad request: ${error.toXML()}", false)
                 }
+
                 item_not_found -> {
                     if (reason == Colibri2Error.Reason.CONFERENCE_NOT_FOUND) {
                         // The conference on the bridge has expired. The state between jicofo and the bridge is out of
                         // sync.
-                        throw ColibriAllocationFailedException("Conference not found", true)
+                        throw ColibriConferenceNotFoundException("Conference not found")
                     } else {
                         // This is an item_not_found NOT coming from the bridge. Most likely coming from the MUC
                         // because the occupant left.
@@ -708,6 +814,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Item not found, bridge unavailable?", false)
                     }
                 }
+
                 conflict -> {
                     if (reason == null) {
                         // An error NOT coming from the bridge.
@@ -718,7 +825,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
                         // The conference on the bridge already exists. The state between jicofo and the bridge
                         // is out of sync.
-                        throw ConferenceAlreadyExistsException("Conference already exists error", true)
+                        throw ConferenceAlreadyExistsException("Conference already exists error")
                     } else {
                         // An error coming from the bridge. The state between jicofo and the bridge must be out of sync.
                         // It's not clear how to handle this. Ideally we should expire the conference and retry, but
@@ -728,6 +835,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Colibri error: ${error.toXML()}", true)
                     }
                 }
+
                 service_unavailable -> {
                     if (reason == Colibri2Error.Reason.GRACEFUL_SHUTDOWN) {
                         // The fact that this bridge was selected means that we haven't received its updated presence yet,
@@ -739,6 +847,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw ColibriAllocationFailedException("Bridge failed with service_unavailable.", true)
                     }
                 }
+
                 else -> {
                     session.bridge.isOperational = false
                     throw ColibriAllocationFailedException("Error: ${error.toXML()}", true)
@@ -756,6 +865,18 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         if (created) {
             session.feedbackSources = response.parseSources()
+        }
+
+        if (participantInfo.synthetic) {
+            // Synthetic endpoints have no transport, so there is nothing further to parse. The transport field is
+            // meaningless for them (there is no client to signal it to). SCTP is rejected up front in doAllocate.
+            return ColibriAllocation(
+                session.feedbackSources,
+                IceUdpTransportPacketExtension(),
+                session.bridge.region,
+                session.id,
+                null
+            )
         }
 
         val transport = response.parseTransport(participantInfo.id)
@@ -894,10 +1015,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val participantInfo = participants[participantId]
             ?: run {
                 // This can happen after a colibri session is removed due to a failure to allocate, since we never
-                // notify the JitsiMeetConferenceImpl object of the failure.
-                logger.error("No ParticipantInfo for $participantId")
+                // notify the JitsiMeetConferenceImpl object of the failure. It also happens when the participant is
+                // being re-invited (e.g. moved to another bridge), until its new allocation completes.
+                logger.warn("No ParticipantInfo for $participantId")
                 return
             }
+        transport?.let { stampIceGeneration(participantInfo, it) }
         if (!suppressLocalBridgeUpdate) {
             participantInfo.session.updateParticipant(participantInfo, transport, sources, initialLastN)
         }
@@ -912,6 +1035,54 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Tags the transport that answers an ICE restart with the `ice-generation` of that restart round, which is
+     * how the bridge tells the credentials of the new Agent from an ordinary transport update for the
+     * established one. An untagged answer is applied to the established Agent, which already has connectivity
+     * and ignores it, so the new Agent never learns the endpoint's credentials, never starts its checks, and the
+     * restart is abandoned when it times out.
+     *
+     * We tag it here rather than rely on the endpoint to echo the attribute back: `ice-generation` has no SDP
+     * representation, so an endpoint can only carry it across by handling it explicitly, and one that does not
+     * (an older client, or one that failed to) would silently get no restart at all. Jicofo knows which round is
+     * outstanding, so it can tag on the endpoint's behalf. A tag the endpoint did set is left alone.
+     *
+     * Only the first credentials of a round are tagged. A transport with no credentials carries trickled
+     * candidates and belongs to the established Agent, and so does one that repeats the credentials we last
+     * forwarded - tagging either would hand the new Agent the wrong password.
+     *
+     * Must be called with [syncRoot] held.
+     */
+    private fun stampIceGeneration(participantInfo: ParticipantInfo, transport: IceUdpTransportPacketExtension) {
+        val ufrag = transport.ufrag
+        if (ufrag == null || transport.password == null) {
+            return
+        }
+
+        val previousUfrag = participantInfo.lastSignaledIceUfrag
+        participantInfo.lastSignaledIceUfrag = ufrag
+
+        if (transport.iceGeneration != IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED) {
+            participantInfo.lastAnsweredIceGeneration = transport.iceGeneration
+            return
+        }
+
+        val generation = participantInfo.lastRelayedIceGeneration
+        if (generation == IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED ||
+            generation == participantInfo.lastAnsweredIceGeneration ||
+            ufrag == previousUfrag
+        ) {
+            return
+        }
+
+        participantInfo.lastAnsweredIceGeneration = generation
+        transport.iceGeneration = generation
+        logger.info(
+            "ICE restart: tagging the transport of ${participantInfo.id} with generation=$generation " +
+                "(ufrag=$ufrag), the endpoint did not."
+        )
     }
 
     override fun getBridgeSessionId(participantId: String): Pair<Bridge?, String?> = synchronized(syncRoot) {

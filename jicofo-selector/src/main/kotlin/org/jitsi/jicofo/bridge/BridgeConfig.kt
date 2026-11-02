@@ -56,6 +56,10 @@ class BridgeConfig private constructor() {
 
     val stressThreshold: Double by config { "$BASE.stress-threshold".from(JitsiConfig.newConfig) }
 
+    val includeBridgeNameInSessionId: Boolean by config {
+        "$BASE.include-bridge-name-in-session-id".from(JitsiConfig.newConfig)
+    }
+
     /**
      * How long the "failed" state should be sticky for. Once a [Bridge] goes in a non-operational state (via
      * [.setIsOperational]) it will be considered non-operational for at least this amount of time.
@@ -93,14 +97,12 @@ class BridgeConfig private constructor() {
             .convertFrom<String> { createTopologyStrategy(it) }
     }
 
-    private fun <T> createClassInstance(className: String): T {
-        return try {
-            val clazz = Class.forName("${javaClass.getPackage().name}.$className")
-            clazz.getConstructor().newInstance() as T
-        } catch (e: Exception) {
-            val clazz = Class.forName(className)
-            clazz.getConstructor().newInstance() as T
-        }
+    private fun <T> createClassInstance(className: String): T = try {
+        val clazz = Class.forName("${javaClass.getPackage().name}.$className")
+        clazz.getConstructor().newInstance() as T
+    } catch (e: Exception) {
+        val clazz = Class.forName(className)
+        clazz.getConstructor().newInstance() as T
     }
 
     private fun createSelectionStrategy(className: String): BridgeSelectionStrategy = createClassInstance(className)

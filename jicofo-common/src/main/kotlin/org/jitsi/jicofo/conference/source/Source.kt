@@ -114,8 +114,7 @@ data class Source(
          * For example "endpointA-a0" is the first audio source of "endpointA" or "endpointA-v0" for the first video
          * source.
          */
-        fun nameForIdAndMediaType(endpointId: String, mediaType: MediaType, idx: Int): String {
-            return "$endpointId-${(mediaType.toString()[0])}$idx"
-        }
+        fun nameForIdAndMediaType(endpointId: String, mediaType: MediaType, idx: Int): String =
+            "$endpointId-${(mediaType.toString()[0])}$idx"
     }
 }

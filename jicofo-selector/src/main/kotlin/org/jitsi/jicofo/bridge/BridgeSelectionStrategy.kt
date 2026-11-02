@@ -319,19 +319,16 @@ abstract class BridgeSelectionStrategy {
      * @param conferenceBridges the bridges in the conference
      * @return `true` if the bridge should be considered overloaded.
      */
-    private fun Bridge.isOverloaded(conferenceBridges: Map<Bridge, ConferenceBridgeProperties>): Boolean {
-        return isOverloaded ||
+    private fun Bridge.isOverloaded(conferenceBridges: Map<Bridge, ConferenceBridgeProperties>): Boolean =
+        isOverloaded ||
             hasMaxParticipantsInConference(conferenceBridges) ||
             hasMaxRecentParticipantsInConference(conferenceBridges)
-    }
 
     private fun Bridge.hasMaxParticipantsInConference(
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>
-    ): Boolean {
-        return config.maxBridgeParticipants > 0 &&
-            conferenceBridges.containsKey(this) &&
-            conferenceBridges[this]!!.participantCount >= config.maxBridgeParticipants
-    }
+    ): Boolean = config.maxBridgeParticipants > 0 &&
+        conferenceBridges.containsKey(this) &&
+        conferenceBridges[this]!!.participantCount >= config.maxBridgeParticipants
 
     /**
      * Whether the conference has recently added too many endpoints to this bridge, i.e. it is growing on this bridge
@@ -340,11 +337,9 @@ abstract class BridgeSelectionStrategy {
      */
     private fun Bridge.hasMaxRecentParticipantsInConference(
         conferenceBridges: Map<Bridge, ConferenceBridgeProperties>
-    ): Boolean {
-        return config.maxBridgeParticipantsPerInterval > 0 &&
-            (conferenceBridges[this]?.recentlyAddedParticipantCount ?: 0) >=
-            config.maxBridgeParticipantsPerInterval
-    }
+    ): Boolean = config.maxBridgeParticipantsPerInterval > 0 &&
+        (conferenceBridges[this]?.recentlyAddedParticipantCount ?: 0) >=
+        config.maxBridgeParticipantsPerInterval
 
     /**
      * Log (and count) the bridges on which the conference has hit the [config.maxBridgeParticipantsPerInterval] limit.

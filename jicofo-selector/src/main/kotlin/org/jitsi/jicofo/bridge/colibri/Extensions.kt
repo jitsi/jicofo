@@ -33,9 +33,8 @@ import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.packet.IQ
 
 /** Read the [IceUdpTransportPacketExtension] for an endpoint with ID [endpointId] (or null if missing). */
-fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? {
-    return endpoints.find { it.id == endpointId }?.transport
-}
+fun ConferenceModifiedIQ.parseTransport(endpointId: String): Transport? =
+    endpoints.find { it.id == endpointId }?.transport
 
 /**
  * Reads the feedback sources (at the "conference" level) and parses them into a [ConferenceSourceMap].
@@ -116,6 +115,9 @@ internal fun ParticipantInfo.toEndpoint(
         }
         if (useRtpMidDemux) {
             addCapability(Capability.CAP_RTP_MID_DEMUX_SUPPORT)
+        }
+        if (synthetic) {
+            addCapability(Capability.CAP_SYNTHETIC_ENDPOINT)
         }
         if (diarize) {
             // Call setDiarize on the Colibri2Endpoint.Builder directly: the fluent builder chain returns a parent

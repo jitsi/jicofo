@@ -56,7 +56,9 @@ class MemberRoleTest : ShouldSpec() {
                 withClue("mucRole=$mucRole, mucAffiliation=$mucAffiliation") {
                     MemberRole.fromSmack(mucRole, mucAffiliation) shouldBe when (mucAffiliation) {
                         MUCAffiliation.admin -> MODERATOR
+
                         MUCAffiliation.owner -> OWNER
+
                         else -> when (mucRole) {
                             MUCRole.moderator -> MODERATOR
                             MUCRole.participant -> PARTICIPANT

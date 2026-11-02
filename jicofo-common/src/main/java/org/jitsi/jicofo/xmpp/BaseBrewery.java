@@ -102,6 +102,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
         this.xmppProvider = xmppProvider;
         this.breweryJid = breweryJid;
         logger.addContext("brewery", breweryJid.getLocalpartOrThrow().toString());
+        logger.addContext("xmpp_connection", xmppProvider.getConfig().getName());
         this.extensionElementName = presenceExtensionElementName;
         this.extensionNamespace = presenceExtensionNamespace;
         logger.info("Initialized with JID=" + breweryJid);

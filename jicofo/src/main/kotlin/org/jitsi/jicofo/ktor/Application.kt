@@ -335,24 +335,20 @@ private suspend fun RoutingCall.respondJson(json: JsonNode) {
     respondText(ContentType.Application.Json, HttpStatusCode.OK) { json.toString() }
 }
 
-private fun translateException(block: () -> MoveResult): MoveResult {
-    return try {
-        block()
-    } catch (e: MoveFailedException) {
-        throw when (e) {
-            is BridgeNotFoundException -> NotFound("Bridge not found")
-            is ConferenceNotFoundException -> NotFound("Conference not found")
-            is MissingParameterException, is InvalidParameterException -> BadRequest(e.message)
-        }
+private fun translateException(block: () -> MoveResult): MoveResult = try {
+    block()
+} catch (e: MoveFailedException) {
+    throw when (e) {
+        is BridgeNotFoundException -> NotFound("Bridge not found")
+        is ConferenceNotFoundException -> NotFound("Conference not found")
+        is MissingParameterException, is InvalidParameterException -> BadRequest(e.message)
     }
 }
 
-private fun RoutingRequest.getToken(): String? {
-    return this.headers["Authorization"]?.let {
-        if (it.startsWith("Bearer ")) {
-            it.substring("Bearer ".length)
-        } else {
-            it
-        }
+private fun RoutingRequest.getToken(): String? = this.headers["Authorization"]?.let {
+    if (it.startsWith("Bearer ")) {
+        it.substring("Bearer ".length)
+    } else {
+        it
     }
 }

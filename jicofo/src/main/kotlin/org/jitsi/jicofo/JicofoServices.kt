@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.jicofo.auth.AbstractAuthAuthority
 import org.jitsi.jicofo.auth.AuthConfig
 import org.jitsi.jicofo.auth.ExternalJWTAuthority
@@ -53,7 +52,6 @@ private val jsonMapper = jacksonObjectMapper()
 /**
  * Start/stop jicofo-specific services.
  */
-@SuppressFBWarnings("MS_CANNOT_BE_FINAL")
 class JicofoServices {
     private val logger = createLogger()
 
@@ -113,7 +111,13 @@ class JicofoServices {
         null
     }
     val sipJibriDetector: JibriDetector? = JibriConfig.config.sipBreweryJid?.let { breweryJid ->
-        JibriDetector(xmppServices.clientConnection, breweryJid, true).apply { init() }
+        JibriDetector(
+            xmppServices.getXmppConnectionByName(JibriConfig.config.sipXmppConnectionName),
+            breweryJid,
+            true
+        ).apply {
+            init()
+        }
     } ?: run {
         logger.info("No SIP Jibri detector configured.")
         null
@@ -184,8 +188,8 @@ class JicofoServices {
         xmppServices.shutdown()
     }
 
-    private fun createAuthenticationAuthority(): AbstractAuthAuthority? {
-        return if (AuthConfig.config.type != AuthConfig.Type.NONE) {
+    private fun createAuthenticationAuthority(): AbstractAuthAuthority? =
+        if (AuthConfig.config.type != AuthConfig.Type.NONE) {
             logger.info("Starting authentication service with config=$authConfig.")
             val authAuthority = when (authConfig.type) {
                 AuthConfig.Type.XMPP -> XMPPDomainAuthAuthority(
@@ -197,6 +201,7 @@ class JicofoServices {
                 AuthConfig.Type.JWT -> ExternalJWTAuthority(
                     JidCreate.domainBareFrom(authConfig.loginUrl)
                 )
+
                 AuthConfig.Type.NONE -> null
             }
             authAuthority
@@ -204,7 +209,6 @@ class JicofoServices {
             logger.info("Authentication service disabled.")
             null
         }
-    }
 
     /** Gets statistics for the /stats HTTP interface. */
     private fun getStats(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {

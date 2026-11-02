@@ -18,6 +18,7 @@
 package org.jitsi.jicofo.bridge.colibri
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -28,6 +29,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
@@ -39,11 +41,13 @@ import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
+import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
+import org.jitsi.xmpp.extensions.jingle.IceCandidatePacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
@@ -53,6 +57,17 @@ private fun transportWithGeneration(generation: Int?) = IceUdpTransportPacketExt
     ufrag = "ufrag-$generation"
     password = "password-$generation"
     generation?.let { setIceGeneration(it) }
+}
+
+/** A transport as a participant signals it: ICE credentials, with no `ice-generation` of its own. */
+private fun transportWithCredentials(ufrag: String) = IceUdpTransportPacketExtension().apply {
+    this.ufrag = ufrag
+    password = "password-$ufrag"
+}
+
+/** A transport as a participant signals it when it trickles a candidate: no credentials. */
+private fun transportWithCandidateOnly() = IceUdpTransportPacketExtension().apply {
+    addCandidate(IceCandidatePacketExtension())
 }
 
 /**
@@ -98,14 +113,25 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     }
 
     private val failedSessions = mutableListOf<Bridge>()
+
+    /** The participants reported for re-invite by [ColibriSessionManager.Listener.bridgeRemoved]. */
+    private val reinvitedParticipants = mutableListOf<String>()
     private val removedEndpoints = mutableListOf<String>()
 
     /** The transports relayed to participants after an ICE restart, in the order they were fired. */
     private val iceRestartedTransports = mutableListOf<Pair<String, IceUdpTransportPacketExtension>>()
+
+    /** The values of [ColibriSessionManager.Listener.connectsChanged], in the order they were fired. */
+    private val connectsChangedEvents = mutableListOf<Boolean>()
+
     private val listener = object : ColibriSessionManager.Listener {
         override fun bridgeCountChanged(bridgeCount: Int) {}
+        override fun connectsChanged(hasConnects: Boolean) {
+            connectsChangedEvents.add(hasConnects)
+        }
         override fun bridgeRemoved(bridge: Bridge, participantIds: List<String>) {
             failedSessions.add(bridge)
+            reinvitedParticipants.addAll(participantIds)
         }
         override fun endpointRemoved(endpointId: String) {
             removedEndpoints.add(endpointId)
@@ -251,6 +277,55 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             }
         }
 
+        context("The bridge expired the conference (state out of sync)") {
+            context("With a participant remaining in the session") {
+                allocate("p1", region = "region-jvb1")
+                allocate("p2", region = "region-jvb1")
+                // The bridge drops the conference, e.g. because it expired its endpoints locally.
+                colibriServers[bridge1.jid]!!.stop()
+
+                context("And removing a participant") {
+                    sessionManager.removeParticipant("p1").also { drain() }
+                    should("fail the session so the remaining participants are re-invited") {
+                        failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants shouldBe listOf("p2")
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+                context("And allocating another participant") {
+                    val e = shouldThrow<ColibriConferenceNotFoundException> {
+                        allocate("p3", region = "region-jvb1")
+                    }
+                    drain()
+                    should("remove the session and report its participants, including the new one") {
+                        e.removeBridge shouldBe true
+                        failedSessions shouldBe listOf(bridge1)
+                        reinvitedParticipants.toSet() shouldBe setOf("p1", "p2", "p3")
+                        sessionManager.getBridges().keys.shouldBeEmpty()
+                    }
+                    should("not mark the bridge as non-operational") {
+                        verify(exactly = 0) { bridge1.isOperational = false }
+                    }
+                }
+            }
+            context("While expiring the conference") {
+                allocate("p1", region = "region-jvb1")
+                colibriServers[bridge1.jid]!!.stop()
+                // Removing the last participant expires the conference, which the bridge has already expired.
+                sessionManager.removeParticipant("p1").also { drain() }
+
+                should("send the expire") {
+                    requestsTo(bridge1).count { it.expire } shouldBe 1
+                }
+                should("not treat the conference_not_found response as a failure") {
+                    failedSessions.shouldBeEmpty()
+                }
+            }
+        }
+
         context("A bridge failing") {
             withNewConfig("jicofo.octo.enabled=true") {
                 allocate("p1", region = "region-jvb1")
@@ -335,6 +410,71 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                 }
             }
 
+            context("Tagging the participant's answer") {
+                // The bridge tells the credentials of its new Agent apart from an ordinary transport update by
+                // the `ice-generation`. The participant can not carry that attribute across SDP, so jicofo tags
+                // the answer on its behalf.
+                fun transportsToBridge() = requestsTo(bridge1).flatMap { it.endpoints }
+                    .mapNotNull { it.transport?.iceUdpTransport }
+
+                sessionManager.updateParticipant("p1", transport = transportWithCredentials("initial"))
+                    .also { drain() }
+
+                should("not tag a transport signaled before any restart") {
+                    transportsToBridge().last().iceGeneration shouldBe
+                        IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                }
+
+                context("After a restart was relayed") {
+                    sessionManager.restartIce("p1").also { drain() }
+                    sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer"))
+                        .also { drain() }
+
+                    should("tag the new credentials with the generation of that restart") {
+                        transportsToBridge().last().iceGeneration shouldBe 1
+                    }
+
+                    context("And the participant repeats the same credentials") {
+                        sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer"))
+                            .also { drain() }
+
+                        should("not tag them again") {
+                            transportsToBridge().last().iceGeneration shouldBe
+                                IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                        }
+                    }
+
+                    context("And the participant trickles a candidate") {
+                        sessionManager.updateParticipant("p1", transport = transportWithCandidateOnly())
+                            .also { drain() }
+
+                        should("not tag it") {
+                            transportsToBridge().last().iceGeneration shouldBe
+                                IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+                        }
+                    }
+
+                    context("And a second restart is relayed") {
+                        sessionManager.restartIce("p1").also { drain() }
+                        sessionManager.updateParticipant("p1", transport = transportWithCredentials("answer-2"))
+                            .also { drain() }
+
+                        should("tag the next answer with the next generation") {
+                            transportsToBridge().last().iceGeneration shouldBe 2
+                        }
+                    }
+                }
+
+                context("With a participant that tags the answer itself") {
+                    sessionManager.restartIce("p1").also { drain() }
+                    sessionManager.updateParticipant("p1", transport = transportWithGeneration(1)).also { drain() }
+
+                    should("leave its tag alone") {
+                        transportsToBridge().last().iceGeneration shouldBe 1
+                    }
+                }
+            }
+
             context("For an unknown participant") {
                 sessionManager.restartIce("nonexistent").also { drain() }
 
@@ -370,6 +510,114 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
 
                     iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
+                }
+            }
+        }
+
+        context("Connects") {
+            val url = TemplatedUrl("wss://{{REGION}}.example.com/x", requiredKeys = setOf("REGION"))
+            allocate("p1")
+
+            should("have no connects initially") {
+                sessionManager.hasConnects() shouldBe false
+                connectsChangedEvents.shouldBeEmpty()
+            }
+            context("With a transcriber") {
+                sessionManager.setTranscriberUrl(url)
+                drain()
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setTranscriberUrl(null)
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+                context("And all sessions expiring, then a participant joining") {
+                    sessionManager.expire()
+                    drain()
+                    colibriRequests.clear()
+                    allocate("p2")
+                    should("still report connects") {
+                        sessionManager.hasConnects() shouldBe true
+                    }
+                    should("re-create the transcriber connect on the new session") {
+                        requestsTo(bridge1).mapNotNull { it.connects }.flatMap { it.getConnects() }
+                            .map { it.id } shouldBe listOf("transcriber")
+                    }
+                }
+                context("And a language change") {
+                    sessionManager.setTextTranslationLanguages(setOf("fr"))
+                    drain()
+                    should("not fire connectsChanged again") {
+                        connectsChangedEvents shouldBe listOf(true)
+                    }
+                }
+            }
+            context("With a translator") {
+                sessionManager.setTranslator(url, listOf(TranslationRequest("p1", "p1-a0", listOf("p1-a0.en"))))
+                drain()
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setTranslator(null)
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+            }
+            context("With a translator URL but no requests") {
+                sessionManager.setTranslator(url, emptyList())
+                drain()
+                should("not report connects") {
+                    sessionManager.hasConnects() shouldBe false
+                    connectsChangedEvents.shouldBeEmpty()
+                }
+            }
+            context("With a voice agent") {
+                allocate("agent1")
+                val agent = AgentConnectRequest("agent1", "agent1-a0", emptyList(), url)
+                sessionManager.setAgents(listOf(agent))
+                drain()
+                fun connectIds() = requestsTo(bridge1).mapNotNull { it.connects }.flatMap { it.getConnects() }
+                    .map { it.id }
+
+                should("report connects and fire connectsChanged(true)") {
+                    sessionManager.hasConnects() shouldBe true
+                    connectsChangedEvents shouldBe listOf(true)
+                }
+                context("And then removing it") {
+                    sessionManager.setAgents(emptyList())
+                    drain()
+                    should("report no connects and fire connectsChanged(false)") {
+                        sessionManager.hasConnects() shouldBe false
+                        connectsChangedEvents shouldBe listOf(true, false)
+                    }
+                }
+                context("And all sessions expiring, then a participant joining") {
+                    sessionManager.expire()
+                    drain()
+                    colibriRequests.clear()
+                    allocate("p2")
+                    should("still report connects") {
+                        sessionManager.hasConnects() shouldBe true
+                    }
+                    should("only re-create the agent connect once its endpoint is allocated again") {
+                        // The endpoint expired with the old session, so there is nothing to attach the connect to.
+                        connectIds().shouldBeEmpty()
+                        allocate("agent1")
+                        sessionManager.setAgents(listOf(agent))
+                        drain()
+                        connectIds() shouldBe listOf("agent-agent1")
+                    }
                 }
             }
         }

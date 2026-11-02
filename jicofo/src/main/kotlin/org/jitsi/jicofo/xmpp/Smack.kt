@@ -18,12 +18,14 @@
 package org.jitsi.jicofo.xmpp
 
 import org.jitsi.xmpp.extensions.DefaultPacketExtensionProvider
+import org.jitsi.xmpp.extensions.clientrequirements.ClientRequirementsIq
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsIqProvider
 import org.jitsi.xmpp.extensions.colibri.ForcefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri.GracefulShutdownIqProvider
 import org.jitsi.xmpp.extensions.colibri2.IqProviderUtils
 import org.jitsi.xmpp.extensions.health.HealthCheckIQProvider
 import org.jitsi.xmpp.extensions.health.HealthStatusPacketExt
+import org.jitsi.xmpp.extensions.jibri.BadRequestPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriBusyStatusPacketExt
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIqProvider
@@ -32,6 +34,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JingleIQProvider
 import org.jitsi.xmpp.extensions.jitsimeet.AudioMutedExtension
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.ClientVersionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIqProvider
 import org.jitsi.xmpp.extensions.jitsimeet.FeatureExtension
 import org.jitsi.xmpp.extensions.jitsimeet.FeaturesExtension
@@ -102,6 +105,7 @@ fun registerXmppExtensions() {
     ProviderManager.addIQProvider(JibriIq.ELEMENT, JibriIq.NAMESPACE, JibriIqProvider())
     JibriStatusPacketExt.registerExtensionProvider()
     JibriBusyStatusPacketExt.registerExtensionProvider()
+    BadRequestPacketExt.registerExtensionProvider()
     HealthStatusPacketExt.registerExtensionProvider()
     // User info
     ProviderManager.addExtensionProvider(
@@ -146,6 +150,8 @@ fun registerXmppExtensions() {
         FeatureExtension.NAMESPACE,
         DefaultPacketExtensionProvider(FeatureExtension::class.java)
     )
+    ClientRequirementsIq.registerProviders()
+    ClientVersionPacketExtension.registerProvider()
     RayoIqProvider().registerRayoIQs()
     org.jitsi.xmpp.Smack.registerMuteIqProviders()
     StartMutedProvider.registerStartMutedProvider()

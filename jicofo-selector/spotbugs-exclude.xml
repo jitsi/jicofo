@@ -32,6 +32,10 @@
       <!-- False positives with kotlin 1.6. -->
       <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
       <Bug pattern="SA_LOCAL_SELF_ASSIGNMENT"/>
+      <!-- Exposure of internal representation is not a concern. -->
+      <Bug pattern="MS_EXPOSE_REP"/>
+      <!-- A Kotlin class compiles to several JVM classes, so a class-level suppression can look unused. -->
+      <Bug pattern="US_USELESS_SUPPRESSION_ON_CLASS"/>
     </Or>
   </And>
 </Match>

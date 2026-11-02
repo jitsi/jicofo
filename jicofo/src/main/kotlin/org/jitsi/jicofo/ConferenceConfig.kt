@@ -18,14 +18,14 @@
 package org.jitsi.jicofo
 
 import com.typesafe.config.ConfigObject
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.config.JitsiConfig.Companion.legacyConfig
 import org.jitsi.config.JitsiConfig.Companion.newConfig
 import org.jitsi.metaconfig.config
+import org.jxmpp.jid.DomainBareJid
+import org.jxmpp.jid.impl.JidCreate
 import java.time.Duration
 import java.util.TreeMap
 
-@SuppressFBWarnings(value = ["BX_UNBOXING_IMMEDIATELY_REBOXED"], justification = "False positive.")
 class ConferenceConfig private constructor() {
     val conferenceStartTimeout: Duration by config {
         "org.jitsi.focus.IDLE_TIMEOUT".from(legacyConfig)
@@ -139,6 +139,20 @@ class ConferenceConfig private constructor() {
         "jicofo.conference.strip-simulcast".from(newConfig)
     }
     fun stripSimulcast() = stripSimulcast
+
+    /**
+     * Whether to reject conference requests for rooms outside of the conference MUC domains. See
+     * [org.jitsi.jicofo.xmpp.ConferenceRoomFilter].
+     */
+    val roomDomainFilterEnabled: Boolean by config {
+        "jicofo.conference.room-domain-filter.enabled".from(newConfig)
+    }
+
+    /** Additional room domains for which conference requests are accepted. */
+    val roomDomainFilterAdditionalDomains: List<DomainBareJid> by config {
+        "jicofo.conference.room-domain-filter.additional-domains".from(newConfig)
+            .convertFrom<List<String>> { l -> l.map { JidCreate.domainBareFrom(it) } }
+    }
 
     companion object {
         @JvmField

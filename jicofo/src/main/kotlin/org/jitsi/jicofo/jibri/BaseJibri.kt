@@ -30,12 +30,14 @@ import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.muc.hasModeratorRights
 import org.jitsi.jicofo.xmpp.tryToSendStanza
 import org.jitsi.tracing.TracingGlobal
+import org.jitsi.utils.RateLimit
 import org.jitsi.utils.logging2.Logger
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.xmpp.extensions.jibri.JibriIq.Action
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 import java.lang.Exception
+import java.time.Clock
 import kotlin.use
 import org.jitsi.jicofo.util.ErrorResponse.create as error
 
@@ -48,11 +50,25 @@ import org.jitsi.jicofo.util.ErrorResponse.create as error
 abstract class BaseJibri internal constructor(
     protected val conference: JitsiMeetConferenceImpl,
     parentLogger: Logger,
-    val jibriDetector: JibriDetector
+    val jibriDetector: JibriDetector,
+    clock: Clock = Clock.systemUTC()
 ) : StateListener {
 
     protected val logger: Logger = parentLogger.createChildLogger(BaseJibri::class.simpleName)
     val tracer: Tracer = TracingGlobal.sdk.getTracer("org.jitsi.jicofo.jibri")
+
+    /**
+     * Limits how often this conference can ask for a new Jibri session. Each Jibri that we start is taken out of a
+     * shared pool, so a client which repeats a request that always fails can empty the pool for everyone else.
+     *
+     * [JibriRecorder] and [JibriSipGateway] each have their own budget, because they use separate pools.
+     */
+    private val startRequestsRateLimit = RateLimit(
+        defaultMinInterval = JibriConfig.config.startRequestMinInterval,
+        maxRequests = JibriConfig.config.startRequestMaxRequests,
+        interval = JibriConfig.config.startRequestInterval,
+        clock = clock
+    )
 
     fun handleJibriRequest(request: JibriRequest): IqProcessingResult = if (accept(request.iq)) {
         logger.info("Accepted jibri request: ${request.iq.toXML()}")
@@ -168,7 +184,20 @@ abstract class BaseJibri internal constructor(
 
         return when (iq.action) {
             Action.START -> when (session) {
-                null -> handleStartRequest(iq)
+                null -> when (startRequestsRateLimit.accept()) {
+                    true -> handleStartRequest(iq)
+
+                    false -> {
+                        logger.warn("Rejecting a Jibri start request, the conference is rate limited.")
+                        JibriStats.startRequestRateLimited()
+                        error(
+                            iq,
+                            StanzaError.Condition.resource_constraint,
+                            "Too many Jibri start requests in this conference, try again later"
+                        )
+                    }
+                }
+
                 else -> {
                     logger.info("Will not start a Jibri session, a session is already active")
                     error(
@@ -178,16 +207,19 @@ abstract class BaseJibri internal constructor(
                     )
                 }
             }
+
             Action.STOP -> when (session) {
                 null -> {
                     logger.warn("Rejecting STOP request for an unknown session.: ${iq.toXML()}")
                     error(iq, StanzaError.Condition.item_not_found, "Unknown session")
                 }
+
                 else -> {
                     session.stop(iq.from)
                     IQ.createResultIQ(iq)
                 }
             }
+
             Action.UNDEFINED, null -> {
                 return error(iq, StanzaError.Condition.bad_request, "undefined action ${iq.toXML()}")
             }
@@ -199,7 +231,10 @@ abstract class BaseJibri internal constructor(
         return when {
             // XXX do we need to keep the difference between `forbidden` and `not_allowed`?
             role == null -> StanzaError.getBuilder(StanzaError.Condition.forbidden).build()
-            role.hasModeratorRights() -> null // no error
+
+            role.hasModeratorRights() -> null
+
+            // no error
             else -> StanzaError.getBuilder(StanzaError.Condition.not_allowed).build()
         }
     }

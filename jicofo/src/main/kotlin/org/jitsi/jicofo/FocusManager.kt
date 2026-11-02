@@ -156,7 +156,8 @@ class FocusManager(
         synchronized(conferencesSyncRoot) {
             conferences.remove(roomName)
             conferencesCache.remove(conference)
-            conferencesByMeetingId.remove(conference.meetingId)
+            // The meeting ID is not set when the conference fails to join the room.
+            conference.meetingId?.let { conferencesByMeetingId.remove(it) }
             if (conference.includeInStatistics()) {
                 ConferenceMetrics.conferenceCount.dec()
             }
@@ -383,5 +384,17 @@ class FocusManager(
 
     override fun registrationChanged(registered: Boolean) {
         conferencesCache.forEach { it.registrationChanged(registered) }
+    }
+
+    /**
+     * Notify the conferences that the XMPP stream to the visitor node [node] was re-established without being
+     * resumed. The MUCs that jicofo joined on that node are not joined anymore.
+     */
+    fun visitorConnectionReset(node: String) = conferencesCache.forEach {
+        try {
+            it.visitorConnectionReset(node)
+        } catch (e: Exception) {
+            logger.error("Failed to reset visitor node $node for conference ${it.roomName}", e)
+        }
     }
 }

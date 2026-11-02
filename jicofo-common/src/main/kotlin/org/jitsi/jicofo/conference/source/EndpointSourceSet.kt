@@ -237,8 +237,11 @@ private fun ContentPacketExtension.getOrCreateRtpDescription() =
 
 operator fun EndpointSourceSet?.plus(other: EndpointSourceSet?): EndpointSourceSet = when {
     this == null && other == null -> EndpointSourceSet.EMPTY
+
     this == null -> other!!
+
     other == null -> this
+
     else -> EndpointSourceSet(
         sources + other.sources,
         ssrcGroups + other.ssrcGroups

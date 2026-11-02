@@ -44,6 +44,7 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.JinglePacketFactory
 import org.jitsi.xmpp.extensions.jingle.Reason
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.ClientVersionPacketExtension
 import org.jitsi.xmpp.extensions.jitsimeet.JsonMessageExtension
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
@@ -130,9 +131,30 @@ class JingleSession(
         return IqProcessingResult.AcceptedWithNoResponse()
     }
 
+    /** The version of the client, if it included one in its session-accept. */
+    var clientVersion: String? = null
+        private set
+
     private fun doProcessIq(iq: JingleIQ) {
+        if (state == State.ENDED) {
+            // The session ended while the IQ was queued.
+            logger.info("Ignoring ${iq.action}, the session has ended.")
+            connection.tryToSendStanza(
+                IQ.createErrorResponse(
+                    iq,
+                    StanzaError.getBuilder(StanzaError.Condition.gone).setConditionText("session ended").build()
+                )
+            )
+            return
+        }
+
         val error = when (iq.action) {
             JingleAction.SESSION_ACCEPT -> {
+                // The client includes its version in the session-accept that it sends to us.
+                iq.getExtension(ClientVersionPacketExtension::class.java)?.version?.let {
+                    clientVersion = it
+                    logger.info("Client version: $it")
+                }
                 // The session needs to be marked as active early to allow code executing as part of onSessionAccept
                 // to proceed (e.g. to signal source updates).
                 state = State.ACTIVE
@@ -142,18 +164,22 @@ class JingleSession(
             }
 
             JingleAction.SESSION_INFO -> requestHandler.onSessionInfo(this, iq)
+
             JingleAction.SESSION_TERMINATE -> requestHandler.onSessionTerminate(this, iq).also {
                 state = State.ENDED
             }
 
             JingleAction.TRANSPORT_ACCEPT -> requestHandler.onTransportAccept(this, iq.contentList)
+
             JingleAction.TRANSPORT_INFO -> requestHandler.onTransportInfo(this, iq.contentList)
+
             JingleAction.TRANSPORT_REJECT -> {
                 requestHandler.onTransportReject(this, iq)
                 null
             }
 
             JingleAction.ADDSOURCE, JingleAction.SOURCEADD -> requestHandler.onAddSource(this, iq.contentList)
+
             JingleAction.REMOVESOURCE, JingleAction.SOURCEREMOVE -> requestHandler.onRemoveSource(
                 this,
                 iq.contentList
@@ -254,7 +280,7 @@ class JingleSession(
             sourcesToRemove.toJingle().forEach { removeSourceIq.addContent(it) }
         }
         logger.debug { "Sending source-remove, sources=$sourcesToRemove" }
-        if (state != State.ACTIVE) logger.error("Sending source-remove for session in state $state")
+        checkStateForSourceUpdate("source-remove")
         connection.tryToSendStanza(removeSourceIq)
         JingleStats.stanzaSent(JingleAction.SOURCEREMOVE)
     }
@@ -296,8 +322,20 @@ class JingleSession(
     fun addSource(sources: ConferenceSourceMap) {
         logger.debug { "Sending source-add, sources=$sources" }
         JingleStats.stanzaSent(JingleAction.SOURCEADD)
-        if (state != State.ACTIVE) logger.error("Sending source-add for session in state $state")
+        checkStateForSourceUpdate("source-add")
         connection.tryToSendStanza(createAddSourceIq(sources))
+    }
+
+    /**
+     * Log if a source update is sent in a state other than ACTIVE. An ENDED session is not an error: the session can
+     * end while an update for it is already queued.
+     */
+    private fun checkStateForSourceUpdate(action: String) {
+        when (state) {
+            State.ACTIVE -> {}
+            State.ENDED -> logger.warn("Sending $action for session in state $state")
+            else -> logger.error("Sending $action for session in state $state")
+        }
     }
 
     @Throws(SmackException.NotConnectedException::class)
@@ -353,6 +391,7 @@ class JingleSession(
         put("sid", sid)
         put("remoteJid", remoteJid.toString())
         put("state", state.toString())
+        put("client_version", clientVersion)
     }
 
     enum class State { PENDING, ACTIVE, ENDED }

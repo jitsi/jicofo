@@ -8,6 +8,7 @@ import io.mockk.mockk
 import org.jitsi.jicofo.FocusManager
 import org.jitsi.jicofo.auth.XMPPDomainAuthAuthority
 import org.jitsi.jicofo.xmpp.ConferenceIqHandler
+import org.jitsi.jicofo.xmpp.ConferenceRoomFilter
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jitsi.xmpp.extensions.jitsimeet.SessionInvalidPacketExtension
 import org.jivesoftware.smack.packet.IQ
@@ -32,7 +33,13 @@ class XMPPDomainAuthAuthorityTest : ShouldSpec() {
         focusAuthJid = "",
         authAuthority = authAuthority,
         jigasiEnabled = false,
-        visitorsManager = mockk(relaxed = true)
+        visitorsManager = mockk(relaxed = true),
+        // Accept rooms in any domain, the room filter is not what this test is about.
+        roomFilter = ConferenceRoomFilter(
+            JidCreate.domainBareFrom("example.com"),
+            enabled = false,
+            additionalDomains = emptyList()
+        )
     )
 
     override fun isolationMode(): IsolationMode = IsolationMode.SingleInstance

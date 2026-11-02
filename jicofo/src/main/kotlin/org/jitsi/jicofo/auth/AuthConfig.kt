@@ -65,10 +65,8 @@ class AuthConfig private constructor() {
         "jicofo.authentication.type".from(newConfig)
     }
 
-    override fun toString(): String {
-        return "AuthConfig[enabled=$enabled, type=$type, loginUrl=$loginUrl, " +
-            "authenticationLifetime=$authenticationLifetime, enableAutoLogin=$enableAutoLogin]"
-    }
+    override fun toString(): String = "AuthConfig[enabled=$enabled, type=$type, loginUrl=$loginUrl, " +
+        "authenticationLifetime=$authenticationLifetime, enableAutoLogin=$enableAutoLogin]"
 
     companion object {
         @JvmField

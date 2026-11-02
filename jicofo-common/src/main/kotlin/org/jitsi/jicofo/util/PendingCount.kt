@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.util
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.jitsi.utils.ms
 import org.jitsi.utils.stats.RateTracker
 import java.time.Clock
@@ -30,6 +31,10 @@ class PendingCount(
     timeout: Duration,
     clock: Clock = Clock.systemUTC()
 ) {
+    @field:SuppressFBWarnings(
+        value = ["AT_NONATOMIC_64BIT_PRIMITIVE"],
+        justification = "Only accessed from the @Synchronized methods, including via tracker.bucketExpired()."
+    )
     private var occurredEvents = 0L
 
     private var tracker = object : RateTracker(timeout, 100.ms, clock) {

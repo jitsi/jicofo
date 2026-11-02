@@ -100,9 +100,7 @@ class RegionBasedBridgeSelectionStrategy : BridgeSelectionStrategy() {
             ?: leastLoaded(bridges, conferenceBridges, participantProperties)
     }
 
-    override fun toString(): String {
-        return "${javaClass.simpleName} with region groups: ${BridgeConfig.config.regionGroups}"
-    }
+    override fun toString(): String = "${javaClass.simpleName} with region groups: ${BridgeConfig.config.regionGroups}"
 
     override fun select(
         bridges: List<Bridge>,

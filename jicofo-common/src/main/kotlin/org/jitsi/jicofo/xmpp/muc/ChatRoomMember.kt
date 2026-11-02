@@ -62,6 +62,19 @@ interface ChatRoomMember {
     /** Whether this member requested per-endpoint diarization (signaled via the "diarize" participant property). */
     val diarize: Boolean
 
+    /**
+     * The language this member wants transcriptions translated into, or null when it wants none or signaled one that
+     * does not look like a language code.
+     *
+     * Signaled via the "translation_language" participant property, the same presence element jigasi has always used.
+     * Whether transcription runs at all is a separate question, decided by the room metadata.
+     */
+    val translationLanguage: String?
+
+    /** The ids of the voice agents this member consented to share audio with ("voiceAgentConsent" property). */
+    val voiceAgentConsent: Set<String>
+        get() = emptySet()
+
     /** Gets the region (e.g. "us-east") of this [ChatRoomMember]. */
     val region: String?
 
@@ -76,6 +89,12 @@ interface ChatRoomMember {
      * the first time [features] is accessed it may block waiting for a disco#info response!
      */
     val features: Set<Features>
+
+    /**
+     * Whether [features] were actually discovered. When this is false [features] is just an assumed default set, and
+     * the absence of a feature from it does not mean that the member does not support the feature.
+     */
+    val featuresDiscovered: Boolean
 
     val debugState: ObjectNode
 }

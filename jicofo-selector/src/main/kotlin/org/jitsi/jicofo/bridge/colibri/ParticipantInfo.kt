@@ -37,6 +37,7 @@ class ParticipantInfo(
     val useRtpMidDemux = parameters.useRtpMidDemux
     val visitor = parameters.visitor
     val diarize = parameters.diarize
+    val synthetic = parameters.synthetic
 
     var audioMuted = parameters.forceMuteAudio
     var videoMuted = parameters.forceMuteVideo
@@ -48,6 +49,19 @@ class ParticipantInfo(
      * [ColibriV2SessionManager.endpointIceRestarted]. Guarded by the session manager's lock.
      */
     var lastRelayedIceGeneration = IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+
+    /**
+     * The `ice-generation` of the most recent ICE restart whose answer we have already forwarded to the bridge,
+     * so that only the first set of new credentials of a round is tagged. See
+     * [ColibriV2SessionManager.stampIceGeneration]. Guarded by the session manager's lock.
+     */
+    var lastAnsweredIceGeneration = IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED
+
+    /**
+     * The ICE ufrag of the last transport we forwarded to the bridge for this participant. The answer to an ICE
+     * restart is recognized by carrying credentials which are not these. Guarded by the session manager's lock.
+     */
+    var lastSignaledIceUfrag: String? = null
 
     fun toJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
         put("id", id)

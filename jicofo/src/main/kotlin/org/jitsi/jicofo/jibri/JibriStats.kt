@@ -42,6 +42,18 @@ class JibriStats {
         )
 
         @JvmField
+        val noInstanceFailures = JicofoMetricsContainer.instance.registerCounter(
+            "jibri_no_instance_failures",
+            "Number of failures to start a jibri session because no instance was available or all instances were busy"
+        )
+
+        @JvmField
+        val startRequestsRateLimited = JicofoMetricsContainer.instance.registerCounter(
+            "jibri_start_requests_rate_limited",
+            "Number of jibri start requests rejected because the conference exceeded its rate limit"
+        )
+
+        @JvmField
         val liveStreamingActive = JicofoMetricsContainer.instance.registerLongGauge(
             "jibri_live_streaming_active",
             "Current number of active jibris in live-streaming mode"
@@ -65,5 +77,11 @@ class JibriStats {
             JibriSession.Type.LIVE_STREAMING -> liveStreamingFailures.inc()
             JibriSession.Type.RECORDING -> recordingFailures.inc()
         }
+
+        @JvmStatic
+        fun noInstanceFailed() = noInstanceFailures.inc()
+
+        @JvmStatic
+        fun startRequestRateLimited() = startRequestsRateLimited.inc()
     }
 }
