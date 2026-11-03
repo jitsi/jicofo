@@ -19,6 +19,7 @@ package org.jitsi.jicofo.xmpp
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer
 import org.jitsi.jicofo.FocusManager
@@ -26,6 +27,7 @@ import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.auth.AuthenticationAuthority
 import org.jitsi.jicofo.auth.ErrorFactory
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
+import org.jitsi.jicofo.util.TracingUtil
 import org.jitsi.jwt.JitsiToken
 import org.jitsi.tracing.TracingGlobal.Companion.sdk
 import org.jitsi.utils.logging2.createLogger
@@ -78,7 +80,16 @@ class ConferenceIqHandler(
 
     /** Handle a [ConferenceIq] synchronously and return a response. */
     fun handleConferenceIq(query: ConferenceIq): IQ {
+        // Join the sender's trace (e.g. jigasi dial-in) when the IQ carries a trace context, either
+        // as a traceparent extension or as a "traceparent" property in W3C format (the property is
+        // what ConferenceIqProvider preserves when parsing).
+        var remoteContext = TracingUtil.remoteContextFromIq(query)
+        if (Span.fromContextOrNull(remoteContext) == null) {
+            remoteContext = TracingUtil.remoteContextFromW3CHeader(query.propertiesMap["traceparent"])
+        }
+
         val span = tracer.spanBuilder("xmpp.conference")
+            .setParent(remoteContext)
             .setAttribute("client.id", Objects.toString(query.from))
             .setAttribute("room.id", Objects.toString(query.room))
             .startSpan()

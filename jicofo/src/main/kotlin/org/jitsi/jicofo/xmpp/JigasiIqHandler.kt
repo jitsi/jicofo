@@ -19,15 +19,23 @@ package org.jitsi.jicofo.xmpp
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.fasterxml.jackson.databind.node.ObjectNode
+import io.opentelemetry.api.trace.Span
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.api.trace.Tracer
+import io.opentelemetry.context.Context
 import org.jitsi.jicofo.ConferenceStore
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.conference.JitsiMeetConference
 import org.jitsi.jicofo.jigasi.JigasiDetector
 import org.jitsi.jicofo.metrics.JicofoMetricsContainer
+import org.jitsi.jicofo.util.TracingUtil
 import org.jitsi.jicofo.xmpp.IqProcessingResult.AcceptedWithNoResponse
 import org.jitsi.jicofo.xmpp.IqProcessingResult.RejectedWithError
+import org.jitsi.tracing.TracingGlobal
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.extensions.rayo.HeaderExtension
+import org.jitsi.xmpp.extensions.rayo.RayoIq
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
@@ -35,6 +43,7 @@ import org.jivesoftware.smack.packet.StanzaError
 import org.jivesoftware.smack.packet.id.StandardStanzaIdSource
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
+import java.util.Objects
 import java.util.concurrent.atomic.AtomicInteger
 
 class JigasiIqHandler(
@@ -48,6 +57,8 @@ class JigasiIqHandler(
     setOf(IQ.Type.set)
 ) {
     private val logger = createLogger()
+
+    private val tracer: Tracer = TracingGlobal.sdk.getTracer("org.jitsi.jicofo.jigasi")
 
     private val stanzaIdSource = stanzaIdSourceFactory.constructStanzaIdSource()
 
@@ -92,13 +103,37 @@ class JigasiIqHandler(
         Stats.acceptedRequests.inc()
 
         TaskPools.ioPool.execute {
+            // Join the sender's trace when the dial IQ carries a trace context, either as a
+            // traceparent extension or as an X-Traceparent rayo header in W3C format (the header is
+            // what RayoIqProvider preserves when parsing).
+            var remoteContext = TracingUtil.remoteContextFromIq(request.iq)
+            if (Span.fromContextOrNull(remoteContext) == null) {
+                remoteContext = TracingUtil.remoteContextFromW3CHeader(
+                    request.iq.getHeaderIgnoreCase(TRACEPARENT_HEADER)
+                )
+            }
+
+            val span = tracer.spanBuilder("jigasi.dial")
+                .setParent(remoteContext)
+                .setAttribute("client.id", Objects.toString(request.iq.from))
+                .setAttribute("room.id", Objects.toString(conference.roomName))
+                .setAttribute(
+                    "dial.type",
+                    if (request.iq.destination == "jitsi_meet_transcribe") "transcription" else "sip"
+                )
+                .startSpan()
             try {
-                inviteJigasi(request, conference)
+                span.makeCurrent().use {
+                    inviteJigasi(request, conference)
+                }
             } catch (e: Exception) {
+                span.setStatus(StatusCode.ERROR, e.message ?: "")
                 logger.warn("Failed to invite jigasi", e)
                 request.connection.tryToSendStanza(
                     IQ.createErrorResponse(request.iq, StanzaError.Condition.internal_server_error)
                 )
+            } finally {
+                span.end()
             }
         }
         return AcceptedWithNoResponse()
@@ -164,6 +199,12 @@ class JigasiIqHandler(
             from = null
             to = jigasiJid
             stanzaId = stanzaIdSource.newStanzaId
+            // Stamp our trace context on the forwarded IQ as an X-Traceparent rayo header, which
+            // jigasi parents its dial-out span from. When tracing is disabled the current span is a
+            // noop span with an invalid (all-zero) context, which must not be sent.
+            Span.fromContextOrNull(Context.current())?.spanContext?.takeIf { it.isValid }?.let {
+                replaceHeaderIgnoreCase(TRACEPARENT_HEADER, TracingUtil.toW3CHeader(it))
+            }
         }
         val responseFromJigasi = try {
             jigasiDetector.xmppConnection.sendIqAndGetResponse(requestToJigasi)
@@ -217,6 +258,9 @@ class JigasiIqHandler(
 
     companion object {
         private val stanzaIdSourceFactory = StandardStanzaIdSource.Factory()
+
+        /** The rayo header which carries a W3C trace context. */
+        private const val TRACEPARENT_HEADER = "X-Traceparent"
     }
 
     class Stats {
@@ -270,6 +314,21 @@ class JigasiIqHandler(
             }
         }
     }
+}
+
+/** Get the value of the first rayo header with the given name, ignoring case (as jigasi does). */
+private fun RayoIq.getHeaderIgnoreCase(name: String): String? =
+    getExtensions(HeaderExtension::class.java).firstOrNull { name.equals(it.name, ignoreCase = true) }?.value
+
+/**
+ * Set a rayo header, replacing any existing headers with the same name (ignoring case). Adds a new extension instead
+ * of updating the existing one, because a copied IQ shares its extension instances with the original.
+ */
+private fun RayoIq.replaceHeaderIgnoreCase(name: String, value: String) {
+    getExtensions(HeaderExtension::class.java)
+        .filter { name.equals(it.name, ignoreCase = true) }
+        .forEach { removeExtension(it) }
+    setHeader(name, value)
 }
 
 private fun JitsiMeetConference.hasTranscriber(): Boolean = this.chatRoom?.members?.any { it.isTranscriber } ?: false

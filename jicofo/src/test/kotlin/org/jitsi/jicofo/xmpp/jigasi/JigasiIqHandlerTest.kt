@@ -36,6 +36,7 @@ import org.jitsi.jicofo.xmpp.IqRequest
 import org.jitsi.jicofo.xmpp.JigasiIqHandler
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.xmpp.extensions.rayo.DialIq
+import org.jitsi.xmpp.extensions.rayo.HeaderExtension
 import org.jivesoftware.smack.packet.EmptyResultIQ
 import org.jivesoftware.smack.packet.ErrorIQ
 import org.jivesoftware.smack.packet.IQ
@@ -143,6 +144,40 @@ class JigasiIqHandlerTest : ShouldSpec() {
                         it.shouldBeSuccessful()
                     }
                 }
+                context("When tracing is disabled") {
+                    jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Success
+                    every { jigasiDetector.selectSipJigasi(any(), any()) } returns jigasi1
+
+                    should("Not add an X-Traceparent header to the forwarded request") {
+                        jigasiIqHandler.handleRequest(dialRequest).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                        dialResponses.last().let {
+                            it.shouldBeInstanceOf<IQ>()
+                            it.shouldBeSuccessful()
+                        }
+                        jigasiXmppConnection.requests.last().traceparentHeaders() shouldBe emptyList()
+                    }
+                    should("Forward the sender's trace context in a single header") {
+                        val traceparent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+                        val request = IqRequest(
+                            DialIq().apply {
+                                from = participant
+                                to = jicofo
+                                type = IQ.Type.set
+                                // Use a different case to check that the lookup ignores case.
+                                setHeader("x-traceparent", traceparent)
+                            },
+                            dialRequest.connection
+                        )
+
+                        jigasiIqHandler.handleRequest(request).shouldBeInstanceOf<AcceptedWithNoResponse>()
+                        dialResponses.last().let {
+                            it.shouldBeInstanceOf<IQ>()
+                            it.shouldBeSuccessful()
+                        }
+                        // With the noop SDK the dial span propagates the remote parent's context unchanged.
+                        jigasiXmppConnection.requests.last().traceparentHeaders() shouldBe listOf(traceparent)
+                    }
+                }
                 context("The first jigasi instance fails, but the second succeeds") {
                     jigasiXmppConnection.responses[jigasi1] = JigasiXmppConnection.Response.Failure
                     jigasiXmppConnection.responses[jigasi2] = JigasiXmppConnection.Response.Success
@@ -200,11 +235,20 @@ private fun IQ?.shouldBeSuccessful() {
     this.shouldBeInstanceOf<EmptyResultIQ>()
 }
 
+private fun DialIq.traceparentHeaders(): List<String?> = getExtensions(HeaderExtension::class.java)
+    .filter { it.name.equals("X-Traceparent", ignoreCase = true) }
+    .map { it.value }
+
 class JigasiXmppConnection : MockXmppConnection() {
     val responses = mutableMapOf<Jid, Response>()
+
+    /** The dial requests received, in order. */
+    val requests = mutableListOf<DialIq>()
+
     override fun handleIq(iq: IQ): IQ? = when (iq) {
-        is DialIq -> responses.computeIfAbsent(iq.to) { Response.Success }.let {
-            when (it) {
+        is DialIq -> {
+            requests.add(iq)
+            when (responses.computeIfAbsent(iq.to) { Response.Success }) {
                 Response.Success -> IQ.createResultIQ(iq)
                 Response.Failure -> IQ.createErrorResponse(iq, Condition.internal_server_error)
                 Response.Timeout -> null
