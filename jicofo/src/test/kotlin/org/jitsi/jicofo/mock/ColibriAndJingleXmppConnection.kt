@@ -35,7 +35,12 @@ import org.jxmpp.jid.Jid
  */
 class ColibriAndJingleXmppConnection : MockXmppConnection() {
     var ssrcs = 1L
-    val colibri2Server = TestColibri2Server()
+
+    /** One colibri2 server per bridge JID, colibri2 IQs are routed by their `to` address. */
+    private val colibri2Servers = mutableMapOf<Jid, TestColibri2Server>()
+
+    /** Bridges which do not respond to colibri2 requests, i.e. the requests time out. */
+    val unresponsiveBridges = mutableSetOf<Jid>()
     val remoteParticipants = mutableMapOf<Jid, RemoteParticipant>()
 
     // IQs sent by jicofo
@@ -47,7 +52,11 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
     override fun handleIq(iq: IQ): IQ? = when (iq) {
         is ConferenceModifyIQ -> {
             conferenceModifyHook?.invoke(iq)
-            colibri2Server.handleConferenceModifyIq(iq)
+            if (iq.to in unresponsiveBridges) {
+                null
+            } else {
+                colibri2Servers.computeIfAbsent(iq.to) { TestColibri2Server() }.handleConferenceModifyIq(iq)
+            }
         }
 
         is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
