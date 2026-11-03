@@ -34,12 +34,17 @@ import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
+import org.jitsi.jicofo.mock.createError
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.time.FakeClock
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Error
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
+import org.jivesoftware.smack.packet.StanzaError.Condition.conflict
+import org.jivesoftware.smack.packet.StanzaError.Condition.internal_server_error
+import org.jivesoftware.smack.packet.StanzaError.Condition.service_unavailable
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 
@@ -59,8 +64,8 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
     /** Bridges which do not respond to colibri2 requests, i.e. the requests time out. */
     private val unresponsiveBridges = mutableSetOf<Jid>()
 
-    /** Bridges which respond to colibri2 requests with an internal-server-error. */
-    private val failingBridges = mutableSetOf<Jid>()
+    /** Bridges which respond to colibri2 requests with an error, and the error they respond with. */
+    private val failingBridges = mutableMapOf<Jid, BridgeError>()
 
     private val xmppConnection = object : MockXmppConnection() {
         override fun handleIq(iq: IQ): IQ? {
@@ -69,11 +74,8 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                 if (iq.to in unresponsiveBridges) {
                     return null
                 }
-                if (iq.to in failingBridges) {
-                    return IQ.createErrorResponse(
-                        iq,
-                        StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
-                    )
+                failingBridges[iq.to]?.let { error ->
+                    return createError(iq, error.condition, extension = error.reason?.let { Colibri2Error(it) })
                 }
                 return colibriServers.computeIfAbsent(iq.to) { TestColibri2Server() }.handleConferenceModifyIq(iq)
             }
@@ -224,7 +226,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                         }
                     }
                     context("And it responds with an error") {
-                        failingBridges.add(jvb1.jid)
+                        failingBridges[jvb1.jid] = INTERNAL_SERVER_ERROR
                         val e = runCatching { sessionManager.allocate("p3") }.exceptionOrNull()
                         // The call threw, so the helper did not drain. Run the queued bridgeRemoved event.
                         drain()
@@ -272,7 +274,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                         jvb1.isOperational = false
                         when (outcome) {
                             Outcome.TIMEOUT -> unresponsiveBridges.add(jvb1.jid)
-                            Outcome.ERROR -> failingBridges.add(jvb1.jid)
+                            Outcome.ERROR -> failingBridges[jvb1.jid] = INTERNAL_SERVER_ERROR
                             Outcome.RESPONDS -> {}
                         }
                         selectionEvents.clear()
@@ -310,6 +312,55 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                                     selectionEvents.last() shouldBe true
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Each error response which removes the session on the normal path fails only the new participant in the
+        // single-bridge fallback.
+        BRIDGE_ERRORS.forEach { error ->
+            listOf(true, false).forEach { fallback ->
+                context(
+                    "The only bridge ${if (fallback) "not " else ""}operational and responding with $error"
+                ) {
+                    val bridgeSelector = BridgeSelector(clock)
+                    val jvb1 = bridgeSelector.addJvbAddress(jid("jvb1")).apply {
+                        setStats(stress = 0.1, relayId = "jvb1")
+                    }
+                    val sessionManager = createSessionManager(bridgeSelector)
+                    sessionManager.allocate("p1")
+                    sessionManager.allocate("p2")
+                    sessionManager.getBridges().keys shouldBe setOf(jvb1)
+
+                    if (fallback) jvb1.isOperational = false
+                    failingBridges[jvb1.jid] = error
+                    val e = runCatching { sessionManager.allocate("p3") }.exceptionOrNull()
+                    // The call threw, so the helper did not drain. Run any queued events.
+                    drain()
+
+                    if (fallback) {
+                        should("fail only the new participant") {
+                            e.shouldBeInstanceOf<ColibriAllocationFailedException>().removeBridge shouldBe false
+                            sessionManager.getParticipants(jvb1) shouldBe listOf("p1", "p2")
+                            sessionManager.bridgeCount shouldBe 1
+                        }
+                        should("not remove the session or re-invite the existing participants") {
+                            failedSessions.shouldBeEmpty()
+                            reinvitedParticipants.shouldBeEmpty()
+                        }
+                    } else {
+                        should("remove the session and report all its participants, including the new one") {
+                            e.shouldBeInstanceOf<ColibriAllocationFailedException>().removeBridge shouldBe true
+                            failedSessions shouldBe listOf(jvb1)
+                            reinvitedParticipants.toSet() shouldBe setOf("p1", "p2", "p3")
+                            sessionManager.bridgeCount shouldBe 0
+                        }
+                    }
+                    if (error.reason == Colibri2Error.Reason.GRACEFUL_SHUTDOWN) {
+                        should("mark the bridge as in graceful shutdown") {
+                            jvb1.isInGracefulShutdown shouldBe true
                         }
                     }
                 }
@@ -522,5 +573,27 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
         ERROR("responding with an error");
 
         override fun toString() = description
+    }
+
+    /** An error response from a bridge: a stanza error [condition], and an optional colibri2 [reason]. */
+    private data class BridgeError(
+        val condition: StanzaError.Condition,
+        val reason: Colibri2Error.Reason?,
+        private val description: String
+    ) {
+        override fun toString() = description
+    }
+
+    companion object {
+        private val INTERNAL_SERVER_ERROR = BridgeError(internal_server_error, null, "internal-server-error")
+
+        /** The errors which make the session manager remove the session, unless it falls back to a single bridge. */
+        private val BRIDGE_ERRORS = listOf(
+            BridgeError(conflict, null, "conflict, with no colibri2 reason"),
+            BridgeError(conflict, Colibri2Error.Reason.UNKNOWN_ENDPOINT, "conflict, with a colibri2 reason"),
+            BridgeError(service_unavailable, Colibri2Error.Reason.GRACEFUL_SHUTDOWN, "graceful shutdown"),
+            BridgeError(service_unavailable, null, "service-unavailable"),
+            INTERNAL_SERVER_ERROR
+        )
     }
 }
