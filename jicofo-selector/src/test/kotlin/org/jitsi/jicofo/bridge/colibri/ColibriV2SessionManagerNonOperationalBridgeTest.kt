@@ -24,6 +24,7 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.collections.shouldBeEmpty
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.bridge.Bridge
@@ -38,6 +39,7 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 
@@ -57,12 +59,21 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
     /** Bridges which do not respond to colibri2 requests, i.e. the requests time out. */
     private val unresponsiveBridges = mutableSetOf<Jid>()
 
+    /** Bridges which respond to colibri2 requests with an internal-server-error. */
+    private val failingBridges = mutableSetOf<Jid>()
+
     private val xmppConnection = object : MockXmppConnection() {
         override fun handleIq(iq: IQ): IQ? {
             if (iq is ConferenceModifyIQ) {
                 colibriRequests.computeIfAbsent(iq.to) { mutableListOf() }.add(iq)
                 if (iq.to in unresponsiveBridges) {
                     return null
+                }
+                if (iq.to in failingBridges) {
+                    return IQ.createErrorResponse(
+                        iq,
+                        StanzaError.getBuilder(StanzaError.Condition.internal_server_error).build()
+                    )
                 }
                 return colibriServers.computeIfAbsent(iq.to) { TestColibri2Server() }.handleConferenceModifyIq(iq)
             }
@@ -91,10 +102,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
 
     private fun jid(name: String) = JidCreate.from("jvbbrewery@example.com/$name")
 
-    /**
-     * Create a [BridgeSelector] and a [ColibriV2SessionManager]. The selector reads its strategy from the config, so
-     * this must run inside the [withNewConfig] block of the context.
-     */
+    /** Create a [ColibriV2SessionManager] which uses [bridgeSelector]. */
     private fun createSessionManager(bridgeSelector: BridgeSelector) = ColibriV2SessionManager(
         xmppConnection.xmppConnection,
         bridgeSelector,
@@ -106,23 +114,24 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
         clock
     ).apply { addListener(listener) }
 
-    private fun ColibriV2SessionManager.allocate(id: String, region: String? = null) = allocate(
-        ParticipantAllocationParameters(
-            id = id,
-            statsId = null,
-            region = region,
-            sources = EndpointSourceSet.EMPTY,
-            useSsrcRewriting = false,
-            useRtpMidDemux = false,
-            forceMuteAudio = false,
-            forceMuteVideo = false,
-            useSctp = false,
-            visitor = false,
-            supportsPrivateAddresses = false,
-            medias = emptySet(),
-            diarize = false
-        )
-    ).also { drain() }
+    private fun ColibriV2SessionManager.allocate(id: String, region: String? = null, visitor: Boolean = false) =
+        allocate(
+            ParticipantAllocationParameters(
+                id = id,
+                statsId = null,
+                region = region,
+                sources = EndpointSourceSet.EMPTY,
+                useSsrcRewriting = false,
+                useRtpMidDemux = false,
+                forceMuteAudio = false,
+                forceMuteVideo = false,
+                useSctp = false,
+                visitor = visitor,
+                supportsPrivateAddresses = false,
+                medias = emptySet(),
+                diarize = false
+            )
+        ).also { drain() }
 
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
@@ -137,8 +146,8 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
     }
 
     init {
-        // Bridges commonly have relay IDs even when Octo is disabled. Without relay IDs all sessions map to the same
-        // (null) key, so test both.
+        // A bridge reports a relay ID when relays are enabled on the bridge, independently of the Octo setting in
+        // jicofo. Without relay IDs all sessions map to the same (null) key, so test both.
         listOf(true, false).forEach { withRelayIds ->
             context("Octo disabled, bridges ${if (withRelayIds) "with" else "without"} relay IDs") {
                 val bridgeSelector = BridgeSelector(clock)
@@ -178,10 +187,18 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                             reinvitedParticipants.shouldBeEmpty()
                         }
                     }
+                    context("And it still responds, with a visitor joining") {
+                        sessionManager.allocate("v1", visitor = true)
+                        should("allocate the visitor on the conference's bridge") {
+                            sessionManager.getParticipants(jvb1) shouldBe listOf("p1", "p2", "v1")
+                            requestsTo(jvb2).shouldBeEmpty()
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
                     context("And it does not respond") {
                         unresponsiveBridges.add(jvb1.jid)
                         val e = shouldThrow<ColibriAllocationFailedException> { sessionManager.allocate("p3") }
-                        // [allocate] threw before it ran the async tasks.
+                        // The call threw, so the helper did not drain. Run the queued bridgeRemoved event.
                         drain()
                         should("remove the session and report all its participants, including the new one") {
                             e.removeBridge shouldBe true
@@ -197,12 +214,24 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                             }
                         }
                     }
+                    context("And it responds with an error") {
+                        failingBridges.add(jvb1.jid)
+                        val e = runCatching { sessionManager.allocate("p3") }.exceptionOrNull()
+                        // The call threw, so the helper did not drain. Run the queued bridgeRemoved event.
+                        drain()
+                        should("remove the session and report all its participants, including the new one") {
+                            e.shouldBeInstanceOf<ColibriAllocationFailedException>().removeBridge shouldBe true
+                            failedSessions shouldBe listOf(jvb1)
+                            reinvitedParticipants.toSet() shouldBe setOf("p1", "p2", "p3")
+                            sessionManager.getBridges().keys.shouldBeEmpty()
+                        }
+                    }
                     context("And no other bridge is operational") {
                         jvb2.isOperational = false
                         val e = runCatching { sessionManager.allocate("p3") }.exceptionOrNull()
                         drain()
                         should("fail bridge selection") {
-                            (e is BridgeSelectionFailedException) shouldBe true
+                            e.shouldBeInstanceOf<BridgeSelectionFailedException>()
                             failedSessions.shouldBeEmpty()
                             requestsTo(jvb2).shouldBeEmpty()
                         }
@@ -289,7 +318,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                         }
                     } else {
                         should("remove the session and report all its participants") {
-                            (e as ColibriAllocationFailedException).removeBridge shouldBe true
+                            e.shouldBeInstanceOf<ColibriAllocationFailedException>().removeBridge shouldBe true
                             failedSessions shouldBe listOf(jvb1)
                             reinvitedParticipants.toSet() shouldBe setOf("p1", "p2")
                             sessionManager.getBridges().keys.shouldBeEmpty()
@@ -307,6 +336,8 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                 jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
                 """.trimIndent()
             ) {
+                // [BridgeSelector] reads its selection strategy from the config when it is created, so create it inside
+                // [withNewConfig].
                 val bridgeSelector = BridgeSelector(clock)
                 val jvb1 = bridgeSelector.addJvbAddress(jid("jvb1")).apply {
                     setStats(stress = 0.1, region = "r1", relayId = "jvb1")
@@ -323,7 +354,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                 drain()
 
                 should("fail bridge selection, and not use the conference's bridge") {
-                    (e is BridgeSelectionFailedException) shouldBe true
+                    e.shouldBeInstanceOf<BridgeSelectionFailedException>()
                     requestsTo(jvb2).shouldBeEmpty()
                     failedSessions.shouldBeEmpty()
                     sessionManager.getParticipants(jvb1) shouldBe listOf("p1")
@@ -339,6 +370,8 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                 jicofo.bridge.selection-strategy=RegionBasedBridgeSelectionStrategy
                 """.trimIndent()
             ) {
+                // [BridgeSelector] reads its selection strategy from the config when it is created, so create it inside
+                // [withNewConfig].
                 val bridgeSelector = BridgeSelector(clock)
                 val jvb1 = bridgeSelector.addJvbAddress(jid("jvb1")).apply {
                     setStats(stress = 0.1, region = "r1", relayId = "jvb1")
@@ -360,7 +393,7 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                 drain()
 
                 should("fail bridge selection, and not use one of the existing bridges") {
-                    (e is BridgeSelectionFailedException) shouldBe true
+                    e.shouldBeInstanceOf<BridgeSelectionFailedException>()
                     requestsTo(jvb3).shouldBeEmpty()
                     failedSessions.shouldBeEmpty()
                     sessionManager.getParticipants(jvb1) shouldBe listOf("p1")

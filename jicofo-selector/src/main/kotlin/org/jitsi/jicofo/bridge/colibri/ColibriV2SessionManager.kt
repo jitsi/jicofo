@@ -661,7 +661,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             if (sessions.isNotEmpty() && sessions.none { it.value.bridge == bridge }) {
                 // There is an existing session, and this is a new bridge.
                 val octoError = if (!OctoConfig.config.enabled) {
-                    "A new bridge was selected, but Octo is disabled"
+                    "A new bridge was selected, but Octo is disabled."
                 } else if (sessions.any { it.value.relayId == null } || bridge.relayId == null) {
                     "Can not enable Octo: one of the selected bridges does not support Octo."
                 } else {
@@ -672,6 +672,10 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     // when the conference's bridge is not operational (e.g. its health check timed out). The
                     // conference can not use a second bridge, so use the existing one. If it does not respond, the
                     // allocation fails, and the conference moves to another bridge.
+                    // This only applies with a single session. With more than one session, there is no single
+                    // bridge to fall back to.
+                    // [Bridge.isOperational] depends on the clock, so it can change between the read in [getBridges]
+                    // and the read below. In that case this fails the selection, as it did before.
                     val existingBridge = sessions.values.singleOrNull()?.bridge
                     if (existingBridge == null || existingBridge.isOperational) {
                         logger.error(octoError)
@@ -680,8 +684,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         throw BridgeSelectionFailedException()
                     }
                     logger.warn(
-                        "$octoError The conference's bridge (${existingBridge.jid.resourceOrNull}) is not " +
-                            "operational, will use it anyway."
+                        "$octoError The selector chose ${bridge.jid.resourceOrNull}, but the conference's bridge " +
+                            "(${existingBridge.jid.resourceOrNull}) is not operational, will use it anyway."
                     )
                     bridge = existingBridge
                 }

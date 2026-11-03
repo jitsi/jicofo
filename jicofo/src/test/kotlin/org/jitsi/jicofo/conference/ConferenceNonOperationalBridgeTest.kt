@@ -31,8 +31,10 @@ import org.jitsi.jicofo.mock.ConferenceHarness
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
+import org.jitsi.utils.time.FakeClock
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.JingleAction
+import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
 import org.jxmpp.jid.impl.JidCreate
 
 /**
@@ -42,7 +44,8 @@ import org.jxmpp.jid.impl.JidCreate
 class ConferenceNonOperationalBridgeTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
 
-    private val bridgeSelector = BridgeSelector()
+    private val clock = FakeClock()
+    private val bridgeSelector = BridgeSelector(clock)
 
     // The lower stress makes jvb1 the initial selection.
     private val jvb1 = bridgeSelector.addJvbAddress(JidCreate.from("jvbbrewery@example.com/jvb1")).apply {
@@ -75,6 +78,17 @@ class ConferenceNonOperationalBridgeTest : ShouldSpec() {
     private fun ChatRoomMember.sessionInitiates() = harness.getRemoteParticipant(this)?.requests
         ?.count { it.action == JingleAction.SESSION_INITIATE } ?: 0
 
+    /**
+     * Request a restart of the current session of this member, as the client does when ICE fails (a session-terminate
+     * with a restart request).
+     */
+    private fun ChatRoomMember.requestRestart() {
+        val sessionInitiate = harness.getRemoteParticipant(this)!!.requests
+            .last { it.action == JingleAction.SESSION_INITIATE }
+        val bridgeSessionId = sessionInitiate.getExtension(BridgeSessionPacketExtension::class.java)!!.id
+        conference.terminateSession(harness.getParticipant(this)!!, bridgeSessionId, true)
+    }
+
     init {
         context("A conference on a bridge which is not operational") {
             val members = harness.addParticipants(2)
@@ -94,6 +108,27 @@ class ConferenceNonOperationalBridgeTest : ShouldSpec() {
                 should("not move the conference") {
                     endpointsCreatedOn(jvb2).shouldBeEmpty()
                     members.forEach { it.sessionInitiates() shouldBe 1 }
+                }
+            }
+            context("When a participant requests a restart and the bridge responds") {
+                members[0].requestRestart()
+
+                should("re-invite the participant on the same bridge") {
+                    endpointsCreatedOn(jvb1) shouldBe members.map { it.endpointId() } + members[0].endpointId()
+                    members[0].sessionInitiates() shouldBe 2
+                }
+                should("not move the conference") {
+                    endpointsCreatedOn(jvb2).shouldBeEmpty()
+                    members[1].sessionInitiates() shouldBe 1
+                }
+            }
+            context("When a participant requests a restart and the bridge does not respond") {
+                xmppConnection.unresponsiveBridges.add(jvb1.jid)
+                members[0].requestRestart()
+
+                should("move the conference to another bridge") {
+                    endpointsCreatedOn(jvb2).toSet() shouldBe members.map { it.endpointId() }.toSet()
+                    conference.bridges.keys shouldBe setOf(jvb2)
                 }
             }
             context("When the bridge does not respond") {
