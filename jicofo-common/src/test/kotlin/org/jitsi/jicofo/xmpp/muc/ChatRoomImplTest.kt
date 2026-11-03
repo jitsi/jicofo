@@ -48,12 +48,15 @@ import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
+import org.jivesoftware.smackx.muc.packet.Destroy
+import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 import kotlin.concurrent.thread
@@ -142,6 +145,24 @@ class ChatRoomImplTest : ShouldSpec() {
     private fun ownPresence(type: Presence.Type) = xmppConnection.stanzaFactory.buildPresenceStanza()
         .ofType(type)
         .to(JidCreate.entityFullFrom("$roomJid/focus"))
+
+    /** An unavailable presence from our own occupant JID, as the MUC sends when we are no longer in the room. */
+    private fun ownUnavailablePresence(
+        affiliation: MUCAffiliation,
+        status: MUCUser.Status? = null,
+        destroy: Destroy? = null
+    ): Presence = StanzaBuilder.buildPresence()
+        .from(JidCreate.entityFullFrom("$roomJid/focus"))
+        .ofType(Presence.Type.unavailable)
+        .build().apply {
+            addExtension(
+                MUCUser().apply {
+                    setItem(MUCItem(affiliation, MUCRole.none, null, null, null, null, null))
+                    status?.let { addStatusCode(it) }
+                    destroy?.let { setDestroy(it) }
+                }
+            )
+        }
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         // Joining blocks the XMPP task queue until the join completes, so the "Joining" tests need a real executor.
@@ -232,6 +253,45 @@ class ChatRoomImplTest : ShouldSpec() {
                 val presence = sent.captured.shouldBeInstanceOf<Presence>()
                 presence.type shouldBe Presence.Type.available
                 presence.getExtension<StandardExtensionElement>("test", "test:ns") shouldNotBe null
+            }
+        }
+        context("Joining, then being removed from the room") {
+            val removed = CompletableFuture<String>()
+            val roleChanges = mutableListOf<MemberRole>()
+            chatRoom.addListener(
+                object : ChatRoomListener {
+                    override fun localUserRemoved(reason: String) {
+                        removed.complete(reason)
+                    }
+                    override fun localRoleChanged(newRole: MemberRole) {
+                        roleChanges.add(newRole)
+                    }
+                }
+            )
+            chatRoom.join()
+
+            should("fire localUserRemoved and leave when kicked") {
+                // A kick keeps our affiliation, only the role is "none".
+                chatRoom.processPresence(ownUnavailablePresence(MUCAffiliation.owner, MUCUser.Status.KICKED_307))
+                removed.get(5, TimeUnit.SECONDS) shouldBe "status=[307]"
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                left shouldBe true
+                roleChanges shouldBe emptyList()
+            }
+            should("fire localUserRemoved and leave when the affiliation is removed") {
+                chatRoom.processPresence(ownUnavailablePresence(MUCAffiliation.none))
+                removed.get(5, TimeUnit.SECONDS) shouldBe "status=[]"
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                left shouldBe true
+            }
+            should("leave without firing localUserRemoved when the room is destroyed") {
+                // Smack fires roomDestroyed for this presence.
+                chatRoom.processPresence(
+                    ownUnavailablePresence(MUCAffiliation.none, destroy = Destroy(null, "destroyed"))
+                )
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                left shouldBe true
+                removed.isDone shouldBe false
             }
         }
         context("Members joining") {

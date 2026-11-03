@@ -3025,6 +3025,19 @@ public class JitsiMeetConferenceImpl
         public void roomDestroyed(String reason)
         {
             logger.info("Visitor room destroyed with reason=" + reason);
+            discard();
+        }
+
+        @Override
+        public void localUserRemoved(@NotNull String reason)
+        {
+            logger.warn("Removed from the visitor room, " + reason);
+            discard();
+        }
+
+        /** We are no longer in the visitor room, so forget it and terminate its visitors. */
+        private void discard()
+        {
             String vnode = null;
             synchronized (visitorChatRooms)
             {
@@ -3086,7 +3099,20 @@ public class JitsiMeetConferenceImpl
         public void roomDestroyed(String reason)
         {
             logger.info("Room destroyed with reason=" + reason);
-            Span span = tracer.spanBuilder("conference.room-destroyed")
+            stopWithSpan("conference.room-destroyed", reason);
+        }
+
+        @Override
+        public void localUserRemoved(@NotNull String reason)
+        {
+            logger.warn("Removed from the room, stopping. " + reason);
+            stopWithSpan("conference.removed-from-room", reason);
+        }
+
+        /** Stop the conference because we are no longer in the room. */
+        private void stopWithSpan(String spanName, String reason)
+        {
+            Span span = tracer.spanBuilder(spanName)
                     .setAllAttributes(TracingUtil.roomAttributes(chatRoom))
                     .setAttribute("conference.id", Objects.toString(meetingId))
                     .setAttribute("reason", Objects.toString(reason))

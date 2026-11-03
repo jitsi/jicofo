@@ -46,7 +46,6 @@ import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
-import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -697,22 +696,24 @@ class ChatRoomImpl(
     private fun processOwnPresence(presence: Presence) {
         val mucUser = presence.getExtension(MUCUser::class.java)
         if (mucUser != null) {
-            val affiliation = mucUser.item.affiliation
-            val role = mucUser.item.role
-
-            // This is our initial role and affiliation, as smack does not fire any initial events.
-            if (!presence.isAvailable && MUCAffiliation.none == affiliation && MUCRole.none == role) {
+            if (presence.type == Presence.Type.unavailable) {
+                // We are no longer an occupant of the room.
                 val destroy = mucUser.destroy
                 if (destroy == null) {
-                    // the room is unavailable to us, there is no
-                    // message we will just leave
-                    leave()
+                    // E.g. kicked (the affiliation is kept, only the role is "none"), our affiliation was changed, or
+                    // the service is shutting down. Smack fires no event for this that the conference handles, so
+                    // without it the conference keeps running in a room that it is not in.
+                    val reason = "status=${mucUser.status.map { it.code }}"
+                    logger.warn("Removed from the room, $reason")
+                    eventEmitter.fireEvent { localUserRemoved(reason) }
                 } else {
+                    // Smack fires roomDestroyed for this presence.
                     logger.info("Leave, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
-                    leave()
                 }
+                leave()
             } else {
-                eventEmitter.fireEvent { localRoleChanged(fromSmack(role, affiliation)) }
+                // This is our initial role and affiliation, as smack does not fire any initial events.
+                eventEmitter.fireEvent { localRoleChanged(fromSmack(mucUser.item.role, mucUser.item.affiliation)) }
             }
         }
     }
