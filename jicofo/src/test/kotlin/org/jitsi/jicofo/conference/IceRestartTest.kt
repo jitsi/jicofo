@@ -21,6 +21,7 @@ import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
 import org.jitsi.jicofo.mock.ConferenceHarness
@@ -31,13 +32,15 @@ import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jitsimeet.BridgeSessionPacketExtension
+import org.jitsi.xmpp.extensions.jitsimeet.IceStatePacketExtension
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.StanzaError
 
 /**
  * Tests the in-place ICE restart flow end to end within jicofo: a client `session-info` with
  * `<bridge-session ice-restart="true"/>` results in a colibri2 request to the bridge, and the bridge's rotated
- * transport is relayed back to the client in a Jingle `transport-info`.
+ * transport is relayed back to the client in a Jingle `transport-info`. Also tests the fallbacks to a full re-invite:
+ * when the bridge declines the restart, and when the client reports `ice-state=failed`.
  */
 class IceRestartTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode = IsolationMode.InstancePerLeaf
@@ -77,6 +80,14 @@ class IceRestartTest : ShouldSpec() {
             /** The `transport-info`s jicofo sent to the client (the session-initiate does not use one). */
             fun transportInfosToClient() =
                 remoteParticipant.requests.filter { it.action == JingleAction.TRANSPORT_INFO }
+
+            /** The `session-initiate`s jicofo sent to the client. */
+            fun sessionInitiatesToClient() =
+                remoteParticipant.requests.filter { it.action == JingleAction.SESSION_INITIATE }
+
+            /** The colibri2 requests jicofo sent which create the participant's endpoint. */
+            fun endpointCreates() = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
+                .flatMap { it.endpoints }.filter { it.id == participant.endpointId && it.create }
 
             fun createIceRestartRequest(bsId: String? = bridgeSessionId) =
                 JingleIQ(JingleAction.SESSION_INFO, sessionInitiate.sid).apply {
@@ -187,6 +198,43 @@ class IceRestartTest : ShouldSpec() {
                 should("not trigger an ICE restart") {
                     iceRestartRequests().size shouldBe 0
                     transportInfosToClient().size shouldBe 0
+                }
+            }
+
+            context("A request which the bridge declines") {
+                val bridge = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>().first().to
+                xmppConnection.colibri2Server(bridge).iceRestartEnabled = false
+                val request = createIceRestartRequest()
+                jingleSession.processIq(request)
+
+                should("not relay anything to the client") {
+                    transportInfosToClient().size shouldBe 0
+                }
+                should("re-invite the participant") {
+                    endpointCreates().size shouldBe 2
+                    sessionInitiatesToClient().size shouldBe 2
+                    participant.jingleSession.shouldNotBeNull() shouldNotBe jingleSession
+                }
+            }
+
+            context("A session-info with ice-state=failed") {
+                val request = JingleIQ(JingleAction.SESSION_INFO, sessionInitiate.sid).apply {
+                    from = sessionInitiate.to
+                    to = sessionInitiate.from
+                    type = IQ.Type.set
+                    stanzaId = "ice-failed"
+                    addExtension(BridgeSessionPacketExtension().apply { id = bridgeSessionId })
+                    addExtension(IceStatePacketExtension().apply { text = "failed" })
+                }
+                jingleSession.processIq(request)
+
+                should("not trigger an in-place ICE restart") {
+                    iceRestartRequests().size shouldBe 0
+                }
+                should("re-invite the participant") {
+                    endpointCreates().size shouldBe 2
+                    sessionInitiatesToClient().size shouldBe 2
+                    participant.jingleSession.shouldNotBeNull() shouldNotBe jingleSession
                 }
             }
         }
