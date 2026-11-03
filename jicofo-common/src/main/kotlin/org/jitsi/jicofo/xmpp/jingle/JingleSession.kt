@@ -100,7 +100,12 @@ class JingleSession(
     private val requestHandler: JingleRequestHandler,
     private val encodeSourcesAsJson: Boolean
 ) {
-    /** Read on the IQ queue thread, and written by [terminate] from other threads. */
+    /**
+     * Read and written from more than one thread: the IQ queue thread, [terminate], and the readers such as
+     * [isActive]. [Volatile] gives visibility only, the transitions are not atomic. For example, the IQ queue thread
+     * can set the state to ACTIVE after a concurrent [terminate]. The conference rejects such a session later, because
+     * it is no longer the current session of the participant.
+     */
     @Volatile
     private var state = State.PENDING
     fun isActive() = state == State.ACTIVE

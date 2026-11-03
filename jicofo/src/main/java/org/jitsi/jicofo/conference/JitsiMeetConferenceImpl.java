@@ -1617,7 +1617,7 @@ public class JitsiMeetConferenceImpl
         // is terminated, so that the old sources are not added back to the conference. Keep holding it until the
         // bridge is updated and the sources are propagated. Otherwise a re-invite can complete in between, and the
         // old transport and sources go to the new endpoint on the bridge. The colibri update does not wait for the
-        // bridge, and other code already calls it with participantLock held.
+        // bridge, and reInviteParticipants already calls it with participantLock held.
         synchronized (participantLock)
         {
             if (!isSessionCurrent(participant, jingleSession))

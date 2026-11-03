@@ -41,6 +41,7 @@ import org.jitsi.jicofo.xmpp.muc.ChatRoomInfo
 import org.jitsi.jicofo.xmpp.muc.ChatRoomMember
 import org.jitsi.jicofo.xmpp.muc.MemberRole
 import org.jitsi.utils.MediaType
+import org.jitsi.xmpp.extensions.colibri2.Colibri2Endpoint
 import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.JingleAction
 import org.jivesoftware.smack.packet.IQ
@@ -73,6 +74,49 @@ class ConferenceTest : ShouldSpec() {
         .flatMap { it.endpoints }.count { it.id == "agent1" && it.create }
     private fun ChatRoomMember.getParticipant() = harness.getParticipant(this)
     private fun ChatRoomMember.getRemoteParticipant() = harness.getRemoteParticipant(this)
+
+    /**
+     * Run [trigger]. When it sends an update for the endpoint of [member] that matches [isUpdate] to the bridge, start
+     * a leave of [member] on another thread, and wait until the leave blocks. Return whether the leave ended the
+     * Jingle session of [member] before the bridge update completed.
+     *
+     * This needs `TaskPools.ioPool` to be [inPlaceExecutor]: the mock connection then handles the update on the thread
+     * which runs [trigger], with the locks of that thread held.
+     */
+    private fun sessionEndedDuringBridgeUpdate(
+        member: ChatRoomMember,
+        isUpdate: (Colibri2Endpoint) -> Boolean,
+        trigger: () -> Unit
+    ): Boolean {
+        val participant = member.getParticipant()!!
+        var sessionEnded: Boolean? = null
+        // An exception in the hook would be lost in the Jingle IQ queue, so keep it and throw it later.
+        var hookError: Throwable? = null
+        val leave = thread(start = false, isDaemon = true) { chatRoom.removeMember(member) }
+        xmppConnection.conferenceModifyHook = { iq ->
+            if (sessionEnded == null && iq.endpoints.any { it.id == participant.endpointId && isUpdate(it) }) {
+                try {
+                    leave.start()
+                    // The leave must block on a lock that this thread holds. When it blocks, it got as far as it can.
+                    val deadline = System.currentTimeMillis() + 5000
+                    while (leave.state != Thread.State.BLOCKED) {
+                        check(System.currentTimeMillis() < deadline) { "The leave did not block: ${leave.state}" }
+                        Thread.sleep(1)
+                    }
+                    sessionEnded = participant.jingleSession == null
+                } catch (t: Throwable) {
+                    hookError = t
+                }
+            }
+        }
+        trigger()
+        xmppConnection.conferenceModifyHook = null
+        leave.join(5000)
+
+        hookError?.let { throw it }
+        leave.isAlive shouldBe false
+        return sessionEnded ?: throw AssertionError("The bridge update was not sent")
+    }
 
     init {
         context("Test inviting 2 participants initially") {
@@ -315,27 +359,26 @@ class ConferenceTest : ShouldSpec() {
             val remoteParticipant3 = member3.getRemoteParticipant()!!
             val jingleSession3 = participant3.jingleSession!!
 
-            // When the session-accept sends member3's transport to the bridge, start the leave on another thread.
-            // The leave must wait until the session-accept has finished, i.e. the check that the session is current
-            // and the bridge update must be atomic. Otherwise a re-invite in the same window can get the old
-            // transport on its new bridge endpoint.
-            var sessionEndedDuringUpdate: Boolean? = null
-            val leave = thread(start = false) { chatRoom.removeMember(member3) }
-            xmppConnection.conferenceModifyHook = { iq ->
-                val updatesMember3 = iq.endpoints.any { it.id == participant3.endpointId && it.transport != null }
-                if (updatesMember3 && sessionEndedDuringUpdate == null) {
-                    leave.start()
-                    // The leave is expected to block, so give it time to get as far as it can.
-                    leave.join(500)
-                    sessionEndedDuringUpdate = participant3.jingleSession == null
-                }
-            }
-            jingleSession3.processIq(remoteParticipant3.createSessionAccept())
-            leave.join(5000)
-
-            sessionEndedDuringUpdate shouldBe false
-            leave.isAlive shouldBe false
+            // The check that the session is current and the bridge update must be atomic. Otherwise a re-invite in the
+            // same window can get the old transport on its new bridge endpoint.
+            sessionEndedDuringBridgeUpdate(member3, { it.transport != null }) {
+                jingleSession3.processIq(remoteParticipant3.createSessionAccept())
+            } shouldBe false
             // The leave ran after the session-accept, and removed the sources.
+            participant3.jingleSession shouldBe null
+            conference.sources[participant3.endpointId] shouldBe null
+        }
+        context("A participant leaving while its source-add updates the bridge") {
+            val member3 = addParticipants(3)[2]
+            val participant3 = member3.getParticipant()!!
+            val remoteParticipant3 = member3.getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+            val newSource = EndpointSourceSet(remoteParticipant3.nextSource(MediaType.VIDEO))
+
+            sessionEndedDuringBridgeUpdate(member3, { it.sources != null }) {
+                jingleSession3.processIq(remoteParticipant3.createSourceAdd(newSource))
+            } shouldBe false
+            // The leave ran after the source-add, and removed the sources.
             participant3.jingleSession shouldBe null
             conference.sources[participant3.endpointId] shouldBe null
         }
