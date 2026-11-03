@@ -1475,15 +1475,32 @@ public class JitsiMeetConferenceImpl
     /**
      * Update the transport information for a participant. Callback called when we receive a 'transport-info', the info
      * is forwarded to the videobridge.
+     *
+     * @param jingleSession the Jingle session on which the participant signaled the transport.
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      */
-    public void updateTransport(@NotNull Participant participant, @NotNull IceUdpTransportPacketExtension transport)
+    public boolean updateTransport(
+            @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
+            @NotNull IceUdpTransportPacketExtension transport)
     {
-        getColibriSessionManager().updateParticipant(
-                participant.getEndpointId(),
-                transport,
-                null /* no change in sources, just transport */,
-                null,
-                false);
+        // Check and update the bridge under participantLock, which is also held when the session is terminated, so
+        // that the transport of an old session is not sent to the endpoint of a new session after a re-invite.
+        synchronized (participantLock)
+        {
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+            getColibriSessionManager().updateParticipant(
+                    participant.getEndpointId(),
+                    transport,
+                    null /* no change in sources, just transport */,
+                    null,
+                    false);
+        }
+        return true;
     }
 
     /**
@@ -1567,42 +1584,59 @@ public class JitsiMeetConferenceImpl
 
     /**
      * Handles a request from a participant to remove sources.
+     *
+     * @param jingleSession the Jingle session on which the participant signaled the source removal.
+     * @return {@code false} if the request was ignored, because the participant left or {@code jingleSession} is no
+     * longer its session. {@code true} otherwise.
      * @throws ValidationFailedException if the request failed because the resulting source set for the participant
      * is invalid, or the participant was not allowed to remove some of the sources.
      */
-    public void removeSources(
+    public boolean removeSources(
             @NotNull Participant participant,
+            @NotNull JingleSession jingleSession,
             @NotNull EndpointSourceSet sourcesRequestedToBeRemoved)
         throws ValidationFailedException
     {
         String participantId = participant.getEndpointId();
-        EndpointSourceSet sourcesAcceptedToBeRemoved
-                = conferenceSources.tryToRemove(participantId, sourcesRequestedToBeRemoved);
-
         logger.debug(
                 () -> "Received source removal request from " + participantId + ": " + sourcesRequestedToBeRemoved);
-        logger.debug(() -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
 
-        if (sourcesAcceptedToBeRemoved.isEmpty())
+        // Check and remove under participantLock, which is also held when the session is terminated, so that a
+        // request from an old session does not remove the sources that the participant signaled on a new session.
+        synchronized (participantLock)
         {
-            logger.warn(
-                    "No sources or groups to be removed from " + participantId
-                            + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
-            return;
+            if (!isSessionCurrent(participant, jingleSession))
+            {
+                return false;
+            }
+
+            EndpointSourceSet sourcesAcceptedToBeRemoved
+                    = conferenceSources.tryToRemove(participantId, sourcesRequestedToBeRemoved);
+            logger.debug(
+                    () -> "Accepted sources to remove from " + participantId + ": " + sourcesAcceptedToBeRemoved);
+
+            if (sourcesAcceptedToBeRemoved.isEmpty())
+            {
+                logger.warn(
+                        "No sources or groups to be removed from " + participantId
+                                + ". The requested sources to remove: " + sourcesRequestedToBeRemoved);
+                return true;
+            }
+
+            getColibriSessionManager().updateParticipant(
+                    participant.getEndpointId(),
+                    null,
+                    participant.getSources(),
+                    null,
+                    false);
+
+            sendSourceRemove(new ConferenceSourceMap(participantId, sourcesAcceptedToBeRemoved), participant);
         }
-
-        getColibriSessionManager().updateParticipant(
-                participant.getEndpointId(),
-                null,
-                participant.getSources(),
-                null,
-                false);
-
-        sendSourceRemove(new ConferenceSourceMap(participantId, sourcesAcceptedToBeRemoved), participant);
 
         // A sender may have removed the audio source being translated; re-evaluate synthetic translation sources.
         translationManager.reapply(colibriSessionManager, meetingId);
         agentManager.reapply(colibriSessionManager, meetingId);
+        return true;
     }
 
     /**
