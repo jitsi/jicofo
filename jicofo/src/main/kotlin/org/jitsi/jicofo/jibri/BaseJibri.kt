@@ -190,10 +190,16 @@ abstract class BaseJibri internal constructor(
                     false -> {
                         logger.warn("Rejecting a Jibri start request, the conference is rate limited.")
                         JibriStats.startRequestRateLimited()
-                        error(
+                        // Use the same error as prosody's mod_filter_iq_jibri, which the client shows as "too
+                        // quickly". A resource-constraint error would show as "all Jibris are busy".
+                        IQ.createErrorResponse(
                             iq,
-                            StanzaError.Condition.resource_constraint,
-                            "Too many Jibri start requests in this conference, try again later"
+                            StanzaError.getBuilder(StanzaError.Condition.policy_violation)
+                                .setType(StanzaError.Type.WAIT)
+                                .setDescriptiveEnText(
+                                    "Too many Jibri start requests in this conference, try again later"
+                                )
+                                .build()
                         )
                     }
                 }
