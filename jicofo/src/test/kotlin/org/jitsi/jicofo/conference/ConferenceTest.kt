@@ -70,6 +70,12 @@ class ConferenceTest : ShouldSpec() {
         chatRoom.chatRoomListeners.forEach { it.agentsChanged(agents) }
     private val agentConfig = "jicofo.agent.url-template = \"wss://example.com/a/{{MEETING_ID}}\""
     private fun colibriRequestCount() = xmppConnection.requests.count { it is ConferenceModifyIQ }
+    private fun responseTo(request: IQ) =
+        xmppConnection.requests.find { it.stanzaId == request.stanzaId && it.type != IQ.Type.set }
+    private fun transport(ufrag: String) = IceUdpTransportPacketExtension().apply {
+        this.ufrag = ufrag
+        password = "$ufrag-pwd"
+    }
     private fun agentCreates() = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
         .flatMap { it.endpoints }.count { it.id == "agent1" && it.create }
     private fun ChatRoomMember.getParticipant() = harness.getParticipant(this)
@@ -369,30 +375,56 @@ class ConferenceTest : ShouldSpec() {
             conference.sources[participant3.endpointId] shouldBe null
             remoteParticipants.map { it.requests.size } shouldBe requestCounts
         }
+        context("A transport-info processed after the participant left") {
+            val members = addParticipants(3)
+            val participant3 = members[2].getParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+
+            chatRoom.removeMember(members[2])
+            val colibriRequestCount = colibriRequestCount()
+            conference.updateTransport(participant3, jingleSession3, transport("old")) shouldBe false
+
+            colibriRequestCount() shouldBe colibriRequestCount
+        }
         context("A transport-info processed for a session replaced by a re-invite") {
             val members = addParticipants(3)
             val participant3 = members[2].getParticipant()!!
+            val remoteParticipant3 = members[2].getRemoteParticipant()!!
             val oldSession = participant3.jingleSession!!
 
             conference.moveEndpoint(participant3.endpointId, null) shouldBe true
-            participant3.jingleSession shouldNotBe oldSession
+            val newSession = participant3.jingleSession!!
+            newSession shouldNotBe oldSession
             val colibriRequestCount = colibriRequestCount()
 
-            val oldTransport = IceUdpTransportPacketExtension().apply {
-                ufrag = "old-ufrag"
-                password = "old-pwd"
-            }
-            conference.updateTransport(participant3, oldSession, oldTransport) shouldBe false
+            conference.updateTransport(participant3, oldSession, transport("old")) shouldBe false
 
             // The old ICE credentials must not be sent to the new endpoint on the bridge.
             colibriRequestCount() shouldBe colibriRequestCount
 
             // A transport-info for the new session, which is not active yet (like the one jigasi sends before its
             // session-accept), is accepted.
-            val newSession = participant3.jingleSession!!
             newSession.isActive() shouldBe false
-            conference.updateTransport(participant3, newSession, oldTransport) shouldBe true
+            val transportInfo = remoteParticipant3.createTransportInfo(transport("new"))
+            newSession.processIq(transportInfo)
+            responseTo(transportInfo)!!.type shouldBe IQ.Type.result
             colibriRequestCount() shouldBe colibriRequestCount + 1
+        }
+        context("A source-remove processed after the participant left") {
+            val members = addParticipants(3)
+            val remoteParticipants = members.take(2).map { it.getRemoteParticipant()!! }
+            val participant3 = members[2].getParticipant()!!
+            val remoteParticipant3 = members[2].getRemoteParticipant()!!
+            val jingleSession3 = participant3.jingleSession!!
+
+            chatRoom.removeMember(members[2])
+            val requestCounts = remoteParticipants.map { it.requests.size }
+            val colibriRequestCount = colibriRequestCount()
+            conference.removeSources(participant3, jingleSession3, remoteParticipant3.sources) shouldBe false
+
+            conference.sources[participant3.endpointId] shouldBe null
+            remoteParticipants.map { it.requests.size } shouldBe requestCounts
+            colibriRequestCount() shouldBe colibriRequestCount
         }
         context("A source-remove processed for a session replaced by a re-invite") {
             val members = addParticipants(3)
@@ -404,19 +436,25 @@ class ConferenceTest : ShouldSpec() {
             conference.moveEndpoint(participant3.endpointId, null) shouldBe true
             val newSession = participant3.jingleSession!!
             newSession shouldNotBe oldSession
-            conference.acceptSession(participant3, newSession, remoteParticipant3.sources, null, null) shouldBe true
+            newSession.processIq(remoteParticipant3.createSessionAccept())
             conference.sources[participant3.endpointId] shouldBe remoteParticipant3.sources
             val requestCounts = remoteParticipants.map { it.requests.size }
+            val colibriRequestCount = colibriRequestCount()
 
             conference.removeSources(participant3, oldSession, remoteParticipant3.sources) shouldBe false
 
             // The sources signaled on the new session must stay.
             conference.sources[participant3.endpointId] shouldBe remoteParticipant3.sources
             remoteParticipants.map { it.requests.size } shouldBe requestCounts
+            colibriRequestCount() shouldBe colibriRequestCount
 
             // A source-remove for the new session is accepted.
-            conference.removeSources(participant3, newSession, remoteParticipant3.sources) shouldBe true
+            val sourceRemove = remoteParticipant3.createSourceRemove(remoteParticipant3.sources)
+            newSession.processIq(sourceRemove)
+            responseTo(sourceRemove)!!.type shouldBe IQ.Type.result
             conference.sources[participant3.endpointId] shouldBe null
+            colibriRequestCount() shouldBe colibriRequestCount + 1
+            remoteParticipants.forEach { it.requests.last().action shouldBe JingleAction.SOURCEREMOVE }
         }
         context("Sender limits") {
             // Jicofo invites participants only once there are at least two.

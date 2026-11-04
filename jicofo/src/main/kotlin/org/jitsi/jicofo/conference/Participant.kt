@@ -388,8 +388,7 @@ open class Participant @JvmOverloads constructor(
             }
 
         override fun onAddSource(jingleSession: JingleSession, contents: List<ContentPacketExtension>): StanzaError? {
-            checkJingleSession(jingleSession)?.let { return it }
-
+            // The conference checks the session under its lock, and replies "gone" if it is no longer current.
             if (chatMember.role === MemberRole.VISITOR) {
                 return StanzaError.from(StanzaError.Condition.forbidden, "add-source not allowed for visitors").build()
             }
@@ -421,8 +420,7 @@ open class Participant @JvmOverloads constructor(
             jingleSession: JingleSession,
             contents: List<ContentPacketExtension>
         ): StanzaError? {
-            checkJingleSession(jingleSession)?.let { return it }
-
+            // The conference checks the session under its lock, and replies "gone" if it is no longer current.
             val sources = fromJingle(contents)
             if (sources.isEmpty()) {
                 logger.info("Ignoring source-remove with no sources specified.")
@@ -435,6 +433,7 @@ open class Participant @JvmOverloads constructor(
                     return sessionGoneError()
                 }
             } catch (e: ValidationFailedException) {
+                logger.warn("Rejecting source-remove: ${e.message}")
                 return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
             }
 
@@ -580,17 +579,18 @@ open class Participant @JvmOverloads constructor(
             // session is already the participant's current session, because createNewJingleSession sets it before
             // the session-initiate is sent. A transport-info for an old session (the participant left or was
             // re-invited) is rejected by the conference.
-            if (!jingleSession.isActive() && !chatMember.isJigasi) {
-                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
-                // we prefer to avoid trickle at all and don't expect to see it.
-                logger.warn("Received an early transport-info from non-jigasi.")
-            }
-
             val transport = contents.getTransport()
                 ?: return StanzaError.from(StanzaError.Condition.bad_request, "missing transport").build()
             if (!conference.updateTransport(this@Participant, jingleSession, transport)) {
                 logger.info("Rejecting transport-info, the participant left or the session has been replaced.")
                 return sessionGoneError()
+            }
+
+            // The session is current, so if it is not active the transport-info is early (not stale).
+            if (!jingleSession.isActive() && !chatMember.isJigasi) {
+                // It's technically allowed to send transport-info before the session is active (XEPs 166, 176), but
+                // we prefer to avoid trickle at all and don't expect to see it.
+                logger.warn("Received an early transport-info from non-jigasi.")
             }
 
             return null

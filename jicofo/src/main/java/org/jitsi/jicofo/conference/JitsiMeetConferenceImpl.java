@@ -1486,7 +1486,10 @@ public class JitsiMeetConferenceImpl
             @NotNull IceUdpTransportPacketExtension transport)
     {
         // Check and update the bridge under participantLock, which is also held when the session is terminated, so
-        // that the transport of an old session is not sent to the endpoint of a new session after a re-invite.
+        // that the transport of an old session is not sent to the endpoint of a new session after a re-invite. Unlike
+        // addSource, the bridge update is inside the lock, because a re-check after the update can not undo it. This is
+        // safe: the colibri request is sent asynchronously, and reInviteParticipants and terminateParticipant already
+        // update the bridge with participantLock held.
         synchronized (participantLock)
         {
             if (!isSessionCurrent(participant, jingleSession))
@@ -1603,6 +1606,8 @@ public class JitsiMeetConferenceImpl
 
         // Check and remove under participantLock, which is also held when the session is terminated, so that a
         // request from an old session does not remove the sources that the participant signaled on a new session.
+        // The bridge update and the source-remove to the other participants are inside the lock too, so that they
+        // can not interleave with a re-invite (see updateTransport for why this is safe).
         synchronized (participantLock)
         {
             if (!isSessionCurrent(participant, jingleSession))
