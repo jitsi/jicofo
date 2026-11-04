@@ -158,6 +158,12 @@ class ChatRoomImpl(
     private val leaveCalled = AtomicBoolean(false)
 
     /**
+     * Whether we have processed an available presence of our own, i.e. we are an occupant of the room. Only accessed
+     * from [xmppTaskQueue].
+     */
+    private var ownAvailablePresenceProcessed = false
+
+    /**
      * Completes when this instance has finished leaving the MUC, that is when the Smack leave has completed (or
      * failed) and the previous instance for the same room, if any, has finished leaving too. A new instance for the
      * same room waits for this before it joins.
@@ -697,13 +703,21 @@ class ChatRoomImpl(
         val mucUser = presence.getExtension(MUCUser::class.java)
         if (mucUser != null) {
             if (presence.type == Presence.Type.unavailable) {
+                if (!ownAvailablePresenceProcessed) {
+                    // We have not joined yet, so this is not for us. It is the MUC reflecting the leave of a previous
+                    // instance for the same room, which sent it after a join that timed out (see [leave]).
+                    logger.info("Ignoring an unavailable presence received before we joined: ${presence.toXML()}")
+                    return
+                }
                 // We are no longer an occupant of the room.
                 val destroy = mucUser.destroy
                 if (destroy == null) {
                     // E.g. kicked (the affiliation is kept, only the role is "none"), our affiliation was changed, or
-                    // the service is shutting down. Smack fires no event for this that the conference handles, so
-                    // without it the conference keeps running in a room that it is not in.
-                    val reason = "status=${mucUser.status.map { it.code }}"
+                    // the service is shutting down. Smack reports this with UserStatusListener.removed() (and
+                    // kicked()/membershipRevoked()), but we handle the presence here instead, so that it runs on the
+                    // room's queue, ordered after the member presence received before it. Without it the conference
+                    // keeps running in a room that it is not in.
+                    val reason = removedReason(mucUser)
                     logger.warn("Removed from the room, $reason")
                     eventEmitter.fireEvent { localUserRemoved(reason) }
                 } else {
@@ -712,9 +726,22 @@ class ChatRoomImpl(
                 }
                 leave()
             } else {
-                // This is our initial role and affiliation, as smack does not fire any initial events.
+                ownAvailablePresenceProcessed = true
+                // Our current role and affiliation. Smack fires no event for the initial values, so read them from
+                // every presence of our own.
                 eventEmitter.fireEvent { localRoleChanged(fromSmack(mucUser.item.role, mucUser.item.affiliation)) }
             }
+        }
+    }
+
+    /** Describe why we were removed from the room, from our own unavailable presence. */
+    private fun removedReason(mucUser: MUCUser): String = buildString {
+        // The status codes are a set, sort them so that the order is stable.
+        append("status=${mucUser.status.map { it.code }.sorted()}")
+        mucUser.item?.let { item ->
+            append(" affiliation=${item.affiliation} role=${item.role}")
+            (item.actorNick ?: item.actor)?.let { append(" actor=$it") }
+            item.reason?.takeIf { it.isNotBlank() }?.let { append(" reason=\"$it\"") }
         }
     }
 
