@@ -28,18 +28,20 @@ import org.jitsi.xmpp.extensions.jingle.JingleIQ
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Mocks an [AbstractXMPPConnection] which responds to colibri2 and Jingle IQs. Creates [RemoteParticipant]s that model
  * the remote side of a Jingle session.
  */
 class ColibriAndJingleXmppConnection : MockXmppConnection() {
-    var ssrcs = 1L
+    private val ssrcs = AtomicLong(1)
 
     /** One colibri2 server per bridge JID, colibri2 IQs are routed by their `to` address. */
     private val colibri2Servers = mutableMapOf<Jid, TestColibri2Server>()
 
-    /** The colibri2 server of the bridge with JID [bridge]. */
+    /** The colibri2 server of the bridge with JID [bridge]. Synchronized like [handleIq], which also calls it. */
+    @Synchronized
     fun colibri2Server(bridge: Jid) = colibri2Servers.computeIfAbsent(bridge) { TestColibri2Server() }
 
     /** Bridges which do not respond to colibri2 requests, i.e. the requests time out. */
@@ -49,11 +51,27 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
     // IQs sent by jicofo
     val requests = mutableListOf<IQ>()
 
+    /**
+     * Called with each colibri2 request, before it is handled. Jicofo reads the response in a task on
+     * `TaskPools.ioPool`, and the request is handled then. So the hook runs on the thread that sends the request (with
+     * the locks of that thread held) only when `TaskPools.ioPool` is `inPlaceExecutor`. With `PendingExecutor`, it
+     * runs later, from `runAll()`.
+     */
+    var conferenceModifyHook: ((ConferenceModifyIQ) -> Unit)? = null
+
+    /**
+     * Synchronized, because a test can send IQs from more than one thread, and the collections and the colibri2 servers
+     * are not thread-safe.
+     */
+    @Synchronized
     override fun handleIq(iq: IQ): IQ? = when (iq) {
-        is ConferenceModifyIQ -> if (iq.to in unresponsiveBridges) {
-            null
-        } else {
-            colibri2Server(iq.to).handleConferenceModifyIq(iq)
+        is ConferenceModifyIQ -> {
+            conferenceModifyHook?.invoke(iq)
+            if (iq.to in unresponsiveBridges) {
+                null
+            } else {
+                colibri2Server(iq.to).handleConferenceModifyIq(iq)
+            }
         }
 
         is JingleIQ -> remoteParticipants.computeIfAbsent(iq.to) { RemoteParticipant(iq.to) }.handleJingleIq(iq)
@@ -66,7 +84,7 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
         requests.add(iq)
     }
 
-    private fun nextSource(mediaType: MediaType) = Source(ssrcs++, mediaType)
+    private fun nextSource(mediaType: MediaType) = Source(ssrcs.getAndIncrement(), mediaType)
 
     /**
      *  Model the remote side of a [Participant], i.e. the entity that would respond to Jingle requests sent from

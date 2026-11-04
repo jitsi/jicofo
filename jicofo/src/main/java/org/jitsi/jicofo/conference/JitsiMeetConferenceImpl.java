@@ -1520,43 +1520,34 @@ public class JitsiMeetConferenceImpl
                             + (rejectedVideoSource ? "video" : ""));
         }
 
-        // Check under participantLock, so that the sources of a participant which already left (or was re-invited)
-        // are not added back to the conference. See acceptSession.
-        EndpointSourceSet sourcesAccepted;
+        // Hold participantLock from the check until the sources are propagated. See acceptSession.
         synchronized (participantLock)
         {
             if (!isSessionCurrent(participant, jingleSession))
             {
                 return false;
             }
-            sourcesAccepted = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
-        }
-        logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
+            EndpointSourceSet sourcesAccepted
+                    = conferenceSources.tryToAdd(participant.getEndpointId(), sourcesAdvertised);
+            logger.debug(() -> "Accepted sources from " + participant.getEndpointId() + ": " + sourcesAccepted);
 
-        if (sourcesAccepted.isEmpty())
-        {
-            // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been an
-            // exception above)
-            logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
-            return true;
-        }
-
-        // Updates source groups on the bridge
-        // We may miss the notification, but the state will be synced up after conference has been relocated to the new
-        // bridge
-        getColibriSessionManager().updateParticipant(
-                participant.getEndpointId(),
-                null,
-                participant.getSources(),
-                null,
-                false);
-        synchronized (participantLock)
-        {
-            // The participant may have left while the bridge was updated. Its sources were removed then.
-            if (!isSessionCurrent(participant, jingleSession))
+            if (sourcesAccepted.isEmpty())
             {
-                return false;
+                // This shouldn't happen as the sources were non-empty, but none were accepted (there should have been
+                // an exception above)
+                logger.warn("Stop processing source-add, no new sources added: " + participant.getEndpointId());
+                return true;
             }
+
+            // Updates source groups on the bridge
+            // We may miss the notification, but the state will be synced up after conference has been relocated to
+            // the new bridge
+            getColibriSessionManager().updateParticipant(
+                    participant.getEndpointId(),
+                    null,
+                    participant.getSources(),
+                    null,
+                    false);
             propagateNewSources(participant, sourcesAccepted);
         }
 
@@ -1625,44 +1616,39 @@ public class JitsiMeetConferenceImpl
 
         // The request is processed on the Jingle IQ queue, so the participant may have left or been re-invited (and
         // had its sources removed) in the meantime. Check under participantLock, which is also held when the session
-        // is terminated, so that the old sources are not added back to the conference.
-        EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
+        // is terminated, so that the old sources are not added back to the conference. Keep holding it until the
+        // bridge is updated and the sources are propagated. Otherwise a re-invite can complete in between, and the
+        // old transport and sources go to the new endpoint on the bridge. The colibri update does not wait for the
+        // bridge, and reInviteParticipants already calls it with participantLock held.
         synchronized (participantLock)
         {
             if (!isSessionCurrent(participant, jingleSession))
             {
                 return false;
             }
+            EndpointSourceSet sourcesAccepted = EndpointSourceSet.EMPTY;
             if (!sourcesAdvertised.isEmpty())
             {
                 sourcesAccepted = conferenceSources.tryToAdd(participantId, sourcesAdvertised);
             }
-        }
 
-        getColibriSessionManager().updateParticipant(
-                participantId,
-                transport,
-                getSourcesForParticipant(participant),
-                initialLastN,
-                false);
+            getColibriSessionManager().updateParticipant(
+                    participantId,
+                    transport,
+                    getSourcesForParticipant(participant),
+                    initialLastN,
+                    false);
 
-        if (!sourcesAccepted.isEmpty())
-        {
-            logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
-            synchronized (participantLock)
+            if (!sourcesAccepted.isEmpty())
             {
-                // The participant may have left while the bridge was updated. Its sources were removed then.
-                if (!isSessionCurrent(participant, jingleSession))
-                {
-                    return false;
-                }
+                logger.info("Accepted initial sources from " + participantId + ": " + sourcesAccepted);
                 // Propagate [participant]'s sources to the other participants.
                 propagateNewSources(participant, sourcesAccepted);
             }
-        }
-        else
-        {
-            logger.debug("Session accepted with no sources.");
+            else
+            {
+                logger.debug("Session accepted with no sources.");
+            }
         }
 
         // The initial sources may include the base audio source for a pending translation request.
