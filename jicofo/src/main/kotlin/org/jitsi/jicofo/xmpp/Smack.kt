@@ -53,7 +53,6 @@ import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SASLAuthentication
 import org.jivesoftware.smack.SmackConfiguration
 import org.jivesoftware.smack.provider.ProviderManager
-import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import org.jivesoftware.smackx.caps.EntityCapsManager
 
 fun initializeSmack() {
@@ -72,10 +71,6 @@ fun initializeSmack() {
     // Smack uses SASL Mechanisms ANONYMOUS and PLAIN, but tries to authenticate with GSSAPI when it's offered
     // by the server. Disable GSSAPI.
     SASLAuthentication.unregisterSASLMechanism("org.jivesoftware.smack.sasl.javax.SASLGSSAPIMechanism")
-
-    // Enable Stream Management
-    XMPPTCPConnection.setUseStreamManagementResumptionDefault(true)
-    XMPPTCPConnection.setUseStreamManagementDefault(true)
 
     registerXmppExtensions()
 }

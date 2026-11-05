@@ -366,11 +366,9 @@ private fun createXmppConnection(config: XmppConnectionConfig, logger: Logger): 
     }
 
     val connection = XMPPTCPConnection(connConfig.build())
-    if (!config.useStreamManagement) {
-        logger.info("Disabling stream management.")
-        connection.setUseStreamManagement(false)
-        connection.setUseStreamManagementResumption(false)
-    }
+    logger.info("Stream management enabled: ${config.useStreamManagement}")
+    connection.setUseStreamManagement(config.useStreamManagement)
+    connection.setUseStreamManagementResumption(config.useStreamManagement)
 
     // This can be removed once all clients are updated reading this from the presence conference property
     ServiceDiscoveryManager.getInstanceFor(connection).addFeature("https://jitsi.org/meet/jicofo/terminate-restart")
