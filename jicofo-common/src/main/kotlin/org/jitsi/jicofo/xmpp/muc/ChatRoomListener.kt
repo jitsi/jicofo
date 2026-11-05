@@ -27,6 +27,13 @@ interface ChatRoomListener {
     fun memberPresenceChanged(member: ChatRoomMember) {}
 
     fun roomDestroyed(reason: String? = null) {}
+
+    /**
+     * We were removed from the room without it being destroyed (e.g. kicked, our affiliation was changed, or the
+     * service is shutting down). We are no longer an occupant and will not receive presence for the room anymore.
+     */
+    fun localUserRemoved(reason: String) {}
+
     fun startMutedChanged(startAudioMuted: Boolean, startVideoMuted: Boolean) {}
     fun localRoleChanged(newRole: MemberRole) {}
     fun numAudioSendersChanged(numAudioSenders: Int) {}

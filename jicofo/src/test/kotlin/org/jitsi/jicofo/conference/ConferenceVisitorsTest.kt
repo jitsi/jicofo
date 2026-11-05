@@ -122,6 +122,26 @@ class ConferenceVisitorsTest : ShouldSpec() {
                     }
                 }
 
+                context("When removed from the visitor room") {
+                    conference.redirectVisitor(true, null, null) shouldBe "v1"
+                    val visitor = visitorRoom.addMember("visitor-1", MemberRole.VISITOR)
+                    conference.getParticipant(visitor.occupantJid) shouldNotBe null
+
+                    // E.g. kicked. The room is not destroyed, so no roomDestroyed event follows.
+                    visitorRoom.chatRoomListeners.forEach { it.localUserRemoved("status=[307]") }
+
+                    should("leave the visitor room") {
+                        verify { visitorRoom.chatRoom.leave() }
+                        conference.visitorRoomsJids.shouldBeEmpty()
+                    }
+                    should("terminate the visitors that were in the room") {
+                        conference.getParticipant(visitor.occupantJid) shouldBe null
+                    }
+                    should("keep the conference running") {
+                        harness.ended shouldBe false
+                    }
+                }
+
                 context("When the conference stops while the connection is down") {
                     conference.redirectVisitor(true, null, null) shouldBe "v1"
                     // Sending the IQ to disconnect the node fails without a connection.
