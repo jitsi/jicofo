@@ -3383,8 +3383,9 @@ public class JitsiMeetConferenceImpl
                     + ", re-inviting the participant.");
             // The session manager has already removed the endpoint, so the re-invite allocates a new one.
             // moveEndpoint() does the same removal before it re-invites. The session manager does the removal under
-            // its lock, and only if the allocation is still current.
-            reInviteParticipantsById(Collections.singletonList(endpointId));
+            // its lock, and only if the allocation is still current. As in endpointRemoved(), do not update the
+            // participant: it has no allocation, and the removal already expired it on the relays.
+            reInviteParticipantsById(Collections.singletonList(endpointId), false);
         }
     }
 

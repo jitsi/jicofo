@@ -570,7 +570,10 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                  * and let the expire of the old endpoint reach the bridge before the new endpoint is created.
                  */
                 fun restartAndReinvite() {
+                    // Nothing else is queued, so the only task is the handler of the restart response.
+                    ioExecutor.size shouldBe 0
                     sessionManager.restartIce("p1")
+                    ioExecutor.size shouldBe 1
                     val response = ioExecutor.takeFirst()
                     sessionManager.removeParticipant("p1").also { drain() }
                     allocate("p1", region = "region-jvb1")
@@ -596,6 +599,8 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     should("not expire the new endpoint") {
                         sessionManager.getParticipants(bridge1).toSet() shouldBe setOf("p1", "p2")
                         p1RequestsAfterLastCreate().none { it.expire } shouldBe true
+                        // Only the removal before the re-invite expired p1.
+                        requestsTo(bridge1).flatMap { it.endpoints }.count { it.id == "p1" && it.expire } shouldBe 1
                     }
                 }
             }

@@ -940,7 +940,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      *
      * [participantInfo] is the allocation the restart was requested for. If the participant was removed or
      * re-invited (possibly to another bridge) before the response arrived, the response is for an endpoint which
-     * no longer exists, and is dropped. As for every restart which does not complete, this counts as failed.
+     * no longer exists, and is dropped. This counts as superseded, not as failed.
      */
     internal fun endpointIceRestarted(participantInfo: ParticipantInfo, transport: IceUdpTransportPacketExtension) {
         val endpointId = participantInfo.id
@@ -950,7 +950,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 logger.info(
                     "ICE restart: ignoring a transport for $endpointId, its allocation was removed or replaced."
                 )
-                IceRestartMetrics.failed.inc()
+                IceRestartMetrics.superseded.inc()
                 return
             }
             if (generation == IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED) {
@@ -985,7 +985,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      * The endpoint is removed here, under the lock and only if [participantInfo] is still the participant's
      * allocation. If the participant was removed or re-invited (possibly to another bridge) before the response
      * arrived, the response is dropped: removing the participant by ID would remove its new allocation instead.
-     * The listener is then not called. The restart still counts as failed.
+     * The listener is then not called, and the restart counts as superseded, not as failed.
      */
     internal fun endpointIceRestartFailed(participantInfo: ParticipantInfo) {
         val endpointId = participantInfo.id
@@ -994,7 +994,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 logger.info(
                     "ICE restart: ignoring a declined restart for $endpointId, its allocation was removed or replaced."
                 )
-                IceRestartMetrics.failed.inc()
+                IceRestartMetrics.superseded.inc()
                 return
             }
             logger.warn("ICE restart: the bridge did not restart ICE for $endpointId, falling back to a re-invite.")
