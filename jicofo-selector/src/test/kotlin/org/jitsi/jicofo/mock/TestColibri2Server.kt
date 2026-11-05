@@ -46,6 +46,9 @@ import kotlin.random.Random
 class TestColibri2Server {
     private val conferences = mutableMapOf<String, Conference>()
 
+    /** Whether to restart ICE when asked to. When false, decline by answering with no transport (as a bridge does). */
+    var iceRestartEnabled = true
+
     fun stop() = conferences.clear()
 
     fun handleConferenceModifyIq(request: ConferenceModifyIQ): IQ {
@@ -156,7 +159,7 @@ class TestColibri2Server {
                     )
                 }
                 respBuilder.setTransport(transBuilder.build())
-            } else if (c2endpoint.transport?.iceRestart == true) {
+            } else if (c2endpoint.transport?.iceRestart == true && iceRestartEnabled) {
                 // Model the bridge's in-place ICE restart: it creates a new agent with fresh credentials, tags them
                 // with the next generation, and returns them in the response.
                 endpoint.iceGeneration++
