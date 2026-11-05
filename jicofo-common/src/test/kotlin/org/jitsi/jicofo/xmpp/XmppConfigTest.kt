@@ -39,7 +39,7 @@ class XmppConfigTest : ShouldSpec() {
                 }
                 config.username shouldBe Resourcepart.from("focus")
                 config.password shouldBe null
-                config.useStreamManagement shouldBe true
+                config.useStreamManagement shouldBe false
             }
             context("Legacy config") {
                 withLegacyConfig(
@@ -69,7 +69,7 @@ class XmppConfigTest : ShouldSpec() {
                         domain = "domain2"
                         username = "user2"
                         password = "pass2"
-                        use-stream-management = false
+                        use-stream-management = true
                     }
                 """
                 ) {
@@ -80,7 +80,7 @@ class XmppConfigTest : ShouldSpec() {
                     config.domain shouldBe JidCreate.domainBareFrom("domain2")
                     config.username shouldBe Resourcepart.from("user2")
                     config.password shouldBe "pass2"
-                    config.useStreamManagement shouldBe false
+                    config.useStreamManagement shouldBe true
                 }
             }
         }
@@ -95,7 +95,7 @@ class XmppConfigTest : ShouldSpec() {
                 }
                 config.username shouldBe Resourcepart.from("focus")
                 config.password shouldBe null
-                config.useStreamManagement shouldBe true
+                config.useStreamManagement shouldBe false
             }
             context("Legacy config") {
                 withLegacyConfig(
@@ -126,7 +126,7 @@ class XmppConfigTest : ShouldSpec() {
                         domain = "domain2"
                         username = "user2"
                         password = "pass2"
-                        use-stream-management = false
+                        use-stream-management = true
                     }
                 """
                 ) {
@@ -137,7 +137,7 @@ class XmppConfigTest : ShouldSpec() {
                     config.domain shouldBe JidCreate.domainBareFrom("domain2")
                     config.username shouldBe Resourcepart.from("user2")
                     config.password shouldBe "pass2"
-                    config.useStreamManagement shouldBe false
+                    config.useStreamManagement shouldBe true
                 }
             }
         }
@@ -164,7 +164,7 @@ class XmppConfigTest : ShouldSpec() {
                             username = "user2"
                             password = "pass2"
                             conference-service = conference.v2.example.com
-                            use-stream-management = false
+                            use-stream-management = true
                         }
                     }
                 """
@@ -179,7 +179,7 @@ class XmppConfigTest : ShouldSpec() {
                         it.username shouldBe Resourcepart.from("user1")
                         it.password shouldBe "pass1"
                         it.conferenceService shouldBe JidCreate.domainBareFrom("conference.v1.example.com")
-                        it.useStreamManagement shouldBe true
+                        it.useStreamManagement shouldBe false
                     }
                     XmppConfig.visitors["v2"].let {
                         it shouldNotBe null
@@ -189,7 +189,7 @@ class XmppConfigTest : ShouldSpec() {
                         it.username shouldBe Resourcepart.from("user2")
                         it.password shouldBe "pass2"
                         it.conferenceService shouldBe JidCreate.domainBareFrom("conference.v2.example.com")
-                        it.useStreamManagement shouldBe false
+                        it.useStreamManagement shouldBe true
                     }
                 }
             }

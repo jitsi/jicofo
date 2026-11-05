@@ -123,7 +123,7 @@ private fun MutableMap.MutableEntry<String, ConfigValue>.toXmppVisitorConnection
         disableCertificateVerification = c["disable-certificate-verification"]?.unwrapped()?.toString()?.toBoolean()
             ?: false,
         useTls = c["use-tls"]?.unwrapped()?.toString()?.toBoolean() ?: true,
-        useStreamManagement = c["use-stream-management"]?.unwrapped()?.toString()?.toBoolean() ?: true,
+        useStreamManagement = c["use-stream-management"]?.unwrapped()?.toString()?.toBoolean() ?: false,
         name = name,
         conferenceService = JidCreate.domainBareFrom(conferenceService),
         xmppDomain = if (xmppDomain != null) JidCreate.domainBareFrom(xmppDomain) else null
