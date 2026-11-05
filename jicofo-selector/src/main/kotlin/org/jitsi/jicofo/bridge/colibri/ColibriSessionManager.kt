@@ -153,9 +153,11 @@ interface ColibriSessionManager {
 
         /**
          * The bridge did not perform the ICE restart that was requested for an endpoint. The bridge signals this
-         * by answering with no transport rather than with an error (so that one endpoint can not fail a
-         * conference-modify carrying updates for others), which leaves the endpoint waiting for a restart that
-         * will never arrive. Recover it the way it would have been recovered without an in-place restart.
+         * with no transport, not with an error, so that one endpoint can not fail a conference-modify for others.
+         * The endpoint then waits for a restart that does not come. Recover it the way it would have been
+         * recovered without an in-place restart. The session manager has already removed the endpoint, so the
+         * listener only needs to re-invite it. The session manager does not fire this event for a response to an
+         * allocation that was removed or replaced.
          */
         fun endpointIceRestartFailed(endpointId: String) {}
     }

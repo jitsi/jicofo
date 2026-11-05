@@ -229,12 +229,12 @@ class Colibri2Session(
                 // omitting the transport rather than by returning an error, so that one endpoint's request does
                 // not fail the whole conference-modify.
                 logger.warn("No transport in the response to an ICE restart request for ${participant.id}")
-                colibriSessionManager.endpointIceRestartFailed(participant.id)
+                colibriSessionManager.endpointIceRestartFailed(participant)
             } else {
                 // Either the transport of the new Agent, tagged with its ice-generation, or -- when the bridge
                 // did not need to restart, because its transport is not established yet -- the transport of the
                 // Agent it already has, with no generation. See endpointIceRestarted.
-                colibriSessionManager.endpointIceRestarted(participant.id, bridgeTransport)
+                colibriSessionManager.endpointIceRestarted(participant, bridgeTransport)
             }
         }
     }

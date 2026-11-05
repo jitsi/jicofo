@@ -924,7 +924,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     /**
-     * The bridge performed an ICE restart for [endpointId] and rotated its own ICE credentials. Relay its new
+     * The bridge performed an ICE restart for [participantInfo] and rotated its own ICE credentials. Relay its new
      * transport on to the participant, which needs it to address its connectivity checks to the bridge's new
      * Agent.
      *
@@ -937,13 +937,20 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      * answered with the credentials of the Agent it already has. It does this when its transport has not
      * connected yet, where there is nothing to preserve and nothing for the participant to do. There is nothing
      * to relay in that case, and no restart to record.
+     *
+     * [participantInfo] is the allocation the restart was requested for. If the participant was removed or
+     * re-invited (possibly to another bridge) before the response arrived, the response is for an endpoint which
+     * no longer exists, and is dropped. This counts as superseded, not as failed.
      */
-    internal fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {
+    internal fun endpointIceRestarted(participantInfo: ParticipantInfo, transport: IceUdpTransportPacketExtension) {
+        val endpointId = participantInfo.id
         val generation = transport.iceGeneration
         synchronized(syncRoot) {
-            val participantInfo = participants[endpointId] ?: run {
-                logger.info("ICE restart: got a transport for an unknown endpoint $endpointId, ignoring.")
-                IceRestartMetrics.failed.inc()
+            if (!isCurrent(participantInfo)) {
+                logger.info(
+                    "ICE restart: ignoring a transport for $endpointId, its allocation was removed or replaced."
+                )
+                IceRestartMetrics.superseded.inc()
                 return
             }
             if (generation == IceUdpTransportPacketExtension.GENERATION_UNSPECIFIED) {
@@ -971,15 +978,42 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     /**
-     * The bridge declined an ICE restart we requested for [endpointId] (it answered with no transport). The
+     * The bridge declined an ICE restart we requested for [participantInfo] (it answered with no transport). The
      * endpoint is waiting for a restart that will never arrive, so escalate to the recovery it would have got
-     * if it had never asked for an in-place restart.
+     * if it had never asked for an in-place restart: remove the endpoint and let the listener re-invite it.
+     *
+     * The endpoint is removed here, under the lock and only if [participantInfo] is still the participant's
+     * allocation. If the participant was removed or re-invited (possibly to another bridge) before the response
+     * arrived, the response is dropped: removing the participant by ID would remove its new allocation instead.
+     * The listener is then not called, and the restart counts as superseded, not as failed.
      */
-    internal fun endpointIceRestartFailed(endpointId: String) {
-        logger.warn("ICE restart: the bridge did not restart ICE for $endpointId, falling back to a re-invite.")
-        IceRestartMetrics.failed.inc()
+    internal fun endpointIceRestartFailed(participantInfo: ParticipantInfo) {
+        val endpointId = participantInfo.id
+        synchronized(syncRoot) {
+            if (!isCurrent(participantInfo)) {
+                logger.info(
+                    "ICE restart: ignoring a declined restart for $endpointId, its allocation was removed or replaced."
+                )
+                IceRestartMetrics.superseded.inc()
+                return
+            }
+            logger.warn("ICE restart: the bridge did not restart ICE for $endpointId, falling back to a re-invite.")
+            IceRestartMetrics.failed.inc()
+            removeParticipantInfosBySession(mapOf(participantInfo.session to singletonList(participantInfo)))
+        }
         eventEmitter.fireEvent { endpointIceRestartFailed(endpointId) }
     }
+
+    /**
+     * The current allocation of [participantId], if any. Used by tests. Code which acts on a response must not
+     * look up the allocation by ID: it must use the [ParticipantInfo] of the request, and check it with [isCurrent].
+     */
+    internal fun getParticipantInfo(participantId: String): ParticipantInfo? = synchronized(syncRoot) {
+        participants[participantId]
+    }
+
+    /** Whether [participantInfo] is the current allocation of its participant. Call it only with [syncRoot] held. */
+    private fun isCurrent(participantInfo: ParticipantInfo) = participants[participantInfo.id] === participantInfo
 
     override fun restartIce(participantId: String) = synchronized(syncRoot) {
         val participantInfo = participants[participantId] ?: run {

@@ -54,6 +54,17 @@ class IceRestartMetrics {
         )
 
         /**
+         * The bridge answered an ICE restart after the participant's allocation was removed or replaced, for example
+         * because the participant left, or was moved or re-invited. The response was dropped. This is not a failure
+         * of the restart itself, so it is not counted in [failed].
+         */
+        @JvmField
+        val superseded = metricsContainer.registerCounter(
+            "ice_restarts_superseded",
+            "Number of in-place ICE restarts whose response was dropped, because the allocation was replaced."
+        )
+
+        /**
          * An ICE restart did not complete: the request was rejected (disabled, rate-limited, stale bridge-session ID)
          * or the bridge's response could not be relayed (no transport in the response, stale generation, participant
          * or Jingle session gone).

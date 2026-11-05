@@ -121,6 +121,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     /** The transports relayed to participants after an ICE restart, in the order they were fired. */
     private val iceRestartedTransports = mutableListOf<Pair<String, IceUdpTransportPacketExtension>>()
 
+    /** The endpoints reported by [ColibriSessionManager.Listener.endpointIceRestartFailed], in order. */
+    private val iceRestartFailures = mutableListOf<String>()
+
     /** The values of [ColibriSessionManager.Listener.connectsChanged], in the order they were fired. */
     private val connectsChangedEvents = mutableListOf<Boolean>()
 
@@ -138,6 +141,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         }
         override fun endpointIceRestarted(endpointId: String, transport: IceUdpTransportPacketExtension) {
             iceRestartedTransports.add(endpointId to transport)
+        }
+        override fun endpointIceRestartFailed(endpointId: String) {
+            iceRestartFailures.add(endpointId)
         }
     }
 
@@ -475,6 +481,140 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                 }
             }
 
+            context("With a restart which the bridge declines") {
+                colibriServers[bridge1.jid].shouldNotBeNull().iceRestartEnabled = false
+                sessionManager.restartIce("p1").also { drain() }
+
+                should("report the failure") {
+                    iceRestartFailures shouldBe listOf("p1")
+                    iceRestartedTransports.shouldBeEmpty()
+                }
+                should("remove the endpoint from the bridge") {
+                    sessionManager.getParticipants(bridge1).shouldBeEmpty()
+                    requestsTo(bridge1).last().expire shouldBe true
+                }
+                should("not report the endpoint as removed, which would re-invite it a second time") {
+                    removedEndpoints.shouldBeEmpty()
+                }
+            }
+
+            context("With a restart which the bridge declines, in a session with other participants") {
+                allocate("p2", region = "region-jvb1")
+                colibriServers[bridge1.jid].shouldNotBeNull().iceRestartEnabled = false
+                sessionManager.restartIce("p1").also { drain() }
+
+                should("report the failure") {
+                    iceRestartFailures shouldBe listOf("p1")
+                }
+                should("expire only the endpoint, and keep the session") {
+                    sessionManager.getParticipants(bridge1) shouldBe listOf("p2")
+                    sessionManager.getBridges().keys shouldBe setOf(bridge1)
+                    with(requestsTo(bridge1).last()) {
+                        expire shouldBe false
+                        endpoints.single { it.id == "p1" }.expire shouldBe true
+                    }
+                    failedSessions.shouldBeEmpty()
+                }
+            }
+
+            // The response to a restart is handled on the IO pool. Before it is handled, the participant can be
+            // re-invited (after a health check failure, a move, ...). The response belongs to the old allocation,
+            // and must not be applied to the new one.
+            context("With a response which arrives after the participant was moved to another bridge") {
+                sessionManager.restartIce("p1")
+                sessionManager.removeParticipant("p1")
+                // allocate() drains the IO queue. The pending response is handled then, after the new allocation
+                // exists.
+                allocate("p1", region = "region-jvb2")
+
+                should("not relay the old bridge's transport") {
+                    iceRestartedTransports.shouldBeEmpty()
+                }
+                should("relay the transport of a restart on the new bridge") {
+                    // The new bridge starts its generations from 1 again. The old allocation got generation 1 from
+                    // the old bridge, which must not cause this one to be dropped as stale.
+                    iceRestartedTransports.clear()
+                    sessionManager.restartIce("p1").also { drain() }
+                    iceRestartedTransports.map { it.first to it.second.iceGeneration } shouldBe listOf("p1" to 1)
+                }
+            }
+
+            context("With a declined restart whose response arrives after the participant was moved") {
+                colibriServers[bridge1.jid].shouldNotBeNull().iceRestartEnabled = false
+                sessionManager.restartIce("p1")
+                sessionManager.removeParticipant("p1")
+                allocate("p1", region = "region-jvb2")
+
+                should("not report a failure, which would re-invite the participant again") {
+                    iceRestartFailures.shouldBeEmpty()
+                }
+                should("keep the new allocation") {
+                    sessionManager.getParticipants(bridge2) shouldBe listOf("p1")
+                    requestsTo(bridge2).none { it.expire || it.endpoints.any { e -> e.expire } } shouldBe true
+                }
+            }
+
+            // The participant is re-invited to the same bridge, and p2 keeps the same session. Only the identity of
+            // the allocation tells the old endpoint from the new one.
+            context("With a response which arrives after the participant was re-invited to the same session") {
+                allocate("p2", region = "region-jvb1")
+                val session = sessionManager.getParticipantInfo("p1").shouldNotBeNull().session
+
+                /** The endpoint requests for p1 to bridge1, after the last one which created it. */
+                fun p1RequestsAfterLastCreate() = requestsTo(bridge1).flatMap { it.endpoints }
+                    .filter { it.id == "p1" }.let { endpoints -> endpoints.drop(endpoints.indexOfLast { it.create }) }
+
+                /**
+                 * Request a restart, then re-invite p1 to the same session before the response is handled. The mock
+                 * connection asks the bridge for its response only when the response task runs. So hold that task,
+                 * and let the expire of the old endpoint reach the bridge before the new endpoint is created.
+                 */
+                fun restartAndReinvite() {
+                    // Nothing else is queued, so the only task is the handler of the restart response.
+                    ioExecutor.size shouldBe 0
+                    sessionManager.restartIce("p1")
+                    ioExecutor.size shouldBe 1
+                    val response = ioExecutor.takeFirst()
+                    sessionManager.removeParticipant("p1").also { drain() }
+                    allocate("p1", region = "region-jvb1")
+                    response.run()
+                    drain()
+                }
+
+                context("When the bridge accepted the restart") {
+                    restartAndReinvite()
+
+                    should("not relay the transport of the old endpoint") {
+                        sessionManager.getParticipantInfo("p1").shouldNotBeNull().session shouldBe session
+                        iceRestartedTransports.shouldBeEmpty()
+                    }
+                }
+                context("When the bridge declined the restart") {
+                    colibriServers[bridge1.jid].shouldNotBeNull().iceRestartEnabled = false
+                    restartAndReinvite()
+
+                    should("not report a failure") {
+                        iceRestartFailures.shouldBeEmpty()
+                    }
+                    should("not expire the new endpoint") {
+                        sessionManager.getParticipants(bridge1).toSet() shouldBe setOf("p1", "p2")
+                        p1RequestsAfterLastCreate().none { it.expire } shouldBe true
+                        // Only the removal before the re-invite expired p1.
+                        requestsTo(bridge1).flatMap { it.endpoints }.count { it.id == "p1" && it.expire } shouldBe 1
+                    }
+                }
+            }
+
+            context("With a declined restart whose response arrives after the participant was removed") {
+                colibriServers[bridge1.jid].shouldNotBeNull().iceRestartEnabled = false
+                sessionManager.restartIce("p1")
+                sessionManager.removeParticipant("p1").also { drain() }
+
+                should("not report a failure") {
+                    iceRestartFailures.shouldBeEmpty()
+                }
+            }
+
             context("For an unknown participant") {
                 sessionManager.restartIce("nonexistent").also { drain() }
 
@@ -487,11 +627,12 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             }
 
             context("With responses arriving out of order") {
+                val p1Info = sessionManager.getParticipantInfo("p1").shouldNotBeNull()
                 // Colibri2 responses are handled on an IO pool, so two restarts in quick succession can be handled in
                 // either order. Only the latest generation may be relayed on to the participant.
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(2)).also { drain() }
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(3)).also { drain() }
+                sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(2)).also { drain() }
+                sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(1)).also { drain() }
+                sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(3)).also { drain() }
 
                 should("drop the stale generation and relay the rest") {
                     iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2, 3)
@@ -499,15 +640,16 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             }
 
             context("With a transport that carries no generation") {
+                val p1Info = sessionManager.getParticipantInfo("p1").shouldNotBeNull()
                 // The bridge kept the Agent it already had instead of restarting, so there is nothing to relay.
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(2)).also { drain() }
-                sessionManager.endpointIceRestarted("p1", transportWithGeneration(null)).also { drain() }
+                sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(2)).also { drain() }
+                sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(null)).also { drain() }
 
                 should("not relay it") {
                     iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
                 }
                 should("not lose the generation of the last transport that was relayed") {
-                    sessionManager.endpointIceRestarted("p1", transportWithGeneration(1)).also { drain() }
+                    sessionManager.endpointIceRestarted(p1Info, transportWithGeneration(1)).also { drain() }
 
                     iceRestartedTransports.map { it.second.iceGeneration } shouldBe listOf(2)
                 }
