@@ -95,9 +95,24 @@ class ColibriAndJingleXmppConnection : MockXmppConnection() {
         val requests = mutableListOf<JingleIQ>()
         fun handleJingleIq(iq: JingleIQ) = IQ.createResultIQ(iq).also { requests.add(iq) }
 
+        /** The latest session-initiate, i.e. the one for the current session after a re-invite. */
         val sessionInitiate: JingleIQ
-            get() = requests.find { it.action == JingleAction.SESSION_INITIATE }
+            get() = requests.lastOrNull { it.action == JingleAction.SESSION_INITIATE }
                 ?: throw IllegalStateException("session-initiate not received")
+
+        fun createTransportInfo(transport: IceUdpTransportPacketExtension) =
+            JingleIQ(JingleAction.TRANSPORT_INFO, sessionInitiate.sid).apply {
+                from = sessionInitiate.to
+                type = IQ.Type.set
+                to = sessionInitiate.from
+                addContent(
+                    ContentPacketExtension().apply {
+                        name = "video"
+                        creator = ContentPacketExtension.CreatorEnum.responder
+                        addChildExtension(transport)
+                    }
+                )
+            }
 
         fun createSourceAdd(sources: EndpointSourceSet) = JingleIQ(JingleAction.SOURCEADD, sessionInitiate.sid).apply {
             from = sessionInitiate.to
