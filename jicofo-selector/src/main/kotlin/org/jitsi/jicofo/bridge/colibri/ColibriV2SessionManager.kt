@@ -635,6 +635,9 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val session: Colibri2Session
         val created: Boolean
         val participantInfo: ParticipantInfo
+        // Whether no bridge was available, and the participant is allocated on the conference's (non-operational)
+        // bridge. Then a failure fails only this participant, and keeps the session.
+        var singleBridgeFallback = false
         synchronized(syncRoot) {
             if (participants.containsKey(participant.id)) {
                 throw IllegalStateException("participant already exists")
@@ -654,8 +657,24 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 ParticipantProperties(participant.region, visitor),
                 bridgeVersion
             ) ?: run {
-                eventEmitter.fireEvent { bridgeSelectionFailed() }
-                throw BridgeSelectionFailedException()
+                // No bridge is available. [getBridges] does not include non-operational bridges, so this happens
+                // when the conference's bridge is not operational (e.g. its health check timed out) and there is no
+                // other bridge. Try the conference's bridge. If it fails, there is no other bridge to move the
+                // conference to, and the existing participants may still have working media. So fail only this
+                // participant.
+                // This only applies with a single session. With more than one session, there is no single bridge to
+                // fall back to.
+                val existingBridge = sessions.values.singleOrNull()?.bridge
+                if (existingBridge == null || existingBridge.isOperational) {
+                    eventEmitter.fireEvent { bridgeSelectionFailed() }
+                    throw BridgeSelectionFailedException()
+                }
+                logger.warn(
+                    "No bridge available, will use the conference's bridge (${existingBridge.jid.resourceOrNull}) " +
+                        "which is not operational."
+                )
+                singleBridgeFallback = true
+                existingBridge
             }
             eventEmitter.fireEvent { bridgeSelectionSucceeded() }
             if (sessions.isNotEmpty() && sessions.none { it.value.bridge == bridge }) {
@@ -754,8 +773,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 throw ColibriSessionGoneException("Participant no longer active: ${participantInfo.id}")
             }
             try {
-                return handleResponse(response, session, created, participantInfo)
+                return handleResponse(response, session, created, participantInfo, keepSession = singleBridgeFallback)
             } catch (e: Exception) {
+                if (singleBridgeFallback) {
+                    // There was no bridge for the participant after all.
+                    eventEmitter.fireEvent { bridgeSelectionFailed() }
+                }
                 if (e is ColibriStateOutOfSyncException) {
                     // This has a recovery path (below) which does not involve the bridge being considered failed, so
                     // it is not an error.
@@ -777,17 +800,25 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         }
     }
 
+    /**
+     * @param keepSession whether to keep the session if the allocation fails, i.e. fail only the participant. This
+     * applies to timeouts and error responses, but not to [ColibriStateOutOfSyncException], since the conference on
+     * the bridge is not usable then.
+     */
     private fun handleResponse(
         response: IQ?,
         session: Colibri2Session,
         created: Boolean,
-        participantInfo: ParticipantInfo
+        participantInfo: ParticipantInfo,
+        keepSession: Boolean
     ): ColibriAllocation {
         // The game we're playing here is throwing the appropriate exception type and setting or not setting the
         // bridge as non-operational so the caller can do the right thing:
         // * Do nothing (if this is due to an internal error we don't want to retry indefinitely)
         // * Re-invite the participants (possibly on the same bridge) on this bridge
         // * Re-invite the participants on this bridge to a different bridge
+        // Whether to remove the session (and re-invite its participants) when the bridge failed.
+        val removeBridge = !keepSession
         if (!sessions.containsKey(session.bridge.relayId)) {
             val reinvite = participants[participantInfo.id] == null
             logger.warn(
@@ -800,7 +831,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         if (response == null) {
             session.bridge.isOperational = false
-            throw ColibriAllocationFailedException("Timeout", true)
+            throw ColibriAllocationFailedException("Timeout", removeBridge)
         }
         response.error?.let { error ->
             // The reason in a colibri2 error extension, if one is present. If a reason is present we know the response
@@ -838,7 +869,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         // An error NOT coming from the bridge.
                         throw ColibriAllocationFailedException(
                             "XMPP error: ${error.toXML()}",
-                            true
+                            removeBridge
                         )
                     } else if (reason == Colibri2Error.Reason.CONFERENCE_ALREADY_EXISTS) {
                         // The conference on the bridge already exists. The state between jicofo and the bridge
@@ -850,7 +881,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         // we can't expire a conference without listing its individual endpoints and we think there
                         // were none.
                         // We remove the bridge from the conference (expiring it) and re-invite the participants.
-                        throw ColibriAllocationFailedException("Colibri error: ${error.toXML()}", true)
+                        throw ColibriAllocationFailedException("Colibri error: ${error.toXML()}", removeBridge)
                     }
                 }
 
@@ -859,16 +890,16 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         // The fact that this bridge was selected means that we haven't received its updated presence yet,
                         // so set the graceful-shutdown flag explicitly to prevent future selection.
                         session.bridge.isInGracefulShutdown = true
-                        throw ColibriAllocationFailedException("Bridge in graceful shutdown", true)
+                        throw ColibriAllocationFailedException("Bridge in graceful shutdown", removeBridge)
                     } else {
                         session.bridge.isOperational = false
-                        throw ColibriAllocationFailedException("Bridge failed with service_unavailable.", true)
+                        throw ColibriAllocationFailedException("Bridge failed with service_unavailable.", removeBridge)
                     }
                 }
 
                 else -> {
                     session.bridge.isOperational = false
-                    throw ColibriAllocationFailedException("Error: ${error.toXML()}", true)
+                    throw ColibriAllocationFailedException("Error: ${error.toXML()}", removeBridge)
                 }
             }
         }

@@ -73,6 +73,10 @@ class ConferenceNonOperationalBridgeTest : ShouldSpec() {
     private fun endpointsCreatedOn(bridge: Bridge) = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
         .filter { it.to == bridge.jid }.flatMap { it.endpoints }.filter { it.create }.map { it.id }
 
+    /** The IDs of the endpoints expired on [bridge], in order. */
+    private fun endpointsExpiredOn(bridge: Bridge) = xmppConnection.requests.filterIsInstance<ConferenceModifyIQ>()
+        .filter { it.to == bridge.jid }.flatMap { it.endpoints }.filter { it.expire }.map { it.id }
+
     private fun ChatRoomMember.endpointId() = harness.getParticipant(this)!!.endpointId
 
     private fun ChatRoomMember.sessionInitiates() = harness.getRemoteParticipant(this)?.requests
@@ -146,6 +150,39 @@ class ConferenceNonOperationalBridgeTest : ShouldSpec() {
                 }
                 should("invite the new participant once") {
                     member3.sessionInitiates() shouldBe 1
+                }
+            }
+        }
+        context("A conference on a bridge which is not operational, with no other operational bridge") {
+            val members = harness.addParticipants(2)
+            endpointsCreatedOn(jvb1) shouldBe members.map { it.endpointId() }
+
+            jvb1.isOperational = false
+            jvb2.isOperational = false
+
+            context("When the bridge responds") {
+                val member3 = harness.chatRoom.addMember("member3")
+
+                should("invite the new participant on the same bridge") {
+                    endpointsCreatedOn(jvb1) shouldBe (members + member3).map { it.endpointId() }
+                    member3.sessionInitiates() shouldBe 1
+                }
+                should("not re-invite the existing participants") {
+                    members.forEach { it.sessionInitiates() shouldBe 1 }
+                }
+            }
+            context("When the bridge does not respond") {
+                xmppConnection.unresponsiveBridges.add(jvb1.jid)
+                val member3 = harness.chatRoom.addMember("member3")
+
+                should("not invite the new participant") {
+                    member3.sessionInitiates() shouldBe 0
+                }
+                should("keep the existing participants on the bridge, and not re-invite them") {
+                    members.forEach { it.sessionInitiates() shouldBe 1 }
+                    endpointsCreatedOn(jvb2).shouldBeEmpty()
+                    endpointsExpiredOn(jvb1).filter { it in members.map { m -> m.endpointId() } }.shouldBeEmpty()
+                    conference.participantCount shouldBe 3
                 }
             }
         }
