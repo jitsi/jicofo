@@ -21,11 +21,13 @@ The distribution package is created in `jicofo/target/jicofo-1.1-SNAPSHOT-archiv
 ```bash
 mvn test                             # Run all tests
 mvn test -pl jicofo-selector         # Run tests for specific module
-mvn test -Dtest=BridgeSelectorTest   # Run specific test class
-mvn verify -Pcoverage                # Run the same checks as CI (tests, SpotBugs, ktlint, coverage)
+mvn test -Dtest=BridgeSelectorTest -Dsurefire.failIfNoSpecifiedTests=false  # Run specific test class
+mvn verify -Pcoverage                # Run the same checks as CI (tests, SpotBugs, ktlint, checkstyle, coverage)
 ```
 
-CI (`.github/workflows/maven.yml`) runs `mvn verify -B -Pcoverage`, not `mvn test`. `mvn test` does not run SpotBugs or ktlint, because both are bound to the `verify` phase. SpotBugs also checks test code (`includeTests=true` in each module), so a change to test code only can fail CI while `mvn test` passes. Run `mvn verify -Pcoverage` from the repo root before you report that the build passes.
+From the repo root, `-Dtest` needs `-Dsurefire.failIfNoSpecifiedTests=false`. Without it, the build fails with "No tests were executed!" in the first module that does not have the test class.
+
+CI (`.github/workflows/maven.yml`) runs `mvn verify -B -Pcoverage`, not `mvn test`. `mvn test` does not run SpotBugs, ktlint or checkstyle, because all three are bound to the `verify` phase. SpotBugs also checks test code (`includeTests=true` in each module), so a change to test code only can fail CI while `mvn test` passes. Run `mvn verify -Pcoverage` from the repo root before you report that the build passes.
 
 Each module has its own `spotbugs-exclude.xml`. When you move a test to a different module, make sure that the exclude file of the destination module has the suppressions that the test needs.
 
@@ -131,7 +133,7 @@ Configuration objects in code are typically Kotlin companion objects (e.g., `Bri
 - **Time Control**: `FakeClock` for time-dependent tests
 - **Isolation**: Tests use `IsolationMode.InstancePerLeaf` for test isolation
 - **Location**: Tests mirror source structure (`src/test/kotlin` matches `src/main/kotlin`)
-- **Surefire counts**: Surefire can print `Tests run: 0` for a Kotest spec that did run, because the Kotest engine does not report each case to Surefire. The total at the end of the run is correct, and a failed case fails the build with the name of the spec. To prove that a new case runs, make one of its assertions fail once.
+- **Surefire counts**: Surefire counts only `should` leaves. A spec that asserts directly inside `context` blocks prints `Tests run: 0` for the spec and adds 0 to the module total, but its assertions run. A failed assertion still fails the build and names the context and the spec. To prove that a new assertion runs, make it fail once.
 
 ### Important Architectural Patterns
 

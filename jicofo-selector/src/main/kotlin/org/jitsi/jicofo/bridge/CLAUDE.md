@@ -48,11 +48,11 @@ In each group, a lower `correctedStress` comes first.
 
 1. Keep only operational bridges.
 2. Remove bridges that are `SHUTTING_DOWN`.
-3. If `OctoConfig.allowMixedVersions` is false, keep only bridges with the required version (the version of the bridges that the conference already uses).
+3. If `OctoConfig.allowMixedVersions` is false, keep only bridges with the required version. The required version is the version of the bridges that the conference already uses. If the conference has no bridge yet, it is the `version` argument of `selectBridge`, if the caller gives one.
 4. Prefer bridges that are not draining, if there are any.
 5. Prefer bridges that are not in graceful shutdown, if there are any.
 
-If step 1, 2 or 3 leaves no bridge, the selection fails.
+If step 1, 2 or 3 leaves no bridge, the selection fails. If the caller gives a `version` that is different from the version of the bridges of the conference, the selection fails before step 1.
 
 ## RegionBasedBridgeSelectionStrategy
 
@@ -69,9 +69,12 @@ If step 1, 2 or 3 leaves no bridge, the selection fails.
 
 Steps 1 to 5 use the per-conference overload check.
 
-If `localRegion` is set and the conference has no bridge yet, a participant whose region is in the same region group as the local region (but is not the local region) gets a bridge in the local region. The strategy assumes that the next participant is in the local region.
+A participant with no region is always treated as if it were in `localRegion`.
 
-If no candidate bridge is in the region group of the participant, the strategy selects as if the participant were in `localRegion`.
+The next two rules apply only when `localRegion` is set:
+
+- If the conference has no bridge yet, a participant whose region is in the same region group as the local region (but is not the local region) gets a bridge in the local region. The strategy assumes that the next participant is in the local region.
+- If no candidate bridge is in the region group of the participant, the strategy selects as if the participant were in `localRegion`.
 
 `jicofo.bridge.region-groups` defines the region groups. A region that is in no group forms a group of its own.
 
@@ -82,6 +85,7 @@ If no candidate bridge is in the region group of the participant, the strategy s
 - The limit applies to one (bridge, conference) pair. It is a term in the per-conference overload check only. It does not change `correctedStress` or `Bridge.isOverloaded`, so it has no effect on other conferences, on sorting, on `hasNonOverloadedBridge()`, or on load redistribution.
 - The state is a `RateTracker` in `Colibri2Session`, which exists once for each (conference, bridge) pair. The tracker is created and removed together with the session. Do not move it to `Bridge` or to a separate map.
 - `ColibriV2SessionManager.getBridges()` reads the tracker of each session into `ConferenceBridgeProperties.recentlyAddedParticipantCount` for each selection.
+- `getBridges()` also drops the sessions whose bridge is not operational. So a bridge that is not operational is never in `conferenceBridges`, even when the conference has endpoints on it.
 - The default is `-1` (disabled).
 - Only steps 1 to 5 of the strategy chain honor the limit. Step 6 (`notLoaded`) uses only the bridge-level check. Step 7 (`leastLoadedNotMaxedAlreadyInConference`) checks only `max-bridge-participants`. Step 8 (`leastLoaded`) checks nothing. Steps 7 and 8 return some bridge, so that the allocation does not fail.
 - Load redistribution removes each moved endpoint and invites it again. The move counts as a new add on the destination bridge, so moved endpoints can reach the limit there.
