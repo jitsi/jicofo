@@ -299,8 +299,10 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                                 failedSessions.shouldBeEmpty()
                                 reinvitedParticipants.shouldBeEmpty()
                             }
-                            should("report the bridge selection as failed") {
-                                selectionEvents.last() shouldBe false
+                            should("not report the bridge selection as failed") {
+                                // The "bridge not available" presence reaches all occupants, and clients leave the
+                                // conference when they receive it.
+                                selectionEvents shouldBe listOf(true)
                             }
                             context("And the bridge responds again") {
                                 unresponsiveBridges.clear()
@@ -349,6 +351,9 @@ class ColibriV2SessionManagerNonOperationalBridgeTest : ShouldSpec() {
                         should("not remove the session or re-invite the existing participants") {
                             failedSessions.shouldBeEmpty()
                             reinvitedParticipants.shouldBeEmpty()
+                        }
+                        should("not report the bridge selection as failed") {
+                            selectionEvents.contains(false) shouldBe false
                         }
                     } else {
                         should("remove the session and report all its participants, including the new one") {

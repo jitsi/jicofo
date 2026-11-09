@@ -661,7 +661,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 // when the conference's bridge is not operational (e.g. its health check timed out) and there is no
                 // other bridge. Try the conference's bridge. If it fails, there is no other bridge to move the
                 // conference to, and the existing participants may still have working media. So fail only this
-                // participant.
+                // participant. Do not fire [bridgeSelectionFailed] in that case: the "bridge not available" presence
+                // reaches all occupants, and clients leave the conference when they receive it.
                 // This only applies with a single session. With more than one session, there is no single bridge to
                 // fall back to.
                 val existingBridge = sessions.values.singleOrNull()?.bridge
@@ -775,10 +776,6 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             try {
                 return handleResponse(response, session, created, participantInfo, keepSession = singleBridgeFallback)
             } catch (e: Exception) {
-                if (singleBridgeFallback) {
-                    // There was no bridge for the participant after all.
-                    eventEmitter.fireEvent { bridgeSelectionFailed() }
-                }
                 if (e is ColibriStateOutOfSyncException) {
                     // This has a recovery path (below) which does not involve the bridge being considered failed, so
                     // it is not an error.
