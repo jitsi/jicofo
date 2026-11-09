@@ -50,7 +50,10 @@ class CodecUtil {
                 // fail to enable h264, if the encoding name is in lower case.
                 val h264 = createPayloadTypeExtension(config.h264.pt(), "H264", 90000)
                 h264.addVideoExtensions(options, config.h264)
-                h264.addParameterExtension("profile-level-id", "42e01f;level-asymmetry-allowed=1;packetization-mode=1;")
+                h264.addParameterExtension(
+                    "profile-level-id",
+                    "${config.h264.profileLevelId()};level-asymmetry-allowed=1;packetization-mode=1;"
+                )
 
                 add(h264)
             }
