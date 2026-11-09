@@ -44,4 +44,14 @@ class PendingExecutor {
             pending.removeFirst().run()
         }
     }
+
+    /** The number of queued tasks. */
+    val size: Int
+        get() = pending.size
+
+    /**
+     * Remove the oldest queued task and return it without running it. A test can run it later, for example to
+     * model a response which arrives after other events.
+     */
+    fun takeFirst(): Runnable = pending.removeFirst()
 }

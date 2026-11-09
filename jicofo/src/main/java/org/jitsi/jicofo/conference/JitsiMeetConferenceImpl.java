@@ -3420,9 +3420,11 @@ public class JitsiMeetConferenceImpl
             // failing ICE, and counting it would feed the bridge-selection penalty.
             logger.info("ICE restart: the bridge did not restart ICE for " + endpointId
                     + ", re-inviting the participant.");
-            // As in moveEndpoint(), remove the endpoint first so that the re-invite allocates a new one.
-            getColibriSessionManager().removeParticipant(endpointId);
-            reInviteParticipantsById(Collections.singletonList(endpointId));
+            // The session manager has already removed the endpoint, so the re-invite allocates a new one.
+            // moveEndpoint() does the same removal before it re-invites. The session manager does the removal under
+            // its lock, and only if the allocation is still current. As in endpointRemoved(), do not update the
+            // participant: it has no allocation, and the removal already expired it on the relays.
+            reInviteParticipantsById(Collections.singletonList(endpointId), false);
         }
     }
 
