@@ -48,6 +48,7 @@ import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
+import org.jivesoftware.smackx.muc.packet.Destroy
 import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
@@ -237,17 +238,21 @@ class ChatRoomImplTest : ShouldSpec() {
             }
             should("stop the conference when the focus is kicked (status 307, affiliation stays owner)") {
                 val roomDestroyed = CompletableFuture<Unit>()
+                var localRoleChanged = false
                 chatRoom.addListener(
                     object : ChatRoomListener {
                         override fun roomDestroyed(reason: String?) {
                             roomDestroyed.complete(Unit)
                         }
+                        override fun localRoleChanged(newRole: MemberRole) {
+                            localRoleChanged = true
+                        }
                     }
                 )
                 chatRoom.join()
 
-                // A MUC kick: an unavailable self-presence with status 307. The focus is always a room owner, so
-                // the affiliation stays "owner" and only the role becomes "none".
+                // A MUC kick: an unavailable self-presence with status 307. In a conference room the focus is an
+                // owner, so the affiliation stays "owner" and only the role becomes "none".
                 val kickPresence = StanzaBuilder.buildPresence()
                     .from(JidCreate.entityFullFrom("$roomJid/focus"))
                     .ofType(Presence.Type.unavailable)
@@ -261,9 +266,75 @@ class ChatRoomImplTest : ShouldSpec() {
                     }
                 chatRoom.processPresence(kickPresence)
 
-                // The conference stops via the roomDestroyed event, the same path a room destroy uses.
-                // get() throws (failing the test) if the event never fires, which is the bug being fixed.
+                // The conference stops via the roomDestroyed event, the same path a room destroy uses, and the room
+                // is left so it does not block a new conference for the same JID. get() throws (failing the test)
+                // on timeout, which is the bug being fixed.
                 roomDestroyed.get(5, TimeUnit.SECONDS)
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                // A kick must not be reported as a role change.
+                localRoleChanged shouldBe false
+            }
+            should("leave but not re-fire roomDestroyed on a room destroy (Smack already fires it)") {
+                var roomDestroyedCount = 0
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyedCount++
+                        }
+                    }
+                )
+                chatRoom.join()
+
+                val destroyPresence = StanzaBuilder.buildPresence()
+                    .from(JidCreate.entityFullFrom("$roomJid/focus"))
+                    .ofType(Presence.Type.unavailable)
+                    .build().apply {
+                        addExtension(
+                            MUCUser().apply {
+                                item = MUCItem(MUCAffiliation.owner, MUCRole.none, null, null, null, null, null)
+                                destroy = Destroy(null, "destroyed")
+                            }
+                        )
+                    }
+                chatRoom.processPresence(destroyPresence)
+
+                // The room is left, but roomDestroyed is not fired from processOwnPresence: Smack's
+                // UserStatusListener fires it for a destroy, so firing it here too would stop the conference twice.
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                roomDestroyedCount shouldBe 0
+            }
+            should("ignore an unavailable self-presence that only reflects our own leave (status 110)") {
+                var roomDestroyedCount = 0
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyedCount++
+                        }
+                    }
+                )
+                chatRoom.join()
+
+                // Status 110 alone (no removal code, no destroy) is a reflection of our own leave, possibly from a
+                // previous instance of the room.
+                val selfLeave = StanzaBuilder.buildPresence()
+                    .from(JidCreate.entityFullFrom("$roomJid/focus"))
+                    .ofType(Presence.Type.unavailable)
+                    .build().apply {
+                        addExtension(
+                            MUCUser().apply {
+                                item = MUCItem(MUCAffiliation.owner, MUCRole.none, null, null, null, null, null)
+                                addStatusCode(MUCUser.Status.PRESENCE_TO_SELF_110)
+                            }
+                        )
+                    }
+                chatRoom.processPresence(selfLeave)
+
+                // Drain the serial presence queue past the self-presence, then assert nothing stopped the room.
+                val drained = CompletableFuture<Unit>()
+                chatRoom.queueXmppTask { drained.complete(Unit) }
+                drained.get(5, TimeUnit.SECONDS)
+                roomDestroyedCount shouldBe 0
+                chatRoom.leftFuture.isDone shouldBe false
             }
         }
         context("Members joining") {
