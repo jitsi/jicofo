@@ -706,11 +706,13 @@ class ChatRoomImpl(
                 // fire it again here, we only leave the room.
                 logger.info("Room destroyed, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
                 leave()
-            } else if (statuses == setOf(MUCUser.Status.PRESENCE_TO_SELF_110)) {
-                // A lone self-presence status (110) with no removal code is a reflection of our own leave, possibly
-                // from a previous instance of the room. We ignore it, so it does not stop a new conference for the
-                // same room.
-                logger.info("Ignoring an unavailable self-presence with no removal status.")
+            } else if (statuses == setOf(MUCUser.Status.PRESENCE_TO_SELF_110) && muc.isJoined) {
+                // A lone self-presence status (110) while Smack still considers the MUC joined is a reflection of our
+                // own leave that reached this instance before it finished joining (Smack did not recognize it as
+                // ours, so the MUC stayed joined). This can come from a previous instance of the same room. We ignore
+                // it, so it does not stop a new conference. A lone 110 that Smack did take as our leave leaves the MUC
+                // not joined and falls through to the removal branch below, so it still stops the conference.
+                logger.info("Ignoring a stale unavailable self-presence (status 110, still joined).")
             } else {
                 // A removal: a kick (307), a ban (301), an affiliation or members-only removal (321/322), a service
                 // shutdown (332). We stop the conference by firing roomDestroyed, the same path a destroy uses.
