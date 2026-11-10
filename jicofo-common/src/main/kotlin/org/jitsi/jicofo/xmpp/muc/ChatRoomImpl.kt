@@ -46,7 +46,6 @@ import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
-import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -700,18 +699,22 @@ class ChatRoomImpl(
             val affiliation = mucUser.item.affiliation
             val role = mucUser.item.role
 
-            // This is our initial role and affiliation, as smack does not fire any initial events.
-            if (!presence.isAvailable && MUCAffiliation.none == affiliation && MUCRole.none == role) {
+            if (!presence.isAvailable) {
+                // An unavailable presence for our own occupant means we have been removed from the room. This happens
+                // for a room destroy, but also for a plain kick (status 307) where the affiliation stays "owner" and
+                // only the role becomes "none". Stop the conference in all cases, regardless of affiliation/role, by
+                // firing roomDestroyed (the same path a room destroy uses). Do not rely on affiliation==none, and do
+                // not fall through to localRoleChanged, which would not stop the conference for an owner kick.
                 val destroy = mucUser.destroy
                 if (destroy == null) {
-                    // the room is unavailable to us, there is no
-                    // message we will just leave
-                    leave()
+                    logger.info("Removed from the room (kicked or revoked). affiliation=$affiliation role=$role")
                 } else {
-                    logger.info("Leave, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
-                    leave()
+                    logger.info("Room destroyed, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
                 }
+                eventEmitter.fireEvent { roomDestroyed(destroy?.reason) }
+                leave()
             } else {
+                // This is our initial role and affiliation, as smack does not fire any initial events.
                 eventEmitter.fireEvent { localRoleChanged(fromSmack(role, affiliation)) }
             }
         }

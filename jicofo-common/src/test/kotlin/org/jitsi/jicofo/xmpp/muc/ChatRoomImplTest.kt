@@ -48,12 +48,14 @@ import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
+import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 import kotlin.concurrent.thread
@@ -232,6 +234,36 @@ class ChatRoomImplTest : ShouldSpec() {
                 val presence = sent.captured.shouldBeInstanceOf<Presence>()
                 presence.type shouldBe Presence.Type.available
                 presence.getExtension<StandardExtensionElement>("test", "test:ns") shouldNotBe null
+            }
+            should("stop the conference when the focus is kicked (status 307, affiliation stays owner)") {
+                val roomDestroyed = CompletableFuture<Unit>()
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyed.complete(Unit)
+                        }
+                    }
+                )
+                chatRoom.join()
+
+                // A MUC kick: an unavailable self-presence with status 307. The focus is always a room owner, so
+                // the affiliation stays "owner" and only the role becomes "none".
+                val kickPresence = StanzaBuilder.buildPresence()
+                    .from(JidCreate.entityFullFrom("$roomJid/focus"))
+                    .ofType(Presence.Type.unavailable)
+                    .build().apply {
+                        addExtension(
+                            MUCUser().apply {
+                                item = MUCItem(MUCAffiliation.owner, MUCRole.none, null, null, null, null, null)
+                                addStatusCode(MUCUser.Status.KICKED_307)
+                            }
+                        )
+                    }
+                chatRoom.processPresence(kickPresence)
+
+                // The conference stops via the roomDestroyed event, the same path a room destroy uses.
+                // get() throws (failing the test) if the event never fires, which is the bug being fixed.
+                roomDestroyed.get(5, TimeUnit.SECONDS)
             }
         }
         context("Members joining") {
