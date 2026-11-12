@@ -345,10 +345,12 @@ public class JitsiMeetConferenceImpl
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
 
-        translationManager = new ConferenceTranslationManager(conferenceSources, logger);
+        // The translation sources and the sources of the agents take their SSRCs from the same minter.
+        SyntheticSsrcMinter syntheticSsrcMinter = new SyntheticSsrcMinter(conferenceSources);
+        translationManager = new ConferenceTranslationManager(conferenceSources, syntheticSsrcMinter, logger);
         clientRequirementsHandler = new ClientRequirementsHandler(logger);
         agentManager = new ConferenceAgentManager(
-                conferenceSources, roomName.toString(), logger, this::getVoiceAgentConsent);
+                conferenceSources, syntheticSsrcMinter, roomName.toString(), logger, this::getVoiceAgentConsent);
 
         this.config = new JitsiMeetConfig(properties);
 

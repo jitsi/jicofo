@@ -18,6 +18,7 @@ package org.jitsi.jicofo.conference.translation
 import org.jitsi.jicofo.TranslationConfig
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.TranslationRequest
+import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -33,15 +34,17 @@ import org.jitsi.utils.logging2.createChildLogger
  * only removed when the request is dropped, the sender's audio source disappears, or the sender leaves — reflected via
  * [reapply], which the conference calls on the relevant events).
  *
- * All side effects on the conference source map and colibri session manager happen here; the pure naming/SSRC logic
- * lives in [TranslationSourceManager].
+ * All side effects on the conference source map and colibri session manager happen here; the naming and the
+ * allocation of the sources live in [TranslationSourceManager].
  */
 class ConferenceTranslationManager(
     private val conferenceSources: ValidatingConferenceSourceMap,
+    /** Mints the SSRCs of the synthetic sources. The conference shares it with the agent manager. */
+    ssrcMinter: SyntheticSsrcMinter,
     parentLogger: Logger
 ) {
     private val logger = createChildLogger(parentLogger)
-    private val sourceManager = TranslationSourceManager()
+    private val sourceManager = TranslationSourceManager(ssrcMinter::mint)
     private var requests: Map<String, List<String>> = emptyMap()
 
     /**
@@ -74,7 +77,7 @@ class ConferenceTranslationManager(
             return
         }
 
-        val result = sourceManager.update(requests, ::baseName, ::ssrcInUse)
+        val result = sourceManager.update(requests, ::baseName)
 
         // Diff the desired synthetic sources against what is currently in the conference source map and apply the delta.
         val affected = mutableSetOf<String>()
@@ -124,10 +127,5 @@ class ConferenceTranslationManager(
             it.mediaType == MediaType.AUDIO && !it.synthetic
         } ?: return null
         return audio.name ?: Source.nameForIdAndMediaType(senderId, MediaType.AUDIO, 0)
-    }
-
-    /** Whether an SSRC is already used by a non-synthetic source in the conference. */
-    private fun ssrcInUse(ssrc: Long): Boolean = conferenceSources.unmodifiable().values.any { set ->
-        set.sources.any { !it.synthetic && it.ssrc == ssrc }
     }
 }

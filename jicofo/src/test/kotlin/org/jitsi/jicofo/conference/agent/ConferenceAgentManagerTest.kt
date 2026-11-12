@@ -39,6 +39,7 @@ import org.jitsi.jicofo.bridge.colibri.ColibriConferenceNotFoundException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionGoneException
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
+import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -91,6 +92,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
     private var consent: Map<String, Set<String>> = emptyMap()
     private val manager = ConferenceAgentManager(
         conferenceSources,
+        SyntheticSsrcMinter(conferenceSources),
         "room@muc.example.com",
         LoggerImpl("test"),
         consentingMembers = { consent },

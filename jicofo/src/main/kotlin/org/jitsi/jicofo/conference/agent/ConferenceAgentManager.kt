@@ -27,6 +27,7 @@ import org.jitsi.jicofo.bridge.colibri.ColibriStateOutOfSyncException
 import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.codec.JingleOfferFactory
 import org.jitsi.jicofo.codec.OfferOptions
+import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
@@ -37,7 +38,6 @@ import org.jitsi.utils.logging2.Logger
 import org.jitsi.utils.logging2.createChildLogger
 import org.jitsi.xmpp.extensions.colibri2.Media
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.ThreadLocalRandom
 
 /**
  * Ties the voice-agent request map (from RoomMetadata) to the conference: for each requested agent it allocates a
@@ -62,8 +62,10 @@ import java.util.concurrent.ThreadLocalRandom
  * [statusReporter] (see [AgentStatusReporter]); the relay reports `active`, `failed` for dial failures and `ended`.
  */
 class ConferenceAgentManager @JvmOverloads constructor(
-    /** Read to avoid SSRC conflicts when minting and to name consenting members' audio sources; never modified. */
+    /** Read to name consenting members' audio sources; never modified. */
     private val conferenceSources: ValidatingConferenceSourceMap,
+    /** Mints the SSRCs of the agents' sources. The conference shares it with the translation manager. */
+    private val ssrcMinter: SyntheticSsrcMinter,
     private val conferenceJid: String,
     parentLogger: Logger,
     /** Endpoint id -> ids of the agents that member consented to share audio with, read on every (re)apply. */
@@ -197,7 +199,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
         requested.keys.forEach { id ->
             val source = allocated.getOrPut(id) {
-                Source(mintSsrc(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
+                Source(ssrcMinter.mint(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
             }
             if (id !in ready && id !in pending && id !in failed && canAllocate && !stopped) {
                 val region = primaryRegion(colibriSessionManager)
@@ -377,29 +379,12 @@ class ConferenceAgentManager @JvmOverloads constructor(
      */
     private fun remint(id: String) {
         val old = allocated[id] ?: return
-        val source = Source(mintSsrc(), MediaType.AUDIO, name = old.name, synthetic = true)
+        val source = old.copy(ssrc = ssrcMinter.mint())
         logger.info("Agent $id gets a new SSRC: ${old.ssrc} -> ${source.ssrc}")
         allocated[id] = source
     }
 
-    /** Whether an SSRC is already used by a source in the conference or by another agent. */
-    private fun ssrcInUse(ssrc: Long): Boolean = allocated.values.any { it.ssrc == ssrc } ||
-        conferenceSources.unmodifiable().values.any { set -> set.sources.any { it.ssrc == ssrc } }
-
-    private fun mintSsrc(): Long {
-        repeat(MAX_MINT_ATTEMPTS) {
-            val candidate = ThreadLocalRandom.current().nextLong(1, MAX_SSRC)
-            if (!ssrcInUse(candidate)) {
-                return candidate
-            }
-        }
-        throw IllegalStateException("Failed to mint a non-conflicting SSRC after $MAX_MINT_ATTEMPTS attempts")
-    }
-
     companion object {
-        private const val MAX_SSRC = 0x1_0000_0000L
-        private const val MAX_MINT_ATTEMPTS = 1000
-
         /** Consecutive session losses during an agent's allocation before it is reported as failed. */
         private const val MAX_SESSION_LOSSES = 3
 

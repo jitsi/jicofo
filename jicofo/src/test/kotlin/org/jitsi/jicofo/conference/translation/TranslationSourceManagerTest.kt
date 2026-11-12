@@ -31,13 +31,12 @@ class TranslationSourceManagerTest : ShouldSpec() {
 
     /** Every sender resolves to "<id>-a0" unless overridden. */
     private val baseName: (String) -> String? = { "$it-a0" }
-    private val noneInUse: (Long) -> Boolean = { false }
 
     init {
         val manager = TranslationSourceManager(sequentialGenerator)
 
         context("A single sender and language") {
-            val result = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, noneInUse)
+            val result = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName)
             val sources = result.sourcesBySender["aaaaaaaa"]!!
 
             should("produce one synthetic audio source named <base>.<lang>") {
@@ -55,7 +54,7 @@ class TranslationSourceManagerTest : ShouldSpec() {
         }
 
         context("Multiple languages for one sender") {
-            val result = manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName, noneInUse)
+            val result = manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName)
             val sources = result.sourcesBySender["aaaaaaaa"]!!
 
             should("produce one source per language with distinct ssrcs") {
@@ -68,41 +67,32 @@ class TranslationSourceManagerTest : ShouldSpec() {
         }
 
         context("Stability across updates") {
-            val first = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, noneInUse)
+            val first = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName)
             val ssrc = first.sourcesBySender["aaaaaaaa"]!!.first().ssrc
 
             should("keep the same ssrc when re-applying the same request") {
-                val second = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, noneInUse)
+                val second = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName)
                 second.sourcesBySender["aaaaaaaa"]!!.first().ssrc shouldBe ssrc
             }
             should("keep existing ssrc and mint a fresh one when adding a language") {
-                val second = manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName, noneInUse)
+                val second = manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName)
                 val byName = second.sourcesBySender["aaaaaaaa"]!!.associateBy { it.name }
                 byName["aaaaaaaa-a0.en"]!!.ssrc shouldBe ssrc
                 byName["aaaaaaaa-a0.es"]!!.ssrc shouldBe 101L
             }
             should("drop a language that is no longer requested, keeping the other") {
-                manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName, noneInUse)
-                val third = manager.update(mapOf("aaaaaaaa" to listOf("es")), baseName, noneInUse)
+                manager.update(mapOf("aaaaaaaa" to listOf("en", "es")), baseName)
+                val third = manager.update(mapOf("aaaaaaaa" to listOf("es")), baseName)
                 val sources = third.sourcesBySender["aaaaaaaa"]!!
                 sources.size shouldBe 1
                 sources.first().name shouldBe "aaaaaaaa-a0.es"
             }
         }
 
-        context("SSRC collision avoidance") {
-            // 100 is already used by the conference; the manager must skip it and pick 101.
-            val result = manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, ssrcInUse = { it == 100L })
-            should("mint an ssrc that does not collide with the conference") {
-                result.sourcesBySender["aaaaaaaa"]!!.first().ssrc shouldBe 101L
-            }
-        }
-
         context("Sender not present or without an audio source") {
             val result = manager.update(
                 mapOf("aaaaaaaa" to listOf("en"), "bbbbbbbb" to listOf("fr")),
-                baseNameResolver = { if (it == "aaaaaaaa") "aaaaaaaa-a0" else null },
-                noneInUse
+                baseNameResolver = { if (it == "aaaaaaaa") "aaaaaaaa-a0" else null }
             )
             should("skip the unresolved sender and keep the resolved one") {
                 result.sourcesBySender.keys shouldContainExactly setOf("aaaaaaaa")
@@ -115,22 +105,22 @@ class TranslationSourceManagerTest : ShouldSpec() {
             val lateResolver: (String) -> String? = { if (it == "aaaaaaaa" && hasAudio) "aaaaaaaa-a0" else null }
 
             // Request arrives before the sender has an audio source: skipped, no synthetic source.
-            val first = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver, noneInUse)
+            val first = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver)
 
             should("skip the sender while it has no audio source") {
                 first.isEmpty shouldBe true
             }
             should("create the synthetic source once the audio source appears and the same request is re-applied") {
                 hasAudio = true
-                val second = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver, noneInUse)
+                val second = manager.update(mapOf("aaaaaaaa" to listOf("es")), lateResolver)
 
                 second.sourcesBySender["aaaaaaaa"]!!.map { it.name } shouldContainExactly listOf("aaaaaaaa-a0.es")
             }
         }
 
         context("Empty requests") {
-            manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName, noneInUse)
-            val result = manager.update(emptyMap(), baseName, noneInUse)
+            manager.update(mapOf("aaaaaaaa" to listOf("en")), baseName)
+            val result = manager.update(emptyMap(), baseName)
             should("clear all synthetic sources") {
                 result.isEmpty shouldBe true
                 manager.allocatedSsrcs().isEmpty() shouldBe true
