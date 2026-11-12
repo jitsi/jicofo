@@ -2587,6 +2587,9 @@ public class JitsiMeetConferenceImpl
                 {
                     // The participant keeps its sources. In the per-source mode another bridge may inject its
                     // synthetic translation sources from now on, so these need new SSRCs.
+                    // This has to run before inviteParticipant: the new allocation takes the sources of the
+                    // participant from conferenceSources. The session manager has no endpoint for the participant at
+                    // this point (every path to here removed it), so the manager signals nothing to a bridge.
                     translationManager.senderReinvited(participant.getEndpointId(), colibriSessionManager, meetingId);
                 }
 

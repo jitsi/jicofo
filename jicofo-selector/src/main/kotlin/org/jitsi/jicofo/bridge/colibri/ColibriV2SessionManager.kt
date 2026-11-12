@@ -263,8 +263,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             connectSession = null
         }
         // Reconcile connects across the remaining sessions (re-place transcriber/translator as needed). Safe because
-        // the removed session is already out of [sessions].
-        // With no connects desired there is nothing to place, and no translator connect that could move.
+        // the removed session is already out of [sessions]. With no connects desired there is nothing to place, and
+        // no translator connect that could move.
         if (connectsDesired()) {
             updateConnects()
         }
