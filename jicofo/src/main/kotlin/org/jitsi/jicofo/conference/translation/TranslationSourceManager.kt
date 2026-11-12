@@ -43,7 +43,7 @@ data class TranslationSources(
  * source per `<sender, language>`, named `<baseName>.<language>` where `baseName` is the sender's first audio source
  * name. SSRCs come from the conference's [org.jitsi.jicofo.conference.SyntheticSsrcMinter] and are kept stable across
  * updates: an existing `<sender, language>` keeps its SSRC, so the map is only ever extended or pruned, never
- * churned.
+ * churned. The exception is [remint], for when another bridge starts to inject the sources.
  *
  * This class holds the allocation state. It does not touch the conference source map and signals nothing: the caller
  * applies the returned [TranslationSources] to the conference.
@@ -98,6 +98,18 @@ class TranslationSourceManager(
         val exportNames = next.keys.mapNotNull { baseNameResolver(it) }.toSet()
 
         return TranslationSources(sourcesBySender, requestNames, exportNames)
+    }
+
+    /**
+     * Give every allocated source a new SSRC under the same name. The caller does this when another bridge starts to
+     * inject the sources: that bridge can not continue the RTP sequence numbers and timestamps of the old stream, so
+     * receivers must see a new stream and not a stream that goes back. The next [update] returns the new sources.
+     */
+    @Synchronized
+    fun remint() {
+        for (byLanguage in allocated.values) {
+            byLanguage.replaceAll { _, source -> source.copy(ssrc = mintSsrc()) }
+        }
     }
 
     /** All synthetic SSRCs currently allocated. Tests read it. */

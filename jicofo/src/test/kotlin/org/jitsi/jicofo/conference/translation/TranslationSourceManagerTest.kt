@@ -126,5 +126,34 @@ class TranslationSourceManagerTest : ShouldSpec() {
                 manager.allocatedSsrcs().isEmpty() shouldBe true
             }
         }
+
+        context("New SSRCs for the allocated sources") {
+            val requests = mapOf("aaaaaaaa" to listOf("en", "es"), "bbbbbbbb" to listOf("en"))
+            val before = manager.update(requests, baseName)
+            val ssrcsBefore = manager.allocatedSsrcs()
+            manager.remint()
+            val after = manager.update(requests, baseName)
+
+            should("give every source an SSRC that was not allocated until now") {
+                manager.allocatedSsrcs().size shouldBe 3
+                manager.allocatedSsrcs().intersect(ssrcsBefore) shouldBe emptySet()
+            }
+            should("keep the names, the senders and the synthetic flag of the sources") {
+                after.sourcesBySender.mapValues { (_, sources) -> sources.map { it.name }.toSet() } shouldBe
+                    before.sourcesBySender.mapValues { (_, sources) -> sources.map { it.name }.toSet() }
+                after.sourcesBySender.values.flatten().all { it.synthetic && it.mediaType == MediaType.AUDIO } shouldBe
+                    true
+            }
+            should("keep the new SSRCs on the updates that follow") {
+                manager.update(requests, baseName).sourcesBySender shouldBe after.sourcesBySender
+            }
+        }
+
+        context("New SSRCs with no source allocated") {
+            manager.remint()
+            should("allocate nothing") {
+                manager.allocatedSsrcs().isEmpty() shouldBe true
+            }
+        }
     }
 }

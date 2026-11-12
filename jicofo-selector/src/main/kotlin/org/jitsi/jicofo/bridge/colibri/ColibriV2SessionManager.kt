@@ -146,6 +146,16 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      */
     private var connectSession: Colibri2Session? = null
 
+    /**
+     * The last session that hosted the single-bridge translator connect since translation was turned on, or null if
+     * no session did. Kept apart from [connectSession], which is cleared when its session is removed. This one stays
+     * set while no session exists, so that the next session to host the connect counts as a move.
+     */
+    private var lastTranslatorSession: Colibri2Session? = null
+
+    /** Backs [translatorConnectMoves]. */
+    private var translatorConnectMoveCount = 0
+
     /** The transcriber URL template */
     private var transcriberUrl: TemplatedUrl? = null
 
@@ -254,6 +264,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         }
         // Reconcile connects across the remaining sessions (re-place transcriber/translator as needed). Safe because
         // the removed session is already out of [sessions].
+        // With no connects desired there is nothing to place, and no translator connect that could move.
         if (connectsDesired()) {
             updateConnects()
         }
@@ -365,6 +376,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             // Set connectSession first, since computeConnectSpecsFor checks it.
             if (connectSession == null && connectsDesired()) {
                 connectSession = session
+                noteTranslatorSession()
             }
             session.setInitialConnects(computeConnectSpecsFor(session))
             return Pair(session, true)
@@ -421,6 +433,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
         // Apply to every session, so connects that are no longer desired on a session are expired.
         sessions.values.forEach { it.setConnects(computeConnectSpecsFor(it)) }
+        noteTranslatorSession()
 
         val hasConnects = connectsDesired()
         if (hasConnects != lastHasConnects) {
@@ -430,6 +443,33 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     override fun hasConnects(): Boolean = lastHasConnects
+
+    override val translatorConnectMoves: Int
+        get() = synchronized(syncRoot) { translatorConnectMoveCount }
+
+    /**
+     * Count a move of the single-bridge translator connect, and fire
+     * [ColibriSessionManager.Listener.translatorConnectMoved], if the connect is now on another session than the last
+     * session that hosted it. Runs wherever [connectSession] is selected.
+     *
+     * The first session to host the connect after translation is turned on is not a move: there are no synthetic
+     * sources from the time that translation was off. A session that hosts the connect after a time with no session
+     * is a move, because receivers can stay connected through that time (see `jicofo.conference.reinvite-method`).
+     */
+    private fun noteTranslatorSession() {
+        if (!translatorDesired() || TranslationConfig.config.mode != TranslationConfig.Mode.SINGLE_BRIDGE) {
+            lastTranslatorSession = null
+            return
+        }
+        val current = connectSession ?: return
+        val previous = lastTranslatorSession
+        lastTranslatorSession = current
+        if (previous != null && previous !== current) {
+            translatorConnectMoveCount++
+            logger.info("The translator connect moved from ${previous.bridge.jid} to ${current.bridge.jid}.")
+            eventEmitter.fireEvent { translatorConnectMoved() }
+        }
+    }
 
     /**
      * Whether any connects are desired for the conference. This is the single predicate for "the conference exports

@@ -3365,6 +3365,14 @@ public class JitsiMeetConferenceImpl
         }
 
         @Override
+        public void translatorConnectMoved()
+        {
+            // Another bridge injects the synthetic translation sources now. The translation manager sees the new
+            // count of moves and gives the sources new SSRCs.
+            translationManager.reapply(colibriSessionManager, meetingId);
+        }
+
+        @Override
         public void endpointRemoved(@NotNull String endpointId)
         {
             logger.info("Endpoint " + endpointId + " was removed from the conference. Re-inviting participant.");

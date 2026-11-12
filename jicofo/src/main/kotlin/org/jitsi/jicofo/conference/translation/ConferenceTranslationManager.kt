@@ -32,7 +32,8 @@ import org.jitsi.utils.logging2.createChildLogger
  *
  * Synthetic sources are owned by the sender endpoint and survive the sender's unrelated source add/remove (they are
  * only removed when the request is dropped, the sender's audio source disappears, or the sender leaves — reflected via
- * [reapply], which the conference calls on the relevant events).
+ * [reapply], which the conference calls on the relevant events). A source is replaced by a source with the same name
+ * and a new SSRC when another bridge starts to inject it: see [apply].
  *
  * All side effects on the conference source map and colibri session manager happen here; the naming and the
  * allocation of the sources live in [TranslationSourceManager].
@@ -52,6 +53,12 @@ class ConferenceTranslationManager(
      * token), or null to use the static config headers. Stored so [reapply] reuses the last value.
      */
     private var customHeaders: Map<String, String>? = null
+
+    /**
+     * The [ColibriSessionManager.translatorConnectMoves] that the sources were last re-minted for. The session
+     * manager owns the count, so a move is seen here whether it happened before, during or after an [apply].
+     */
+    private var seenTranslatorConnectMoves = 0
 
     /** Update the aggregated request map (and per-room connect headers) and re-apply. */
     @Synchronized
@@ -75,6 +82,19 @@ class ConferenceTranslationManager(
         if (colibriSessionManager == null || meetingId == null) {
             // Not ready yet; will be applied from JitsiMeetConferenceImpl once colibri is initialized.
             return
+        }
+
+        // In the single-bridge mode the translator connect moves to another session when its session goes away (its
+        // bridge failed, or the last participant left it). The senders on the other bridges keep their synthetic
+        // sources, but the new bridge can not continue the RTP sequence numbers and timestamps that the old bridge
+        // sent for them. Receivers would see the same SSRC go back to numbers that it already used and drop the
+        // packets, so the sources get new SSRCs. The session manager moves the connect and then reports the move, so
+        // the new bridge can inject media on the old SSRCs until the bridges have the new sources.
+        val moves = colibriSessionManager.translatorConnectMoves
+        if (moves != seenTranslatorConnectMoves) {
+            seenTranslatorConnectMoves = moves
+            logger.info("The translator connect moved to another bridge, the synthetic sources get new SSRCs.")
+            sourceManager.remint()
         }
 
         val result = sourceManager.update(requests, ::baseName)
