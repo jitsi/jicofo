@@ -24,6 +24,7 @@ import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.bridge.colibri.ColibriSessionManager
 import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
@@ -34,7 +35,8 @@ import org.jitsi.utils.logging2.LoggerImpl
 
 /**
  * Tests that [ConferenceTranslationManager] gives the synthetic sources new SSRCs when another bridge starts to
- * inject them: the single translator connect moved to another session.
+ * inject them: the single translator connect moved to another session, or a sender is re-invited in the per-source
+ * mode.
  */
 class ConferenceTranslationManagerTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -133,6 +135,40 @@ class ConferenceTranslationManagerTest : ShouldSpec() {
 
                 should("not change again in the next apply") {
                     reapply() shouldBe second
+                }
+            }
+        }
+        context("A sender that is re-invited and keeps its sources") {
+            context("in the per-source mode") {
+                setRequests()
+                val first = syntheticSource()
+                val firstOfOther = syntheticSource(otherSender)
+                manager.senderReinvited(sender, colibriSessionManager, "meeting")
+
+                should("get a new SSRC for its synthetic source under the same name") {
+                    syntheticSource().ssrc shouldNotBe first.ssrc
+                    syntheticSource().copy(ssrc = first.ssrc) shouldBe first
+                }
+                should("leave the synthetic sources of the other senders alone") {
+                    syntheticSource(otherSender) shouldBe firstOfOther
+                }
+            }
+            context("in the per-source mode, with no synthetic source") {
+                manager.senderReinvited(sender, colibriSessionManager, "meeting")
+
+                should("signal nothing") {
+                    verify(exactly = 0) { colibriSessionManager.setTranslator(any(), any(), any()) }
+                }
+            }
+            context("in the single-bridge mode") {
+                withNewConfig("jicofo.translation.mode=single-bridge") {
+                    setRequests()
+                    val first = syntheticSource()
+                    manager.senderReinvited(sender, colibriSessionManager, "meeting")
+
+                    should("keep the SSRC: the bridge that injects the source did not change") {
+                        syntheticSource() shouldBe first
+                    }
                 }
             }
         }

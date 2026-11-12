@@ -2583,6 +2583,12 @@ public class JitsiMeetConferenceImpl
                     removeParticipantSources(participant, true, updateParticipant);
                     participant.terminateJingleSession(Reason.SUCCESS, "moving", true);
                 }
+                else
+                {
+                    // The participant keeps its sources. In the per-source mode another bridge may inject its
+                    // synthetic translation sources from now on, so these need new SSRCs.
+                    translationManager.senderReinvited(participant.getEndpointId(), colibriSessionManager, meetingId);
+                }
 
                 // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a
                 // transport-replace (reInvite = true)

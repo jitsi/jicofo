@@ -33,7 +33,7 @@ import org.jitsi.utils.logging2.createChildLogger
  * Synthetic sources are owned by the sender endpoint and survive the sender's unrelated source add/remove (they are
  * only removed when the request is dropped, the sender's audio source disappears, or the sender leaves — reflected via
  * [reapply], which the conference calls on the relevant events). A source is replaced by a source with the same name
- * and a new SSRC when another bridge starts to inject it: see [apply].
+ * and a new SSRC when another bridge starts to inject it: see [apply] and [senderReinvited].
  *
  * All side effects on the conference source map and colibri session manager happen here; the naming and the
  * allocation of the sources live in [TranslationSourceManager].
@@ -77,6 +77,23 @@ class ConferenceTranslationManager(
     @Synchronized
     fun reapply(colibriSessionManager: ColibriSessionManager?, meetingId: String?) =
         apply(colibriSessionManager, meetingId)
+
+    /**
+     * The conference re-invites [sender] and lets it keep its sources (`reinvite-method = ReplaceTransport`). In the
+     * per-source mode the connect of a sender is on the bridge of the sender, so another bridge may inject its
+     * synthetic sources from now on: they get new SSRCs. In the single-bridge mode the bridge that injects does not
+     * change with the sender (see [apply] for when it does).
+     *
+     * With `reinvite-method = RestartJingle` the conference removes the sources of the sender instead, which drops
+     * the synthetic sources, and the sender gets new sources when its audio source is back.
+     */
+    @Synchronized
+    fun senderReinvited(sender: String, colibriSessionManager: ColibriSessionManager?, meetingId: String?) {
+        if (TranslationConfig.config.mode == TranslationConfig.Mode.PER_SOURCE && sourceManager.remint(sender)) {
+            logger.info("$sender is re-invited, its synthetic sources get new SSRCs.")
+            apply(colibriSessionManager, meetingId)
+        }
+    }
 
     private fun apply(colibriSessionManager: ColibriSessionManager?, meetingId: String?) {
         if (colibriSessionManager == null || meetingId == null) {

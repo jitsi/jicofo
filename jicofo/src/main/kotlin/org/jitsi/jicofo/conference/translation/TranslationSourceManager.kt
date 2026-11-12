@@ -106,11 +106,22 @@ class TranslationSourceManager(
      * receivers must see a new stream and not a stream that goes back. The next [update] returns the new sources.
      */
     @Synchronized
-    fun remint() {
-        for (byLanguage in allocated.values) {
-            byLanguage.replaceAll { _, source -> source.copy(ssrc = mintSsrc()) }
-        }
+    fun remint() = allocated.values.forEach { remint(it) }
+
+    /**
+     * Give the allocated sources of [sender] new SSRCs, as [remint] does for all sources.
+     *
+     * @return whether [sender] had any allocated source.
+     */
+    @Synchronized
+    fun remint(sender: String): Boolean {
+        val byLanguage = allocated[sender]?.takeIf { it.isNotEmpty() } ?: return false
+        remint(byLanguage)
+        return true
     }
+
+    private fun remint(byLanguage: MutableMap<String, Source>) =
+        byLanguage.replaceAll { _, source -> source.copy(ssrc = mintSsrc()) }
 
     /** All synthetic SSRCs currently allocated. Tests read it. */
     @Synchronized
