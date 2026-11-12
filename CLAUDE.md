@@ -17,6 +17,16 @@ mvn install -DskipTests              # Build without running tests
 
 The distribution package is created in `jicofo/target/jicofo-1.1-SNAPSHOT-archive.zip`.
 
+### Debian package layout
+
+`resources/build_deb_package.sh` sets the Maven version to `1.0-<build number>` (`mvn versions:set`). The Debian package version is the same with `-1` added. `debian/rules` renames the main jar to `jicofo.jar` and copies the runtime dependencies, and `debian/install` puts the files on the host:
+
+- `jicofo.jar` (the `jicofo` module) goes to `/usr/share/jicofo/`.
+- All other jar files go to `/usr/share/jicofo/lib/`. These include the jicofo modules `jicofo-common-<version>.jar` and `jicofo-selector-<version>.jar`, which hold part of the code.
+- `resources/jicofo.sh` puts `jicofo*.jar` and every `lib/*.jar` on the classpath.
+
+The names of the module jars contain the version. If you replace the jars on a host by hand, replace `jicofo.jar` and the module jars in `lib/` together, and remove the old module jars. Otherwise jicofo runs old code, or loads two versions of the same classes.
+
 ### Testing
 ```bash
 mvn test                             # Run all tests
