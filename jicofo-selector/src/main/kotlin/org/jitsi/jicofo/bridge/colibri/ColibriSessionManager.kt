@@ -97,6 +97,17 @@ interface ColibriSessionManager {
     )
 
     /**
+     * How many times the single translator connect of the [org.jitsi.jicofo.TranslationConfig.Mode.SINGLE_BRIDGE]
+     * mode moved to another session while translation was on. It never goes down, and it stays 0 in the per-source
+     * mode. The first session that hosts the connect does not count. A session that hosts it after a time with no
+     * session at all does count.
+     *
+     * After a move another bridge injects the synthetic translation sources. A caller that remembers the value can
+     * tell later that a move happened, also when it missed [Listener.translatorConnectMoved].
+     */
+    val translatorConnectMoves: Int
+
+    /**
      * Set the desired voice-agent connects. Each entry corresponds to an already-allocated synthetic endpoint; its
      * connect is placed on the bridge session hosting that endpoint. The full list replaces the previous one:
      * connects for agents no longer listed are expired.
@@ -144,6 +155,13 @@ interface ColibriSessionManager {
          * media via colibri2 `<connect>`s.
          */
         fun connectsChanged(hasConnects: Boolean) {}
+
+        /**
+         * The single translator connect moved to another session, and [translatorConnectMoves] went up. The new
+         * bridge can not continue the RTP sequence numbers and timestamps that the old bridge sent for the synthetic
+         * translation sources, so the sources need new SSRCs.
+         */
+        fun translatorConnectMoved() {}
 
         /**
          * The bridge performed an ICE restart for an endpoint and rotated its own ICE credentials. The new

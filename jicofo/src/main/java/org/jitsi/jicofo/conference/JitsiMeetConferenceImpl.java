@@ -345,10 +345,12 @@ public class JitsiMeetConferenceImpl
         logger = new LoggerImpl(JitsiMeetConferenceImpl.class.getName(), logLevel);
         logger.addContext("room", roomName.toString());
 
-        translationManager = new ConferenceTranslationManager(conferenceSources, logger);
+        // The translation sources and the sources of the agents take their SSRCs from the same minter.
+        SyntheticSsrcMinter syntheticSsrcMinter = new SyntheticSsrcMinter(conferenceSources);
+        translationManager = new ConferenceTranslationManager(conferenceSources, syntheticSsrcMinter, logger);
         clientRequirementsHandler = new ClientRequirementsHandler(logger);
         agentManager = new ConferenceAgentManager(
-                conferenceSources, roomName.toString(), logger, this::getVoiceAgentConsent);
+                conferenceSources, syntheticSsrcMinter, roomName.toString(), logger, this::getVoiceAgentConsent);
 
         this.config = new JitsiMeetConfig(properties);
 
@@ -2581,6 +2583,15 @@ public class JitsiMeetConferenceImpl
                     removeParticipantSources(participant, true, updateParticipant);
                     participant.terminateJingleSession(Reason.SUCCESS, "moving", true);
                 }
+                else
+                {
+                    // The participant keeps its sources. In the per-source mode another bridge may inject its
+                    // synthetic translation sources from now on, so these need new SSRCs.
+                    // This has to run before inviteParticipant: the new allocation takes the sources of the
+                    // participant from conferenceSources. The session manager has no endpoint for the participant at
+                    // this point (every path to here removed it), so the manager signals nothing to a bridge.
+                    translationManager.senderReinvited(participant.getEndpointId(), colibriSessionManager, meetingId);
+                }
 
                 // If were restarting the jingle session it's a fresh invite (reInvite = false), otherwise it's a
                 // transport-replace (reInvite = true)
@@ -3360,6 +3371,14 @@ public class JitsiMeetConferenceImpl
             logger.info("Bridge " + bridge + " was removed from the conference. Re-inviting its participants: "
                     + participantIds);
             reInviteParticipantsById(participantIds);
+        }
+
+        @Override
+        public void translatorConnectMoved()
+        {
+            // Another bridge injects the synthetic translation sources now. The translation manager sees the new
+            // count of moves and gives the sources new SSRCs.
+            translationManager.reapply(colibriSessionManager, meetingId);
         }
 
         @Override
