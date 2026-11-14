@@ -46,7 +46,6 @@ import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
-import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -157,6 +156,12 @@ class ChatRoomImpl(
 
     /** Whether [leave] has been called. Leaving more than once must have no effect. */
     private val leaveCalled = AtomicBoolean(false)
+
+    /**
+     * Whether we have processed an available presence of our own, i.e. we are an occupant of the room. Only accessed
+     * from [xmppTaskQueue].
+     */
+    private var ownAvailablePresenceProcessed = false
 
     /**
      * Completes when this instance has finished leaving the MUC, that is when the Smack leave has completed (or
@@ -697,23 +702,46 @@ class ChatRoomImpl(
     private fun processOwnPresence(presence: Presence) {
         val mucUser = presence.getExtension(MUCUser::class.java)
         if (mucUser != null) {
-            val affiliation = mucUser.item.affiliation
-            val role = mucUser.item.role
-
-            // This is our initial role and affiliation, as smack does not fire any initial events.
-            if (!presence.isAvailable && MUCAffiliation.none == affiliation && MUCRole.none == role) {
+            if (presence.type == Presence.Type.unavailable) {
+                if (!ownAvailablePresenceProcessed) {
+                    // We have not joined yet, so this is not for us. It is the MUC reflecting the leave of a previous
+                    // instance for the same room, which sent it after a join that timed out (see [leave]).
+                    logger.info("Ignoring an unavailable presence received before we joined: ${presence.toXML()}")
+                    return
+                }
+                // We are no longer an occupant of the room.
                 val destroy = mucUser.destroy
                 if (destroy == null) {
-                    // the room is unavailable to us, there is no
-                    // message we will just leave
-                    leave()
+                    // E.g. kicked (the affiliation is kept, only the role is "none"), our affiliation was changed, or
+                    // the service is shutting down. Smack reports this with UserStatusListener.removed() (and
+                    // kicked()/membershipRevoked()), but we handle the presence here instead, so that it runs on the
+                    // room's queue, ordered after the member presence received before it. Without it the conference
+                    // keeps running in a room that it is not in.
+                    val reason = removedReason(mucUser)
+                    logger.warn("Removed from the room, $reason")
+                    eventEmitter.fireEvent { localUserRemoved(reason) }
                 } else {
+                    // Smack fires roomDestroyed for this presence.
                     logger.info("Leave, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
-                    leave()
                 }
+                leave()
             } else {
-                eventEmitter.fireEvent { localRoleChanged(fromSmack(role, affiliation)) }
+                ownAvailablePresenceProcessed = true
+                // Our current role and affiliation. Smack fires no event for the initial values, so read them from
+                // every presence of our own.
+                eventEmitter.fireEvent { localRoleChanged(fromSmack(mucUser.item.role, mucUser.item.affiliation)) }
             }
+        }
+    }
+
+    /** Describe why we were removed from the room, from our own unavailable presence. */
+    private fun removedReason(mucUser: MUCUser): String = buildString {
+        // The status codes are a set, sort them so that the order is stable.
+        append("status=${mucUser.status.map { it.code }.sorted()}")
+        mucUser.item?.let { item ->
+            append(" affiliation=${item.affiliation} role=${item.role}")
+            (item.actorNick ?: item.actor)?.let { append(" actor=$it") }
+            item.reason?.takeIf { it.isNotBlank() }?.let { append(" reason=\"$it\"") }
         }
     }
 

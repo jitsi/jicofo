@@ -24,6 +24,7 @@ import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
+import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.ConferenceConfig
 import org.jitsi.jicofo.TaskPools
@@ -281,6 +282,18 @@ class ConferenceTest : ShouldSpec() {
                 val lone = harness.chatRoom.addMember("lone")
                 harness.conference.participantCount shouldBe 1
                 harness.getParticipant(lone) shouldNotBe null
+            }
+        }
+        context("The focus being removed from the room") {
+            addParticipants(2)
+            conference.participantCount shouldBe 2
+
+            // E.g. kicked. The room is not destroyed, so no roomDestroyed event follows.
+            chatRoom.chatRoomListeners.forEach { it.localUserRemoved("status=[307]") }
+
+            should("stop the conference") {
+                harness.ended shouldBe true
+                verify(exactly = 1) { chatRoom.chatRoom.leave() }
             }
         }
         context("Test inviting more than 2 initially") {

@@ -48,12 +48,15 @@ import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
+import org.jivesoftware.smackx.muc.packet.Destroy
+import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 import kotlin.concurrent.thread
@@ -142,6 +145,51 @@ class ChatRoomImplTest : ShouldSpec() {
     private fun ownPresence(type: Presence.Type) = xmppConnection.stanzaFactory.buildPresenceStanza()
         .ofType(type)
         .to(JidCreate.entityFullFrom("$roomJid/focus"))
+
+    /** An available presence from our own occupant JID, as the MUC sends when we have joined. */
+    private fun ownAvailablePresence(): Presence = StanzaBuilder.buildPresence()
+        .from(JidCreate.entityFullFrom("$roomJid/focus"))
+        .ofType(Presence.Type.available)
+        .build().apply {
+            addExtension(
+                MUCUser().apply {
+                    setItem(MUCItem(MUCAffiliation.owner, MUCRole.moderator, null, null, null, null, null))
+                    addStatusCode(MUCUser.Status.PRESENCE_TO_SELF_110)
+                }
+            )
+        }
+
+    /** An unavailable presence from our own occupant JID, as the MUC sends when we are no longer in the room. */
+    private fun ownUnavailablePresence(
+        affiliation: MUCAffiliation,
+        status: MUCUser.Status? = null,
+        destroy: Destroy? = null,
+        actorNick: String? = null,
+        reason: String? = null
+    ): Presence = StanzaBuilder.buildPresence()
+        .from(JidCreate.entityFullFrom("$roomJid/focus"))
+        .ofType(Presence.Type.unavailable)
+        .build().apply {
+            addExtension(
+                MUCUser().apply {
+                    setItem(
+                        MUCItem(
+                            affiliation,
+                            MUCRole.none,
+                            null,
+                            reason,
+                            null,
+                            null,
+                            actorNick?.let { Resourcepart.from(it) }
+                        )
+                    )
+                    // The MUC always adds this to presence of our own.
+                    addStatusCode(MUCUser.Status.PRESENCE_TO_SELF_110)
+                    status?.let { addStatusCode(it) }
+                    destroy?.let { setDestroy(it) }
+                }
+            )
+        }
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         // Joining blocks the XMPP task queue until the join completes, so the "Joining" tests need a real executor.
@@ -232,6 +280,73 @@ class ChatRoomImplTest : ShouldSpec() {
                 val presence = sent.captured.shouldBeInstanceOf<Presence>()
                 presence.type shouldBe Presence.Type.available
                 presence.getExtension<StandardExtensionElement>("test", "test:ns") shouldNotBe null
+            }
+        }
+        context("Joining, then being removed from the room") {
+            val removed = CompletableFuture<String>()
+            val roleChanges = mutableListOf<MemberRole>()
+            val firstRoleChange = CompletableFuture<MemberRole>()
+            chatRoom.addListener(
+                object : ChatRoomListener {
+                    override fun localUserRemoved(reason: String) {
+                        removed.complete(reason)
+                    }
+                    override fun localRoleChanged(newRole: MemberRole) {
+                        roleChanges.add(newRole)
+                        firstRoleChange.complete(newRole)
+                    }
+                }
+            )
+            chatRoom.join()
+
+            context("After our own presence was processed") {
+                chatRoom.processPresence(ownAvailablePresence())
+                firstRoleChange.get(5, TimeUnit.SECONDS) shouldBe MemberRole.OWNER
+
+                should("fire localUserRemoved and leave when kicked") {
+                    // A kick keeps our affiliation, only the role is "none".
+                    chatRoom.processPresence(
+                        ownUnavailablePresence(
+                            MUCAffiliation.owner,
+                            MUCUser.Status.KICKED_307,
+                            actorNick = "moderator",
+                            reason = "bye"
+                        )
+                    )
+                    removed.get(5, TimeUnit.SECONDS) shouldBe
+                        "status=[110, 307] affiliation=owner role=none actor=moderator reason=\"bye\""
+                    chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                    left shouldBe true
+                    // Only the role from our own available presence, the kick must not be reported as a role change.
+                    roleChanges shouldBe listOf(MemberRole.OWNER)
+                }
+                should("fire localUserRemoved and leave when the affiliation is removed") {
+                    chatRoom.processPresence(
+                        ownUnavailablePresence(MUCAffiliation.none, MUCUser.Status.REMOVED_AFFIL_CHANGE_321)
+                    )
+                    removed.get(5, TimeUnit.SECONDS) shouldBe "status=[110, 321] affiliation=none role=none"
+                    chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                    left shouldBe true
+                }
+                should("leave without firing localUserRemoved when the room is destroyed") {
+                    // Smack fires roomDestroyed for this presence.
+                    chatRoom.processPresence(
+                        ownUnavailablePresence(MUCAffiliation.none, destroy = Destroy(null, "destroyed"))
+                    )
+                    chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                    left shouldBe true
+                    removed.isDone shouldBe false
+                }
+            }
+            should("ignore an unavailable presence received before our own available presence") {
+                // The MUC reflecting the leave of a previous instance, after its join timed out.
+                chatRoom.processPresence(ownUnavailablePresence(MUCAffiliation.owner))
+                chatRoom.processPresence(ownAvailablePresence())
+                // The queue is ordered, so the unavailable presence has been processed by now.
+                firstRoleChange.get(5, TimeUnit.SECONDS) shouldBe MemberRole.OWNER
+                removed.isDone shouldBe false
+                left shouldBe false
+                chatRoom.leftFuture.isDone shouldBe false
             }
         }
         context("Members joining") {
