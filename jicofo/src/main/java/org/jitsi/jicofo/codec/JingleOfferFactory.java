@@ -136,6 +136,11 @@ public class JingleOfferFactory
 
         CodecUtil.Companion.createVideoPayloadTypeExtensions(options).forEach(rtpDesc::addPayloadType);
         CodecUtil.Companion.createVideoRtpHdrExtExtensions(options).forEach(rtpDesc::addExtmap);
+        if (options.getCcfb())
+        {
+            // a=rtcp-fb:* ack ccfb
+            rtpDesc.addChildExtension(CodecUtil.Companion.createCcfbExtension());
+        }
         if (Config.config.getExtmapAllowMixed())
         {
             rtpDesc.setExtmapAllowMixed(new ExtmapAllowMixedPacketExtension());
@@ -156,6 +161,11 @@ public class JingleOfferFactory
 
         CodecUtil.Companion.createAudioRtpHdrExtExtensions(options).forEach(rtpDesc::addExtmap);
         CodecUtil.Companion.createAudioPayloadTypeExtensions(options).forEach(rtpDesc::addPayloadType);
+        if (options.getCcfb())
+        {
+            // a=rtcp-fb:* ack ccfb
+            rtpDesc.addChildExtension(CodecUtil.Companion.createCcfbExtension());
+        }
         if (Config.config.getExtmapAllowMixed())
         {
             rtpDesc.setExtmapAllowMixed(new ExtmapAllowMixedPacketExtension());

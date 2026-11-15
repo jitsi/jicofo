@@ -27,5 +27,6 @@ fun OfferOptions.applyConstraints(participant: Participant) {
     rtx = rtx && participant.hasRtxSupport()
     remb = remb && participant.hasRembSupport()
     tcc = tcc && participant.hasTccSupport()
+    ccfb = ccfb && participant.hasCcfbSupport()
     opusRed = opusRed && participant.hasOpusRedSupport()
 }
