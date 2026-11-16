@@ -25,8 +25,9 @@ import java.lang.IllegalStateException
  * An extension of [ConferenceSourceMap] with an API for addition ([tryToAdd]) and removal ([tryToRemove]) of sources
  * with validation. Note that the standard [add] and [remove] APIs are still available and do NOT perform validation.
  *
- * Validation means that the addition of sources does not lead to a conflict of SSRC or MSID with another endpoint
- * in the conference, and that the addition/removal operations leave the endpoint's resulting set of sources valid.
+ * Validation means that the addition of sources does not lead to a conflict of SSRC, MSID or source name with another
+ * endpoint in the conference, that source names start with the owner's endpoint ID (if [requireSourceNamePrefix] is
+ * set), and that the addition/removal operations leave the endpoint's resulting set of sources valid.
  *
  * A set of sources is valid if there are no conflicts in SSRC or MSID, all sources within a group have the same MSID,
  * all SSRCs within a group have a corresponding source, and other similar checks pass. See [validateEndpointSourceSet].
@@ -35,7 +36,9 @@ import java.lang.IllegalStateException
  */
 class ValidatingConferenceSourceMap(
     private val maxSsrcsPerUser: Int,
-    private val maxSsrcGroupsPerUser: Int
+    private val maxSsrcGroupsPerUser: Int,
+    /** Whether to require source names to start with the owner's endpoint ID followed by "-". */
+    private val requireSourceNamePrefix: Boolean = true
 ) : ConferenceSourceMap() {
     val logger = createLogger()
 
@@ -52,6 +55,12 @@ class ValidatingConferenceSourceMap(
      * Note that since the value is nullable [Map.containsKey] must be used when checking for the existence of an entry.
      */
     private val msidToOwnerMap = mutableMapOf<String, String>()
+
+    /**
+     * Maps a source name to the JID of the endpoint that owns it. Used to detect cross-endpoint conflicts efficiently.
+     * Several sources of the same endpoint can share a name (for example the SSRCs of a simulcast stream).
+     */
+    private val nameToOwnerMap = mutableMapOf<String, String>()
 
     /**
      * Attempts to add [sourcesToAdd] as sources owned by [owner]. The attempt is successful if the addition does not
@@ -85,6 +94,16 @@ class ValidatingConferenceSourceMap(
             source.msid?.let { msid ->
                 if (msidToOwnerMap.containsKey(msid) && msidToOwnerMap[msid] != owner) {
                     throw MsidConflictException(msid)
+                }
+            }
+            source.name?.let { name ->
+                // A name must start with the owner's endpoint ID, so that an endpoint can not use names which belong
+                // to another endpoint (including names that the other endpoint has not used yet).
+                if (requireSourceNamePrefix && !name.startsWith("$owner-")) {
+                    throw SourceNameNotOwnedException(name, owner)
+                }
+                if (nameToOwnerMap.containsKey(name) && nameToOwnerMap[name] != owner) {
+                    throw SourceNameConflictException(name)
                 }
             }
             if (existingSourceSet.sources.size + sourcesToAdd.sources.size > maxSsrcsPerUser) {
@@ -178,14 +197,14 @@ class ValidatingConferenceSourceMap(
         return acceptedSourceSet
     }
 
-    /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    /** Override [add] to keep the additional [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
     override fun add(other: ConferenceSourceMap) = synchronized(syncRoot) {
         super.add(other).also {
             other.forEach { (owner, endpointSourceSet) -> sourceSetAdded(owner, endpointSourceSet) }
         }
     }
 
-    /** Override [add] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    /** Override [add] to keep the additional [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
     override fun add(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         super.add(owner, endpointSourceSet).also {
             sourceSetAdded(owner, endpointSourceSet)
@@ -198,17 +217,20 @@ class ValidatingConferenceSourceMap(
             source.msid?.let {
                 msidToOwnerMap[it] = owner
             }
+            source.name?.let {
+                nameToOwnerMap[it] = owner
+            }
         }
     }
 
-    /** Override [remove] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    /** Override [remove] to keep the additional [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
     override fun remove(other: ConferenceSourceMap) = synchronized(syncRoot) {
         super.remove(other).also {
             other.forEach { (owner, ownerRemovedSourceSet) -> sourceSetRemoved(owner, ownerRemovedSourceSet) }
         }
     }
 
-    /** Override [remove] to keep the additional [ssrcToOwnerMap] and [msidToOwnerMap] maps updated. */
+    /** Override [remove] to keep the additional [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
     override fun remove(owner: String): EndpointSourceSet? = synchronized(syncRoot) {
         val ownerRemovedSourceSet = super.remove(owner)
         ownerRemovedSourceSet?.let {
@@ -218,7 +240,7 @@ class ValidatingConferenceSourceMap(
     }
 
     /**
-     * Update the local maps ([ssrcToOwnerMap] and [msidToOwnerMap] after the removal of a source set.
+     * Update the local maps ([ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] after the removal of a source set.
      * @param owner the owner of the removed source set.
      * @param endpointSourceSet the source set which has already been removed.
      */
@@ -231,6 +253,13 @@ class ValidatingConferenceSourceMap(
                     ownerRemainingSourceSet.sources.none { it.msid == sourceMsid }
                 ) {
                     msidToOwnerMap.remove(sourceMsid)
+                }
+            }
+            source.name?.let { sourceName ->
+                if (ownerRemainingSourceSet == null ||
+                    ownerRemainingSourceSet.sources.none { it.name == sourceName }
+                ) {
+                    nameToOwnerMap.remove(sourceName)
                 }
             }
         }
@@ -356,3 +385,7 @@ class SourceDoesNotExistException(ssrc: Long? = null) : ValidationFailedExceptio
     "Source does not exist or is not owned by endpoint ${ssrc?.let { "(ssrc=$it)" }}."
 )
 class SourceGroupDoesNotExistException : ValidationFailedException("Source group does not exist")
+class SourceNameNotOwnedException(name: String, owner: String) : ValidationFailedException(
+    "Source name '$name' does not start with the endpoint ID '$owner-'."
+)
+class SourceNameConflictException(name: String) : ValidationFailedException("Source name is already used: $name.")

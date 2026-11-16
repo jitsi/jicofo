@@ -273,7 +273,8 @@ public class JitsiMeetConferenceImpl
      */
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap(
             ConferenceConfig.config.getMaxSsrcsPerUser(),
-            ConferenceConfig.config.getMaxSsrcGroupsPerUser()
+            ConferenceConfig.config.getMaxSsrcGroupsPerUser(),
+            ConferenceConfig.config.getRequireSourceNamePrefix()
     );
 
     /**

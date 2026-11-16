@@ -334,6 +334,97 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 // The empty groups should be silently ignored.
                 accepted shouldBe EndpointSourceSet(setOf(s1, s2, s3), setOf(sim))
             }
+            context("Source names") {
+                val ownName = EndpointSourceSet(Source(11, AUDIO, name = "jid1-a0", msid = "m1"))
+                val simulcast = EndpointSourceSet(
+                    setOf(
+                        Source(21, VIDEO, name = "jid1-v0", msid = "m3"),
+                        Source(22, VIDEO, name = "jid1-v0", msid = "m3")
+                    ),
+                    setOf(SsrcGroup(SsrcGroupSemantics.Fid, listOf(21, 22)))
+                )
+
+                context("With the prefix check") {
+                    context("A name that starts with the endpoint ID is accepted") {
+                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                    }
+                    context("Sources without a name are accepted") {
+                        val noName = EndpointSourceSet(Source(12, AUDIO, msid = "m2"))
+                        conferenceSources.tryToAdd(jid1, noName) shouldBe noName
+                    }
+                    context("Sources of one stream can share a name") {
+                        conferenceSources.tryToAdd(jid1, simulcast) shouldBe simulcast
+                    }
+                    context("A synthetic name derived from the endpoint's own name is accepted") {
+                        val translated = EndpointSourceSet(Source(13, AUDIO, name = "jid1-a0.fr", synthetic = true))
+                        conferenceSources.tryToAdd(jid1, translated) shouldBe translated
+                    }
+                    context("A name with the prefix of another endpoint is rejected") {
+                        context("when the other endpoint has not used it yet") {
+                            shouldThrow<SourceNameNotOwnedException> {
+                                conferenceSources.tryToAdd(jid2, ownName)
+                            }
+                            conferenceSources[jid2] shouldBe null
+                        }
+                        context("when the other endpoint uses it") {
+                            conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                            shouldThrow<SourceNameNotOwnedException> {
+                                conferenceSources.tryToAdd(
+                                    jid2,
+                                    EndpointSourceSet(Source(14, AUDIO, name = "jid1-a0", msid = "m4"))
+                                )
+                            }
+                            conferenceSources[jid2] shouldBe null
+                        }
+                    }
+                    context("A name with no endpoint ID prefix is rejected") {
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "other")))
+                        }
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1")))
+                        }
+                        conferenceSources[jid1] shouldBe null
+                    }
+                }
+                context("Without the prefix check") {
+                    val conferenceSources = ValidatingConferenceSourceMap(
+                        MAX_SSRCS_PER_USER,
+                        MAX_SSRC_GROUPS_PER_USER,
+                        requireSourceNamePrefix = false
+                    )
+                    val otherName = EndpointSourceSet(Source(31, AUDIO, name = "jid1-a0", msid = "m5"))
+
+                    context("A name with no endpoint ID prefix is accepted") {
+                        val name = EndpointSourceSet(Source(15, AUDIO, name = "other"))
+                        conferenceSources.tryToAdd(jid1, name) shouldBe name
+                    }
+                    context("A name that another endpoint uses is rejected and does not change the state") {
+                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                        shouldThrow<SourceNameConflictException> {
+                            conferenceSources.tryToAdd(jid2, otherName)
+                        }
+                        conferenceSources[jid2] shouldBe null
+                    }
+                    context("A name can be used by another endpoint after it is removed") {
+                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                        conferenceSources.tryToRemove(jid1, ownName)
+                        conferenceSources.tryToAdd(jid2, otherName) shouldBe otherName
+                    }
+                    context("A name is released when the endpoint's sources are removed with remove(owner)") {
+                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                        conferenceSources.remove(jid1)
+                        conferenceSources.tryToAdd(jid2, otherName) shouldBe otherName
+                    }
+                    context("A name stays used while one of its sources remains") {
+                        conferenceSources.tryToAdd(jid1, simulcast) shouldBe simulcast
+                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(Source(21, VIDEO, msid = "m3")))
+                        shouldThrow<SourceNameConflictException> {
+                            conferenceSources.tryToAdd(jid2, EndpointSourceSet(Source(23, VIDEO, name = "jid1-v0")))
+                        }
+                    }
+                }
+            }
         }
         context("Removing sources") {
 
