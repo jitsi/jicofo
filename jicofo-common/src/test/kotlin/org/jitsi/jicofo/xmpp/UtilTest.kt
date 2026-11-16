@@ -42,6 +42,12 @@ class UtilTest : ShouldSpec() {
             should("return null when there is no XMPPErrorException") {
                 Exception("outer", RuntimeException("inner")).findStanzaError() shouldBe null
             }
+            should("return null for a cause chain with a cycle") {
+                val first = Exception("first")
+                val second = Exception("second", first)
+                first.initCause(second)
+                first.findStanzaError() shouldBe null
+            }
         }
         context("isRoomCreationRefused") {
             fun xmppError(condition: StanzaError.Condition, type: StanzaError.Type) = XMPPException.XMPPErrorException(

@@ -188,6 +188,7 @@ class ConferenceIqHandlerTest : ShouldSpec() {
             every { focusManager.conferenceRequest(any(), any()) } throws
                 mucError(roomJid, StanzaError.Condition.resource_constraint, StanzaError.Type.CANCEL)
 
+            val refusedBefore = ConferenceIqHandler.refusedConferenceRequestCounter.get()
             val response = createHandler().handleConferenceIq(conferenceIq(roomJid))
             should("relay the resource-constraint condition to the client") {
                 response.shouldBeError(StanzaError.Condition.resource_constraint)
@@ -195,6 +196,9 @@ class ConferenceIqHandlerTest : ShouldSpec() {
             }
             should("name the condition in the text of the error, which the HTTP API returns") {
                 response.error.toString() shouldContain "resource-constraint"
+            }
+            should("count the refused request") {
+                ConferenceIqHandler.refusedConferenceRequestCounter.get() shouldBe refusedBefore + 1
             }
         }
         context("When the MUC replies with a temporary resource-constraint error") {

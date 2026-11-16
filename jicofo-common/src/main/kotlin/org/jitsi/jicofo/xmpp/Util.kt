@@ -32,6 +32,8 @@ import org.jxmpp.stringprep.XmppStringprepException
 
 private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.Util")
 
+private const val MAX_CAUSE_DEPTH = 20
+
 /**
  * Reads the original jid as encoded in the resource part by mod_client_proxy, returns the original jid if it format
  * is not as expected.
@@ -82,6 +84,8 @@ fun AbstractXMPPConnection.sendIqAndGetResponse(iq: IQ): IQ? = createStanzaColle
  * or null if there is none.
  */
 fun Throwable.findStanzaError(): StanzaError? = generateSequence(this) { it.cause }
+    // Bound the walk, in case the cause chain has a cycle.
+    .take(MAX_CAUSE_DEPTH)
     .filterIsInstance<XMPPException.XMPPErrorException>()
     .firstOrNull()
     ?.stanzaError

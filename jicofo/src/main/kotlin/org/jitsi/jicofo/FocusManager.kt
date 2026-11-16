@@ -111,11 +111,8 @@ class FocusManager(
                 conference.start()
             }
         } catch (e: Exception) {
-            if (e.isRoomCreationRefused()) {
-                // An expected refusal of the MUC service (e.g. a room time limit). Log it without a stack trace. The
-                // exception still goes to the caller.
-                logger.info("Failed to start the conference for room $room: ${e.message}")
-            } else {
+            // An expected refusal of the MUC service (e.g. a room time limit) is logged by the caller.
+            if (!e.isRoomCreationRefused()) {
                 logger.warn("Exception while trying to start the conference", e)
             }
             throw e
