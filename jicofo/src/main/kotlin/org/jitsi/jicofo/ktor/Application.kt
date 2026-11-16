@@ -172,10 +172,13 @@ class Application(
                     throw BadRequest(e.message)
                 }
 
+                // For resource-constraint, lib-jitsi-meet looks for the condition name in the body. It then shows the
+                // room time limit error and does not retry.
                 response.error?.let {
                     throw when (it.condition) {
                         StanzaError.Condition.not_authorized -> Forbidden()
                         StanzaError.Condition.not_acceptable -> BadRequest("invalid-session")
+                        StanzaError.Condition.resource_constraint -> BadRequest("resource-constraint")
                         else -> BadRequest(it.toString())
                     }
                 }

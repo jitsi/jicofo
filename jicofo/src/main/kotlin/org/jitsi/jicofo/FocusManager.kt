@@ -26,6 +26,7 @@ import org.jitsi.jicofo.conference.JitsiMeetConferenceImpl.ConferenceListener
 import org.jitsi.jicofo.jibri.JibriSession
 import org.jitsi.jicofo.jibri.JibriStats
 import org.jitsi.jicofo.xmpp.XmppProvider
+import org.jitsi.jicofo.xmpp.isRoomCreationRefused
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.queue.QueueStatistics.Companion.getStatistics
 import org.jitsi.utils.stats.ConferenceSizeBuckets
@@ -110,7 +111,10 @@ class FocusManager(
                 conference.start()
             }
         } catch (e: Exception) {
-            logger.warn("Exception while trying to start the conference", e)
+            // An expected refusal of the MUC service (e.g. a room time limit) is logged by the caller.
+            if (!e.isRoomCreationRefused()) {
+                logger.warn("Exception while trying to start the conference", e)
+            }
             throw e
         }
         return conference

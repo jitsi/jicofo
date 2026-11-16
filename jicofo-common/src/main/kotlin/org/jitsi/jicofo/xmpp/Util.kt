@@ -21,14 +21,18 @@ import org.jitsi.utils.logging2.LoggerImpl
 import org.jivesoftware.smack.AbstractXMPPConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPConnection
+import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.Stanza
+import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.DomainBareJid
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.stringprep.XmppStringprepException
 
 private val logger = LoggerImpl("org.jitsi.jicofo.xmpp.Util")
+
+private const val MAX_CAUSE_DEPTH = 20
 
 /**
  * Reads the original jid as encoded in the resource part by mod_client_proxy, returns the original jid if it format
@@ -74,3 +78,24 @@ fun AbstractXMPPConnection.sendIqAndGetResponse(iq: IQ): IQ? = createStanzaColle
         it.cancel()
     }
 }
+
+/**
+ * Returns the [StanzaError] of the first [XMPPException.XMPPErrorException] in the cause chain of this [Throwable],
+ * or null if there is none.
+ */
+fun Throwable.findStanzaError(): StanzaError? = generateSequence(this) { it.cause }
+    // Bound the walk, in case the cause chain has a cycle.
+    .take(MAX_CAUSE_DEPTH)
+    .filterIsInstance<XMPPException.XMPPErrorException>()
+    .firstOrNull()
+    ?.stanzaError
+
+/**
+ * Whether this exception comes from a `cancel` + `resource-constraint` error. The MUC service replies with this when it
+ * does not allow the room to be created, e.g. when the room reached its time limit (mod_time_restricted). A `wait` +
+ * `resource-constraint` error (e.g. from Prosody's mod_muc when it cannot track or load the room) is a temporary
+ * failure and does not match.
+ */
+fun Throwable.isRoomCreationRefused(): Boolean = findStanzaError()?.let {
+    it.condition == StanzaError.Condition.resource_constraint && it.type == StanzaError.Type.CANCEL
+} == true
