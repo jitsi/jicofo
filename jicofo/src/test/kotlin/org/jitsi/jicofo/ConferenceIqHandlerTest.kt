@@ -22,6 +22,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
@@ -34,8 +35,11 @@ import org.jitsi.jicofo.xmpp.ConferenceRoomFilter
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.xmpp.extensions.jitsimeet.ConferenceIq
 import org.jivesoftware.smack.AbstractXMPPConnection
+import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.packet.IQ
+import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.Stanza
+import org.jivesoftware.smack.packet.StanzaBuilder
 import org.jivesoftware.smack.packet.StanzaError
 import org.jxmpp.jid.impl.JidCreate
 
@@ -91,6 +95,16 @@ class ConferenceIqHandlerTest : ShouldSpec() {
         to = JidCreate.from("focus.example.com")
         type = IQ.Type.set
     }
+
+    /** An error that the MUC service sends in reply to the join presence of jicofo. */
+    private fun mucError(roomJid: String, condition: StanzaError.Condition, type: StanzaError.Type) =
+        XMPPException.XMPPErrorException(
+            StanzaBuilder.buildPresence()
+                .ofType(Presence.Type.error)
+                .from(JidCreate.from("$roomJid/focus"))
+                .build(),
+            StanzaError.getBuilder(condition).setType(type).build()
+        )
 
     private fun IQ.shouldBeError(condition: StanzaError.Condition) {
         type shouldBe IQ.Type.error
@@ -167,6 +181,42 @@ class ConferenceIqHandlerTest : ShouldSpec() {
             every { focusManager.conferenceRequest(any(), any()) } throws XmppProvider.RoomExistsException("in use")
             createHandler().handleConferenceIq(conferenceIq("testRoom@conference.example.com"))
                 .shouldBeError(StanzaError.Condition.conflict)
+        }
+        context("When the MUC refuses to create the room with resource-constraint") {
+            // This is how mod_time_restricted refuses to create a room again after it reached its time limit.
+            val roomJid = "testRoom@conference.example.com"
+            every { focusManager.conferenceRequest(any(), any()) } throws
+                mucError(roomJid, StanzaError.Condition.resource_constraint, StanzaError.Type.CANCEL)
+
+            val response = createHandler().handleConferenceIq(conferenceIq(roomJid))
+            should("relay the resource-constraint condition to the client") {
+                response.shouldBeError(StanzaError.Condition.resource_constraint)
+                response.error.type shouldBe StanzaError.Type.CANCEL
+            }
+            should("name the condition in the text of the error, which the HTTP API returns") {
+                response.error.toString() shouldContain "resource-constraint"
+            }
+        }
+        context("When the MUC replies with a temporary resource-constraint error") {
+            // Prosody's mod_muc replies with this when it can not track or load the room.
+            val roomJid = "testRoom@conference.example.com"
+            every { focusManager.conferenceRequest(any(), any()) } throws
+                mucError(roomJid, StanzaError.Condition.resource_constraint, StanzaError.Type.WAIT)
+
+            should("reply with internal-server-error, so that the client retries") {
+                createHandler().handleConferenceIq(conferenceIq(roomJid))
+                    .shouldBeError(StanzaError.Condition.internal_server_error)
+            }
+        }
+        context("When the MUC replies with a different error") {
+            val roomJid = "testRoom@conference.example.com"
+            every { focusManager.conferenceRequest(any(), any()) } throws
+                mucError(roomJid, StanzaError.Condition.forbidden, StanzaError.Type.CANCEL)
+
+            should("reply with internal-server-error") {
+                createHandler().handleConferenceIq(conferenceIq(roomJid))
+                    .shouldBeError(StanzaError.Condition.internal_server_error)
+            }
         }
         context("When starting the conference fails") {
             every { focusManager.conferenceRequest(any(), any()) } throws RuntimeException("test")

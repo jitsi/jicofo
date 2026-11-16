@@ -178,6 +178,18 @@ class ConferenceIqHandler(
                 StanzaError.from(StanzaError.Condition.conflict, "The room is in use.").build()
             )
         } catch (e: Exception) {
+            if (e.isRoomCreationRefused()) {
+                // The MUC service does not allow the room to be created, e.g. because the room reached its time limit
+                // (mod_time_restricted). Pass the condition to the client, so that it can show the reason and does
+                // not retry.
+                logger.warn("Failed to start the conference for room $room, the MUC refused it: ${e.findStanzaError()}")
+                return IQ.createErrorResponse(
+                    query,
+                    StanzaError.getBuilder(StanzaError.Condition.resource_constraint)
+                        .setType(StanzaError.Type.CANCEL)
+                        .build()
+                )
+            }
             logger.error("Failed to start the conference for room $room", e)
             return IQ.createErrorResponse(
                 query,
