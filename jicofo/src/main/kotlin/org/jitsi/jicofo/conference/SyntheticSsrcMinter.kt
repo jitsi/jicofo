@@ -24,13 +24,15 @@ import java.util.concurrent.ThreadLocalRandom
  * Mints the SSRCs of the synthetic audio sources of a conference: the translation sources and the sources of the voice
  * agents. A conference has a single instance, which the managers of both kinds of source share.
  *
- * A new SSRC is not used by a source in the conference source map, and this instance never minted it. An SSRC is
- * not given out a second time after its source is gone, because a receiver can still have state for it. The sources of
- * the agents are not in the conference source map, so the record of this instance is also what keeps a translation
- * source and the source of an agent apart.
+ * A new SSRC is not used by a signaled or reserved source in the conference source map (see
+ * [ValidatingConferenceSourceMap.isSsrcUsed]), and this instance never minted it. An SSRC is not given out a second
+ * time after its source is gone, because a receiver can still have state for it.
+ *
+ * Minting does not register the SSRC. The caller registers its source in the conference source map, which checks it
+ * again.
  */
 class SyntheticSsrcMinter @JvmOverloads constructor(
-    /** Read to avoid the SSRCs of the sources in the conference; never modified. */
+    /** Read to avoid the SSRCs of the sources in the conference; never modified by the minter. */
     private val conferenceSources: ValidatingConferenceSourceMap,
     /** Returns a candidate SSRC. Overridable for tests; defaults to a random 32-bit value. */
     private val generator: () -> Long = { ThreadLocalRandom.current().nextLong(1, MAX_SSRC) }
@@ -51,8 +53,7 @@ class SyntheticSsrcMinter @JvmOverloads constructor(
         throw IllegalStateException("Failed to mint a non-conflicting SSRC after $MAX_MINT_ATTEMPTS attempts")
     }
 
-    private fun usedInConference(ssrc: Long): Boolean =
-        conferenceSources.unmodifiable().values.any { set -> set.sources.any { it.ssrc == ssrc } }
+    private fun usedInConference(ssrc: Long): Boolean = conferenceSources.isSsrcUsed(ssrc)
 
     companion object {
         private const val MAX_SSRC = 0x1_0000_0000L

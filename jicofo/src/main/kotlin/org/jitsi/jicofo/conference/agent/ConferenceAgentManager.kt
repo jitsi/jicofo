@@ -31,6 +31,7 @@ import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
+import org.jitsi.jicofo.conference.source.ValidationFailedException
 import org.jitsi.jicofo.conference.toMedia
 import org.jitsi.jicofo.xmpp.RoomMetadata
 import org.jitsi.utils.MediaType
@@ -45,9 +46,10 @@ import java.util.concurrent.RejectedExecutionException
  * drives the agent `<connect>` on the bridge session hosting that endpoint. The connect exports only the audio of the
  * members that consented to that agent (see [org.jitsi.jicofo.xmpp.muc.ChatRoomMember.voiceAgentConsent]).
  *
- * The agent's sources are NOT added to the conference source map (no Jingle signaling): clients learn about the
- * agent from room metadata and receive its audio only after explicitly subscribing to its source, which is
- * delivered over the bridge channel (AudioSourcesMap).
+ * The agent's sources are reserved in the conference source map
+ * ([ValidatingConferenceSourceMap.tryToReserve]), so no participant can signal the same SSRC or source name. They are
+ * not signaled over Jingle: clients learn about the agent from room metadata and receive its audio only after
+ * explicitly subscribing to its source, which is delivered over the bridge channel (AudioSourcesMap).
  *
  * Endpoint allocation involves a blocking colibri round-trip, so it runs on the IO pool; connects are (re)applied
  * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
@@ -62,7 +64,7 @@ import java.util.concurrent.RejectedExecutionException
  * [statusReporter] (see [AgentStatusReporter]); the relay reports `active`, `failed` for dial failures and `ended`.
  */
 class ConferenceAgentManager @JvmOverloads constructor(
-    /** Read to name consenting members' audio sources; never modified. */
+    /** Read to name consenting members' audio sources. The agents' sources are reserved in it. */
     private val conferenceSources: ValidatingConferenceSourceMap,
     /** Mints the SSRCs of the agents' sources. The conference shares it with the translation manager. */
     private val ssrcMinter: SyntheticSsrcMinter,
@@ -190,6 +192,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
         (allocated.keys - requested.keys).toList().forEach { id ->
             logger.info("Removing agent $id")
             allocated.remove(id)
+            conferenceSources.tryToReserve(id, emptySet())
             pending.remove(id)
             failed.remove(id)
             if (ready.remove(id)) {
@@ -199,7 +202,9 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
         requested.keys.forEach { id ->
             val source = allocated.getOrPut(id) {
-                Source(ssrcMinter.mint(), MediaType.AUDIO, name = sourceName(id), synthetic = true)
+                Source(ssrcMinter.mint(), MediaType.AUDIO, name = sourceName(id), synthetic = true).also {
+                    reserve(id, it)
+                }
             }
             if (id !in ready && id !in pending && id !in failed && canAllocate && !stopped) {
                 val region = primaryRegion(colibriSessionManager)
@@ -382,6 +387,22 @@ class ConferenceAgentManager @JvmOverloads constructor(
         val source = old.copy(ssrc = ssrcMinter.mint())
         logger.info("Agent $id gets a new SSRC: ${old.ssrc} -> ${source.ssrc}")
         allocated[id] = source
+        reserve(id, source)
+    }
+
+    /**
+     * Reserves [source] as [id]'s only source in the conference source map. If it conflicts with a source in the
+     * conference (for example a participant that signaled the same source name), the agent fails.
+     */
+    private fun reserve(id: String, source: Source) {
+        try {
+            conferenceSources.tryToReserve(id, setOf(source))
+        } catch (e: ValidationFailedException) {
+            logger.error("Failed to reserve agent $id's source $source: ${e.message}")
+            conferenceSources.tryToReserve(id, emptySet())
+            failed.add(id)
+            statusReporter.report(id, AgentStatusReporter.FAILED, failureReason(e))
+        }
     }
 
     companion object {
@@ -397,6 +418,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
          */
         fun failureReason(e: Exception): String = when (e) {
             is BridgeSelectionFailedException -> "no bridge available"
+
+            is ValidationFailedException -> "source conflict"
 
             is ColibriAllocationFailedException -> {
                 val summary = e.message?.substringBefore('<')?.trim()?.trimEnd(':')

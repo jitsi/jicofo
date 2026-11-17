@@ -426,6 +426,94 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 }
             }
         }
+        context("Reserved sources") {
+            val agent = "agent1"
+            val reserved = Source(500, AUDIO, name = "agent1-a0", synthetic = true)
+            conferenceSources.tryToReserve(agent, setOf(reserved))
+
+            context("are not part of the map's content") {
+                conferenceSources[agent] shouldBe null
+                conferenceSources.getReserved(agent) shouldBe setOf(reserved)
+                conferenceSources.isSsrcUsed(500) shouldBe true
+            }
+            context("A participant can not signal a reserved SSRC") {
+                shouldThrow<SsrcAlreadyUsedException> {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(500, AUDIO, name = "jid1-a0")))
+                }
+                conferenceSources[jid1] shouldBe null
+            }
+            context("A participant can not signal a reserved source name") {
+                val conferenceSources = ValidatingConferenceSourceMap(
+                    MAX_SSRCS_PER_USER,
+                    MAX_SSRC_GROUPS_PER_USER,
+                    requireSourceNamePrefix = false
+                )
+                conferenceSources.tryToReserve(agent, setOf(reserved))
+                shouldThrow<SourceNameConflictException> {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(501, AUDIO, name = "agent1-a0")))
+                }
+                conferenceSources[jid1] shouldBe null
+            }
+            context("A source can not be reserved") {
+                conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "jid1-a0"))) shouldBe
+                    EndpointSourceSet(Source(1, AUDIO, name = "jid1-a0"))
+
+                context("with the SSRC of a signaled source") {
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToReserve("agent2", setOf(Source(1, AUDIO, name = "agent2-a0")))
+                    }
+                    conferenceSources.getReserved("agent2") shouldBe emptySet()
+                }
+                context("with the SSRC that another endpoint reserved") {
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToReserve("agent2", setOf(Source(500, AUDIO, name = "agent2-a0")))
+                    }
+                    conferenceSources.getReserved("agent2") shouldBe emptySet()
+                }
+                context("with the name of a signaled source") {
+                    val conferenceSources = ValidatingConferenceSourceMap(
+                        MAX_SSRCS_PER_USER,
+                        MAX_SSRC_GROUPS_PER_USER,
+                        requireSourceNamePrefix = false
+                    )
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "agent2-a0")))
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToReserve("agent2", setOf(Source(2, AUDIO, name = "agent2-a0")))
+                    }
+                    conferenceSources.getReserved("agent2") shouldBe emptySet()
+                }
+                context("with a name that does not start with the endpoint ID") {
+                    shouldThrow<SourceNameNotOwnedException> {
+                        conferenceSources.tryToReserve("agent2", setOf(Source(2, AUDIO, name = "jid1-a1")))
+                    }
+                }
+                context("with an invalid SSRC") {
+                    shouldThrow<InvalidSsrcException> {
+                        conferenceSources.tryToReserve("agent2", setOf(Source(0, AUDIO, name = "agent2-a0")))
+                    }
+                }
+            }
+            context("A new reservation replaces the old one") {
+                val replacement = reserved.copy(ssrc = 600)
+                conferenceSources.tryToReserve(agent, setOf(replacement))
+                conferenceSources.getReserved(agent) shouldBe setOf(replacement)
+                conferenceSources.isSsrcUsed(500) shouldBe false
+                conferenceSources.isSsrcUsed(600) shouldBe true
+            }
+            context("Releasing a reservation frees its SSRC and name") {
+                val conferenceSources = ValidatingConferenceSourceMap(
+                    MAX_SSRCS_PER_USER,
+                    MAX_SSRC_GROUPS_PER_USER,
+                    requireSourceNamePrefix = false
+                )
+                conferenceSources.tryToReserve(agent, setOf(reserved))
+                conferenceSources.tryToReserve(agent, emptySet())
+                conferenceSources.getReserved(agent) shouldBe emptySet()
+                conferenceSources.isSsrcUsed(500) shouldBe false
+                val sameSource = EndpointSourceSet(Source(500, AUDIO, name = "agent1-a0"))
+                conferenceSources.tryToAdd(jid1, sameSource) shouldBe sameSource
+            }
+        }
         context("Removing sources") {
 
             conferenceSources.tryToAdd(jid1, sourceSet)
