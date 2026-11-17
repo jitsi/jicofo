@@ -46,7 +46,6 @@ import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.PresenceBuilder
 import org.jivesoftware.smack.util.Consumer
 import org.jivesoftware.smackx.muc.MUCAffiliation
-import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
@@ -695,25 +694,36 @@ class ChatRoomImpl(
      * @param presence the packet to process.
      */
     private fun processOwnPresence(presence: Presence) {
-        val mucUser = presence.getExtension(MUCUser::class.java)
-        if (mucUser != null) {
-            val affiliation = mucUser.item.affiliation
-            val role = mucUser.item.role
+        if (!presence.isAvailable) {
+            // An unavailable self-presence means we are out of the room, whatever the affiliation and role. We read
+            // the muc#user extension only here, because an unavailable presence may carry no <item>.
+            val mucUser = presence.getExtension(MUCUser::class.java)
+            val destroy = mucUser?.destroy
+            val statuses = mucUser?.status ?: emptySet()
 
-            // This is our initial role and affiliation, as smack does not fire any initial events.
-            if (!presence.isAvailable && MUCAffiliation.none == affiliation && MUCRole.none == role) {
-                val destroy = mucUser.destroy
-                if (destroy == null) {
-                    // the room is unavailable to us, there is no
-                    // message we will just leave
-                    leave()
-                } else {
-                    logger.info("Leave, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
-                    leave()
-                }
+            if (destroy != null) {
+                // Smack's UserStatusListener.roomDestroyed already fires roomDestroyed for a destroy, so we do not
+                // fire it again here, we only leave the room.
+                logger.info("Room destroyed, reason: ${destroy.reason} alt-jid: ${destroy.jid}")
+                leave()
+            } else if (statuses == setOf(MUCUser.Status.PRESENCE_TO_SELF_110) && muc.isJoined) {
+                // A lone self-presence status (110) while Smack still considers the MUC joined is a reflection of our
+                // own leave that reached this instance before it finished joining (Smack did not recognize it as
+                // ours, so the MUC stayed joined). This can come from a previous instance of the same room. We ignore
+                // it, so it does not stop a new conference. A lone 110 that Smack did take as our leave leaves the MUC
+                // not joined and falls through to the removal branch below, so it still stops the conference.
+                logger.info("Ignoring a stale unavailable self-presence (status 110, still joined).")
             } else {
-                eventEmitter.fireEvent { localRoleChanged(fromSmack(role, affiliation)) }
+                // A removal: a kick (307), a ban (301), an affiliation or members-only removal (321/322), a service
+                // shutdown (332). We stop the conference by firing roomDestroyed, the same path a destroy uses.
+                logger.warn("Removed from the room. status=$statuses")
+                eventEmitter.fireEvent { roomDestroyed("kicked") }
+                leave()
             }
+        } else {
+            // This is our initial role and affiliation, as smack does not fire any initial events.
+            val item = presence.getExtension(MUCUser::class.java)?.item ?: return
+            eventEmitter.fireEvent { localRoleChanged(fromSmack(item.role, item.affiliation)) }
         }
     }
 

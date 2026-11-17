@@ -48,12 +48,15 @@ import org.jivesoftware.smackx.muc.MUCRole
 import org.jivesoftware.smackx.muc.MultiUserChat
 import org.jivesoftware.smackx.muc.MultiUserChatManager
 import org.jivesoftware.smackx.muc.Occupant
+import org.jivesoftware.smackx.muc.packet.Destroy
+import org.jivesoftware.smackx.muc.packet.MUCItem
 import org.jivesoftware.smackx.muc.packet.MUCUser
 import org.jxmpp.jid.EntityFullJid
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Resourcepart
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level
 import kotlin.concurrent.thread
@@ -142,6 +145,19 @@ class ChatRoomImplTest : ShouldSpec() {
     private fun ownPresence(type: Presence.Type) = xmppConnection.stanzaFactory.buildPresenceStanza()
         .ofType(type)
         .to(JidCreate.entityFullFrom("$roomJid/focus"))
+
+    /** Build an unavailable self-presence (from our occupant JID) with a muc#user item for owner/none. */
+    private fun ownUnavailablePresence(configureMucUser: MUCUser.() -> Unit): Presence = StanzaBuilder.buildPresence()
+        .from(JidCreate.entityFullFrom("$roomJid/focus"))
+        .ofType(Presence.Type.unavailable)
+        .build().apply {
+            addExtension(
+                MUCUser().apply {
+                    item = MUCItem(MUCAffiliation.owner, MUCRole.none, null, null, null, null, null)
+                    configureMucUser()
+                }
+            )
+        }
 
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         // Joining blocks the XMPP task queue until the join completes, so the "Joining" tests need a real executor.
@@ -232,6 +248,96 @@ class ChatRoomImplTest : ShouldSpec() {
                 val presence = sent.captured.shouldBeInstanceOf<Presence>()
                 presence.type shouldBe Presence.Type.available
                 presence.getExtension<StandardExtensionElement>("test", "test:ns") shouldNotBe null
+            }
+            should("stop the conference when the focus is kicked (status 307, affiliation stays owner)") {
+                val roomDestroyed = CompletableFuture<Unit>()
+                var localRoleChanged = false
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyed.complete(Unit)
+                        }
+                        override fun localRoleChanged(newRole: MemberRole) {
+                            localRoleChanged = true
+                        }
+                    }
+                )
+                chatRoom.join()
+
+                // A MUC kick: an unavailable self-presence with status 307. In a conference room the focus is an
+                // owner, so the affiliation stays "owner" and only the role becomes "none".
+                val kickPresence = ownUnavailablePresence { addStatusCode(MUCUser.Status.KICKED_307) }
+                chatRoom.processPresence(kickPresence)
+
+                // The conference stops via the roomDestroyed event, the same path a room destroy uses, and the room
+                // is left so it does not block a new conference for the same JID. get() throws (failing the test)
+                // on timeout, which is the bug being fixed.
+                roomDestroyed.get(5, TimeUnit.SECONDS)
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                // A kick must not be reported as a role change.
+                localRoleChanged shouldBe false
+            }
+            should("leave but not re-fire roomDestroyed on a room destroy (Smack already fires it)") {
+                var roomDestroyedCount = 0
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyedCount++
+                        }
+                    }
+                )
+                chatRoom.join()
+
+                val destroyPresence = ownUnavailablePresence { destroy = Destroy(null, "destroyed") }
+                chatRoom.processPresence(destroyPresence)
+
+                // The room is left, but roomDestroyed is not fired from processOwnPresence: Smack's
+                // UserStatusListener fires it for a destroy, so firing it here too would stop the conference twice.
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
+                roomDestroyedCount shouldBe 0
+            }
+            should("ignore a stale lone status-110 self-presence that arrives while still joined") {
+                var roomDestroyedCount = 0
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyedCount++
+                        }
+                    }
+                )
+                chatRoom.join()
+                // Smack did not take the presence as ours (it arrived before the join completed), so the MUC is
+                // still joined. This is a reflection of our own leave, possibly from a previous instance of the room.
+                every { muc.isJoined } returns true
+
+                val selfLeave = ownUnavailablePresence { addStatusCode(MUCUser.Status.PRESENCE_TO_SELF_110) }
+                chatRoom.processPresence(selfLeave)
+
+                // Drain the serial presence queue past the self-presence, then assert nothing stopped the room.
+                val drained = CompletableFuture<Unit>()
+                chatRoom.queueXmppTask { drained.complete(Unit) }
+                drained.get(5, TimeUnit.SECONDS)
+                roomDestroyedCount shouldBe 0
+                chatRoom.leftFuture.isDone shouldBe false
+            }
+            should("stop the conference on a lone status-110 self-presence once Smack has left the MUC") {
+                val roomDestroyed = CompletableFuture<Unit>()
+                chatRoom.addListener(
+                    object : ChatRoomListener {
+                        override fun roomDestroyed(reason: String?) {
+                            roomDestroyed.complete(Unit)
+                        }
+                    }
+                )
+                chatRoom.join()
+                // muc.isJoined is false: Smack took the unavailable self-presence as our leave, so this is a real
+                // removal and must still stop the conference.
+
+                val removal = ownUnavailablePresence { addStatusCode(MUCUser.Status.PRESENCE_TO_SELF_110) }
+                chatRoom.processPresence(removal)
+
+                roomDestroyed.get(5, TimeUnit.SECONDS)
+                chatRoom.leftFuture.get(5, TimeUnit.SECONDS)
             }
         }
         context("Members joining") {
