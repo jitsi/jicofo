@@ -205,6 +205,9 @@ open class Participant @JvmOverloads constructor(
     /** Returns `true` iff this participant supports TCC. */
     fun hasTccSupport() = supportedFeatures.contains(Features.TCC)
 
+    /** Return true if this participant supports RTCP feedback for congestion control (RFC 8888). */
+    fun hasCcfbSupport() = supportedFeatures.contains(Features.CCFB)
+
     /** Returns `true` iff this participant supports RTX. */
     fun hasRtxSupport() = supportedFeatures.contains(Features.RTX)
 

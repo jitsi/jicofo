@@ -297,9 +297,15 @@ public class ParticipantInviteRunnable implements Runnable, Cancelable
     private Offer createOffer()
     {
         OfferOptions offerOptions = new OfferOptions();
+        offerOptions.setCcfb(Config.config.getCcfb());
         OfferOptionsUtilKt.applyConstraints(offerOptions, participant);
-        // Enable REMB only when TCC is not enabled.
-        if (!offerOptions.getTcc() && participant.hasRembSupport())
+        if (offerOptions.getCcfb())
+        {
+            // RFC 8888 feedback is used in place of transport-cc feedback, not together with it.
+            offerOptions.setTcc(false);
+        }
+        // Enable REMB only when neither TCC nor RFC 8888 feedback is enabled.
+        if (!offerOptions.getTcc() && !offerOptions.getCcfb() && participant.hasRembSupport())
         {
             offerOptions.setRemb(true);
         }
