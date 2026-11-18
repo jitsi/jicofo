@@ -23,13 +23,13 @@ import org.jitsi.config.withNewConfig
 
 class ConferenceConfigTest : ShouldSpec() {
     init {
-        context("require-source-name-prefix") {
+        context("validate-source-names") {
             context("By default") {
-                ConferenceConfig.config.requireSourceNamePrefix shouldBe true
+                ConferenceConfig.config.validateSourceNames shouldBe true
             }
             context("When disabled") {
-                withNewConfig("jicofo.conference.require-source-name-prefix = false") {
-                    ConferenceConfig.config.requireSourceNamePrefix shouldBe false
+                withNewConfig("jicofo.conference.validate-source-names = false") {
+                    ConferenceConfig.config.validateSourceNames shouldBe false
                 }
             }
         }

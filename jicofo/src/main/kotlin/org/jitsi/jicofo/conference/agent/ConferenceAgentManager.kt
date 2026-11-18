@@ -48,9 +48,13 @@ import java.util.concurrent.RejectedExecutionException
  *
  * The agent's sources are reserved in the conference source map
  * ([ValidatingConferenceSourceMap.tryToReserve]), so no participant can signal the same SSRC, MSID or source name. If
- * a participant already uses one of them, the reservation fails and so does the agent (see [reserve]). They are
- * not signaled over Jingle: clients learn about the agent from room metadata and receive its audio only after
- * explicitly subscribing to its source, which is delivered over the bridge channel (AudioSourcesMap).
+ * a participant already uses one of them, the reservation fails and so does the agent (see [reserve]). This is a
+ * deliberate choice. When `jicofo.conference.validate-source-names` is set, a participant can only use the agent's
+ * source name "<agentId>-a0" if its endpoint ID is the agent ID, and prosody's mod_muc_resource_validate (if it is
+ * enabled) prevents that, because it allows no "-" in a nick. When the option is not set, any participant can use
+ * the name first. The agent's sources are not signaled over Jingle: clients learn about the agent from room metadata
+ * and receive its audio only after explicitly subscribing to its source, which is delivered over the bridge channel
+ * (AudioSourcesMap).
  *
  * Endpoint allocation involves a blocking colibri round-trip, so it runs on the IO pool; connects are (re)applied
  * once the allocation completes. All state ([allocated], [ready], [pending], [failed]) is guarded by this object's
@@ -82,7 +86,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
 
     /**
      * Agent id -> its synthetic audio source. Stable across metadata updates; an endpoint that is lost and re-allocated
-     * keeps the source name but gets a new SSRC (see [remint]).
+     * keeps the source name but gets a new SSRC (see [remint]). A source is here only while it is reserved in
+     * [conferenceSources]: an agent whose reservation fails is only in [failed].
      */
     private val allocated = mutableMapOf<String, Source>()
 
@@ -169,7 +174,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
             return
         }
         // Re-applies run on every presence update, so bail out early when there is no agent to manage.
-        if (!AgentConfig.config.enabled || (requests.isEmpty() && allocated.isEmpty())) {
+        if (!AgentConfig.config.enabled || (requests.isEmpty() && allocated.isEmpty() && failed.isEmpty())) {
             return
         }
 
@@ -191,7 +196,7 @@ class ConferenceAgentManager @JvmOverloads constructor(
         val requested = requests.filterValues { it.isRequested() }
 
         // Removals originate from the provisioning API (dismiss / room end), so there is nothing to report back.
-        (allocated.keys - requested.keys).toList().forEach { id ->
+        ((allocated.keys + failed) - requested.keys).toList().forEach { id ->
             logger.info("Removing agent $id")
             allocated.remove(id)
             conferenceSources.tryToReserve(id, emptySet())
@@ -203,11 +208,12 @@ class ConferenceAgentManager @JvmOverloads constructor(
         }
 
         requested.keys.forEach { id ->
-            val source = allocated.getOrPut(id) {
-                Source(ssrcMinter.mint(), MediaType.AUDIO, name = sourceName(id), synthetic = true).also {
-                    reserve(id, it)
-                }
+            if (id in failed) {
+                return@forEach
             }
+            val source = allocated[id]
+                ?: reserve(id, Source(ssrcMinter.mint(), MediaType.AUDIO, name = sourceName(id), synthetic = true))
+                ?: return@forEach
             if (id !in ready && id !in pending && id !in failed && canAllocate && !stopped) {
                 val region = primaryRegion(colibriSessionManager)
                 logger.info(
@@ -388,23 +394,26 @@ class ConferenceAgentManager @JvmOverloads constructor(
         val old = allocated[id] ?: return
         val source = old.copy(ssrc = ssrcMinter.mint())
         logger.info("Agent $id gets a new SSRC: ${old.ssrc} -> ${source.ssrc}")
-        allocated[id] = source
         reserve(id, source)
     }
 
     /**
-     * Reserves [source] as [id]'s only source in the conference source map. If it conflicts with a source in the
-     * conference (for example a participant that signaled the same source name), the agent fails.
+     * Reserves [source] as [id]'s only source in the conference source map, and records it in [allocated]. Returns
+     * the source, or null if it conflicts with a source in the conference (for example a participant that signaled
+     * the same source name). Then the agent fails: it is removed from [allocated], its earlier reservation is
+     * released, and it stays in [failed] until the provisioning API removes it.
      */
-    private fun reserve(id: String, source: Source) {
-        try {
-            conferenceSources.tryToReserve(id, setOf(source))
-        } catch (e: ValidationFailedException) {
-            logger.error("Failed to reserve agent $id's source $source: ${e.message}")
-            conferenceSources.tryToReserve(id, emptySet())
-            failed.add(id)
-            statusReporter.report(id, AgentStatusReporter.FAILED, failureReason(e))
-        }
+    private fun reserve(id: String, source: Source): Source? = try {
+        conferenceSources.tryToReserve(id, setOf(source))
+        allocated[id] = source
+        source
+    } catch (e: ValidationFailedException) {
+        logger.error("Failed to reserve agent $id's source $source: ${e.message}")
+        allocated.remove(id)
+        conferenceSources.tryToReserve(id, emptySet())
+        failed.add(id)
+        statusReporter.report(id, AgentStatusReporter.FAILED, failureReason(e))
+        null
     }
 
     companion object {

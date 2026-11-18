@@ -394,6 +394,56 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                             conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-.fr")))
                         }
                     }
+                    context("A name must match the media type") {
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-v0")))
+                        }
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, VIDEO, name = "jid1-a0")))
+                        }
+                    }
+                    context("A name that clients can not parse is rejected") {
+                        listOf("jid1-x", "jid1-a", "jid1-a0x", "jid1-a12345", "jid1-a0\",\"x\":\"y").forEach {
+                            shouldThrow<SourceNameNotOwnedException> {
+                                conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = it)))
+                            }
+                        }
+                        conferenceSources[jid1] shouldBe null
+                    }
+                    context("A source that is not synthetic can not have a suffix") {
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-a0.fr")))
+                        }
+                    }
+                    context("The suffix of a synthetic source must be short and use a limited set of characters") {
+                        listOf("jid1-a0.", "jid1-a0.a.b", "jid1-a0.\"", "jid1-a0." + "x".repeat(33)).forEach {
+                            shouldThrow<SourceNameNotOwnedException> {
+                                conferenceSources.tryToAdd(
+                                    jid1,
+                                    EndpointSourceSet(Source(15, AUDIO, name = it, synthetic = true))
+                                )
+                            }
+                        }
+                    }
+                    context("A synthetic source can not use the name of a source that is not synthetic") {
+                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                        shouldThrow<SourceNameConflictException> {
+                            conferenceSources.tryToAdd(
+                                jid1,
+                                EndpointSourceSet(Source(16, AUDIO, name = "jid1-a0", synthetic = true))
+                            )
+                        }
+                    }
+                    context("An endpoint ID with a \".\" does not make a name valid for two endpoints") {
+                        // Without a suffix on signaled sources, "abcd1234-a0.pt-BR" is not a valid name of endpoint
+                        // "abcd1234-a0.pt".
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(
+                                "abcd1234-a0.pt",
+                                EndpointSourceSet(Source(15, AUDIO, name = "abcd1234-a0.pt-BR"))
+                            )
+                        }
+                    }
                     context("A suffix after the token can have a \"-\"") {
                         val name = EndpointSourceSet(Source(15, AUDIO, name = "jid1-a0.pt-BR", synthetic = true))
                         conferenceSources.tryToAdd(jid1, name) shouldBe name
@@ -414,40 +464,57 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         conferenceSources.tryToAdd("agent-x", name) shouldBe name
                     }
                 }
-                context("Without the prefix check") {
+                context("Without the name checks") {
                     val conferenceSources = ValidatingConferenceSourceMap(
                         MAX_SSRCS_PER_USER,
                         MAX_SSRC_GROUPS_PER_USER,
-                        requireSourceNamePrefix = false
+                        validateSourceNames = false
                     )
-                    val otherName = EndpointSourceSet(Source(31, AUDIO, name = "jid1-a0", msid = "m5"))
 
                     context("A name with no endpoint ID prefix is accepted") {
                         val name = EndpointSourceSet(Source(15, AUDIO, name = "other"))
                         conferenceSources.tryToAdd(jid1, name) shouldBe name
                     }
-                    context("A name that another endpoint uses is rejected and does not change the state") {
-                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
+                    context("Two endpoints can use the same name") {
+                        val name1 = EndpointSourceSet(Source(15, AUDIO, name = "audio"))
+                        val name2 = EndpointSourceSet(Source(16, AUDIO, name = "audio"))
+                        conferenceSources.tryToAdd(jid1, name1) shouldBe name1
+                        conferenceSources.tryToAdd(jid2, name2) shouldBe name2
+                    }
+                    context("A synthetic source can not use the name of a source that is not synthetic") {
+                        conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-a0.fr")))
                         shouldThrow<SourceNameConflictException> {
-                            conferenceSources.tryToAdd(jid2, otherName)
+                            conferenceSources.tryToAdd(
+                                jid1,
+                                EndpointSourceSet(Source(16, AUDIO, name = "jid1-a0.fr", synthetic = true))
+                            )
                         }
-                        conferenceSources[jid2] shouldBe null
                     }
-                    context("A name can be used by another endpoint after it is removed") {
-                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
-                        conferenceSources.tryToRemove(jid1, ownName)
-                        conferenceSources.tryToAdd(jid2, otherName) shouldBe otherName
-                    }
-                    context("A name is released when the endpoint's sources are removed with remove(owner)") {
-                        conferenceSources.tryToAdd(jid1, ownName) shouldBe ownName
-                        conferenceSources.remove(jid1)
-                        conferenceSources.tryToAdd(jid2, otherName) shouldBe otherName
-                    }
-                    context("A name stays used while one of its sources remains") {
-                        conferenceSources.tryToAdd(jid1, simulcast) shouldBe simulcast
-                        conferenceSources.tryToRemove(jid1, EndpointSourceSet(Source(21, VIDEO, msid = "m3")))
+                    context("A reserved name is rejected") {
+                        conferenceSources.tryToReserve("agent-x", setOf(Source(500, AUDIO, name = "agent-x-a0")))
                         shouldThrow<SourceNameConflictException> {
-                            conferenceSources.tryToAdd(jid2, EndpointSourceSet(Source(23, VIDEO, name = "jid1-v0")))
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "agent-x-a0")))
+                        }
+                    }
+                    context("A name can be reserved after the signaled sources with it are removed") {
+                        conferenceSources.tryToAdd(jid1, simulcast) shouldBe simulcast
+                        val toReserve = setOf(Source(500, VIDEO, name = "jid1-v0", synthetic = true))
+
+                        context("but not while one of them remains") {
+                            conferenceSources.tryToRemove(jid1, EndpointSourceSet(Source(21, VIDEO, msid = "m3")))
+                            shouldThrow<SourceNameConflictException> {
+                                conferenceSources.tryToReserve(jid1, toReserve)
+                            }
+                        }
+                        context("with tryToRemove") {
+                            conferenceSources.tryToRemove(jid1, simulcast)
+                            conferenceSources.tryToReserve(jid1, toReserve)
+                            conferenceSources.getReserved(jid1) shouldBe toReserve
+                        }
+                        context("with remove(owner)") {
+                            conferenceSources.remove(jid1)
+                            conferenceSources.tryToReserve(jid1, toReserve)
+                            conferenceSources.getReserved(jid1) shouldBe toReserve
                         }
                     }
                 }
@@ -473,7 +540,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 val conferenceSources = ValidatingConferenceSourceMap(
                     MAX_SSRCS_PER_USER,
                     MAX_SSRC_GROUPS_PER_USER,
-                    requireSourceNamePrefix = false
+                    validateSourceNames = false
                 )
                 conferenceSources.tryToReserve(agent, setOf(reserved))
                 shouldThrow<SourceNameConflictException> {
@@ -501,7 +568,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                     val conferenceSources = ValidatingConferenceSourceMap(
                         MAX_SSRCS_PER_USER,
                         MAX_SSRC_GROUPS_PER_USER,
-                        requireSourceNamePrefix = false
+                        validateSourceNames = false
                     )
                     conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "agent2-a0")))
                     shouldThrow<SourceNameConflictException> {
@@ -526,6 +593,19 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 conferenceSources.getReserved(agent) shouldBe setOf(replacement)
                 conferenceSources.isSsrcUsed(500) shouldBe false
                 conferenceSources.isSsrcUsed(600) shouldBe true
+            }
+            context("A source without a name is checked with the name that the bridge uses for it") {
+                conferenceSources.tryToReserve("agent-x", setOf(Source(600, AUDIO, name = "agent-x-a0")))
+                shouldThrow<SourceNameConflictException> {
+                    conferenceSources.tryToAdd("agent-x", EndpointSourceSet(Source(601, AUDIO)))
+                }
+                conferenceSources["agent-x"] shouldBe null
+
+                conferenceSources.tryToAdd("agent-y", EndpointSourceSet(Source(602, AUDIO)))
+                shouldThrow<SourceNameConflictException> {
+                    conferenceSources.tryToReserve("agent-y", setOf(Source(603, AUDIO, name = "agent-y-a0")))
+                }
+                conferenceSources.getReserved("agent-y") shouldBe emptySet()
             }
             context("A failed reservation keeps the earlier one") {
                 conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "jid1-a0")))
@@ -579,7 +659,7 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 val conferenceSources = ValidatingConferenceSourceMap(
                     MAX_SSRCS_PER_USER,
                     MAX_SSRC_GROUPS_PER_USER,
-                    requireSourceNamePrefix = false
+                    validateSourceNames = false
                 )
                 conferenceSources.tryToReserve(agent, setOf(reserved))
                 conferenceSources.tryToReserve(agent, emptySet())

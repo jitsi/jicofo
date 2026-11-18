@@ -45,15 +45,13 @@ class SyntheticSsrcMinter @JvmOverloads constructor(
     fun mint(): Long {
         repeat(MAX_MINT_ATTEMPTS) {
             val candidate = generator() and 0xFFFF_FFFFL
-            if (candidate != 0L && candidate !in minted && !usedInConference(candidate)) {
+            if (candidate != 0L && candidate !in minted && !conferenceSources.isSsrcUsed(candidate)) {
                 minted.add(candidate)
                 return candidate
             }
         }
         throw IllegalStateException("Failed to mint a non-conflicting SSRC after $MAX_MINT_ATTEMPTS attempts")
     }
-
-    private fun usedInConference(ssrc: Long): Boolean = conferenceSources.isSsrcUsed(ssrc)
 
     companion object {
         private const val MAX_SSRC = 0x1_0000_0000L

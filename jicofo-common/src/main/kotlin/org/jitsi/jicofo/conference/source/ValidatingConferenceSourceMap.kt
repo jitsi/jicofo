@@ -17,6 +17,8 @@
  */
 package org.jitsi.jicofo.conference.source
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory
+import com.fasterxml.jackson.databind.node.ObjectNode
 import org.jitsi.utils.MediaType
 import org.jitsi.utils.logging2.createLogger
 import java.lang.IllegalStateException
@@ -26,9 +28,12 @@ import java.lang.IllegalStateException
  * with validation. Note that the standard [add] and [remove] APIs are still available and do NOT perform validation.
  *
  * Validation means that the addition of sources does not lead to a conflict of SSRC, MSID or source name with another
- * endpoint in the conference, that source names have the format "<owner>-<token>" (if [requireSourceNamePrefix] is
- * set, see [checkSourceNameFormat]), and that the addition/removal operations leave the endpoint's resulting set of
- * sources valid.
+ * endpoint in the conference, that source names have the format that clients use (see [checkSourceNameFormat]), and
+ * that the addition/removal operations leave the endpoint's resulting set of sources valid. The checks of the source
+ * names between signaled sources run only if [validateSourceNames] is set.
+ *
+ * A source without a name is checked with the name that the bridge uses for it, "<owner>-a0" or "<owner>-v0" (see
+ * [effectiveName]).
  *
  * A set of sources is valid if there are no conflicts in SSRC or MSID, all sources within a group have the same MSID,
  * all SSRCs within a group have a corresponding source, and other similar checks pass. See [validateEndpointSourceSet].
@@ -43,8 +48,11 @@ import java.lang.IllegalStateException
 class ValidatingConferenceSourceMap(
     private val maxSsrcsPerUser: Int,
     private val maxSsrcGroupsPerUser: Int,
-    /** Whether to require source names to have the format "<owner>-<token>" (see [checkSourceNameFormat]). */
-    private val requireSourceNamePrefix: Boolean = true
+    /**
+     * Whether to check the names of signaled sources: their format (see [checkSourceNameFormat]), and that two
+     * endpoints do not use the same name. The names of reserved sources are checked regardless.
+     */
+    private val validateSourceNames: Boolean = true
 ) : ConferenceSourceMap() {
     val logger = createLogger()
 
@@ -61,11 +69,12 @@ class ValidatingConferenceSourceMap(
     private val msidToOwnerMap = mutableMapOf<String, String>()
 
     /**
-     * Maps the name of a signaled source to the ID of the endpoint that owns it. Used to detect cross-endpoint
-     * conflicts efficiently. Several sources of the same endpoint can share a name (for example the SSRCs of a
-     * simulcast stream).
+     * Maps the name of a signaled source (see [effectiveName]) to the IDs of the endpoints that use it, and for each
+     * one whether its sources with that name are synthetic. Several sources of the same endpoint can share a name (for
+     * example the SSRCs of a simulcast stream). Several endpoints can use the same name only if [validateSourceNames]
+     * is not set.
      */
-    private val nameToOwnerMap = mutableMapOf<String, String>()
+    private val nameToOwnersMap = mutableMapOf<String, MutableMap<String, Boolean>>()
 
     /**
      * The reserved sources of each endpoint (see [tryToReserve]). There are few of them (for example one for each
@@ -74,25 +83,30 @@ class ValidatingConferenceSourceMap(
     private val reservedSources = mutableMapOf<String, Set<Source>>()
 
     /** The endpoint that has a reserved source that matches [predicate], or null. */
-    private fun reservedOwner(predicate: (Source) -> Boolean): String? =
-        reservedSources.entries.firstOrNull { (_, sources) -> sources.any(predicate) }?.key
+    private fun reservedOwner(predicate: (String, Source) -> Boolean): String? =
+        reservedSources.entries.firstOrNull { (owner, sources) -> sources.any { predicate(owner, it) } }?.key
 
     /** Whether a signaled or reserved source of any endpoint uses [ssrc]. */
     fun isSsrcUsed(ssrc: Long): Boolean = synchronized(syncRoot) {
-        ssrcToOwnerMap.containsKey(ssrc) || reservedOwner { it.ssrc == ssrc } != null
+        ssrcToOwnerMap.containsKey(ssrc) || reservedOwner { _, it -> it.ssrc == ssrc } != null
     }
 
     /**
-     * Checks that the name of a source has the format "<owner>-<token>", optionally followed by "." and a suffix,
-     * where <token> is not empty and has no "-" or ".". For example "abcd1234-a0", "abcd1234-v1" and
-     * "abcd1234-a0.pt-BR" are valid names for owner "abcd1234". The token must not have a "-", so that a name of
-     * owner "abc-def" (for example "abc-def-a0") is not a valid name of owner "abc".
+     * Checks that [name], the name of a [source] of [owner], has the format that clients use: "<owner>-a<index>" for
+     * an audio source and "<owner>-v<index>" for a video source, for example "abcd1234-a0". A synthetic source (one
+     * that jicofo adds) can also have a suffix of up to 32 letters, digits, "_" or "-" after a ".", for example
+     * "abcd1234-a0.pt-BR" for a translation. A name of one endpoint is never a valid name of another endpoint.
      */
     @Throws(SourceNameNotOwnedException::class)
-    private fun checkSourceNameFormat(owner: String, name: String) {
+    private fun checkSourceNameFormat(owner: String, source: Source, name: String) {
         val prefix = "$owner-"
-        val token = name.removePrefix(prefix).substringBefore('.')
-        if (!name.startsWith(prefix) || token.isEmpty() || token.contains('-')) {
+        val rest = name.removePrefix(prefix)
+        val token = if (source.synthetic) rest.substringBefore('.') else rest
+        val suffix = if (source.synthetic && rest.contains('.')) rest.substringAfter('.') else null
+        if (!name.startsWith(prefix) ||
+            !token.matches(if (source.mediaType == MediaType.AUDIO) AUDIO_TOKEN else VIDEO_TOKEN) ||
+            (suffix != null && !suffix.matches(SUFFIX))
+        ) {
             throw SourceNameNotOwnedException(name, owner)
         }
     }
@@ -102,48 +116,50 @@ class ValidatingConferenceSourceMap(
      * ([reserve] is true):
      * - The SSRC is valid, and no signaled source of any endpoint (including [owner]) uses it. No reserved source
      * uses it, except a reserved source of [owner] when [reserve] is true (because the reservation is replaced).
-     * - If [requireSourceNamePrefix] is set, the name has the format checked by [checkSourceNameFormat].
-     * - No other endpoint uses the MSID or the name. Signaled and reserved sources are kept apart: a signaled source
-     * can not use the MSID or name of a reserved source, and the reverse, even when the owner is the same.
+     * - No other endpoint uses the MSID.
+     * - For a signaled source, if [validateSourceNames] is set: the name has the format checked by
+     * [checkSourceNameFormat], and no other endpoint uses the name.
+     * - A synthetic source and a source that is not synthetic do not have the same name.
+     *
+     * Signaled and reserved sources are kept apart: a signaled source can not use the MSID or name of a reserved
+     * source, and the reverse, even when the owner is the same.
      */
     @Throws(ValidationFailedException::class)
     private fun checkConflicts(owner: String, source: Source, reserve: Boolean) {
         if (source.ssrc <= 0 || source.ssrc >= 0x1_0000_0000) {
             throw InvalidSsrcException(source.ssrc)
         }
-        val reservedSsrcOwner = reservedOwner { it.ssrc == source.ssrc }
-        if (ssrcToOwnerMap.containsKey(source.ssrc) ||
-            (reservedSsrcOwner != null && !(reserve && reservedSsrcOwner == owner))
-        ) {
-            // Adding the same SSRC for the same endpoint is also invalid.
-            throw SsrcAlreadyUsedException(source.ssrc)
+        ssrcToOwnerMap[source.ssrc]?.let { throw SsrcAlreadyUsedException(source.ssrc, it) }
+        reservedOwner { o, it -> it.ssrc == source.ssrc && !(reserve && o == owner) }?.let {
+            throw SsrcAlreadyUsedException(source.ssrc, "$it (reserved)")
         }
+
         source.msid?.let { msid ->
-            if (conflicts(owner, reserve, msidToOwnerMap[msid], reservedOwner { it.msid == msid })) {
-                throw MsidConflictException(msid)
+            val signaledOwner = msidToOwnerMap[msid]
+            val reservedOwner = reservedOwner { o, it -> it.msid == msid && !(reserve && o == owner) }
+            if (reserve && signaledOwner != null) throw MsidConflictException(msid, signaledOwner)
+            if (!reserve && signaledOwner != null && signaledOwner != owner) {
+                throw MsidConflictException(msid, signaledOwner)
             }
+            if (reservedOwner != null) throw MsidConflictException(msid, "$reservedOwner (reserved)")
         }
-        source.name?.let { name ->
-            if (requireSourceNamePrefix) {
-                checkSourceNameFormat(owner, name)
+
+        if (source.name != null && (reserve || validateSourceNames)) {
+            checkSourceNameFormat(owner, source, source.name)
+        }
+        val name = effectiveName(owner, source)
+        reservedOwner { o, it -> effectiveName(o, it) == name && !(reserve && o == owner) }?.let {
+            throw SourceNameConflictException(name, "$it (reserved)")
+        }
+        nameToOwnersMap[name]?.let { owners ->
+            owners.keys.firstOrNull { reserve || (validateSourceNames && it != owner) }?.let {
+                throw SourceNameConflictException(name, it)
             }
-            if (conflicts(owner, reserve, nameToOwnerMap[name], reservedOwner { it.name == name })) {
-                throw SourceNameConflictException(name)
+            owners.entries.firstOrNull { it.value != source.synthetic }?.let {
+                throw SourceNameConflictException(name, it.key)
             }
         }
     }
-
-    /**
-     * Whether a value (an MSID or a name) that [owner] wants to use conflicts with its current use: by a signaled
-     * source of [signaledOwner] and by a reserved source of [reservedOwner]. Only the same kind of source of the same
-     * owner can use it again.
-     */
-    private fun conflicts(owner: String, reserve: Boolean, signaledOwner: String?, reservedOwner: String?) =
-        if (reserve) {
-            signaledOwner != null || (reservedOwner != null && reservedOwner != owner)
-        } else {
-            reservedOwner != null || (signaledOwner != null && signaledOwner != owner)
-        }
 
     /**
      * Attempts to reserve [sources] for [owner], replacing the sources that [owner] reserved before. Reserved sources
@@ -151,8 +167,9 @@ class ValidatingConferenceSourceMap(
      * can use their SSRCs, MSIDs or names. Use an empty set to release the reservation.
      *
      * @throws ValidationFailedException if a source has an invalid SSRC, if [sources] repeats an SSRC, if a name does
-     * not have the required format, or if a source conflicts (see [checkConflicts]) with a signaled source of any
-     * endpoint or with a reserved source of another endpoint. The state of the map remains unchanged.
+     * not have the required format (see [checkSourceNameFormat]), or if a source conflicts (see [checkConflicts]) with
+     * a signaled source of any endpoint or with a reserved source of another endpoint. The state of the map remains
+     * unchanged.
      */
     @Throws(ValidationFailedException::class)
     fun tryToReserve(owner: String, sources: Set<Source>) = synchronized(syncRoot) {
@@ -160,7 +177,7 @@ class ValidatingConferenceSourceMap(
         sources.forEach { source ->
             checkConflicts(owner, source, reserve = true)
             if (!ssrcs.add(source.ssrc)) {
-                throw SsrcAlreadyUsedException(source.ssrc)
+                throw SsrcAlreadyUsedException(source.ssrc, owner)
             }
         }
         if (sources.isEmpty()) {
@@ -173,10 +190,17 @@ class ValidatingConferenceSourceMap(
     /** The sources that [owner] reserved (see [tryToReserve]). */
     fun getReserved(owner: String): Set<Source> = synchronized(syncRoot) { reservedSources[owner] ?: emptySet() }
 
+    /** The reserved sources in the expanded JSON format used for debugging (see [toJson]). */
+    fun reservedToJson(): ObjectNode = JsonNodeFactory.instance.objectNode().apply {
+        synchronized(syncRoot) {
+            reservedSources.forEach { (owner, sources) -> set<ObjectNode>(owner, EndpointSourceSet(sources).toJson()) }
+        }
+    }
+
     /**
      * Attempts to add [sourcesToAdd] as sources owned by [owner]. The attempt is successful if the addition does not
      * introduce any conflicts in SSRC, MSID or source name (with signaled or reserved sources, see [checkConflicts]),
-     * the names have the required format (if [requireSourceNamePrefix] is set), and the resulting set of sources for
+     * the names have the required format (if [validateSourceNames] is set), and the resulting set of sources for
      * [owner] is valid (see [validateEndpointSourceSet]).
      *
      * If the attempt is successful, the sources are added to [owner]'s sources and the accepted sources are returned.
@@ -288,14 +312,14 @@ class ValidatingConferenceSourceMap(
         return acceptedSourceSet
     }
 
-    /** Override [add] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
+    /** Override [add] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnersMap] maps updated. */
     override fun add(other: ConferenceSourceMap) = synchronized(syncRoot) {
         super.add(other).also {
             other.forEach { (owner, endpointSourceSet) -> sourceSetAdded(owner, endpointSourceSet) }
         }
     }
 
-    /** Override [add] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
+    /** Override [add] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnersMap] maps updated. */
     override fun add(owner: String, endpointSourceSet: EndpointSourceSet) = synchronized(syncRoot) {
         super.add(owner, endpointSourceSet).also {
             sourceSetAdded(owner, endpointSourceSet)
@@ -308,20 +332,18 @@ class ValidatingConferenceSourceMap(
             source.msid?.let {
                 msidToOwnerMap[it] = owner
             }
-            source.name?.let {
-                nameToOwnerMap[it] = owner
-            }
+            nameToOwnersMap.getOrPut(effectiveName(owner, source)) { mutableMapOf() }[owner] = source.synthetic
         }
     }
 
-    /** Override [remove] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
+    /** Override [remove] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnersMap] maps updated. */
     override fun remove(other: ConferenceSourceMap) = synchronized(syncRoot) {
         super.remove(other).also {
             other.forEach { (owner, ownerRemovedSourceSet) -> sourceSetRemoved(owner, ownerRemovedSourceSet) }
         }
     }
 
-    /** Override [remove] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap] maps updated. */
+    /** Override [remove] to keep the [ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnersMap] maps updated. */
     override fun remove(owner: String): EndpointSourceSet? = synchronized(syncRoot) {
         val ownerRemovedSourceSet = super.remove(owner)
         ownerRemovedSourceSet?.let {
@@ -331,7 +353,7 @@ class ValidatingConferenceSourceMap(
     }
 
     /**
-     * Update the local maps ([ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnerMap]) after the removal of a source
+     * Update the local maps ([ssrcToOwnerMap], [msidToOwnerMap] and [nameToOwnersMap]) after the removal of a source
      * set.
      * @param owner the owner of the removed source set.
      * @param endpointSourceSet the source set which has already been removed.
@@ -347,17 +369,29 @@ class ValidatingConferenceSourceMap(
                     msidToOwnerMap.remove(sourceMsid)
                 }
             }
-            source.name?.let { sourceName ->
-                if (ownerRemainingSourceSet == null ||
-                    ownerRemainingSourceSet.sources.none { it.name == sourceName }
-                ) {
-                    nameToOwnerMap.remove(sourceName)
+            val sourceName = effectiveName(owner, source)
+            if (ownerRemainingSourceSet == null ||
+                ownerRemainingSourceSet.sources.none { effectiveName(owner, it) == sourceName }
+            ) {
+                nameToOwnersMap[sourceName]?.let { owners ->
+                    owners.remove(owner)
+                    if (owners.isEmpty()) nameToOwnersMap.remove(sourceName)
                 }
             }
         }
     }
 
     companion object {
+        private val AUDIO_TOKEN = Regex("a[0-9]{1,4}")
+        private val VIDEO_TOKEN = Regex("v[0-9]{1,4}")
+        private val SUFFIX = Regex("[A-Za-z0-9_-]{1,32}")
+
+        /**
+         * The name of [source] of [owner] as the bridge knows it: its name, or "<owner>-a0" / "<owner>-v0" if it has
+         * none (see [Source.nameForIdAndMediaType]).
+         */
+        private fun effectiveName(owner: String, source: Source): String =
+            source.name ?: Source.nameForIdAndMediaType(owner, source.mediaType, 0)
 
         /**
          * Checks if a given [EndpointSourceSet] is internally valid. The checks include:
@@ -461,14 +495,18 @@ sealed class ValidationFailedException(message: String?) : Exception(message)
 class InvalidSsrcException(ssrc: Long) : ValidationFailedException("Invalid SSRC: $ssrc.")
 class SsrcLimitExceededException(limit: Int) : ValidationFailedException("SSRC limit ($limit) exceeded.")
 class SsrcGroupLimitExceededException(limit: Int) : ValidationFailedException("ssrc-group limit ($limit) exceeded.")
-class SsrcAlreadyUsedException(ssrc: Long) : ValidationFailedException("SSRC is already used: $ssrc.")
+class SsrcAlreadyUsedException(ssrc: Long, owner: String? = null) : ValidationFailedException(
+    "SSRC is already used: $ssrc${owner?.let { " (by $it)" } ?: ""}."
+)
 class RequiredParameterMissingException(name: String) : ValidationFailedException(
     "Required source parameter '$name' is not present."
 )
 class GroupMsidMismatchException(ssrcs: List<Long>) : ValidationFailedException(
     "SsrcGroup contains sources with different MSIDs: $ssrcs."
 )
-class MsidConflictException(msid: String) : ValidationFailedException("MSID is already used: $msid.")
+class MsidConflictException(msid: String, owner: String? = null) : ValidationFailedException(
+    "MSID is already used: $msid${owner?.let { " (by $it)" } ?: ""}."
+)
 class GroupContainsUnknownSourceException(groupSsrcs: List<Long>) : ValidationFailedException(
     "An SSRC group contains an SSRC, which hasn't been signaled as a source: $groupSsrcs."
 )
@@ -478,6 +516,8 @@ class SourceDoesNotExistException(ssrc: Long? = null) : ValidationFailedExceptio
 )
 class SourceGroupDoesNotExistException : ValidationFailedException("Source group does not exist")
 class SourceNameNotOwnedException(name: String, owner: String) : ValidationFailedException(
-    "Source name '$name' does not have the format '$owner-<token>'."
+    "Invalid source name for endpoint $owner: '$name' (expected $owner-a<index> or $owner-v<index>)."
 )
-class SourceNameConflictException(name: String) : ValidationFailedException("Source name is already used: $name.")
+class SourceNameConflictException(name: String, owner: String) : ValidationFailedException(
+    "Source name is already used: $name (by $owner)."
+)

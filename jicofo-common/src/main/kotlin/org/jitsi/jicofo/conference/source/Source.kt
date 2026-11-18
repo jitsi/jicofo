@@ -46,7 +46,8 @@ data class Source(
     constructor(mediaType: MediaType, sourcePacketExtension: SourcePacketExtension) : this(
         sourcePacketExtension.ssrc,
         mediaType,
-        sourcePacketExtension.name,
+        // An empty name is the same as no name.
+        sourcePacketExtension.name?.ifEmpty { null },
         sourcePacketExtension.getChildExtensionsOfType(ParameterPacketExtension::class.java)
             .filter { it.name == "msid" }.map { it.value }.firstOrNull(),
         if (sourcePacketExtension.videoType == null) null else VideoType.parseString(sourcePacketExtension.videoType)

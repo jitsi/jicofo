@@ -464,7 +464,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
 
         context("When a participant already uses the agent's source name") {
             withNewConfig(urlConfig) {
-                val conferenceSources = ValidatingConferenceSourceMap(20, 20, requireSourceNamePrefix = false)
+                val conferenceSources = ValidatingConferenceSourceMap(20, 20, validateSourceNames = false)
                 conferenceSources.tryToAdd("p1", EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent1-a0")))
                 val manager = ConferenceAgentManager(
                     conferenceSources,
@@ -479,6 +479,7 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "source conflict") }
                     verify(exactly = 0) { colibriSessionManager.allocate(any()) }
                     conferenceSources.getReserved("agent1") shouldBe emptySet()
+                    manager.manages("agent1") shouldBe false
                 }
                 should("not report the failure again on re-apply") {
                     manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
@@ -506,6 +507,12 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                             "agent",
                             EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent-x-a0"))
                         )
+                    }
+                }
+                should("keep a participant with the same ID as the agent from sending a source without a name") {
+                    // The bridge would know that source as "agent-x-a0".
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToAdd("agent-x", EndpointSourceSet(Source(1234, MediaType.AUDIO)))
                     }
                 }
                 should("keep a participant with the same ID as the agent from using the agent's name") {
