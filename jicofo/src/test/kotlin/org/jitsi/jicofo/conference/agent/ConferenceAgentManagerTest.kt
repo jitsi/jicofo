@@ -15,6 +15,7 @@
  */
 package org.jitsi.jicofo.conference.agent
 
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
@@ -42,6 +43,9 @@ import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
+import org.jitsi.jicofo.conference.source.SourceNameConflictException
+import org.jitsi.jicofo.conference.source.SourceNameNotOwnedException
+import org.jitsi.jicofo.conference.source.SsrcAlreadyUsedException
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.jicofo.mock.inPlaceExecutor
 import org.jitsi.jicofo.xmpp.RoomMetadata
@@ -421,6 +425,102 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
                     should("not report anything further") {
                         verify(exactly = 0) { statusReporter.report("agent1", "ended", any()) }
+                    }
+                }
+            }
+        }
+
+        context("The agent's source in the conference source map") {
+            withNewConfig(urlConfig) {
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                val params = slot<ParticipantAllocationParameters>()
+                verify { colibriSessionManager.allocate(capture(params)) }
+                val source = params.captured.sources.sources.single()
+
+                should("be reserved, but not signaled") {
+                    conferenceSources.getReserved("agent1") shouldBe setOf(source)
+                    conferenceSources["agent1"] shouldBe null
+                }
+                should("keep a participant from signaling its SSRC") {
+                    shouldThrow<SsrcAlreadyUsedException> {
+                        conferenceSources.tryToAdd("p1", EndpointSourceSet(Source(source.ssrc, MediaType.AUDIO)))
+                    }
+                }
+                should("be released when the agent is removed") {
+                    manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
+                    conferenceSources.getReserved("agent1") shouldBe emptySet()
+                    conferenceSources.isSsrcUsed(source.ssrc) shouldBe false
+                }
+                should("move to the new SSRC when the bridge loses the agent's endpoint") {
+                    every { colibriSessionManager.getBridgeSessionId("agent1") } returns Pair(null, null)
+                    manager.endpointsRemoved(listOf("agent1"), colibriSessionManager, "meeting1")
+                    val reserved = conferenceSources.getReserved("agent1").single()
+                    reserved.name shouldBe source.name
+                    reserved.ssrc shouldNotBe source.ssrc
+                    conferenceSources.isSsrcUsed(source.ssrc) shouldBe false
+                }
+            }
+        }
+
+        context("When a participant already uses the agent's source name") {
+            withNewConfig(urlConfig) {
+                val conferenceSources = ValidatingConferenceSourceMap(20, 20, validateSourceNames = false)
+                conferenceSources.tryToAdd("p1", EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent1-a0")))
+                val manager = ConferenceAgentManager(
+                    conferenceSources,
+                    SyntheticSsrcMinter(conferenceSources),
+                    "room@muc.example.com",
+                    LoggerImpl("test"),
+                    statusReporter = statusReporter
+                )
+                manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+
+                should("fail the agent without allocating it") {
+                    verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "source conflict") }
+                    verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                    conferenceSources.getReserved("agent1") shouldBe emptySet()
+                    manager.manages("agent1") shouldBe false
+                }
+                should("not report the failure again on re-apply") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                }
+                should("allocate the agent once the provisioning API re-adds it and the name is free") {
+                    manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
+                    conferenceSources.remove("p1")
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    conferenceSources.getReserved("agent1").single().name shouldBe "agent1-a0"
+                }
+            }
+        }
+
+        context("An agent ID in the format that prosody uses") {
+            withNewConfig(urlConfig) {
+                manager.setRequests(mapOf("agent-x" to agent), colibriSessionManager, "meeting1")
+
+                should("keep a participant whose ID is a prefix of the agent ID from using the agent's name") {
+                    shouldThrow<SourceNameNotOwnedException> {
+                        conferenceSources.tryToAdd(
+                            "agent",
+                            EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent-x-a0"))
+                        )
+                    }
+                }
+                should("keep a participant with the same ID as the agent from sending a source without a name") {
+                    // The bridge would know that source as "agent-x-a0".
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToAdd("agent-x", EndpointSourceSet(Source(1234, MediaType.AUDIO)))
+                    }
+                }
+                should("keep a participant with the same ID as the agent from using the agent's name") {
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToAdd(
+                            "agent-x",
+                            EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent-x-a0"))
+                        )
                     }
                 }
             }

@@ -273,7 +273,8 @@ public class JitsiMeetConferenceImpl
      */
     private final ValidatingConferenceSourceMap conferenceSources = new ValidatingConferenceSourceMap(
             ConferenceConfig.config.getMaxSsrcsPerUser(),
-            ConferenceConfig.config.getMaxSsrcGroupsPerUser()
+            ConferenceConfig.config.getMaxSsrcGroupsPerUser(),
+            ConferenceConfig.config.getValidateSourceNames()
     );
 
     /**
@@ -1940,6 +1941,7 @@ public class JitsiMeetConferenceImpl
         o.set("conference_properties", MAPPER.valueToTree(conferenceProperties));
         o.put("include_in_statistics", includeInStatistics);
         o.set("conference_sources", conferenceSources.toJson());
+        o.set("reserved_sources", conferenceSources.reservedToJson());
         o.put("audio_limit_reached", audioLimitReached);
         o.put("video_limit_reached", videoLimitReached);
 

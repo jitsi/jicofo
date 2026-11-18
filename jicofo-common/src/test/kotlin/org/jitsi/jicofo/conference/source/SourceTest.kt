@@ -38,6 +38,13 @@ class SourceTest : ShouldSpec() {
             Source(MediaType.VIDEO, packetExtension) shouldBe
                 Source(1, MediaType.VIDEO, name = "name-1", msid = "msid", videoType = VideoType.Camera)
         }
+        context("From XML with an empty name") {
+            val packetExtension = SourcePacketExtension().apply {
+                ssrc = 1
+                name = ""
+            }
+            Source(MediaType.AUDIO, packetExtension).name shouldBe null
+        }
         context("To XML") {
             val msidValue = "msid-value"
             val nameValue = "source-name-value"

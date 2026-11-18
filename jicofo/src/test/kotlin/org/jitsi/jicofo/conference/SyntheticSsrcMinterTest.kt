@@ -52,6 +52,10 @@ class SyntheticSsrcMinterTest : ShouldSpec() {
                 )
                 minter(100, 101, 102).mint() shouldBe 102L
             }
+            should("skip an SSRC of a reserved source") {
+                conferenceSources.tryToReserve("agent1", setOf(Source(100, MediaType.AUDIO, name = "agent1-a0")))
+                minter(100, 101).mint() shouldBe 101L
+            }
             should("skip a source that joined the conference after the minter was created") {
                 val minter = minter(100, 101)
                 conferenceSources.add("aaaaaaaa", EndpointSourceSet(Source(100, MediaType.AUDIO, name = "aaaaaaaa-a0")))

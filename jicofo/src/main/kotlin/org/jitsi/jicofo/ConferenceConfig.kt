@@ -51,6 +51,10 @@ class ConferenceConfig private constructor() {
         "jicofo.conference.max-ssrc-groups-per-user".from(newConfig)
     }
 
+    val validateSourceNames: Boolean by config {
+        "jicofo.conference.validate-source-names".from(newConfig)
+    }
+
     val singleParticipantTimeout: Duration by config {
         "org.jitsi.jicofo.SINGLE_PARTICIPANT_TIMEOUT".from(legacyConfig)
         "jicofo.conference.single-participant-timeout".from(newConfig)

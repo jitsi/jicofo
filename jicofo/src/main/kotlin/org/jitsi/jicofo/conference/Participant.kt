@@ -476,6 +476,7 @@ open class Participant @JvmOverloads constructor(
                     return sessionGoneError()
                 }
             } catch (e: ValidationFailedException) {
+                logger.warn("Rejecting $action: ${e.message}")
                 return StanzaError.from(StanzaError.Condition.bad_request, e.message).build()
             }
 

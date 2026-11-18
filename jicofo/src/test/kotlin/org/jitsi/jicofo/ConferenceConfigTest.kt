@@ -23,6 +23,16 @@ import org.jitsi.config.withNewConfig
 
 class ConferenceConfigTest : ShouldSpec() {
     init {
+        context("validate-source-names") {
+            context("By default") {
+                ConferenceConfig.config.validateSourceNames shouldBe true
+            }
+            context("When disabled") {
+                withNewConfig("jicofo.conference.validate-source-names = false") {
+                    ConferenceConfig.config.validateSourceNames shouldBe false
+                }
+            }
+        }
         context("source-signaling-delays") {
             context("With no delay configured") {
                 for (i in 0..100) {
