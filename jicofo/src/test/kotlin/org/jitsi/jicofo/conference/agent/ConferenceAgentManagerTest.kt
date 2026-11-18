@@ -43,6 +43,8 @@ import org.jitsi.jicofo.bridge.colibri.ParticipantAllocationParameters
 import org.jitsi.jicofo.conference.SyntheticSsrcMinter
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.conference.source.Source
+import org.jitsi.jicofo.conference.source.SourceNameConflictException
+import org.jitsi.jicofo.conference.source.SourceNameNotOwnedException
 import org.jitsi.jicofo.conference.source.SsrcAlreadyUsedException
 import org.jitsi.jicofo.conference.source.ValidatingConferenceSourceMap
 import org.jitsi.jicofo.mock.inPlaceExecutor
@@ -477,6 +479,42 @@ class ConferenceAgentManagerTest : ShouldSpec() {
                     verify { statusReporter.report("agent1", AgentStatusReporter.FAILED, "source conflict") }
                     verify(exactly = 0) { colibriSessionManager.allocate(any()) }
                     conferenceSources.getReserved("agent1") shouldBe emptySet()
+                }
+                should("not report the failure again on re-apply") {
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    manager.reapply(colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { statusReporter.report("agent1", AgentStatusReporter.FAILED, any()) }
+                    verify(exactly = 0) { colibriSessionManager.allocate(any()) }
+                }
+                should("allocate the agent once the provisioning API re-adds it and the name is free") {
+                    manager.setRequests(emptyMap(), colibriSessionManager, "meeting1")
+                    conferenceSources.remove("p1")
+                    manager.setRequests(mapOf("agent1" to agent), colibriSessionManager, "meeting1")
+                    verify(exactly = 1) { colibriSessionManager.allocate(any()) }
+                    conferenceSources.getReserved("agent1").single().name shouldBe "agent1-a0"
+                }
+            }
+        }
+
+        context("An agent ID in the format that prosody uses") {
+            withNewConfig(urlConfig) {
+                manager.setRequests(mapOf("agent-x" to agent), colibriSessionManager, "meeting1")
+
+                should("keep a participant whose ID is a prefix of the agent ID from using the agent's name") {
+                    shouldThrow<SourceNameNotOwnedException> {
+                        conferenceSources.tryToAdd(
+                            "agent",
+                            EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent-x-a0"))
+                        )
+                    }
+                }
+                should("keep a participant with the same ID as the agent from using the agent's name") {
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToAdd(
+                            "agent-x",
+                            EndpointSourceSet(Source(1234, MediaType.AUDIO, name = "agent-x-a0"))
+                        )
+                    }
                 }
             }
         }

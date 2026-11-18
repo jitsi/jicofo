@@ -386,6 +386,33 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                         }
                         conferenceSources[jid1] shouldBe null
                     }
+                    context("A name must have a token after the endpoint ID") {
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-")))
+                        }
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(15, AUDIO, name = "jid1-.fr")))
+                        }
+                    }
+                    context("A suffix after the token can have a \"-\"") {
+                        val name = EndpointSourceSet(Source(15, AUDIO, name = "jid1-a0.pt-BR", synthetic = true))
+                        conferenceSources.tryToAdd(jid1, name) shouldBe name
+                    }
+                    context("An endpoint ID followed by \"-\" that is a prefix of another endpoint ID") {
+                        // "agent" followed by "-" is a prefix of "agent-x", but the names of "agent-x" (for
+                        // example "agent-x-a0") are not valid names of "agent".
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToAdd(
+                                "agent",
+                                EndpointSourceSet(Source(15, AUDIO, name = "agent-x-a0"))
+                            )
+                        }
+                        shouldThrow<SourceNameNotOwnedException> {
+                            conferenceSources.tryToReserve("agent", setOf(Source(15, AUDIO, name = "agent-x-a0")))
+                        }
+                        val name = EndpointSourceSet(Source(15, AUDIO, name = "agent-x-a0"))
+                        conferenceSources.tryToAdd("agent-x", name) shouldBe name
+                    }
                 }
                 context("Without the prefix check") {
                     val conferenceSources = ValidatingConferenceSourceMap(
@@ -499,6 +526,54 @@ class ValidatingConferenceSourceMapTest : ShouldSpec() {
                 conferenceSources.getReserved(agent) shouldBe setOf(replacement)
                 conferenceSources.isSsrcUsed(500) shouldBe false
                 conferenceSources.isSsrcUsed(600) shouldBe true
+            }
+            context("A failed reservation keeps the earlier one") {
+                conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "jid1-a0")))
+                shouldThrow<SsrcAlreadyUsedException> {
+                    conferenceSources.tryToReserve(agent, setOf(reserved.copy(ssrc = 1)))
+                }
+                conferenceSources.getReserved(agent) shouldBe setOf(reserved)
+                conferenceSources.isSsrcUsed(500) shouldBe true
+            }
+            context("The same source can be reserved again") {
+                conferenceSources.tryToReserve(agent, setOf(reserved))
+                conferenceSources.getReserved(agent) shouldBe setOf(reserved)
+            }
+            context("A reservation can not repeat an SSRC") {
+                shouldThrow<SsrcAlreadyUsedException> {
+                    conferenceSources.tryToReserve(
+                        "agent2",
+                        setOf(Source(700, AUDIO, name = "agent2-a0"), Source(700, VIDEO, name = "agent2-v0"))
+                    )
+                }
+                conferenceSources.getReserved("agent2") shouldBe emptySet()
+            }
+            context("Signaled and reserved sources of the same endpoint ID") {
+                val reservedWithMsid = Source(800, AUDIO, name = "agent2-a0", msid = "agent2-msid", synthetic = true)
+                conferenceSources.tryToReserve("agent2", setOf(reservedWithMsid))
+
+                context("A signaled source can not use the reserved name") {
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToAdd("agent2", EndpointSourceSet(Source(801, AUDIO, name = "agent2-a0")))
+                    }
+                    conferenceSources["agent2"] shouldBe null
+                }
+                context("A signaled source can not use the reserved MSID") {
+                    shouldThrow<MsidConflictException> {
+                        conferenceSources.tryToAdd(
+                            "agent2",
+                            EndpointSourceSet(Source(801, AUDIO, name = "agent2-a1", msid = "agent2-msid"))
+                        )
+                    }
+                    conferenceSources["agent2"] shouldBe null
+                }
+                context("A source can not be reserved with the name of a signaled source") {
+                    conferenceSources.tryToAdd(jid1, EndpointSourceSet(Source(1, AUDIO, name = "jid1-a0")))
+                    shouldThrow<SourceNameConflictException> {
+                        conferenceSources.tryToReserve(jid1, setOf(Source(2, AUDIO, name = "jid1-a0")))
+                    }
+                    conferenceSources.getReserved(jid1) shouldBe emptySet()
+                }
             }
             context("Releasing a reservation frees its SSRC and name") {
                 val conferenceSources = ValidatingConferenceSourceMap(

@@ -47,7 +47,8 @@ import java.util.concurrent.RejectedExecutionException
  * members that consented to that agent (see [org.jitsi.jicofo.xmpp.muc.ChatRoomMember.voiceAgentConsent]).
  *
  * The agent's sources are reserved in the conference source map
- * ([ValidatingConferenceSourceMap.tryToReserve]), so no participant can signal the same SSRC or source name. They are
+ * ([ValidatingConferenceSourceMap.tryToReserve]), so no participant can signal the same SSRC, MSID or source name. If
+ * a participant already uses one of them, the reservation fails and so does the agent (see [reserve]). They are
  * not signaled over Jingle: clients learn about the agent from room metadata and receive its audio only after
  * explicitly subscribing to its source, which is delivered over the bridge channel (AudioSourcesMap).
  *
@@ -60,8 +61,9 @@ import java.util.concurrent.RejectedExecutionException
  *
  * The connect carries no dial config, only the `conference` and `agentId` query parameters: the media relay fetches
  * the customer endpoint by them, so no customer secret passes through jicofo or the bridge. Lifecycle reporting is
- * split the same way. Jicofo reports `connecting` (allocation submitted) and `failed` (allocation error) through
- * [statusReporter] (see [AgentStatusReporter]); the relay reports `active`, `failed` for dial failures and `ended`.
+ * split the same way. Jicofo reports `connecting` (allocation submitted) and `failed` (allocation error, or a source
+ * conflict) through [statusReporter] (see [AgentStatusReporter]); the relay reports `active`, `failed` for dial
+ * failures and `ended`.
  */
 class ConferenceAgentManager @JvmOverloads constructor(
     /** Read to name consenting members' audio sources. The agents' sources are reserved in it. */
@@ -91,8 +93,8 @@ class ConferenceAgentManager @JvmOverloads constructor(
     private val pending = mutableSetOf<String>()
 
     /**
-     * Agents whose allocation failed. Terminal until the id leaves the request map: every status report makes
-     * prosody rebroadcast the metadata that triggers [apply], so retrying here would loop.
+     * Agents whose allocation or source reservation failed. Terminal until the id leaves the request map: every status
+     * report makes prosody rebroadcast the metadata that triggers [apply], so retrying here would loop.
      */
     private val failed = mutableSetOf<String>()
 

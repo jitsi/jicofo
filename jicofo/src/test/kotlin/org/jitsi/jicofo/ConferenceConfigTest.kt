@@ -23,6 +23,16 @@ import org.jitsi.config.withNewConfig
 
 class ConferenceConfigTest : ShouldSpec() {
     init {
+        context("require-source-name-prefix") {
+            context("By default") {
+                ConferenceConfig.config.requireSourceNamePrefix shouldBe true
+            }
+            context("When disabled") {
+                withNewConfig("jicofo.conference.require-source-name-prefix = false") {
+                    ConferenceConfig.config.requireSourceNamePrefix shouldBe false
+                }
+            }
+        }
         context("source-signaling-delays") {
             context("With no delay configured") {
                 for (i in 0..100) {
