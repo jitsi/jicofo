@@ -40,10 +40,12 @@ import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.ParticipantProperties
 import org.jitsi.jicofo.bridge.VisitorTopologyStrategy
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.ms
@@ -428,6 +430,33 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             failedSessions.shouldBeEmpty()
                         }
                     }
+
+                    context("And adding a third core bridge") {
+                        // The new bridge connects to both core bridges. The visitor bridges are behind them, one of
+                        // them behind another visitor bridge.
+                        val coreBridge3 = createBridge("core3")
+                        bridges.add(coreBridge3)
+                        allocate("p3", region = "region-core3")
+
+                        should("connect it to the core bridges only") {
+                            activeRelays(coreBridge3) shouldBe listOf("core1", "jvb2")
+                        }
+                        should("create its participant on the core bridges with the new relay") {
+                            relayEndpointCreates(coreBridge1, "core3", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(bridge2, "core3", "p3") shouldBe listOf(true)
+                        }
+                        should("create its participant on the visitor bridges behind the core bridges") {
+                            relayEndpointCreates(visitorBridge1, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge3, "visitor1", "p3") shouldBe listOf(true)
+                        }
+                        should("not create its participant on the relay towards the visitor bridge behind it") {
+                            relayEndpointCreates(visitorBridge1, "visitor3", "p3").shouldBeEmpty()
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
                 }
 
                 context("And a request fails while a core bridge is removed") {
@@ -501,6 +530,17 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             relayEndpointCreates(visitorBridge2, "jvb1", "p3") shouldBe listOf(true)
                         }
                     }
+
+                    context("And the participant signals its sources") {
+                        val sources = EndpointSourceSet(Source(1234L, MediaType.AUDIO, name = "p2-a0"))
+                        sessionManager.updateParticipant("p2", sources = sources).also { drain() }
+
+                        should("update the participant on each other bridge after the create") {
+                            relayEndpointCreates(bridge1, "jvb2", "p2") shouldBe listOf(true, false)
+                            relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true, false)
+                            relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true, false)
+                        }
+                    }
                 }
 
                 context("And adding a third visitor bridge") {
@@ -536,7 +576,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             activeRelays(visitorBridge1) shouldBe listOf("visitor2", "jvb2")
                             activeRelays(visitorBridge2) shouldBe listOf("visitor1")
                         }
-                        should("create its participant on the visitor bridge which does not connect to it") {
+                        should("create its participant on both visitor bridges") {
                             relayEndpointCreates(visitorBridge1, "jvb2", "p2") shouldBe listOf(true)
                             relayEndpointCreates(visitorBridge2, "visitor1", "p2") shouldBe listOf(true)
                         }
