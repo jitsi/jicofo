@@ -24,6 +24,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -40,10 +41,12 @@ import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.ParticipantProperties
 import org.jitsi.jicofo.bridge.VisitorTopologyStrategy
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
+import org.jitsi.jicofo.conference.source.Source
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
 import org.jitsi.jicofo.mock.TestColibri2Server
 import org.jitsi.jicofo.mock.inPlaceScheduledExecutor
+import org.jitsi.utils.MediaType
 import org.jitsi.utils.TemplatedUrl
 import org.jitsi.utils.logging2.createLogger
 import org.jitsi.utils.ms
@@ -218,6 +221,21 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     private fun initialRelayEndpoints(bridge: Bridge, relayId: String) = requestsTo(bridge).flatMap { it.relays }
         .filter { it.create && it.id == relayId }
         .mapNotNull { it.endpoints }.flatMap { it.endpoints }.map { it.id }
+
+    /**
+     * The value of `create` in each request which jicofo sent to [bridge] for the remote endpoint [endpointId] on the
+     * relay [relayId], in the order of the requests.
+     */
+    private fun relayEndpointCreates(bridge: Bridge, relayId: String, endpointId: String) =
+        requestsTo(bridge).flatMap { it.relays }.filter { it.id == relayId }
+            .mapNotNull { it.endpoints }.flatMap { it.endpoints }
+            .filter { it.id == endpointId }.map { it.create }
+
+    /** The number of requests which jicofo sent to [bridge] to expire the remote endpoint [endpointId] on [relayId]. */
+    private fun relayEndpointExpires(bridge: Bridge, relayId: String, endpointId: String) =
+        requestsTo(bridge).flatMap { it.relays }.filter { it.id == relayId }
+            .mapNotNull { it.endpoints }.flatMap { it.endpoints }
+            .count { it.id == endpointId && it.expire }
 
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
@@ -419,6 +437,79 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             failedSessions.shouldBeEmpty()
                         }
                     }
+
+                    context("And adding a third core bridge") {
+                        // The new bridge connects to both core bridges. The visitor bridges are behind them, one of
+                        // them behind another visitor bridge.
+                        val coreBridge3 = createBridge("core3")
+                        bridges.add(coreBridge3)
+                        allocate("p3", region = "region-core3")
+
+                        should("connect it to the core bridges only") {
+                            activeRelays(coreBridge3) shouldBe listOf("core1", "jvb2")
+                        }
+                        should("create its participant on the core bridges with the new relay") {
+                            relayEndpointCreates(coreBridge1, "core3", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(bridge2, "core3", "p3") shouldBe listOf(true)
+                        }
+                        should("create its participant on the visitor bridges behind the core bridges") {
+                            relayEndpointCreates(visitorBridge1, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge3, "visitor1", "p3") shouldBe listOf(true)
+                        }
+                        should("not create its participant on the relay towards the visitor bridge behind it") {
+                            relayEndpointCreates(visitorBridge1, "visitor3", "p3").shouldBeEmpty()
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+
+                        context("And removing its only participant") {
+                            sessionManager.removeParticipant("p3").also { drain() }
+
+                            should("expire the participant on the visitor bridges, up to three hops away") {
+                                relayEndpointExpires(visitorBridge1, "jvb2", "p3") shouldBe 1
+                                relayEndpointExpires(visitorBridge2, "jvb2", "p3") shouldBe 1
+                                relayEndpointExpires(visitorBridge3, "visitor1", "p3") shouldBe 1
+                            }
+                            should("expire only the relay on the core bridges") {
+                                relayEndpointExpires(coreBridge1, "core3", "p3") shouldBe 0
+                                relayEndpointExpires(bridge2, "core3", "p3") shouldBe 0
+                            }
+                        }
+                    }
+
+                    context("And removing the core bridge which the visitor bridges connect to") {
+                        // The removal leads to a repair, which adds links.
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("expire the participant once on the visitor bridge behind another one") {
+                            relayEndpointExpires(visitorBridge3, "visitor1", "p2") shouldBe 1
+                            requestsTo(visitorBridge3).flatMap { it.relays }.mapNotNull { it.endpoints }
+                                .flatMap { it.endpoints }.count { it.id == "p2" && it.expire } shouldBe 1
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
+
+                    context("And the expire of a participant fails while its bridge is removed") {
+                        val expiresEndpointOnVisitorBridge3 = { iq: IQ ->
+                            iq is ConferenceModifyIQ && iq.to == visitorBridge3.jid &&
+                                iq.relays.any { relay -> relay.endpoints?.endpoints?.any { it.expire } == true }
+                        }
+                        every {
+                            xmppConnection.xmppConnection.createStanzaCollectorAndSend(
+                                match(expiresEndpointOnVisitorBridge3)
+                            )
+                        } throws SmackException.NotConnectedException()
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("remove the session of the bridge") {
+                            sessionManager.getBridges().keys shouldNotContain bridge2
+                            requestsTo(bridge2).count { it.expire } shouldBe 1
+                        }
+                    }
                 }
 
                 context("And a request fails while a core bridge is removed") {
@@ -463,6 +554,89 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     activeRelays(visitorBridge2) shouldBe listOf("jvb1")
                 }
 
+                context("And adding a second core bridge") {
+                    // The new bridge connects to the first core bridge. It has no relay to the visitor bridges.
+                    allocate("p2", region = "region-jvb2")
+
+                    should("connect the core bridges to each other") {
+                        activeRelays(bridge2) shouldBe listOf("jvb1")
+                        activeRelays(visitorBridge1) shouldBe listOf("jvb1")
+                        activeRelays(visitorBridge2) shouldBe listOf("jvb1")
+                    }
+                    should("create its first participant on the bridge which connects to it") {
+                        relayEndpointCreates(bridge1, "jvb2", "p2") shouldBe listOf(true)
+                    }
+                    should("create its first participant on the bridges which do not connect to it") {
+                        relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true)
+                        relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true)
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+
+                    context("And adding a second participant to it") {
+                        allocate("p3", region = "region-jvb2")
+
+                        should("create the participant once on each of the other bridges") {
+                            relayEndpointCreates(bridge1, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge1, "jvb1", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "jvb1", "p3") shouldBe listOf(true)
+                        }
+
+                        context("And removing the bridge") {
+                            sessionManager.removeBridge(bridge2).also { drain() }
+
+                            should("expire both participants on the bridges which do not connect to it") {
+                                listOf(visitorBridge1, visitorBridge2).forEach { bridge ->
+                                    relayEndpointExpires(bridge, "jvb1", "p2") shouldBe 1
+                                    relayEndpointExpires(bridge, "jvb1", "p3") shouldBe 1
+                                }
+                            }
+                        }
+                    }
+
+                    context("And removing its only participant") {
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("expire the relay on the bridge which connects to it") {
+                            requestsTo(bridge1).flatMap { it.relays }.filter { it.expire }.map { it.id } shouldBe
+                                listOf("jvb2")
+                            relayEndpointExpires(bridge1, "jvb2", "p2") shouldBe 0
+                        }
+                        should("expire the participant on the bridges which do not connect to it") {
+                            relayEndpointExpires(visitorBridge1, "jvb1", "p2") shouldBe 1
+                            relayEndpointExpires(visitorBridge2, "jvb1", "p2") shouldBe 1
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
+
+                    context("And the participant signals its sources") {
+                        val sources = EndpointSourceSet(Source(1234L, MediaType.AUDIO, name = "p2-a0"))
+                        sessionManager.updateParticipant("p2", sources = sources).also { drain() }
+
+                        should("update the participant on each other bridge after the create") {
+                            relayEndpointCreates(bridge1, "jvb2", "p2") shouldBe listOf(true, false)
+                            relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true, false)
+                            relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true, false)
+                        }
+                    }
+                }
+
+                context("And adding a third visitor bridge") {
+                    val visitorBridge3 = createBridge("visitor3")
+                    bridges.add(visitorBridge3)
+                    allocate("v3", region = "region-visitor3", visitor = true)
+
+                    should("not signal the visitor to the other bridges") {
+                        listOf(bridge1, visitorBridge1, visitorBridge2).forEach { bridge ->
+                            requestsTo(bridge).flatMap { it.relays }.mapNotNull { it.endpoints }
+                                .flatMap { it.endpoints }.filter { it.id == "v3" }.shouldBeEmpty()
+                        }
+                    }
+                }
+
                 context("And removing the core bridge") {
                     sessionManager.removeParticipant("p1").also { drain() }
 
@@ -482,6 +656,10 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             activeRelays(bridge2) shouldBe listOf("visitor1")
                             activeRelays(visitorBridge1) shouldBe listOf("visitor2", "jvb2")
                             activeRelays(visitorBridge2) shouldBe listOf("visitor1")
+                        }
+                        should("create its participant on both visitor bridges") {
+                            relayEndpointCreates(visitorBridge1, "jvb2", "p2") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "visitor1", "p2") shouldBe listOf(true)
                         }
                         should("not fail any sessions") {
                             failedSessions.shouldBeEmpty()
