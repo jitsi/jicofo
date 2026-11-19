@@ -223,6 +223,15 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         .mapNotNull { it.endpoints }.flatMap { it.endpoints }.map { it.id }
 
     /**
+     * The number of times that jicofo created the remote endpoint [endpointId] on the relay [relayId] of [bridge], with
+     * the request that created the relay or with a request of its own.
+     */
+    private fun relayEndpointCreateCount(bridge: Bridge, relayId: String, endpointId: String) =
+        requestsTo(bridge).flatMap { it.relays }.filter { it.id == relayId }
+            .mapNotNull { it.endpoints }.flatMap { it.endpoints }
+            .count { it.id == endpointId && it.create }
+
+    /**
      * The value of `create` in each request which jicofo sent to [bridge] for the remote endpoint [endpointId] on the
      * relay [relayId], in the order of the requests.
      */
@@ -512,6 +521,74 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     }
                 }
 
+                context("And removing the core bridge which a chain of visitor bridges connects to") {
+                    // The first visitor bridge connects to the core bridge, and a second one to the first.
+                    val visitorBridge3 = createBridge("visitor3", bridgeRegion = "region-visitor1")
+                    bridges.remove(visitorBridge1)
+                    bridges.add(visitorBridge3)
+                    allocate("v3", region = "region-visitor1", visitor = true)
+                    sessionManager.removeParticipant("p2").also { drain() }
+
+                    should("connect the visitor bridge which was connected to the removed bridge") {
+                        activeRelays(visitorBridge1) shouldBe listOf("visitor3", "core1")
+                        activeRelays(visitorBridge3) shouldBe listOf("visitor1")
+                    }
+                    should("signal the participant of the core bridge to both visitor bridges") {
+                        relayEndpointCreateCount(visitorBridge1, "core1", "p1") shouldBe 1
+                        relayEndpointCreateCount(visitorBridge3, "visitor1", "p1") shouldBe 1
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+                }
+
+                context("And a main-room participant on a visitor bridge, with three core bridges") {
+                    // The third core bridge has a higher stress, so a repair connects a visitor bridge to core1.
+                    val coreBridge3 = createBridge("core3", stress = 0.6)
+                    bridges.add(coreBridge3)
+                    allocate("p3", region = "region-core3")
+                    // The selector picks the bridge of the region, which is a visitor bridge.
+                    allocate("m1", region = "region-visitor1")
+
+                    should("signal the participant to all other bridges") {
+                        relayEndpointCreateCount(bridge2, "visitor1", "m1") shouldBe 1
+                        relayEndpointCreateCount(coreBridge1, "jvb2", "m1") shouldBe 1
+                        relayEndpointCreateCount(coreBridge3, "jvb2", "m1") shouldBe 1
+                        relayEndpointCreateCount(visitorBridge2, "jvb2", "m1") shouldBe 1
+                    }
+
+                    context("And removing the core bridge which the visitor bridges connect to") {
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("connect the visitor bridges to core1") {
+                            activeRelays(visitorBridge1) shouldBe listOf("core1")
+                            activeRelays(visitorBridge2) shouldBe listOf("core1")
+                        }
+                        should("create the participant on the core bridge which the repair does not link") {
+                            relayEndpointCreateCount(coreBridge3, "core1", "m1") shouldBe 1
+                        }
+                        should("create the participant once on each bridge which the repair links") {
+                            relayEndpointCreateCount(coreBridge1, "visitor1", "m1") shouldBe 1
+                            relayEndpointCreateCount(visitorBridge2, "core1", "m1") shouldBe 1
+                        }
+                        should("not create the participants of the core bridges again") {
+                            relayEndpointCreateCount(visitorBridge1, "core1", "p1") shouldBe 1
+                            relayEndpointCreateCount(visitorBridge2, "core1", "p1") shouldBe 1
+                        }
+                        should("not signal the visitors to any bridge") {
+                            // v1 is on a bridge whose path changes, and visitors have no remote endpoints.
+                            listOf(bridge2, coreBridge1, coreBridge3, visitorBridge1, visitorBridge2).forEach {
+                                requestsTo(it).flatMap { r -> r.relays }.mapNotNull { r -> r.endpoints }
+                                    .flatMap { e -> e.endpoints }.filter { e -> e.id == "v1" || e.id == "v2" }
+                                    .shouldBeEmpty()
+                            }
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
+                }
+
                 context("And a request fails while a core bridge is removed") {
                     // The request which expires the relay on the first visitor bridge is not sent.
                     val expiresRelayOnVisitorBridge1 = { iq: IQ ->
@@ -746,6 +823,81 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         should("not fail any sessions") {
                             failedSessions.shouldBeEmpty()
                         }
+                    }
+                }
+            }
+        }
+
+        context("A repair which connects to a visitor bridge") {
+            withNewConfig("jicofo.octo.enabled=true") {
+                useVisitorTopology()
+
+                // The visitor bridges are in the same region, and the core bridges in other regions. The test makes
+                // bridges overloaded for a while, so that each visitor bridge connects to the bridge which it needs.
+                val coreA = createBridge("coreA", stress = 0.0)
+                val coreB = createBridge("coreB", stress = 0.5)
+                val visitor5 = createBridge("visitor5", bridgeRegion = "region-v")
+                val visitor1 = createBridge("visitor1", bridgeRegion = "region-v")
+                val visitor3 = createBridge("visitor3", bridgeRegion = "region-v")
+                bridges.clear()
+                bridges.addAll(listOf(coreA, coreB, visitor5))
+
+                allocate("pA", region = "region-coreA")
+                allocate("pB", region = "region-coreB")
+                allocate("v5", region = "region-v", visitor = true)
+
+                every { coreA.isOverloaded } returns true
+                every { visitor5.isOverloaded } returns true
+                bridges.remove(visitor5)
+                bridges.add(visitor1)
+                allocate("v1", region = "region-v", visitor = true)
+
+                every { coreA.isOverloaded } returns false
+                bridges.remove(visitor1)
+                bridges.add(visitor3)
+                allocate("v3", region = "region-v", visitor = true)
+                every { visitor5.isOverloaded } returns false
+                // A main-room participant on the last visitor bridge.
+                allocate("m1", region = "region-v")
+
+                should("build a chain behind the second core bridge") {
+                    activeRelays(visitor5) shouldBe listOf("coreA")
+                    activeRelays(visitor1) shouldBe listOf("coreB", "visitor3")
+                    activeRelays(visitor3) shouldBe listOf("visitor1")
+                }
+
+                context("And removing the visitor bridge in the middle of the chain") {
+                    sessionManager.removeParticipant("v1").also { drain() }
+
+                    should("connect the last visitor bridge to the visitor bridge in its region") {
+                        activeRelays(visitor3) shouldBe listOf("visitor5")
+                        initialRelayEndpoints(visitor3, "visitor5").toSet() shouldBe setOf("pA", "pB")
+                    }
+                    should("create the participant on the core bridges, on their relay towards it") {
+                        relayEndpointCreateCount(coreA, "visitor5", "m1") shouldBe 1
+                        relayEndpointCreateCount(coreB, "coreA", "m1") shouldBe 1
+                    }
+                    should("expire the participant on the old relay which still exists") {
+                        relayEndpointExpires(coreA, "coreB", "m1") shouldBe 1
+                    }
+                    should("move the participant to the new relay on the bridge which the repair links") {
+                        // The old relay still exists, so the repair relay does not get the participant. It is expired
+                        // on the old relay first, then created on the new one, once.
+                        initialRelayEndpoints(visitor5, "visitor3").shouldBeEmpty()
+                        val m1Requests = requestsTo(visitor5).flatMap { it.relays }.flatMap { relay ->
+                            relay.endpoints?.endpoints?.filter { it.id == "m1" }?.map {
+                                val action = when {
+                                    it.expire -> "expire"
+                                    it.create -> "create"
+                                    else -> "update"
+                                }
+                                "${relay.id}:$action"
+                            } ?: emptyList()
+                        }
+                        m1Requests shouldBe listOf("coreA:create", "coreA:expire", "visitor3:create")
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
                     }
                 }
             }

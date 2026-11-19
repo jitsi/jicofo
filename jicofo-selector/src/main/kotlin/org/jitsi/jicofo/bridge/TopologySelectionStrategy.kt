@@ -24,6 +24,12 @@ import org.jitsi.jicofo.bridge.colibri.ColibriV2SessionManager
  */
 abstract class TopologySelectionStrategy {
     abstract fun connectNode(cascade: ColibriV2SessionManager, node: Colibri2Session): TopologySelectionResult
+
+    /**
+     * Return the links which connect the [disconnected] sets of nodes again, after a node was removed. In each set,
+     * the nodes which were linked to the removed node come first (see [removeNode]), so `first()` of a set is one of
+     * them.
+     */
     abstract fun repairMesh(
         cascade: ColibriV2SessionManager,
         disconnected: Set<Set<Colibri2Session>>
