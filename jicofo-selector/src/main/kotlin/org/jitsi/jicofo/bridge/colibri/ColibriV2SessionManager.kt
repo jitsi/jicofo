@@ -253,7 +253,16 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         // Remove the session from the cascade before it expires. [Colibri2Session.expire] clears the relays of the
         // session, and [removeNode] needs them: it expires the relays to this session on the sessions connected to
         // it, and it connects again the sessions which were connected only through this one.
-        removeNode(session, ::repairMesh)
+        try {
+            removeNode(session, ::repairMesh)
+        } catch (e: Exception) {
+            // Continue, so that the session expires and leaves the maps below.
+            logger.error("Failed to remove $session from the cascade", e)
+        }
+        // [removeNode] removes these relays when it succeeds. When it fails, a remaining session can keep its relay to
+        // the removed session, and the functions which walk the cascade throw for a relay to a session which is not
+        // in [sessions].
+        session.relayId?.let { removedRelayId -> sessions.values.forEach { it.relays.remove(removedRelayId) } }
         session.expire()
         sessions.remove(session.relayId)
         participantsBySession.remove(session)

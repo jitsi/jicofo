@@ -52,6 +52,7 @@ import org.jitsi.xmpp.extensions.colibri2.ConferenceModifyIQ
 import org.jitsi.xmpp.extensions.jingle.DtlsFingerprintPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceCandidatePacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.IQ
 import org.jxmpp.jid.Jid
 import org.jxmpp.jid.impl.JidCreate
@@ -220,6 +221,16 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
+    /**
+     * Makes the conference use one [VisitorTopologyStrategy]. The strategy counts the meshes which it creates, so the
+     * conference has to use a single instance. The config does not cache values in tests, and creates a new instance
+     * each time it is read.
+     */
+    private fun useVisitorTopology() {
+        mockkObject(BridgeConfig.config)
+        every { BridgeConfig.config.topologyStrategy } returns VisitorTopologyStrategy()
+    }
+
     override suspend fun beforeAny(testCase: TestCase) = super.beforeAny(testCase).also {
         TaskPools.ioPool = ioExecutor.executor
         TaskPools.scheduledPool = inPlaceScheduledExecutor
@@ -315,10 +326,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
         context("Visitor bridges in satellite trees") {
             withNewConfig("jicofo.octo.enabled=true") {
-                // The strategy counts the meshes which it creates, so the conference has to use a single instance.
-                // The config does not cache values in tests, and creates a new instance each time it is read.
-                mockkObject(BridgeConfig.config)
-                every { BridgeConfig.config.topologyStrategy } returns VisitorTopologyStrategy()
+                useVisitorTopology()
 
                 // The visitor bridges connect to the core bridge with the lowest stress, which is jvb2.
                 val coreBridge1 = createBridge("core1", stress = 0.5)
@@ -378,6 +386,106 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     }
                     should("not fail any sessions") {
                         failedSessions.shouldBeEmpty()
+                    }
+                }
+
+                context("And a visitor bridge which connects to another visitor bridge") {
+                    // A visitor bridge connects to a bridge in its region before a core bridge in another region.
+                    val visitorBridge3 = createBridge("visitor3", bridgeRegion = "region-visitor1")
+                    bridges.remove(visitorBridge1)
+                    bridges.add(visitorBridge3)
+                    allocate("v3", region = "region-visitor1", visitor = true)
+
+                    should("connect to the visitor bridge in its region") {
+                        activeRelays(visitorBridge3) shouldBe listOf("visitor1")
+                        activeRelays(visitorBridge1) shouldBe listOf("jvb2", "visitor3")
+                    }
+
+                    context("And removing the visitor bridge between it and the core bridge") {
+                        sessionManager.removeParticipant("v1").also { drain() }
+
+                        should("remove the session of the visitor bridge") {
+                            sessionManager.getBridges().keys shouldBe
+                                setOf(coreBridge1, bridge2, visitorBridge2, visitorBridge3)
+                        }
+                        should("connect the visitor bridge behind it to a core bridge") {
+                            activeRelays(visitorBridge3) shouldBe listOf("jvb2")
+                            activeRelays(bridge2) shouldBe listOf("core1", "visitor2", "visitor3")
+                        }
+                        should("signal the participants to it") {
+                            initialRelayEndpoints(visitorBridge3, "jvb2").toSet() shouldBe setOf("p1", "p2")
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
+                }
+
+                context("And a request fails while a core bridge is removed") {
+                    // The request which expires the relay on the first visitor bridge is not sent.
+                    val expiresRelayOnVisitorBridge1 = { iq: IQ ->
+                        iq is ConferenceModifyIQ && iq.to == visitorBridge1.jid && iq.relays.any { it.expire }
+                    }
+                    every {
+                        xmppConnection.xmppConnection.createStanzaCollectorAndSend(match(expiresRelayOnVisitorBridge1))
+                    } throws SmackException.NotConnectedException()
+                    sessionManager.removeParticipant("p2").also { drain() }
+
+                    should("remove the session of the core bridge") {
+                        sessionManager.getBridges().keys shouldBe setOf(coreBridge1, visitorBridge1, visitorBridge2)
+                        requestsTo(bridge2).count { it.expire } shouldBe 1
+                    }
+                    should("connect a new visitor bridge to the remaining core bridge") {
+                        val visitorBridge3 = createBridge("visitor3")
+                        bridges.add(visitorBridge3)
+                        allocate("v3", region = "region-visitor3", visitor = true)
+
+                        activeRelays(visitorBridge3) shouldBe listOf("core1")
+                    }
+                }
+            }
+        }
+
+        context("Visitor bridges with one core bridge") {
+            withNewConfig("jicofo.octo.enabled=true") {
+                useVisitorTopology()
+
+                val visitorBridge1 = createBridge("visitor1")
+                val visitorBridge2 = createBridge("visitor2")
+                bridges.addAll(listOf(visitorBridge1, visitorBridge2))
+
+                allocate("p1", region = "region-jvb1")
+                allocate("v1", region = "region-visitor1", visitor = true)
+                allocate("v2", region = "region-visitor2", visitor = true)
+
+                should("connect each visitor bridge to the core bridge") {
+                    activeRelays(visitorBridge1) shouldBe listOf("jvb1")
+                    activeRelays(visitorBridge2) shouldBe listOf("jvb1")
+                }
+
+                context("And removing the core bridge") {
+                    sessionManager.removeParticipant("p1").also { drain() }
+
+                    should("connect the visitor bridges to each other") {
+                        sessionManager.getBridges().keys shouldBe setOf(visitorBridge1, visitorBridge2)
+                        activeRelays(visitorBridge1) shouldBe listOf("visitor2")
+                        activeRelays(visitorBridge2) shouldBe listOf("visitor1")
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+
+                    context("And adding a core bridge") {
+                        allocate("p2", region = "region-jvb2")
+
+                        should("connect the core bridge to one visitor bridge") {
+                            activeRelays(bridge2) shouldBe listOf("visitor1")
+                            activeRelays(visitorBridge1) shouldBe listOf("visitor2", "jvb2")
+                            activeRelays(visitorBridge2) shouldBe listOf("visitor1")
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
                     }
                 }
             }
