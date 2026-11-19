@@ -49,6 +49,12 @@ class TestColibri2Server {
     /** Whether to restart ICE when asked to. When false, decline by answering with no transport (as a bridge does). */
     var iceRestartEnabled = true
 
+    /**
+     * The IDs of the endpoints whose create request fails with bad_request. The conference is still created, as on a
+     * bridge which rejects an endpoint ID.
+     */
+    val rejectedEndpoints = mutableSetOf<String>()
+
     fun stop() = conferences.clear()
 
     fun handleConferenceModifyIq(request: ConferenceModifyIQ): IQ {
@@ -117,6 +123,9 @@ class TestColibri2Server {
             }
 
             val endpoint = if (c2endpoint.create) {
+                if (c2endpoint.id in rejectedEndpoints) {
+                    throw IqProcessingException(bad_request, "Endpoint ID ${c2endpoint.id} is rejected")
+                }
                 if (endpoints.containsKey(c2endpoint.id)) {
                     throw IqProcessingException(conflict, "Endpoint with ID ${c2endpoint.id} already exists")
                 }
