@@ -250,14 +250,14 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.bridge.endpointsRemoved(participants.size)
-        session.expire()
+        // Remove the session from the cascade before it expires. [Colibri2Session.expire] clears the relays of the
+        // session, and [removeNode] needs them: it expires the relays to this session on the sessions connected to
+        // it, and it connects again the sessions which were connected only through this one.
         removeNode(session, ::repairMesh)
+        session.expire()
         sessions.remove(session.relayId)
         participantsBySession.remove(session)
         participants.forEach { remove(it) }
-        session.relayId?.let { removedRelayId ->
-            sessions.values.forEach { otherSession -> otherSession.expireRelay(removedRelayId) }
-        }
         if (session == connectSession) {
             // The session hosting the transcriber/single-bridge translator connect went away; force reselection.
             connectSession = null

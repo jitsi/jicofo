@@ -35,7 +35,11 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
             cascade.getDistanceFrom(it) { node -> !node.visitor }
         }
 
-        val sortedNodes = nodesWithDistance.entries.sortedWith(
+        /* A node with no path to a core node does not receive the media of the participants. Use such a node only
+         * when no node has a path to a core node, i.e. when the conference has no core nodes. */
+        val candidates = nodesWithDistance.filterValues { it != Int.MAX_VALUE }.ifEmpty { nodesWithDistance }
+
+        val sortedNodes = candidates.entries.sortedWith(
             compareBy({ it.value }, { it.key.bridge.correctedStress })
         ).map { it.key }
 
@@ -51,7 +55,7 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
         return nonOverloadedInRegion.firstOrNull()
             ?: nonOverloaded.firstOrNull()
             ?: inRegion.firstOrNull()
-            ?: existingNodes.first()
+            ?: sortedNodes.first()
     }
 
     override fun connectNode(cascade: ColibriV2SessionManager, node: Colibri2Session): TopologySelectionResult {

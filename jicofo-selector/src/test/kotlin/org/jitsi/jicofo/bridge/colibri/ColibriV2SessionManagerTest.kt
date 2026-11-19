@@ -29,6 +29,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.jitsi.config.withNewConfig
 import org.jitsi.jicofo.TaskPools
@@ -36,6 +38,7 @@ import org.jitsi.jicofo.bridge.Bridge
 import org.jitsi.jicofo.bridge.BridgeConfig
 import org.jitsi.jicofo.bridge.BridgeSelector
 import org.jitsi.jicofo.bridge.ParticipantProperties
+import org.jitsi.jicofo.bridge.VisitorTopologyStrategy
 import org.jitsi.jicofo.conference.source.EndpointSourceSet
 import org.jitsi.jicofo.mock.MockXmppConnection
 import org.jitsi.jicofo.mock.PendingExecutor
@@ -92,23 +95,31 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         }
     }
 
-    private fun createBridge(name: String, bridgeRelayId: String? = name, bridgeRegion: String = "region-$name") =
-        mockk<Bridge>(relaxed = true) {
-            every { jid } returns JidCreate.from("jvbbrewery@example.com/$name")
-            every { relayId } returns bridgeRelayId
-            every { isOperational } returns true
-            every { debugState } returns JsonNodeFactory.instance.objectNode()
-            every { region } returns bridgeRegion
-        }
+    private fun createBridge(
+        name: String,
+        bridgeRelayId: String? = name,
+        bridgeRegion: String = "region-$name",
+        stress: Double = 0.0
+    ) = mockk<Bridge>(relaxed = true) {
+        every { jid } returns JidCreate.from("jvbbrewery@example.com/$name")
+        every { relayId } returns bridgeRelayId
+        every { isOperational } returns true
+        every { debugState } returns JsonNodeFactory.instance.objectNode()
+        every { region } returns bridgeRegion
+        every { correctedStress } returns stress
+    }
 
     private val bridge1 = createBridge("jvb1")
     private val bridge2 = createBridge("jvb2")
+
+    /** The bridges which [bridgeSelector] selects from. */
+    private val bridges = mutableListOf(bridge1, bridge2)
 
     private val bridgeSelector: BridgeSelector = mockk {
         every { selectBridge(any(), any(), any()) } answers {
             // Select a bridge matching the participant's region, if any.
             val region = secondArg<ParticipantProperties>().region
-            listOf(bridge1, bridge2).find { it.region == region } ?: bridge1
+            bridges.find { it.region == region } ?: bridge1
         }
     }
 
@@ -171,7 +182,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
 
     private fun drain() = ioExecutor.runAll()
 
-    private fun allocate(id: String, region: String? = null) = sessionManager.allocate(
+    private fun allocate(id: String, region: String? = null, visitor: Boolean = false) = sessionManager.allocate(
         ParticipantAllocationParameters(
             id = id,
             statsId = null,
@@ -182,12 +193,30 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             forceMuteAudio = false,
             forceMuteVideo = false,
             useSctp = false,
-            visitor = false,
+            visitor = visitor,
             supportsPrivateAddresses = false,
             medias = emptySet(),
             diarize = false
         )
     ).also { drain() }
+
+    /** The IDs of the relays which jicofo created on [bridge] and has not expired, in the order of creation. */
+    private fun activeRelays(bridge: Bridge): List<String> {
+        val active = mutableListOf<String>()
+        requestsTo(bridge).flatMap { it.relays }.forEach {
+            if (it.create) {
+                active.add(it.id)
+            } else if (it.expire) {
+                active.remove(it.id)
+            }
+        }
+        return active
+    }
+
+    /** The IDs of the remote endpoints which jicofo signaled to [bridge] when it created the relay [relayId]. */
+    private fun initialRelayEndpoints(bridge: Bridge, relayId: String) = requestsTo(bridge).flatMap { it.relays }
+        .filter { it.create && it.id == relayId }
+        .mapNotNull { it.endpoints }.flatMap { it.endpoints }.map { it.id }
 
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
@@ -199,6 +228,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
     override suspend fun afterAny(testCase: TestCase, result: TestResult) = super.afterAny(testCase, result).also {
         TaskPools.resetIoPool()
         TaskPools.resetScheduledPool()
+        unmockkObject(BridgeConfig.config)
     }
 
     init {
@@ -275,6 +305,76 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         sessionManager.getBridges().keys shouldBe setOf(bridge1)
                         val relayExpires = requestsTo(bridge1).flatMap { it.relays }.filter { it.expire }
                         relayExpires.map { it.id } shouldBe listOf("jvb2")
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+                }
+            }
+        }
+
+        context("Visitor bridges in satellite trees") {
+            withNewConfig("jicofo.octo.enabled=true") {
+                // The strategy counts the meshes which it creates, so the conference has to use a single instance.
+                // The config does not cache values in tests, and creates a new instance each time it is read.
+                mockkObject(BridgeConfig.config)
+                every { BridgeConfig.config.topologyStrategy } returns VisitorTopologyStrategy()
+
+                // The visitor bridges connect to the core bridge with the lowest stress, which is jvb2.
+                val coreBridge1 = createBridge("core1", stress = 0.5)
+                val visitorBridge1 = createBridge("visitor1")
+                val visitorBridge2 = createBridge("visitor2")
+                bridges.clear()
+                bridges.addAll(listOf(coreBridge1, bridge2, visitorBridge1, visitorBridge2))
+
+                allocate("p1", region = "region-core1")
+                allocate("p2", region = "region-jvb2")
+                allocate("v1", region = "region-visitor1", visitor = true)
+                allocate("v2", region = "region-visitor2", visitor = true)
+
+                should("connect the core bridges to each other") {
+                    activeRelays(coreBridge1) shouldBe listOf("jvb2")
+                }
+                should("connect each visitor bridge to one core bridge") {
+                    activeRelays(visitorBridge1) shouldBe listOf("jvb2")
+                    activeRelays(visitorBridge2) shouldBe listOf("jvb2")
+                    activeRelays(bridge2) shouldBe listOf("core1", "visitor1", "visitor2")
+                }
+
+                context("And removing the core bridge which the visitor bridges connect to") {
+                    sessionManager.removeParticipant("p2").also { drain() }
+
+                    should("remove the session of the core bridge") {
+                        sessionManager.getBridges().keys shouldBe setOf(coreBridge1, visitorBridge1, visitorBridge2)
+                    }
+                    should("connect the visitor bridges to the remaining core bridge") {
+                        activeRelays(visitorBridge1) shouldBe listOf("core1")
+                        activeRelays(visitorBridge2) shouldBe listOf("core1")
+                        activeRelays(coreBridge1).toSet() shouldBe setOf("visitor1", "visitor2")
+                    }
+                    should("signal the remaining participant to the visitor bridges") {
+                        initialRelayEndpoints(visitorBridge1, "core1") shouldBe listOf("p1")
+                        initialRelayEndpoints(visitorBridge2, "core1") shouldBe listOf("p1")
+                    }
+                    should("expire each relay to the removed bridge once") {
+                        listOf(coreBridge1, visitorBridge1, visitorBridge2).forEach { bridge ->
+                            requestsTo(bridge).flatMap { it.relays }.filter { it.expire }
+                                .map { it.id } shouldBe listOf("jvb2")
+                        }
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+                }
+
+                context("And removing a visitor bridge") {
+                    sessionManager.removeParticipant("v1").also { drain() }
+
+                    should("expire the relay only on the bridge which it connects to") {
+                        requestsTo(bridge2).flatMap { it.relays }.filter { it.expire }
+                            .map { it.id } shouldBe listOf("visitor1")
+                        requestsTo(coreBridge1).flatMap { it.relays }.filter { it.expire }.shouldBeEmpty()
+                        requestsTo(visitorBridge2).flatMap { it.relays }.filter { it.expire }.shouldBeEmpty()
                     }
                     should("not fail any sessions") {
                         failedSessions.shouldBeEmpty()
