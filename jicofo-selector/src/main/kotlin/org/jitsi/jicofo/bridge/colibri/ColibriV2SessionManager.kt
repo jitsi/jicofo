@@ -214,6 +214,30 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      */
     private val participantsBySession = mutableMapOf<Colibri2Session, MutableList<ParticipantInfo>>()
 
+    /** The state of a cascade repair, which [removeSession] shares with [addLinkBetween]. */
+    private class Repair(
+        /** The relay ID of the first hop from each session to each other session, before the removal. */
+        val firstHopsBefore: Map<Colibri2Session, Map<Colibri2Session, String>>
+    ) {
+        /** The participants which [addLinkBetween] signaled on each relay that it created, by session and relay ID. */
+        val signaled = mutableMapOf<Pair<Colibri2Session, String>, Set<String>>()
+
+        /**
+         * Whether [session] had the remote endpoint of [participant] on a relay which still exists and is not
+         * [relayId]. [signalChangedPaths] moves such an endpoint, so a new relay must not have a second copy of it.
+         */
+        fun hasOnOtherRelay(session: Colibri2Session, participant: ParticipantInfo, relayId: String): Boolean {
+            val oldRelayId = firstHopsBefore[session]?.get(participant.session) ?: return false
+            return oldRelayId != relayId && session.relays.containsKey(oldRelayId)
+        }
+    }
+
+    /**
+     * Set only while [removeSession] removes a session from the cascade, with [syncRoot] held. [addLinkBetween] uses it
+     * for the links of the repair. It is null for the links of a new session ([addNodeToMesh]).
+     */
+    private var repair: Repair? = null
+
     /** Protects access to [sessions], [participants] and [participantsBySession]. */
     private val syncRoot = Any()
 
@@ -273,14 +297,35 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                 logger.error("Failed to expire the participants of $session on the other sessions", e)
             }
         }
+        // A repair can change the relay through which a session reaches another one. Remember the relays before, so
+        // that the participants can be created on the new relays after the repair (see [signalChangedPaths]).
+        // Only a session which connects two or more meshes leads to a repair.
+        val repairExpected = session.relays.values.map { it.meshId }.toSet().size > 1
+        val firstHopsBefore = if (repairExpected) {
+            try {
+                sessions.values.filter { it !== session }.associateWith { firstHops(it) }
+            } catch (e: Exception) {
+                logger.error("Failed to find the paths before the removal of $session", e)
+                null
+            }
+        } else {
+            null
+        }
+        val repair = firstHopsBefore?.let { Repair(it) }
         // Remove the session from the cascade before it expires. [Colibri2Session.expire] clears the relays of the
         // session, and [removeNode] needs them: it expires the relays to this session on the sessions connected to
         // it, and it connects again the sessions which were connected only through this one.
         try {
+            this.repair = repair
             removeNode(session, ::repairMesh)
         } catch (e: Exception) {
             // Continue, so that the session expires and leaves the maps below.
             logger.error("Failed to remove $session from the cascade", e)
+        } finally {
+            this.repair = null
+        }
+        if (repair != null && repair.signaled.isNotEmpty()) {
+            signalChangedPaths(repair)
         }
         // [removeNode] removes these relays when it succeeds. When it fails, a remaining session can keep its relay to
         // the removed session, and the functions which walk the cascade throw for a relay to a session which is not
@@ -301,6 +346,64 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             updateConnects()
         }
         return participants.toSet()
+    }
+
+    /** The relay ID of the first hop on the path from [session] to each other session. */
+    private fun firstHops(session: Colibri2Session): Map<Colibri2Session, String> {
+        val firstHops = mutableMapOf<Colibri2Session, String>()
+        // The walk reaches each session after the session from which it reaches it.
+        getPathsFrom(session) { _, otherSession, from ->
+            when {
+                from == null -> {}
+                from === session -> otherSession.relayId?.let { firstHops[otherSession] = it }
+                else -> firstHops[from]?.let { firstHops[otherSession] = it }
+            }
+        }
+        return firstHops
+    }
+
+    /**
+     * After a repair of the cascade, move the remote endpoints of each session to the new relay on the sessions which
+     * reach it through another relay than before. The relays of the repair already have some of them
+     * ([Repair.signaled]).
+     *
+     * When the old relay still exists, expire the endpoints on it first, then create them on the new relay. The bridge
+     * removes an endpoint from the conference by its ID, so a copy left on the old relay would remove the endpoint on
+     * the new relay when the old relay expires. The bridge handles the requests of a conference in order. The relays of
+     * the repair do not have these endpoints ([Repair.hasOnOtherRelay]), so they are created only once.
+     */
+    private fun signalChangedPaths(repair: Repair) {
+        sessions.values.forEach { session ->
+            val before = repair.firstHopsBefore[session] ?: return@forEach
+            val firstHops = try {
+                firstHops(session)
+            } catch (e: Exception) {
+                logger.error("Failed to find the paths from $session after a repair", e)
+                return@forEach
+            }
+            firstHops.forEach { (otherSession, relayId) ->
+                val oldRelayId = before[otherSession]
+                if (oldRelayId == relayId) return@forEach
+                try {
+                    val participants = getVisibleSessionParticipants(otherSession)
+                    if (participants.isEmpty()) return@forEach
+                    val signaled = repair.signaled[session to relayId] ?: emptySet()
+                    if (oldRelayId != null && session.relays.containsKey(oldRelayId)) {
+                        session.expireRemoteParticipants(participants, oldRelayId)
+                    }
+                    participants.filter { it.id !in signaled }.forEach {
+                        logger.debug { "Adding a relayed endpoint to $session for ${it.id} from $relayId." }
+                        session.updateRemoteParticipant(it, relayId, create = true)
+                    }
+                } catch (e: Exception) {
+                    logger.error(
+                        "Failed to move the participants of $otherSession on $session from relay $oldRelayId to " +
+                            "relay $relayId after a repair",
+                        e
+                    )
+                }
+            }
+        }
     }
 
     private fun removeParticipantInfosBySession(
@@ -666,13 +769,19 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     }
 
     override fun addLinkBetween(session: Colibri2Session, otherSession: Colibri2Session, meshId: String) {
+        val repair = this.repair
         val participantsBehindSession = getNodesBehind(meshId, session).flatMap { getVisibleSessionParticipants(it) }
+            .filter { repair?.hasOnOtherRelay(otherSession, it, session.relayId!!) != true }
         val participantsBehindOtherSession = getNodesBehind(meshId, otherSession).flatMap {
             getVisibleSessionParticipants(it)
-        }
+        }.filter { repair?.hasOnOtherRelay(session, it, otherSession.relayId!!) != true }
 
+        // Record each relay right after it is created, so that a failure of the second one does not leave the first
+        // one without a record.
         session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true, meshId)
+        repair?.signaled?.set(session to otherSession.relayId!!, participantsBehindOtherSession.map { it.id }.toSet())
         otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false, meshId)
+        repair?.signaled?.set(otherSession to session.relayId!!, participantsBehindSession.map { it.id }.toSet())
     }
 
     override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {

@@ -89,7 +89,10 @@ class VisitorTopologyStrategy : TopologySelectionStrategy() {
 
         val others = disconnected.subtract(setOf(core))
         others.forEach {
-            val connect = it.first() // Should I try to be smarter here?
+            // The first node was linked to the removed node (see [removeNode]). In a visitor mesh it is the only such
+            // node. Linking it keeps the first hop of the other nodes of the set towards the rest of the cascade, so
+            // they do not need to move their remote endpoints to another relay.
+            val connect = it.first()
             val best = pickConnectionNode(cascade, connect, core)
             ret.add(Colibri2CascadeRepair(connect, best, nextMesh()))
         }
