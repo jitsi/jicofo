@@ -274,6 +274,29 @@ class ColibriV2SessionManager @JvmOverloads constructor(
     private fun removeSession(session: Colibri2Session): Set<ParticipantInfo> {
         val participants = getSessionParticipants(session)
         session.bridge.endpointsRemoved(participants.size)
+        // [removeNode] expires the relays to this session on the sessions connected to it. The sessions behind them
+        // keep their relay towards this session, so expire the participants of this session on that relay. Do it
+        // before [removeNode]: a repair adds links, and a walk which follows them reaches some sessions more than once.
+        val visibleParticipants = participants.filter { !it.visitor }
+        if (visibleParticipants.isNotEmpty()) {
+            try {
+                getPathsFrom(session) { _, otherSession, from ->
+                    val relayId = from?.relayId
+                    if (from !== session && relayId != null) {
+                        try {
+                            otherSession.expireRemoteParticipants(visibleParticipants, relayId)
+                        } catch (e: Exception) {
+                            logger.error(
+                                "Failed to expire the participants of $session on $otherSession, relay $relayId",
+                                e
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Failed to expire the participants of $session on the other sessions", e)
+            }
+        }
         // A repair can change the relay through which a session reaches another one. Remember the relays before, so
         // that the participants can be created on the new relays after the repair (see [signalChangedPaths]).
         // Only a session which connects two or more meshes leads to a repair.
@@ -406,8 +429,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
                 // Visitors don't have relay endpoints.
                 if (sessionParticipantsToRemove.any { !it.visitor }) {
-                    // If the session was removed the relays themselves are expired, so there's no need to expire
-                    // individual endpoints within a relay.
+                    // When the whole session is removed, [removeNode] expires the relays to it on the sessions
+                    // connected to it, and [removeSession] expires its participants on the other sessions.
                     getPathsFrom(session) { _, otherSession, from ->
                         from?.relayId?.let {
                             otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)
@@ -892,17 +915,19 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     session
                 )
                 addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
-            } else {
-                if (!participantInfo.visitor) {
-                    getPathsFrom(session) { _, otherSession, from ->
-                        if (from != null) {
-                            logger.debug {
-                                "Adding a relayed endpoint to $otherSession for ${participantInfo.id} " +
-                                    "from ${from.relayId}."
-                            }
-                            // We already made sure that relayId is not null when there are multiple sessions.
-                            otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
+            }
+            if (!participantInfo.visitor) {
+                getPathsFrom(session) { _, otherSession, from ->
+                    // When the session is new, the sessions which it connects to received the participant with the
+                    // request that created their relay (see [addLinkBetween]). The sessions behind them have a relay
+                    // which exists already, so they need a request of their own.
+                    if (from != null && !(created && from === session)) {
+                        logger.debug {
+                            "Adding a relayed endpoint to $otherSession for ${participantInfo.id} " +
+                                "from ${from.relayId}."
                         }
+                        // We already made sure that relayId is not null when there are multiple sessions.
+                        otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
                     }
                 }
             }
