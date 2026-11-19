@@ -783,6 +783,21 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     session
                 )
                 addNodeToMesh(session, topologySelectionResult.meshId, topologySelectionResult.existingNode)
+                if (!participantInfo.visitor) {
+                    // The sessions which the new session connects to received the participant with the request that
+                    // created their relay (see [addLinkBetween]). The sessions behind them have a relay which exists
+                    // already, so they need a request of their own.
+                    getPathsFrom(session) { _, otherSession, from ->
+                        if (from != null && from !== session) {
+                            logger.debug {
+                                "Adding a relayed endpoint to $otherSession for ${participantInfo.id} " +
+                                    "from ${from.relayId}."
+                            }
+                            // We already made sure that relayId is not null when there are multiple sessions.
+                            otherSession.updateRemoteParticipant(participantInfo, from.relayId!!, create = true)
+                        }
+                    }
+                }
             } else {
                 if (!participantInfo.visitor) {
                     getPathsFrom(session) { _, otherSession, from ->

@@ -219,6 +219,15 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
         .filter { it.create && it.id == relayId }
         .mapNotNull { it.endpoints }.flatMap { it.endpoints }.map { it.id }
 
+    /**
+     * The value of `create` in each request which jicofo sent to [bridge] for the remote endpoint [endpointId] on the
+     * relay [relayId], in the order of the requests.
+     */
+    private fun relayEndpointCreates(bridge: Bridge, relayId: String, endpointId: String) =
+        requestsTo(bridge).flatMap { it.relays }.filter { it.id == relayId }
+            .mapNotNull { it.endpoints }.flatMap { it.endpoints }
+            .filter { it.id == endpointId }.map { it.create }
+
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
     /**
@@ -463,6 +472,50 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                     activeRelays(visitorBridge2) shouldBe listOf("jvb1")
                 }
 
+                context("And adding a second core bridge") {
+                    // The new bridge connects to the first core bridge. It has no relay to the visitor bridges.
+                    allocate("p2", region = "region-jvb2")
+
+                    should("connect the core bridges to each other") {
+                        activeRelays(bridge2) shouldBe listOf("jvb1")
+                        activeRelays(visitorBridge1) shouldBe listOf("jvb1")
+                        activeRelays(visitorBridge2) shouldBe listOf("jvb1")
+                    }
+                    should("create its first participant on the bridge which connects to it") {
+                        relayEndpointCreates(bridge1, "jvb2", "p2") shouldBe listOf(true)
+                    }
+                    should("create its first participant on the bridges which do not connect to it") {
+                        relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true)
+                        relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true)
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+
+                    context("And adding a second participant to it") {
+                        allocate("p3", region = "region-jvb2")
+
+                        should("create the participant once on each of the other bridges") {
+                            relayEndpointCreates(bridge1, "jvb2", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge1, "jvb1", "p3") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "jvb1", "p3") shouldBe listOf(true)
+                        }
+                    }
+                }
+
+                context("And adding a third visitor bridge") {
+                    val visitorBridge3 = createBridge("visitor3")
+                    bridges.add(visitorBridge3)
+                    allocate("v3", region = "region-visitor3", visitor = true)
+
+                    should("not signal the visitor to the other bridges") {
+                        listOf(bridge1, visitorBridge1, visitorBridge2).forEach { bridge ->
+                            requestsTo(bridge).flatMap { it.relays }.mapNotNull { it.endpoints }
+                                .flatMap { it.endpoints }.filter { it.id == "v3" }.shouldBeEmpty()
+                        }
+                    }
+                }
+
                 context("And removing the core bridge") {
                     sessionManager.removeParticipant("p1").also { drain() }
 
@@ -482,6 +535,10 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             activeRelays(bridge2) shouldBe listOf("visitor1")
                             activeRelays(visitorBridge1) shouldBe listOf("visitor2", "jvb2")
                             activeRelays(visitorBridge2) shouldBe listOf("visitor1")
+                        }
+                        should("create its participant on the visitor bridge which does not connect to it") {
+                            relayEndpointCreates(visitorBridge1, "jvb2", "p2") shouldBe listOf(true)
+                            relayEndpointCreates(visitorBridge2, "visitor1", "p2") shouldBe listOf(true)
                         }
                         should("not fail any sessions") {
                             failedSessions.shouldBeEmpty()
