@@ -490,6 +490,14 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             relayEndpointCreateCount(visitorBridge1, "core1", "p1") shouldBe 1
                             relayEndpointCreateCount(visitorBridge2, "core1", "p1") shouldBe 1
                         }
+                        should("not signal the visitors to any bridge") {
+                            // v1 is on a bridge whose path changes, and visitors have no remote endpoints.
+                            listOf(bridge2, coreBridge1, coreBridge3, visitorBridge1, visitorBridge2).forEach {
+                                requestsTo(it).flatMap { r -> r.relays }.mapNotNull { r -> r.endpoints }
+                                    .flatMap { e -> e.endpoints }.filter { e -> e.id == "v1" || e.id == "v2" }
+                                    .shouldBeEmpty()
+                            }
+                        }
                         should("not fail any sessions") {
                             failedSessions.shouldBeEmpty()
                         }

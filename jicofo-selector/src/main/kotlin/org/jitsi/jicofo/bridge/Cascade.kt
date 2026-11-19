@@ -107,7 +107,8 @@ fun <N : CascadeNode<N, L>, L : CascadeLink> Cascade<N, L>.addNodeToMesh(
 /**
  * Remove [node] from the cascade. If it connected two or more meshes, call [repairFn] with the sets of nodes which are
  * no longer connected to each other, and add the links which it returns. In each set, the nodes which were linked to
- * [node] come first, so a repair which links the first node of a set does not change the paths inside the set.
+ * [node] come first. When a repair links one of them, the other nodes of the set keep their first hop towards the rest
+ * of the cascade: it still leads through that node. A repair which links another node of the set changes it.
  */
 fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     node: N,
@@ -143,8 +144,7 @@ fun <C : Cascade<N, L>, N : CascadeNode<N, L>, L : CascadeLink> C.removeNode(
     if (meshes.size > 1) {
         /* The removed node was a bridge between two or more meshes - we need to repair the cascade. */
         val disconnected = node.relays.values.groupBy { it.meshId }.values.map { links ->
-            /* Put the nodes which were linked to the removed node first. A repair which connects the first node of a
-             * set keeps the paths inside the set as they were. */
+            /* Put the nodes which were linked to the removed node first (see the KDoc). */
             LinkedHashSet<N>().apply {
                 links.forEach { add(checkNotNull(sessions[it.relayId])) }
                 links.forEach { addAll(getNodesBehind(node, it.relayId!!)) }

@@ -53,6 +53,9 @@ class TestCascadeNode(override val relayId: String) : CascadeNode<TestCascadeNod
     }
 
     override fun toString(): String = "$relayId: [${relays.values.joinToString()}]"
+
+    /** A hash from the ID, so that the order of a [HashSet] of nodes is the same in each run. */
+    override fun hashCode(): Int = relayId.hashCode()
 }
 
 class TestCascadeLink(override val relayId: String, override val meshId: String?) : CascadeLink {
@@ -407,6 +410,32 @@ class CascadeTest : ShouldSpec() {
                         CascadeRepair(nodes[1], nodes[4], "D")
                     )
                 }
+                cascade.validate()
+            }
+        }
+        context("removing the node in front of a chain") {
+            // 0 and 1 in mesh A, then a chain 1 - 9 - 3 - 4 - 5, each link in its own mesh. A HashSet of the last
+            // four nodes iterates "9" last, so the test fails when the set is not ordered.
+            val cascade = TestCascade()
+            val nodes = arrayOf("0", "1", "9", "3", "4", "5").map { TestCascadeNode(it) }
+            cascade.addNodeToMesh(nodes[0], "A")
+            cascade.addNodeToMesh(nodes[1], "A")
+            cascade.addNodeToMesh(nodes[2], "B", nodes[1])
+            cascade.addNodeToMesh(nodes[3], "C", nodes[2])
+            cascade.addNodeToMesh(nodes[4], "D", nodes[3])
+            cascade.addNodeToMesh(nodes[5], "E", nodes[4])
+
+            should("put the node which was linked to the removed node first in its set") {
+                var disconnected: Set<Set<TestCascadeNode>> = emptySet()
+                cascade.removeNode(nodes[1]) { _, d ->
+                    disconnected = d
+                    setOf(CascadeRepair(nodes[2], nodes[0], "F"))
+                }
+                disconnected.shouldContainExactlyInAnyOrder(
+                    setOf(nodes[0]),
+                    setOf(nodes[2], nodes[3], nodes[4], nodes[5])
+                )
+                disconnected.map { it.first() }.shouldContainExactlyInAnyOrder(nodes[0], nodes[2])
                 cascade.validate()
             }
         }

@@ -351,11 +351,17 @@ class ColibriV2SessionManager @JvmOverloads constructor(
      */
     private fun signalChangedPaths(repair: Repair) {
         sessions.values.forEach { session ->
-            try {
-                val before = repair.firstHopsBefore[session] ?: return@forEach
-                firstHops(session).forEach { (otherSession, relayId) ->
-                    val oldRelayId = before[otherSession]
-                    if (oldRelayId == relayId) return@forEach
+            val before = repair.firstHopsBefore[session] ?: return@forEach
+            val firstHops = try {
+                firstHops(session)
+            } catch (e: Exception) {
+                logger.error("Failed to find the paths from $session after a repair", e)
+                return@forEach
+            }
+            firstHops.forEach { (otherSession, relayId) ->
+                val oldRelayId = before[otherSession]
+                if (oldRelayId == relayId) return@forEach
+                try {
                     val participants = getVisibleSessionParticipants(otherSession)
                     if (participants.isEmpty()) return@forEach
                     val signaled = repair.signaled[session to relayId] ?: emptySet()
@@ -366,9 +372,13 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                         logger.debug { "Adding a relayed endpoint to $session for ${it.id} from $relayId." }
                         session.updateRemoteParticipant(it, relayId, create = true)
                     }
+                } catch (e: Exception) {
+                    logger.error(
+                        "Failed to move the participants of $otherSession on $session from relay $oldRelayId to " +
+                            "relay $relayId after a repair",
+                        e
+                    )
                 }
-            } catch (e: Exception) {
-                logger.error("Failed to signal the participants to $session after a repair", e)
             }
         }
     }
@@ -743,12 +753,12 @@ class ColibriV2SessionManager @JvmOverloads constructor(
             getVisibleSessionParticipants(it)
         }.filter { repair?.hasOnOtherRelay(session, it, otherSession.relayId!!) != true }
 
+        // Record each relay right after it is created, so that a failure of the second one does not leave the first
+        // one without a record.
         session.createRelay(otherSession.relayId!!, participantsBehindOtherSession, initiator = true, meshId)
+        repair?.signaled?.set(session to otherSession.relayId!!, participantsBehindOtherSession.map { it.id }.toSet())
         otherSession.createRelay(session.relayId!!, participantsBehindSession, initiator = false, meshId)
-        repair?.let {
-            it.signaled[session to otherSession.relayId!!] = participantsBehindOtherSession.map { p -> p.id }.toSet()
-            it.signaled[otherSession to session.relayId!!] = participantsBehindSession.map { p -> p.id }.toSet()
-        }
+        repair?.signaled?.set(otherSession to session.relayId!!, participantsBehindSession.map { it.id }.toSet())
     }
 
     override fun removeLinkTo(session: Colibri2Session, otherSession: Colibri2Session) {
