@@ -619,10 +619,9 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         relayEndpointExpireCount(coreA, "coreB", "m1") shouldBe 1
                     }
                     should("move the participant to the new relay on the bridge which the repair links") {
-                        // The repair relay has it, and the old relay still exists. Expire both, then create it again.
-                        relayEndpointExpireCount(visitor5, "coreA", "m1") shouldBe 1
-                        relayEndpointExpireCount(visitor5, "visitor3", "m1") shouldBe 1
-                        relayEndpointCreateCount(visitor5, "visitor3", "m1") shouldBe 2
+                        // The old relay still exists, so the repair relay does not get the participant. It is expired
+                        // on the old relay first, then created on the new one, once.
+                        initialRelayEndpoints(visitor5, "visitor3").shouldBeEmpty()
                         val m1Requests = requestsTo(visitor5).flatMap { it.relays }.flatMap { relay ->
                             relay.endpoints?.endpoints?.filter { it.id == "m1" }?.map {
                                 val action = when {
@@ -633,13 +632,7 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                                 "${relay.id}:$action"
                             } ?: emptyList()
                         }
-                        m1Requests shouldBe listOf(
-                            "coreA:create",
-                            "visitor3:create",
-                            "coreA:expire",
-                            "visitor3:expire",
-                            "visitor3:create"
-                        )
+                        m1Requests shouldBe listOf("coreA:create", "coreA:expire", "visitor3:create")
                     }
                     should("not fail any sessions") {
                         failedSessions.shouldBeEmpty()
