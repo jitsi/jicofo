@@ -251,14 +251,22 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val participants = getSessionParticipants(session)
         session.bridge.endpointsRemoved(participants.size)
         // [removeNode] expires the relays to this session on the sessions connected to it. The sessions behind them
-        // keep their relay towards this session, so expire the participants of this session on that relay. This needs
-        // the links, so do it before [removeNode].
+        // keep their relay towards this session, so expire the participants of this session on that relay. Do it
+        // before [removeNode]: a repair adds links, and a walk which follows them reaches some sessions more than once.
         val visibleParticipants = participants.filter { !it.visitor }
         if (visibleParticipants.isNotEmpty()) {
             try {
                 getPathsFrom(session) { _, otherSession, from ->
-                    if (from != null && from !== session) {
-                        from.relayId?.let { otherSession.expireRemoteParticipants(visibleParticipants, it) }
+                    val relayId = from?.relayId
+                    if (from !== session && relayId != null) {
+                        try {
+                            otherSession.expireRemoteParticipants(visibleParticipants, relayId)
+                        } catch (e: Exception) {
+                            logger.error(
+                                "Failed to expire the participants of $session on $otherSession, relay $relayId",
+                                e
+                            )
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -318,8 +326,8 @@ class ColibriV2SessionManager @JvmOverloads constructor(
 
                 // Visitors don't have relay endpoints.
                 if (sessionParticipantsToRemove.any { !it.visitor }) {
-                    // When the whole session is removed, [removeSession] expires its participants on the other
-                    // sessions.
+                    // When the whole session is removed, [removeNode] expires the relays to it on the sessions
+                    // connected to it, and [removeSession] expires its participants on the other sessions.
                     getPathsFrom(session) { _, otherSession, from ->
                         from?.relayId?.let {
                             otherSession.expireRemoteParticipants(sessionParticipantsToRemove, it)

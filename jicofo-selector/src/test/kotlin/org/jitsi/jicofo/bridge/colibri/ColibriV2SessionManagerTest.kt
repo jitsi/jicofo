@@ -24,6 +24,7 @@ import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.core.test.TestCase
 import io.kotest.core.test.TestResult
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -461,6 +462,52 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         }
                         should("not fail any sessions") {
                             failedSessions.shouldBeEmpty()
+                        }
+
+                        context("And removing its only participant") {
+                            sessionManager.removeParticipant("p3").also { drain() }
+
+                            should("expire the participant on the visitor bridges, up to three hops away") {
+                                relayEndpointExpires(visitorBridge1, "jvb2", "p3") shouldBe 1
+                                relayEndpointExpires(visitorBridge2, "jvb2", "p3") shouldBe 1
+                                relayEndpointExpires(visitorBridge3, "visitor1", "p3") shouldBe 1
+                            }
+                            should("expire only the relay on the core bridges") {
+                                relayEndpointExpires(coreBridge1, "core3", "p3") shouldBe 0
+                                relayEndpointExpires(bridge2, "core3", "p3") shouldBe 0
+                            }
+                        }
+                    }
+
+                    context("And removing the core bridge which the visitor bridges connect to") {
+                        // The removal leads to a repair, which adds links.
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("expire the participant once on the visitor bridge behind another one") {
+                            relayEndpointExpires(visitorBridge3, "visitor1", "p2") shouldBe 1
+                            requestsTo(visitorBridge3).flatMap { it.relays }.mapNotNull { it.endpoints }
+                                .flatMap { it.endpoints }.count { it.id == "p2" && it.expire } shouldBe 1
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+                    }
+
+                    context("And the expire of a participant fails while its bridge is removed") {
+                        val expiresEndpointOnVisitorBridge3 = { iq: IQ ->
+                            iq is ConferenceModifyIQ && iq.to == visitorBridge3.jid &&
+                                iq.relays.any { relay -> relay.endpoints?.endpoints?.any { it.expire } == true }
+                        }
+                        every {
+                            xmppConnection.xmppConnection.createStanzaCollectorAndSend(
+                                match(expiresEndpointOnVisitorBridge3)
+                            )
+                        } throws SmackException.NotConnectedException()
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("remove the session of the bridge") {
+                            sessionManager.getBridges().keys shouldNotContain bridge2
+                            requestsTo(bridge2).count { it.expire } shouldBe 1
                         }
                     }
                 }
