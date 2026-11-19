@@ -230,6 +230,12 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
             .mapNotNull { it.endpoints }.flatMap { it.endpoints }
             .filter { it.id == endpointId }.map { it.create }
 
+    /** The number of requests which jicofo sent to [bridge] to expire the remote endpoint [endpointId] on [relayId]. */
+    private fun relayEndpointExpires(bridge: Bridge, relayId: String, endpointId: String) =
+        requestsTo(bridge).flatMap { it.relays }.filter { it.id == relayId }
+            .mapNotNull { it.endpoints }.flatMap { it.endpoints }
+            .count { it.id == endpointId && it.expire }
+
     private fun requestsTo(bridge: Bridge) = colibriRequests[bridge.jid] ?: emptyList()
 
     /**
@@ -528,6 +534,34 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             relayEndpointCreates(bridge1, "jvb2", "p3") shouldBe listOf(true)
                             relayEndpointCreates(visitorBridge1, "jvb1", "p3") shouldBe listOf(true)
                             relayEndpointCreates(visitorBridge2, "jvb1", "p3") shouldBe listOf(true)
+                        }
+
+                        context("And removing the bridge") {
+                            sessionManager.removeBridge(bridge2).also { drain() }
+
+                            should("expire both participants on the bridges which do not connect to it") {
+                                listOf(visitorBridge1, visitorBridge2).forEach { bridge ->
+                                    relayEndpointExpires(bridge, "jvb1", "p2") shouldBe 1
+                                    relayEndpointExpires(bridge, "jvb1", "p3") shouldBe 1
+                                }
+                            }
+                        }
+                    }
+
+                    context("And removing its only participant") {
+                        sessionManager.removeParticipant("p2").also { drain() }
+
+                        should("expire the relay on the bridge which connects to it") {
+                            requestsTo(bridge1).flatMap { it.relays }.filter { it.expire }.map { it.id } shouldBe
+                                listOf("jvb2")
+                            relayEndpointExpires(bridge1, "jvb2", "p2") shouldBe 0
+                        }
+                        should("expire the participant on the bridges which do not connect to it") {
+                            relayEndpointExpires(visitorBridge1, "jvb1", "p2") shouldBe 1
+                            relayEndpointExpires(visitorBridge2, "jvb1", "p2") shouldBe 1
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
                         }
                     }
 
