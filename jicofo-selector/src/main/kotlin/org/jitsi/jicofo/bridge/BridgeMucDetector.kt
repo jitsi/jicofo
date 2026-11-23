@@ -50,5 +50,9 @@ class BridgeMucDetector(
         bridgeSelector.addJvbAddress(jid, stats)
     }
 
-    override fun notifyInstanceOffline(jid: Jid) = bridgeSelector.removeJvbAddress(jid)
+    override fun notifyInstanceOffline(jid: Jid) = notifyInstanceOffline(jid, true)
+
+    /** Count the bridge as lost only if it left. If jicofo left the brewery the bridge may still be connected. */
+    override fun notifyInstanceOffline(jid: Jid, instanceLeft: Boolean) =
+        bridgeSelector.removeJvbAddress(jid, countIfLost = instanceLeft)
 }

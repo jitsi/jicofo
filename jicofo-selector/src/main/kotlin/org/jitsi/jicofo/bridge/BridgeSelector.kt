@@ -27,6 +27,8 @@ import org.jitsi.utils.logging2.createLogger
 import org.jitsi.xmpp.extensions.colibri.ColibriStatsExtension
 import org.jxmpp.jid.Jid
 import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
@@ -58,6 +60,16 @@ class BridgeSelector @JvmOverloads constructor(
 
     /** The map of bridge JID to <tt>Bridge</tt>. */
     private val bridges: MutableMap<Jid, Bridge> = ConcurrentHashMap()
+
+    /**
+     * Bridges that left without a graceful-shutdown or shutting-down state, mapped to the time when they left. A bridge
+     * stays here until it joins again (it is counted as reconnected), or until [BridgeConfig.lostBridgeGracePeriod]
+     * expires (it is counted as lost).
+     */
+    private val pendingLostBridges: MutableMap<Jid, Instant> = ConcurrentHashMap()
+
+    /** Read once, so that an invalid value fails at startup and not when a bridge leaves. */
+    private val lostBridgeGracePeriod: Duration = BridgeConfig.config.lostBridgeGracePeriod
 
     /** Get the [Bridge] with a specific JID or null */
     fun get(jid: Jid) = bridges[jid]
@@ -96,6 +108,17 @@ class BridgeSelector @JvmOverloads constructor(
         if (stats != null) {
             newBridge.setStats(stats)
         }
+        pendingLostBridges.remove(bridgeJid)?.let { leftAt ->
+            val absent = Duration.between(leftAt, clock.instant())
+            if (absent >= lostBridgeGracePeriod) {
+                // countLostBridges() has not run since the grace period expired.
+                logger.warn("Lost a bridge: $bridgeJid (joined again after $absent)")
+                lostBridges.inc()
+            } else {
+                logger.info("Bridge $bridgeJid joined again after $absent")
+                reconnectedBridges.inc()
+            }
+        }
         logger.info("Added new videobridge: $newBridge")
         bridges[bridgeJid] = newBridge
         bridgeCount.inc()
@@ -106,14 +129,21 @@ class BridgeSelector @JvmOverloads constructor(
      * Removes a [Bridge] with a specific JID from the list of videobridge instances.
      *
      * @param bridgeJid the JID of bridge to remove.
+     * @param countIfLost whether to count the bridge as lost when it is not in graceful shutdown or shutting down,
+     * and does not join again in [BridgeConfig.lostBridgeGracePeriod]. Use false when the bridge did not leave
+     * (for example when jicofo left the brewery).
      */
+    @JvmOverloads
     @Synchronized
-    fun removeJvbAddress(bridgeJid: Jid) {
+    fun removeJvbAddress(bridgeJid: Jid, countIfLost: Boolean = true) {
         logger.info("Removing JVB: $bridgeJid")
         bridges.remove(bridgeJid)?.let {
-            if (!it.isInGracefulShutdown && !it.isShuttingDown) {
-                logger.warn("Lost a bridge: $bridgeJid")
-                lostBridges.inc()
+            if (countIfLost && !it.isInGracefulShutdown && !it.isShuttingDown) {
+                logger.warn(
+                    "Bridge left without a shutdown state, will count it as lost if it does not join again in " +
+                        "$lostBridgeGracePeriod: $bridgeJid"
+                )
+                pendingLostBridges[bridgeJid] = clock.instant()
             }
             it.markRemoved()
             bridgeCount.dec()
@@ -230,6 +260,7 @@ class BridgeSelector @JvmOverloads constructor(
             put("operational_bridge_count", operationalBridgeCountMetric.get())
             put("in_shutdown_bridge_count", inShutdownBridgeCountMetric.get())
             put("lost_bridges", lostBridges.get())
+            put("reconnected_bridges", reconnectedBridges.get())
             put("bridge_version_count", bridgeVersionCount.get())
         }
 
@@ -245,7 +276,25 @@ class BridgeSelector @JvmOverloads constructor(
             )
         }
 
+    /**
+     * Counts as lost the bridges that left without a shutdown state more than [BridgeConfig.lostBridgeGracePeriod]
+     * ago, and did not join again.
+     */
+    @Synchronized
+    fun countLostBridges() {
+        val now = clock.instant()
+        pendingLostBridges.entries.removeIf { (jid, leftAt) ->
+            (Duration.between(leftAt, now) >= lostBridgeGracePeriod).also { expired ->
+                if (expired) {
+                    logger.warn("Lost a bridge: $jid")
+                    lostBridges.inc()
+                }
+            }
+        }
+    }
+
     fun updateMetrics() {
+        countLostBridges()
         inShutdownBridgeCountMetric.set(bridges.values.count { it.isInGracefulShutdown }.toLong())
         operationalBridgeCountMetric.set(bridges.values.count { it.isOperational }.toLong())
         bridgeVersionCount.set(bridges.values.map { it.fullVersion }.toSet().size.toLong())
@@ -256,7 +305,13 @@ class BridgeSelector @JvmOverloads constructor(
         @JvmField
         val lostBridges = JicofoMetricsContainer.instance.registerCounter(
             "bridge_selector_lost_bridges",
-            "Number of bridges which disconnected unexpectedly."
+            "Number of bridges which disconnected unexpectedly and did not reconnect."
+        )
+
+        @JvmField
+        val reconnectedBridges = JicofoMetricsContainer.instance.registerCounter(
+            "bridge_selector_reconnected_bridges",
+            "Number of bridges which disconnected unexpectedly and reconnected within the grace period."
         )
 
         @JvmField

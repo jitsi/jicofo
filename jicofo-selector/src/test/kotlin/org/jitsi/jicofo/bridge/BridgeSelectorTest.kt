@@ -28,6 +28,7 @@ import org.jitsi.metaconfig.MetaconfigSettings
 import org.jitsi.utils.ms
 import org.jitsi.utils.time.FakeClock
 import org.jxmpp.jid.impl.JidCreate
+import java.time.Duration
 
 class BridgeSelectorTest : ShouldSpec() {
     override fun isolationMode() = IsolationMode.InstancePerLeaf
@@ -225,19 +226,65 @@ class BridgeSelectorTest : ShouldSpec() {
             val selector = BridgeSelector(clock)
             // TODO use MetricsContainer.reset() instead
             val initialLostBridges = BridgeSelector.lostBridges.get()
-            // BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+            val initialReconnectedBridges = BridgeSelector.reconnectedBridges.get()
+            val gracePeriod = BridgeConfig.config.lostBridgeGracePeriod
 
             val jvb1 = selector.addJvbAddress(jid1)
             BridgeSelector.lostBridges.get() shouldBe initialLostBridges
 
-            should("Increment the lost bridges stat when a bridge goes away") {
+            should("Increment the lost bridges stat when a bridge goes away and does not come back") {
                 selector.removeJvbAddress(jvb1.jid)
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+
+                clock.elapse(gracePeriod.minusSeconds(1))
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+
+                clock.elapse(Duration.ofSeconds(1))
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
+                BridgeSelector.reconnectedBridges.get() shouldBe initialReconnectedBridges
+
+                // Count it only once.
+                clock.elapse(gracePeriod)
+                selector.updateMetrics()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
+            }
+            should("Count a reconnected bridge when a bridge goes away and comes back in the grace period") {
+                selector.removeJvbAddress(jvb1.jid)
+                clock.elapse(gracePeriod.minusSeconds(1))
+                selector.addJvbAddress(jid1)
+                BridgeSelector.reconnectedBridges.get() shouldBe initialReconnectedBridges + 1
+
+                clock.elapse(gracePeriod)
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+            }
+            should("Count a lost bridge when it comes back after the grace period, before the periodic check") {
+                selector.removeJvbAddress(jvb1.jid)
+                clock.elapse(gracePeriod.plusSeconds(1))
+                selector.addJvbAddress(jid1)
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
+                BridgeSelector.reconnectedBridges.get() shouldBe initialReconnectedBridges
+
+                selector.countLostBridges()
                 BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
             }
             should("Not increment the lost bridges stat when a bridge in graceful-shutdown goes away") {
                 jvb1.setStats(gracefulShutdown = true)
                 selector.removeJvbAddress(jvb1.jid)
+                clock.elapse(gracePeriod)
+                selector.countLostBridges()
                 BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+            }
+            should("Not increment the lost bridges stat when the bridge is removed with countIfLost=false") {
+                selector.removeJvbAddress(jvb1.jid, countIfLost = false)
+                clock.elapse(gracePeriod)
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+                selector.addJvbAddress(jid1)
+                BridgeSelector.reconnectedBridges.get() shouldBe initialReconnectedBridges
             }
         }
         xcontext("Performance") {
