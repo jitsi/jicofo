@@ -174,6 +174,11 @@ class Config {
         "jicofo.codec.rtp-extensions.extmap-allow-mixed".from(JitsiConfig.newConfig)
     }
 
+    /** Whether to offer RTCP feedback for congestion control (RFC 8888) to the endpoints which support it. */
+    val ccfb: Boolean by config {
+        "jicofo.codec.ccfb.enabled".from(JitsiConfig.newConfig)
+    }
+
     companion object {
         const val LEGACY_BASE = "org.jitsi.jicofo"
 

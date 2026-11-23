@@ -33,6 +33,9 @@ enum class Features(val value: String) {
     /** Transport-wide congestion control. */
     TCC("http://jitsi.org/tcc"),
 
+    /** RTCP feedback for congestion control (RFC 8888, "ack ccfb"). */
+    CCFB("http://jitsi.org/ccfb"),
+
     /** Source name signalling. */
     SOURCE_NAMES("http://jitsi.org/source-name"),
     SSRC_REWRITING_V1("http://jitsi.org/ssrc-rewriting-1"),

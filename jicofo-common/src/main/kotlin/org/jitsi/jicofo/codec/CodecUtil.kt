@@ -27,6 +27,13 @@ import java.net.URI
 
 class CodecUtil {
     companion object {
+        /**
+         * Creates the rtcp-fb element which signals RTCP feedback for congestion control (RFC 8888): "ack ccfb".
+         * RFC 8888 requires it to be signaled for all payload types at once ("a=rtcp-fb:* ack ccfb"), so in Jingle
+         * it belongs in the description and not in a payload type.
+         */
+        fun createCcfbExtension(): RtcpFbPacketExtension = createRtcpFbPacketExtension("ack", "ccfb")
+
         fun createVideoPayloadTypeExtensions(
             options: OfferOptions = OfferOptions()
         ): Collection<PayloadTypePacketExtension> = buildList {

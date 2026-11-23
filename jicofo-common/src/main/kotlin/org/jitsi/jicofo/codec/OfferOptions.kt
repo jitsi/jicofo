@@ -25,6 +25,8 @@ data class OfferOptions(
     var video: Boolean = true,
     var sctp: Boolean = true,
     var tcc: Boolean = true,
+    /** RTCP feedback for congestion control (RFC 8888). It is used in place of transport-cc feedback. */
+    var ccfb: Boolean = false,
     var remb: Boolean = false,
     var rtx: Boolean = true,
     var opusRed: Boolean = true

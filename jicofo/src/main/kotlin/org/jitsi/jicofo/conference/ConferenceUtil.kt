@@ -17,6 +17,7 @@
  */
 package org.jitsi.jicofo.conference
 
+import org.jitsi.jicofo.codec.CodecUtil
 import org.jitsi.jicofo.visitors.VisitorsConfig
 import org.jitsi.jicofo.xmpp.XmppProvider
 import org.jitsi.jicofo.xmpp.muc.ChatRoom
@@ -25,6 +26,8 @@ import org.jitsi.xmpp.extensions.colibri2.Media
 import org.jitsi.xmpp.extensions.jingle.ContentPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceRtcpmuxPacketExtension
 import org.jitsi.xmpp.extensions.jingle.IceUdpTransportPacketExtension
+import org.jitsi.xmpp.extensions.jingle.PayloadTypePacketExtension
+import org.jitsi.xmpp.extensions.jingle.RtcpFbPacketExtension
 import org.jitsi.xmpp.extensions.jingle.RtpDescriptionPacketExtension
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.jid.impl.JidCreate
@@ -38,8 +41,20 @@ internal fun ContentPacketExtension.toMedia(): Media? {
     }
 
     getFirstChildOfType(RtpDescriptionPacketExtension::class.java)?.let {
+        // RFC 8888 feedback is signaled for all the payload types at once, in the description. Colibri has no place
+        // for that, so the bridge is told with each payload type.
+        val ccfb = it.getChildExtensionsOfType(RtcpFbPacketExtension::class.java).any { fb -> fb.isCcfb() }
         it.payloadTypes.forEach { payloadTypePacketExtension ->
-            media.addPayloadType(payloadTypePacketExtension)
+            media.addPayloadType(
+                if (ccfb && payloadTypePacketExtension.rtcpFeedbackTypeList.none { fb -> fb.isCcfb() }) {
+                    // A copy (with its parameters and other feedback), so that the description is not changed.
+                    PayloadTypePacketExtension.clone(payloadTypePacketExtension).apply {
+                        addRtcpFeedbackType(CodecUtil.createCcfbExtension())
+                    }
+                } else {
+                    payloadTypePacketExtension
+                }
+            )
         }
         it.extmapList.forEach { rtpHdrExtPacketExtension ->
             media.addRtpHdrExt(rtpHdrExtPacketExtension)
@@ -48,6 +63,8 @@ internal fun ContentPacketExtension.toMedia(): Media? {
     }
     return media.build()
 }
+
+private fun RtcpFbPacketExtension.isCcfb() = feedbackType == "ack" && feedbackSubtype == "ccfb"
 
 internal fun List<ContentPacketExtension>.getTransport(): IceUdpTransportPacketExtension? {
     val transport = firstNotNullOfOrNull { it.getFirstChildOfType(IceUdpTransportPacketExtension::class.java) }
