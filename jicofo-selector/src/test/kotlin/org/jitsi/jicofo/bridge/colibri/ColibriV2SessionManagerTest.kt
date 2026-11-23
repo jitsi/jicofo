@@ -689,6 +689,47 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                         }
                     }
 
+                    context("And the allocation of a second participant on it fails") {
+                        colibriServers[bridge2.jid]!!.rejectedEndpoints.add("p3")
+                        shouldThrow<ColibriAllocationFailedException> {
+                            allocate("p3", region = "region-jvb2")
+                        }.removeBridge shouldBe false
+                        drain()
+
+                        should("expire the participant on each other bridge") {
+                            relayEndpointExpires(bridge1, "jvb2", "p3") shouldBe 1
+                            relayEndpointExpires(visitorBridge1, "jvb1", "p3") shouldBe 1
+                            relayEndpointExpires(visitorBridge2, "jvb1", "p3") shouldBe 1
+                        }
+                        should("keep the session with its remaining participant") {
+                            sessionManager.getParticipants(bridge2) shouldBe listOf("p2")
+                            activeRelays(bridge1) shouldBe listOf("visitor1", "visitor2", "jvb2")
+                        }
+                        should("not send another request to the bridge which rejected the participant") {
+                            // An error response to a request fails the session.
+                            requestsTo(bridge2).last().endpoints.map { it.id } shouldBe listOf("p3")
+                        }
+                        should("count the endpoint as removed from the bridge") {
+                            verify(exactly = 1) { bridge2.endpointRemoved() }
+                        }
+                        should("not fail any sessions") {
+                            failedSessions.shouldBeEmpty()
+                        }
+
+                        context("And allocating the participant again") {
+                            colibriServers[bridge2.jid]!!.rejectedEndpoints.clear()
+                            allocate("p3", region = "region-jvb2")
+
+                            should("create it again on each other bridge") {
+                                relayEndpointCreates(bridge1, "jvb2", "p3") shouldBe listOf(true, false, true)
+                                relayEndpointCreates(visitorBridge1, "jvb1", "p3") shouldBe listOf(true, false, true)
+                                relayEndpointCreates(visitorBridge2, "jvb1", "p3") shouldBe listOf(true, false, true)
+                                sessionManager.getParticipants(bridge2) shouldBe listOf("p2", "p3")
+                                failedSessions.shouldBeEmpty()
+                            }
+                        }
+                    }
+
                     context("And the participant signals its sources") {
                         val sources = EndpointSourceSet(Source(1234L, MediaType.AUDIO, name = "p2-a0"))
                         sessionManager.updateParticipant("p2", sources = sources).also { drain() }
@@ -697,6 +738,47 @@ class ColibriV2SessionManagerTest : ShouldSpec() {
                             relayEndpointCreates(bridge1, "jvb2", "p2") shouldBe listOf(true, false)
                             relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true, false)
                             relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true, false)
+                        }
+                    }
+                }
+
+                context("And the allocation of the first participant of a second core bridge fails") {
+                    // The bridge creates the conference and rejects the endpoint.
+                    TestColibri2Server().also { colibriServers[bridge2.jid] = it }.rejectedEndpoints.add("p2")
+                    shouldThrow<ColibriAllocationFailedException> {
+                        allocate("p2", region = "region-jvb2")
+                    }.removeBridge shouldBe false
+                    drain()
+
+                    should("remove the session of the bridge") {
+                        sessionManager.getBridges().keys shouldBe setOf(bridge1, visitorBridge1, visitorBridge2)
+                        requestsTo(bridge2).count { it.expire } shouldBe 1
+                    }
+                    should("expire the relay to the bridge") {
+                        activeRelays(bridge1) shouldBe listOf("visitor1", "visitor2")
+                    }
+                    should("expire the participant on the bridges which do not connect to it") {
+                        relayEndpointExpires(visitorBridge1, "jvb1", "p2") shouldBe 1
+                        relayEndpointExpires(visitorBridge2, "jvb1", "p2") shouldBe 1
+                    }
+                    should("count the endpoint as removed from the bridge") {
+                        verify(exactly = 1) { bridge2.endpointsRemoved(1) }
+                    }
+                    should("not fail any sessions") {
+                        failedSessions.shouldBeEmpty()
+                    }
+
+                    context("And allocating the participant again") {
+                        colibriServers[bridge2.jid]!!.rejectedEndpoints.clear()
+                        allocate("p2", region = "region-jvb2")
+
+                        should("create a new session and connect it again") {
+                            requestsTo(bridge2).count { it.create } shouldBe 2
+                            activeRelays(bridge1) shouldBe listOf("visitor1", "visitor2", "jvb2")
+                            relayEndpointCreates(visitorBridge1, "jvb1", "p2") shouldBe listOf(true, false, true)
+                            relayEndpointCreates(visitorBridge2, "jvb1", "p2") shouldBe listOf(true, false, true)
+                            sessionManager.getParticipants(bridge2) shouldBe listOf("p2")
+                            failedSessions.shouldBeEmpty()
                         }
                     }
                 }

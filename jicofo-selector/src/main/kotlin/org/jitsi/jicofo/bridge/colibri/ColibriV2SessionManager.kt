@@ -817,7 +817,7 @@ class ColibriV2SessionManager @JvmOverloads constructor(
         val created: Boolean
         val participantInfo: ParticipantInfo
         // Whether no bridge was available, and the participant is allocated on the conference's (non-operational)
-        // bridge. Then a failure fails only this participant, and keeps the session.
+        // bridge. Then a failure fails only this participant, and keeps the session if other participants remain.
         var singleBridgeFallback = false
         synchronized(syncRoot) {
             if (participants.containsKey(participant.id)) {
@@ -973,10 +973,55 @@ class ColibriV2SessionManager @JvmOverloads constructor(
                     remove(participantInfo)
                     eventEmitter.fireEvent { bridgeRemoved(session.bridge, removedParticipants.map { it.id }.toList()) }
                 } else {
-                    remove(participantInfo)
+                    removeFailedParticipant(session, participantInfo)
                 }
                 throw e
             }
+        }
+    }
+
+    /**
+     * Remove [participantInfo] after its allocation on [session] failed, when the session stays. The other sessions
+     * received the participant as a remote endpoint before the response (see [doAllocate]), so expire it there.
+     *
+     * If no other participant remains, remove the session: a new session would otherwise stay in the cascade with its
+     * relays, and the bridge keeps a conference whose create request failed. Otherwise keep the session, and do not
+     * send a request to its bridge: an error response to it fails the session (see [Colibri2Session]), which
+     * `keepSession` in [handleResponse] avoids.
+     */
+    private fun removeFailedParticipant(session: Colibri2Session, participantInfo: ParticipantInfo) {
+        if (getSessionParticipants(session).all { it == participantInfo }) {
+            logger.info("Removing session with no remaining participants: $session")
+            try {
+                removeSession(session)
+            } catch (e: Exception) {
+                // The caller throws the allocation failure, which the invite code handles.
+                logger.error("Failed to remove $session after the failed allocation of ${participantInfo.id}", e)
+            }
+            // [removeSession] removes the participants of the session from the maps. Remove this one also if the
+            // session no longer listed it.
+            remove(participantInfo)
+            eventEmitter.fireEvent { bridgeCountChanged(sessions.size) }
+            return
+        }
+
+        remove(participantInfo)
+        session.bridge.endpointRemoved()
+        if (participantInfo.visitor) {
+            // Visitors don't have relay endpoints.
+            return
+        }
+        try {
+            getPathsFrom(session) { _, otherSession, from ->
+                val relayId = from?.relayId ?: return@getPathsFrom
+                try {
+                    otherSession.expireRemoteParticipants(singletonList(participantInfo), relayId)
+                } catch (e: Exception) {
+                    logger.error("Failed to expire ${participantInfo.id} on $otherSession, relay $relayId", e)
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to expire ${participantInfo.id} on the other sessions", e)
         }
     }
 
