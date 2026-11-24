@@ -55,4 +55,7 @@ class BridgeMucDetector(
     /** Count the bridge as lost only if it left. If jicofo left the brewery the bridge may still be connected. */
     override fun notifyInstanceOffline(jid: Jid, instanceLeft: Boolean) =
         bridgeSelector.removeJvbAddress(jid, countIfLost = instanceLeft)
+
+    /** We can not see the bridges that left join again, so do not count them as lost. */
+    override fun breweryStopped() = bridgeSelector.clearPendingLostBridges()
 }

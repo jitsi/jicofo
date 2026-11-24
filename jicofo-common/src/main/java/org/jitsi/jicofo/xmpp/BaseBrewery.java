@@ -244,6 +244,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
             // Clean up the list of service instances. They did not leave, we did.
             instances.forEach(i -> removeInstance(i, false));
+            breweryStopped();
         }
     }
 
@@ -400,6 +401,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param jid the instance muc address
      */
     abstract protected void notifyInstanceOffline(@NotNull Jid jid);
+
+    /**
+     * Called after this brewery left the room and removed all instances. Until it joins again it does not see
+     * instances join or leave. The default implementation does nothing.
+     */
+    protected void breweryStopped()
+    {
+    }
 
     /**
      * Notifies that a brewing instance is going offline.

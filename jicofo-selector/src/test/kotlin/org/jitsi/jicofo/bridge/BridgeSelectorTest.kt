@@ -251,6 +251,21 @@ class BridgeSelectorTest : ShouldSpec() {
                 selector.updateMetrics()
                 BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
             }
+            should("Count a lost bridge in the periodic metrics update") {
+                selector.removeJvbAddress(jvb1.jid)
+                clock.elapse(gracePeriod)
+                selector.updateMetrics()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges + 1
+            }
+            should("Not count a bridge that left before the pending bridges were cleared") {
+                selector.removeJvbAddress(jvb1.jid)
+                selector.clearPendingLostBridges()
+                clock.elapse(gracePeriod)
+                selector.countLostBridges()
+                BridgeSelector.lostBridges.get() shouldBe initialLostBridges
+                selector.addJvbAddress(jid1)
+                BridgeSelector.reconnectedBridges.get() shouldBe initialReconnectedBridges
+            }
             should("Count a reconnected bridge when a bridge goes away and comes back in the grace period") {
                 selector.removeJvbAddress(jvb1.jid)
                 clock.elapse(gracePeriod.minusSeconds(1))

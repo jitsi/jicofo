@@ -277,6 +277,19 @@ class BridgeSelector @JvmOverloads constructor(
         }
 
     /**
+     * Forgets the bridges that left without a shutdown state and did not join again yet. Use when jicofo cannot see
+     * the bridges join again (for example when it left the brewery), so they are counted neither as lost nor as
+     * reconnected.
+     */
+    @Synchronized
+    fun clearPendingLostBridges() {
+        if (pendingLostBridges.isNotEmpty()) {
+            logger.info("Not counting ${pendingLostBridges.size} bridges that left: ${pendingLostBridges.keys}")
+            pendingLostBridges.clear()
+        }
+    }
+
+    /**
      * Counts as lost the bridges that left without a shutdown state more than [BridgeConfig.lostBridgeGracePeriod]
      * ago, and did not join again.
      */

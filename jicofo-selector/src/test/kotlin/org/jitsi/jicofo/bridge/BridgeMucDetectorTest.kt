@@ -78,6 +78,9 @@ class BridgeMucDetectorTest : ShouldSpec() {
                 verify(exactly = 1) { bridgeSelector.removeJvbAddress(bridgeJid, false) }
                 verify(exactly = 0) { bridgeSelector.removeJvbAddress(bridgeJid, true) }
             }
+            should("Not count the bridges that left before") {
+                verify(exactly = 1) { bridgeSelector.clearPendingLostBridges() }
+            }
         }
     }
 }
