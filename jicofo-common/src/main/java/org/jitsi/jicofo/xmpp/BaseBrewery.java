@@ -242,8 +242,9 @@ public abstract class BaseBrewery<T extends ExtensionElement>
             // even if leave fails we want to cleanup, so we can retry
             chatRoom = null;
 
-            // Clean up the list of service instances
-            instances.forEach(this::removeInstance);
+            // Clean up the list of service instances. They did not leave, we did.
+            instances.forEach(i -> removeInstance(i, false));
+            breweryStopped();
         }
     }
 
@@ -282,7 +283,7 @@ public abstract class BaseBrewery<T extends ExtensionElement>
 
             if (instance != null)
             {
-                removeInstance(instance);
+                removeInstance(instance, true);
             }
         }
     }
@@ -385,12 +386,14 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * offline.
      *
      * @param i the brewing instance
+     * @param instanceLeft true if the instance left the brewery room, false if it is removed because this brewery
+     * left the room.
      */
-    private void removeInstance(@NotNull BrewInstance i)
+    private void removeInstance(@NotNull BrewInstance i, boolean instanceLeft)
     {
         instances.remove(i);
-        logger.info("Removed brewery instance: " + i.jid);
-        notifyInstanceOffline(i.jid);
+        logger.info("Removed brewery instance: " + i.jid + (instanceLeft ? "" : " (brewery stopped)"));
+        notifyInstanceOffline(i.jid, instanceLeft);
     }
 
     /**
@@ -398,6 +401,25 @@ public abstract class BaseBrewery<T extends ExtensionElement>
      * @param jid the instance muc address
      */
     abstract protected void notifyInstanceOffline(@NotNull Jid jid);
+
+    /**
+     * Called after this brewery left the room and removed all instances. Until it joins again it does not see
+     * instances join or leave. The default implementation does nothing.
+     */
+    protected void breweryStopped()
+    {
+    }
+
+    /**
+     * Notifies that a brewing instance is going offline.
+     * @param jid the instance muc address
+     * @param instanceLeft true if the instance left the brewery room, false if it is removed because this brewery
+     * left the room (for example after the XMPP connection was lost). The default implementation ignores it.
+     */
+    protected void notifyInstanceOffline(@NotNull Jid jid, boolean instanceLeft)
+    {
+        notifyInstanceOffline(jid);
+    }
 
     /**
      * Internal structure for storing information about brewing instances.

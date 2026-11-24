@@ -146,6 +146,14 @@ class BridgeConfig private constructor() {
         }
     }
 
+    /**
+     * A bridge that leaves the brewery without a shutdown state is counted as lost only if it does not join again
+     * in this period.
+     */
+    val lostBridgeGracePeriod: Duration by config {
+        "$BASE.lost-bridge-grace-period".from(JitsiConfig.newConfig)
+    }
+
     val xmppConnectionName: XmppConnectionEnum by config {
         "jicofo.bridge.xmpp-connection-name".from(JitsiConfig.newConfig)
     }
