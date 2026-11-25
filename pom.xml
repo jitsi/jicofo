@@ -39,9 +39,9 @@
     <jxmpp.version>1.0.3</jxmpp.version>
     <smack.version>4.4.8-jitsi-4</smack.version>
     <kotlin.version>2.4.20</kotlin.version>
-    <ktor.version>3.0.0</ktor.version>
+    <ktor.version>3.5.2</ktor.version>
     <kotest.version>5.9.1</kotest.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <slf4j.version>2.0.18</slf4j.version>
     <jackson.version>2.21.5</jackson.version>
     <jitsi.utils.version>1.0-157-g01961f9</jitsi.utils.version>
     <jicoco.version>1.1-183-gfc70624</jicoco.version>
@@ -182,6 +182,12 @@
         <groupId>${project.groupId}</groupId>
         <artifactId>jitsi-xmpp-extensions</artifactId>
         <version>1.0-128-g1223d2e</version>
+      </dependency>
+      <!-- Use the same version in all modules. Without this, jicoco-config and ktor bring different versions. -->
+      <dependency>
+        <groupId>com.typesafe</groupId>
+        <artifactId>config</artifactId>
+        <version>1.4.9</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
